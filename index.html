@@ -34,25 +34,30 @@
 
           <div id="strength-fields" class="grid activity-fields" data-activity="strength">
             <label>
-              Exercise
-              <input type="text" id="exercise" placeholder="e.g. Back squat" />
+              Exercise name
+              <input type="text" id="exercise-name" placeholder="e.g. Back squat" />
             </label>
 
             <label>
-              Sets
-              <input type="number" id="sets" min="0" placeholder="e.g. 5" />
+              Set reps
+              <input type="number" id="strength-set-reps" min="0" placeholder="e.g. 5" />
             </label>
 
             <label>
-              Reps
-              <input type="number" id="reps" min="0" placeholder="e.g. 5" />
+              Set weight (kg)
+              <input type="number" id="strength-set-weight" min="0" step="0.1" placeholder="e.g. 60" />
             </label>
 
-            <label>
-              Weight (kg)
-              <input type="number" id="weight" min="0" step="0.1" placeholder="e.g. 60" />
+            <label class="checkbox-label">
+              <input type="checkbox" id="strength-set-bodyweight" />
+              Body weight set
             </label>
+
+            <button type="button" id="add-strength-set">Add Set To Exercise</button>
+            <button type="button" id="add-strength-exercise">Add Exercise To Workout</button>
+            <ul id="current-strength-sets" class="detail-list"></ul>
           </div>
+          <ul id="strength-exercise-list" class="detail-list"></ul>
 
           <div id="run-fields" class="grid activity-fields" data-activity="run">
             <label>
