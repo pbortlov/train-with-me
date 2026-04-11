@@ -143,6 +143,24 @@ td {
   vertical-align: top;
 }
 
+.actions-cell {
+  white-space: nowrap;
+}
+
+.ghost-button {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.85rem;
+  margin-right: 0.35rem;
+}
+
+.danger-button {
+  color: #b42318;
+  border-color: #f2c6c1;
+}
+
 @media (max-width: 640px) {
   .grid,
   .summary {

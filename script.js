@@ -6,6 +6,7 @@ const goalsForm = document.getElementById("goals-form");
 const historyBody = document.getElementById("history-body");
 const summaryEl = document.getElementById("summary");
 const goalProgressEl = document.getElementById("goal-progress");
+const workoutSubmitButton = workoutForm.querySelector('button[type="submit"]');
 
 const dateInput = document.getElementById("date");
 
@@ -17,6 +18,7 @@ let goals = load(STORAGE_KEY_GOALS, {
   run: null,
   sprint: null,
 });
+let editingWorkoutId = null;
 
 hydrateGoalInputs();
 render();
@@ -25,7 +27,7 @@ workoutForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const workout = {
-    id: crypto.randomUUID(),
+    id: editingWorkoutId ?? crypto.randomUUID(),
     date: valueOf("date"),
     activity: valueOf("activity"),
     sets: toNumberOrNull(valueOf("sets")),
@@ -38,10 +40,19 @@ workoutForm.addEventListener("submit", (event) => {
     createdAt: Date.now(),
   };
 
-  workouts.unshift(workout);
+  if (editingWorkoutId) {
+    const existingIndex = workouts.findIndex((savedWorkout) => savedWorkout.id === editingWorkoutId);
+    if (existingIndex >= 0) {
+      workouts[existingIndex] = {
+        ...workout,
+        createdAt: workouts[existingIndex].createdAt,
+      };
+    }
+  } else {
+    workouts.unshift(workout);
+  }
   save(STORAGE_KEY_WORKOUTS, workouts);
-  workoutForm.reset();
-  dateInput.valueAsDate = new Date();
+  resetWorkoutForm();
   render();
 });
 
@@ -54,6 +65,27 @@ goalsForm.addEventListener("submit", (event) => {
   };
   save(STORAGE_KEY_GOALS, goals);
   renderGoals();
+});
+
+historyBody.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const { action, id } = target.dataset;
+  if (!action || !id) {
+    return;
+  }
+
+  if (action === "delete") {
+    deleteWorkout(id);
+    return;
+  }
+
+  if (action === "edit") {
+    startEditingWorkout(id);
+  }
 });
 
 function render() {
@@ -97,7 +129,7 @@ function renderSummary() {
 
 function renderHistory() {
   if (!workouts.length) {
-    historyBody.innerHTML = `<tr><td colspan="4">No workouts yet. Add your first one above.</td></tr>`;
+    historyBody.innerHTML = `<tr><td colspan="5">No workouts yet. Add your first one above.</td></tr>`;
     return;
   }
 
@@ -111,6 +143,10 @@ function renderHistory() {
           <td>${capitalize(w.activity)}</td>
           <td>${metric}</td>
           <td>${escapeHtml(w.notes || "")}</td>
+          <td class="actions-cell">
+            <button type="button" class="ghost-button" data-action="edit" data-id="${w.id}">Edit</button>
+            <button type="button" class="ghost-button danger-button" data-action="delete" data-id="${w.id}">Delete</button>
+          </td>
         </tr>
       `;
     })
@@ -234,4 +270,42 @@ function escapeHtml(text) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function startEditingWorkout(workoutId) {
+  const workout = workouts.find((item) => item.id === workoutId);
+  if (!workout) {
+    return;
+  }
+
+  editingWorkoutId = workoutId;
+  document.getElementById("date").value = workout.date ?? "";
+  document.getElementById("activity").value = workout.activity ?? "strength";
+  document.getElementById("sets").value = workout.sets ?? "";
+  document.getElementById("reps").value = workout.reps ?? "";
+  document.getElementById("weight").value = workout.weight ?? "";
+  document.getElementById("distance").value = workout.distance ?? "";
+  document.getElementById("time").value = workout.time ?? "";
+  document.getElementById("pace").value = workout.pace ?? "";
+  document.getElementById("notes").value = workout.notes ?? "";
+  workoutSubmitButton.textContent = "Update Workout";
+  workoutForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function deleteWorkout(workoutId) {
+  workouts = workouts.filter((workout) => workout.id !== workoutId);
+
+  if (editingWorkoutId === workoutId) {
+    resetWorkoutForm();
+  }
+
+  save(STORAGE_KEY_WORKOUTS, workouts);
+  render();
+}
+
+function resetWorkoutForm() {
+  editingWorkoutId = null;
+  workoutForm.reset();
+  dateInput.valueAsDate = new Date();
+  workoutSubmitButton.textContent = "Save Workout";
 }

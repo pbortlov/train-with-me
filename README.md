@@ -7,6 +7,7 @@ A beginner-friendly, single-page training tracker for:
 
 ## Features in Version 1
 - Workout entry form (date, activity, metrics, notes)
+- Edit and delete workout entries from the recent history table
 - Goal entry form
 - Simple progress summary
 - Recent workout history
