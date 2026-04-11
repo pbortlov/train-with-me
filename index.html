@@ -30,6 +30,13 @@
                 <option value="sprint">Sprint</option>
               </select>
             </label>
+          </div>
+
+          <div id="strength-fields" class="grid activity-fields" data-activity="strength">
+            <label>
+              Exercise
+              <input type="text" id="exercise" placeholder="e.g. Back squat" />
+            </label>
 
             <label>
               Sets
@@ -45,7 +52,9 @@
               Weight (kg)
               <input type="number" id="weight" min="0" step="0.1" placeholder="e.g. 60" />
             </label>
+          </div>
 
+          <div id="run-fields" class="grid activity-fields" data-activity="run">
             <label>
               Distance (km)
               <input type="number" id="distance" min="0" step="0.01" placeholder="e.g. 5" />
@@ -60,6 +69,22 @@
               Pace (min/km)
               <input type="number" id="pace" min="0" step="0.01" placeholder="e.g. 6" />
             </label>
+          </div>
+
+          <div id="sprint-fields" class="activity-fields" data-activity="sprint">
+            <p class="hint">Add each sprint set in order (seconds + meters).</p>
+            <div class="grid">
+              <label>
+                Sprint time (sec)
+                <input type="number" id="sprint-time-sec" min="0" step="0.01" placeholder="e.g. 14.2" />
+              </label>
+              <label>
+                Sprint distance (m)
+                <input type="number" id="sprint-distance-m" min="0" step="1" placeholder="e.g. 100" />
+              </label>
+              <button type="button" id="add-sprint-set">Add Sprint Set</button>
+            </div>
+            <ol id="sprint-sets-list" class="sprint-sets-list"></ol>
           </div>
 
           <label>
@@ -85,8 +110,8 @@
           </label>
 
           <label>
-            Sprint goal time (min)
-            <input type="number" id="goal-sprint" min="0" step="0.01" placeholder="e.g. 0.2" />
+            Sprint goal best time (sec)
+            <input type="number" id="goal-sprint" min="0" step="0.01" placeholder="e.g. 14.2" />
           </label>
 
           <button type="submit">Save Goals</button>

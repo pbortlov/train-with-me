@@ -6,7 +6,10 @@ A beginner-friendly, single-page training tracker for:
 - sprinting
 
 ## Features in Version 1
-- Workout entry form (date, activity, metrics, notes)
+- Workout entry form with activity-specific fields:
+  - Strength: exercise, weight, sets, reps
+  - Run: distance (km), time (min), pace (min/km)
+  - Sprint: ordered sprint sets with time (sec) + distance (m)
 - Edit and delete workout entries from the recent history table
 - Goal entry form
 - Simple progress summary

@@ -7,6 +7,10 @@ const historyBody = document.getElementById("history-body");
 const summaryEl = document.getElementById("summary");
 const goalProgressEl = document.getElementById("goal-progress");
 const workoutSubmitButton = workoutForm.querySelector('button[type="submit"]');
+const activityInput = document.getElementById("activity");
+const activityFieldGroups = document.querySelectorAll(".activity-fields");
+const addSprintSetButton = document.getElementById("add-sprint-set");
+const sprintSetsList = document.getElementById("sprint-sets-list");
 
 const dateInput = document.getElementById("date");
 
@@ -19,8 +23,11 @@ let goals = load(STORAGE_KEY_GOALS, {
   sprint: null,
 });
 let editingWorkoutId = null;
+let draftSprintSets = [];
 
 hydrateGoalInputs();
+updateVisibleFields();
+renderSprintSets();
 render();
 
 workoutForm.addEventListener("submit", (event) => {
@@ -30,12 +37,14 @@ workoutForm.addEventListener("submit", (event) => {
     id: editingWorkoutId ?? crypto.randomUUID(),
     date: valueOf("date"),
     activity: valueOf("activity"),
+    exercise: valueOf("exercise")?.trim() || "",
     sets: toNumberOrNull(valueOf("sets")),
     reps: toNumberOrNull(valueOf("reps")),
     weight: toNumberOrNull(valueOf("weight")),
     distance: toNumberOrNull(valueOf("distance")),
     time: toNumberOrNull(valueOf("time")),
     pace: toNumberOrNull(valueOf("pace")),
+    sprintSets: valueOf("activity") === "sprint" ? normalizeSprintSets(draftSprintSets) : [],
     notes: valueOf("notes")?.trim() || "",
     createdAt: Date.now(),
   };
@@ -54,6 +63,27 @@ workoutForm.addEventListener("submit", (event) => {
   save(STORAGE_KEY_WORKOUTS, workouts);
   resetWorkoutForm();
   render();
+});
+
+activityInput.addEventListener("change", updateVisibleFields);
+
+addSprintSetButton.addEventListener("click", () => {
+  const sprintTime = toNumberOrNull(valueOf("sprint-time-sec"));
+  const sprintDistance = toNumberOrNull(valueOf("sprint-distance-m"));
+
+  if (!isNumber(sprintTime) || !isNumber(sprintDistance)) {
+    return;
+  }
+
+  draftSprintSets.push({
+    order: draftSprintSets.length + 1,
+    time: sprintTime,
+    distance: sprintDistance,
+  });
+
+  document.getElementById("sprint-time-sec").value = "";
+  document.getElementById("sprint-distance-m").value = "";
+  renderSprintSets();
 });
 
 goalsForm.addEventListener("submit", (event) => {
@@ -104,8 +134,10 @@ function renderSummary() {
     .reduce((max, w) => Math.max(max, w.distance), 0);
 
   const bestSprintTime = workouts
-    .filter((w) => w.activity === "sprint" && isNumber(w.time))
-    .reduce((min, w) => Math.min(min, w.time), Infinity);
+    .filter((w) => w.activity === "sprint")
+    .map((w) => sprintBestTime(w))
+    .filter((timeValue) => isNumber(timeValue))
+    .reduce((min, timeValue) => Math.min(min, timeValue), Infinity);
 
   summaryEl.innerHTML = `
     <article class="badge">
@@ -122,7 +154,7 @@ function renderSummary() {
     </article>
     <article class="badge">
       <span class="label">Best sprint time</span>
-      <span class="value">${Number.isFinite(bestSprintTime) ? `${bestSprintTime} min` : "-"}</span>
+      <span class="value">${Number.isFinite(bestSprintTime) ? `${bestSprintTime} sec` : "-"}</span>
     </article>
   `;
 }
@@ -163,13 +195,15 @@ function renderGoals() {
     .reduce((max, w) => Math.max(max, w.distance), 0);
 
   const currentSprint = workouts
-    .filter((w) => w.activity === "sprint" && isNumber(w.time))
-    .reduce((min, w) => Math.min(min, w.time), Infinity);
+    .filter((w) => w.activity === "sprint")
+    .map((w) => sprintBestTime(w))
+    .filter((timeValue) => isNumber(timeValue))
+    .reduce((min, timeValue) => Math.min(min, timeValue), Infinity);
 
   goalProgressEl.innerHTML = `
     ${goalRow("Strength", currentStrength, goals.strength, "kg", true)}
     ${goalRow("Run distance", currentRun, goals.run, "km", true)}
-    ${goalRow("Sprint time", Number.isFinite(currentSprint) ? currentSprint : null, goals.sprint, "min", false)}
+    ${goalRow("Sprint best time", Number.isFinite(currentSprint) ? currentSprint : null, goals.sprint, "sec", false)}
   `;
 }
 
@@ -199,6 +233,7 @@ function hydrateGoalInputs() {
 function formatMainMetric(w) {
   if (w.activity === "strength") {
     const parts = [
+      w.exercise ? `${escapeHtml(w.exercise)}` : null,
       isNumber(w.sets) ? `${w.sets} sets` : null,
       isNumber(w.reps) ? `${w.reps} reps` : null,
       isNumber(w.weight) ? `${w.weight} kg` : null,
@@ -215,11 +250,12 @@ function formatMainMetric(w) {
     return parts.join(" • ") || "-";
   }
 
-  const parts = [
-    isNumber(w.time) ? `${w.time} min` : null,
-    isNumber(w.distance) ? `${w.distance} km` : null,
-    isNumber(w.pace) ? `${w.pace} min/km` : null,
-  ].filter(Boolean);
+  const sprintSets = normalizeSprintSets(w.sprintSets);
+  if (sprintSets.length) {
+    return sprintSets.map((set) => `#${set.order} ${set.distance}m/${set.time}s`).join(" • ");
+  }
+
+  const parts = [isNumber(w.time) ? `${w.time} sec` : null, isNumber(w.distance) ? `${w.distance} m` : null].filter(Boolean);
   return parts.join(" • ") || "-";
 }
 
@@ -281,13 +317,17 @@ function startEditingWorkout(workoutId) {
   editingWorkoutId = workoutId;
   document.getElementById("date").value = workout.date ?? "";
   document.getElementById("activity").value = workout.activity ?? "strength";
+  document.getElementById("exercise").value = workout.exercise ?? "";
   document.getElementById("sets").value = workout.sets ?? "";
   document.getElementById("reps").value = workout.reps ?? "";
   document.getElementById("weight").value = workout.weight ?? "";
   document.getElementById("distance").value = workout.distance ?? "";
   document.getElementById("time").value = workout.time ?? "";
   document.getElementById("pace").value = workout.pace ?? "";
+  draftSprintSets = normalizeSprintSets(workout.sprintSets);
   document.getElementById("notes").value = workout.notes ?? "";
+  renderSprintSets();
+  updateVisibleFields();
   workoutSubmitButton.textContent = "Update Workout";
   workoutForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -305,7 +345,52 @@ function deleteWorkout(workoutId) {
 
 function resetWorkoutForm() {
   editingWorkoutId = null;
+  draftSprintSets = [];
   workoutForm.reset();
   dateInput.valueAsDate = new Date();
+  renderSprintSets();
+  updateVisibleFields();
   workoutSubmitButton.textContent = "Save Workout";
+}
+
+function updateVisibleFields() {
+  const selectedActivity = valueOf("activity");
+
+  activityFieldGroups.forEach((group) => {
+    group.classList.toggle("is-hidden", group.dataset.activity !== selectedActivity);
+  });
+}
+
+function renderSprintSets() {
+  if (!draftSprintSets.length) {
+    sprintSetsList.innerHTML = "<li>No sprint sets yet.</li>";
+    return;
+  }
+
+  sprintSetsList.innerHTML = draftSprintSets
+    .map((set) => `<li>#${set.order}: ${formatNumber(set.time)} sec • ${formatNumber(set.distance)} m</li>`)
+    .join("");
+}
+
+function normalizeSprintSets(sprintSets) {
+  if (!Array.isArray(sprintSets)) {
+    return [];
+  }
+
+  return sprintSets
+    .filter((set) => isNumber(set?.time) && isNumber(set?.distance))
+    .map((set, index) => ({
+      order: index + 1,
+      time: Number(set.time),
+      distance: Number(set.distance),
+    }));
+}
+
+function sprintBestTime(workout) {
+  const sprintSets = normalizeSprintSets(workout.sprintSets);
+  if (sprintSets.length) {
+    return sprintSets.reduce((min, set) => Math.min(min, set.time), Infinity);
+  }
+
+  return isNumber(workout.time) ? workout.time : null;
 }
