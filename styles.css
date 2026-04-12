@@ -111,6 +111,20 @@ button {
   margin-bottom: 0.8rem;
 }
 
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.chart-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: #fff;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;

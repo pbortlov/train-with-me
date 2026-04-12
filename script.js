@@ -21,6 +21,10 @@ const filterActivityInput = document.getElementById("filter-activity");
 const filterFromDateInput = document.getElementById("filter-from-date");
 const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
+const chartsStatusEl = document.getElementById("charts-status");
+const strengthChartCanvas = document.getElementById("strength-chart");
+const runChartCanvas = document.getElementById("run-chart");
+const sprintChartCanvas = document.getElementById("sprint-chart");
 
 const dateInput = document.getElementById("date");
 
@@ -41,6 +45,9 @@ let progressFilters = {
   fromDate: "",
   toDate: "",
 };
+let strengthChart = null;
+let runChart = null;
+let sprintChart = null;
 
 hydrateGoalInputs();
 updateVisibleFields();
@@ -193,6 +200,7 @@ historyBody.addEventListener("click", (event) => {
 
 function render() {
   renderSummary();
+  renderCharts();
   renderHistory();
   renderGoals();
 }
@@ -484,6 +492,66 @@ function getFilteredWorkouts() {
     const fromMatch = !progressFilters.fromDate || (dateValue && dateValue >= progressFilters.fromDate);
     const toMatch = !progressFilters.toDate || (dateValue && dateValue <= progressFilters.toDate);
     return activityMatch && fromMatch && toMatch;
+  });
+}
+
+function renderCharts() {
+  if (typeof Chart === "undefined") {
+    chartsStatusEl.textContent = "Charts unavailable (Chart.js failed to load).";
+    return;
+  }
+
+  chartsStatusEl.textContent = "";
+  const filteredWorkouts = getFilteredWorkouts().slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  const strengthData = filteredWorkouts
+    .filter((workout) => workout.activity === "strength")
+    .map((workout) => ({ x: workout.date, y: strengthBestWeight(workout) }))
+    .filter((point) => point.x && isNumber(point.y));
+  const runData = filteredWorkouts
+    .filter((workout) => workout.activity === "run" && isNumber(workout.distance))
+    .map((workout) => ({ x: workout.date, y: workout.distance }))
+    .filter((point) => point.x);
+  const sprintData = filteredWorkouts
+    .filter((workout) => workout.activity === "sprint")
+    .map((workout) => ({ x: workout.date, y: sprintBestTime(workout) }))
+    .filter((point) => point.x && isNumber(point.y));
+
+  strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, strengthData, "kg", "#2f6fed");
+  runChart = createOrUpdateChart(runChart, runChartCanvas, runData, "km", "#16a34a");
+  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "sec", "#b42318");
+}
+
+function createOrUpdateChart(existingChart, canvas, points, unit, color) {
+  if (!canvas) {
+    return existingChart;
+  }
+
+  if (existingChart) {
+    existingChart.destroy();
+  }
+
+  return new Chart(canvas, {
+    type: "line",
+    data: {
+      datasets: [
+        {
+          data: points,
+          borderColor: color,
+          backgroundColor: `${color}33`,
+          tension: 0.25,
+          fill: false,
+          pointRadius: 3,
+        },
+      ],
+    },
+    options: {
+      parsing: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { type: "category", title: { display: true, text: "Date" } },
+        y: { title: { display: true, text: unit }, beginAtZero: true },
+      },
+    },
   });
 }
 

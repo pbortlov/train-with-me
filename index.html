@@ -148,6 +148,21 @@
           <button type="button" id="clear-filters">Clear Filters</button>
         </div>
         <div id="summary" class="summary"></div>
+        <p id="charts-status" class="hint"></p>
+        <div class="charts-grid">
+          <article class="chart-card">
+            <h3>Strength (Best Weight)</h3>
+            <canvas id="strength-chart" height="180"></canvas>
+          </article>
+          <article class="chart-card">
+            <h3>Run (Distance)</h3>
+            <canvas id="run-chart" height="180"></canvas>
+          </article>
+          <article class="chart-card">
+            <h3>Sprint (Best Time)</h3>
+            <canvas id="sprint-chart" height="180"></canvas>
+          </article>
+        </div>
 
         <h3>Recent Workouts</h3>
         <div class="table-wrap">
@@ -167,6 +182,7 @@
       </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
