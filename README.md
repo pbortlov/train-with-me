@@ -13,6 +13,7 @@ A beginner-friendly, single-page training tracker for:
   - Run: distance (km), time (min), pace (min/km)
   - Sprint: ordered sprint sets with time (sec) + distance (m)
 - Edit and delete workout entries from the recent history table
+- Progress filters by activity and date range
 - Goal entry form
 - Simple progress summary
 - Recent workout history

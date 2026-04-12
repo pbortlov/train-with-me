@@ -17,6 +17,10 @@ const currentStrengthSetsList = document.getElementById("current-strength-sets")
 const strengthExerciseList = document.getElementById("strength-exercise-list");
 const strengthSetWeightInput = document.getElementById("strength-set-weight");
 const strengthBodyweightInput = document.getElementById("strength-set-bodyweight");
+const filterActivityInput = document.getElementById("filter-activity");
+const filterFromDateInput = document.getElementById("filter-from-date");
+const filterToDateInput = document.getElementById("filter-to-date");
+const clearFiltersButton = document.getElementById("clear-filters");
 
 const dateInput = document.getElementById("date");
 
@@ -32,6 +36,11 @@ let editingWorkoutId = null;
 let draftSprintSets = [];
 let draftStrengthExercises = [];
 let draftCurrentStrengthSets = [];
+let progressFilters = {
+  activity: "all",
+  fromDate: "",
+  toDate: "",
+};
 
 hydrateGoalInputs();
 updateVisibleFields();
@@ -73,6 +82,10 @@ workoutForm.addEventListener("submit", (event) => {
 });
 
 activityInput.addEventListener("change", updateVisibleFields);
+filterActivityInput.addEventListener("change", onFilterChange);
+filterFromDateInput.addEventListener("change", onFilterChange);
+filterToDateInput.addEventListener("change", onFilterChange);
+clearFiltersButton.addEventListener("click", clearFilters);
 strengthBodyweightInput.addEventListener("change", () => {
   strengthSetWeightInput.disabled = strengthBodyweightInput.checked;
   if (strengthBodyweightInput.checked) {
@@ -185,17 +198,19 @@ function render() {
 }
 
 function renderSummary() {
-  const bestStrength = workouts
+  const filteredWorkouts = getFilteredWorkouts();
+
+  const bestStrength = filteredWorkouts
     .filter((w) => w.activity === "strength")
     .map((w) => strengthBestWeight(w))
     .filter((weightValue) => isNumber(weightValue))
     .reduce((max, weightValue) => Math.max(max, weightValue), 0);
 
-  const bestRunDistance = workouts
+  const bestRunDistance = filteredWorkouts
     .filter((w) => w.activity === "run" && isNumber(w.distance))
     .reduce((max, w) => Math.max(max, w.distance), 0);
 
-  const bestSprintTime = workouts
+  const bestSprintTime = filteredWorkouts
     .filter((w) => w.activity === "sprint")
     .map((w) => sprintBestTime(w))
     .filter((timeValue) => isNumber(timeValue))
@@ -204,7 +219,7 @@ function renderSummary() {
   summaryEl.innerHTML = `
     <article class="badge">
       <span class="label">Workouts logged</span>
-      <span class="value">${workouts.length}</span>
+      <span class="value">${filteredWorkouts.length}</span>
     </article>
     <article class="badge">
       <span class="label">Best strength weight</span>
@@ -222,12 +237,17 @@ function renderSummary() {
 }
 
 function renderHistory() {
-  if (!workouts.length) {
-    historyBody.innerHTML = `<tr><td colspan="5">No workouts yet. Add your first one above.</td></tr>`;
+  const filteredWorkouts = getFilteredWorkouts();
+
+  if (!filteredWorkouts.length) {
+    const message = workouts.length
+      ? "No workouts match your current filters."
+      : "No workouts yet. Add your first one above.";
+    historyBody.innerHTML = `<tr><td colspan="5">${message}</td></tr>`;
     return;
   }
 
-  historyBody.innerHTML = workouts
+  historyBody.innerHTML = filteredWorkouts
     .slice(0, 15)
     .map((w) => {
       const metric = formatMainMetric(w);
@@ -438,6 +458,32 @@ function updateVisibleFields() {
 
   activityFieldGroups.forEach((group) => {
     group.classList.toggle("is-hidden", group.dataset.activity !== selectedActivity);
+  });
+}
+
+function onFilterChange() {
+  progressFilters = {
+    activity: filterActivityInput.value || "all",
+    fromDate: filterFromDateInput.value || "",
+    toDate: filterToDateInput.value || "",
+  };
+  render();
+}
+
+function clearFilters() {
+  filterActivityInput.value = "all";
+  filterFromDateInput.value = "";
+  filterToDateInput.value = "";
+  onFilterChange();
+}
+
+function getFilteredWorkouts() {
+  return workouts.filter((workout) => {
+    const activityMatch = progressFilters.activity === "all" || workout.activity === progressFilters.activity;
+    const dateValue = workout.date || "";
+    const fromMatch = !progressFilters.fromDate || (dateValue && dateValue >= progressFilters.fromDate);
+    const toMatch = !progressFilters.toDate || (dateValue && dateValue <= progressFilters.toDate);
+    return activityMatch && fromMatch && toMatch;
   });
 }
 

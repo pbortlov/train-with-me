@@ -127,6 +127,26 @@
 
       <section class="card">
         <h2>Progress</h2>
+        <div class="grid" id="progress-filters">
+          <label>
+            Filter activity
+            <select id="filter-activity">
+              <option value="all">All</option>
+              <option value="strength">Strength</option>
+              <option value="run">Run</option>
+              <option value="sprint">Sprint</option>
+            </select>
+          </label>
+          <label>
+            From date
+            <input type="date" id="filter-from-date" />
+          </label>
+          <label>
+            To date
+            <input type="date" id="filter-to-date" />
+          </label>
+          <button type="button" id="clear-filters">Clear Filters</button>
+        </div>
         <div id="summary" class="summary"></div>
 
         <h3>Recent Workouts</h3>
