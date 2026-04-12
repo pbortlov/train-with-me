@@ -126,6 +126,19 @@
       </section>
 
       <section class="card">
+        <h2>Backup</h2>
+        <p class="hint">Export your data to a JSON file, or import a backup file.</p>
+        <div class="grid">
+          <button type="button" id="export-data">Export Data (JSON)</button>
+          <label>
+            Import JSON file
+            <input type="file" id="import-data-file" accept=".json,application/json" />
+          </label>
+        </div>
+        <p id="backup-status" class="hint"></p>
+      </section>
+
+      <section class="card">
         <h2>Progress</h2>
         <div class="grid" id="progress-filters">
           <label>

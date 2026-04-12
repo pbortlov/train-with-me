@@ -25,6 +25,9 @@ const chartsStatusEl = document.getElementById("charts-status");
 const strengthChartCanvas = document.getElementById("strength-chart");
 const runChartCanvas = document.getElementById("run-chart");
 const sprintChartCanvas = document.getElementById("sprint-chart");
+const exportDataButton = document.getElementById("export-data");
+const importDataFileInput = document.getElementById("import-data-file");
+const backupStatusEl = document.getElementById("backup-status");
 
 const dateInput = document.getElementById("date");
 
@@ -93,6 +96,8 @@ filterActivityInput.addEventListener("change", onFilterChange);
 filterFromDateInput.addEventListener("change", onFilterChange);
 filterToDateInput.addEventListener("change", onFilterChange);
 clearFiltersButton.addEventListener("click", clearFilters);
+exportDataButton.addEventListener("click", exportBackupData);
+importDataFileInput.addEventListener("change", importBackupData);
 strengthBodyweightInput.addEventListener("change", () => {
   strengthSetWeightInput.disabled = strengthBodyweightInput.checked;
   if (strengthBodyweightInput.checked) {
@@ -553,6 +558,73 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
       },
     },
   });
+}
+
+function exportBackupData() {
+  const backupPayload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    workouts,
+    goals,
+  };
+
+  const fileBlob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: "application/json" });
+  const downloadUrl = URL.createObjectURL(fileBlob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = `train-with-me-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(downloadUrl);
+  backupStatusEl.textContent = "Backup exported successfully.";
+}
+
+function importBackupData(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || "{}"));
+      if (!parsed || !Array.isArray(parsed.workouts) || typeof parsed.goals !== "object") {
+        backupStatusEl.textContent = "Invalid backup file format.";
+        return;
+      }
+
+      workouts = parsed.workouts.map((workout) => ({
+        id: workout.id || crypto.randomUUID(),
+        date: workout.date || "",
+        activity: workout.activity || "run",
+        strengthExercises: normalizeStrengthExercises(workout.strengthExercises),
+        distance: toNumberOrNull(workout.distance),
+        time: toNumberOrNull(workout.time),
+        pace: toNumberOrNull(workout.pace),
+        sprintSets: normalizeSprintSets(workout.sprintSets),
+        notes: typeof workout.notes === "string" ? workout.notes : "",
+        createdAt: isNumber(workout.createdAt) ? workout.createdAt : Date.now(),
+      }));
+
+      goals = {
+        strength: toNumberOrNull(parsed.goals.strength),
+        run: toNumberOrNull(parsed.goals.run),
+        sprint: toNumberOrNull(parsed.goals.sprint),
+      };
+
+      save(STORAGE_KEY_WORKOUTS, workouts);
+      save(STORAGE_KEY_GOALS, goals);
+      hydrateGoalInputs();
+      render();
+      backupStatusEl.textContent = `Imported ${workouts.length} workout(s) successfully.`;
+    } catch {
+      backupStatusEl.textContent = "Could not read JSON backup file.";
+    } finally {
+      importDataFileInput.value = "";
+    }
+  };
+
+  reader.readAsText(file);
 }
 
 function renderSprintSets() {

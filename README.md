@@ -15,6 +15,7 @@ A beginner-friendly, single-page training tracker for:
 - Edit and delete workout entries from the recent history table
 - Progress filters by activity and date range
 - Simple progress line charts for strength, run, and sprint
+- Backup tools: export/import JSON data
 - Goal entry form
 - Simple progress summary
 - Recent workout history
