@@ -19,6 +19,8 @@ const strengthExerciseList = document.getElementById("strength-exercise-list");
 const strengthSetLoadTypeInput = document.getElementById("strength-set-load-type");
 const strengthSetWeightInput = document.getElementById("strength-set-weight");
 const strengthSetBandColorInput = document.getElementById("strength-set-band-color");
+const strengthSetWeightLabel = document.getElementById("strength-set-weight-label");
+const strengthSetBandColorLabel = document.getElementById("strength-set-band-color-label");
 const filterActivityInput = document.getElementById("filter-activity");
 const filterFromDateInput = document.getElementById("filter-from-date");
 const filterToDateInput = document.getElementById("filter-to-date");
@@ -50,6 +52,8 @@ const editStrengthRepsInput = document.getElementById("edit-strength-reps");
 const editStrengthLoadTypeInput = document.getElementById("edit-strength-load-type");
 const editStrengthWeightInput = document.getElementById("edit-strength-weight");
 const editStrengthBandColorInput = document.getElementById("edit-strength-band-color");
+const editStrengthWeightLabel = document.getElementById("edit-strength-weight-label");
+const editStrengthBandColorLabel = document.getElementById("edit-strength-band-color-label");
 const editAddStrengthSetButton = document.getElementById("edit-add-strength-set");
 const editAddStrengthExerciseButton = document.getElementById("edit-add-strength-exercise");
 const editCurrentStrengthSetsList = document.getElementById("edit-current-strength-sets");
@@ -172,6 +176,12 @@ addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
   const loadType = editStrengthLoadTypeInput.value;
   editStrengthWeightInput.disabled = loadType !== "kg";
   editStrengthBandColorInput.disabled = loadType !== "band";
+  if (editStrengthWeightLabel) {
+    editStrengthWeightLabel.style.display = loadType === "kg" ? "grid" : "none";
+  }
+  if (editStrengthBandColorLabel) {
+    editStrengthBandColorLabel.style.display = loadType === "band" ? "grid" : "none";
+  }
   if (loadType !== "kg") {
     editStrengthWeightInput.value = "";
   }
@@ -184,6 +194,12 @@ strengthSetLoadTypeInput.addEventListener("change", () => {
   const loadType = strengthSetLoadTypeInput.value;
   strengthSetWeightInput.disabled = loadType !== "kg";
   strengthSetBandColorInput.disabled = loadType !== "band";
+  if (strengthSetWeightLabel) {
+    strengthSetWeightLabel.style.display = loadType === "kg" ? "grid" : "none";
+  }
+  if (strengthSetBandColorLabel) {
+    strengthSetBandColorLabel.style.display = loadType === "band" ? "grid" : "none";
+  }
   if (loadType !== "kg") {
     strengthSetWeightInput.value = "";
   }
@@ -483,7 +499,7 @@ function formatMainMetric(w) {
           const setSummary = exercise.sets
             .map((set) => `${set.reps} reps @ ${formatStrengthLoad(set)}`)
             .join(", ");
-          return `<div class="metric-line">${escapeHtml(exercise.name)} (${setSummary})</div>`;
+          return `<div class="metric-line"><strong class="exercise-name">${escapeHtml(exercise.name)}</strong> (${setSummary})</div>`;
         })
         .join("");
     }

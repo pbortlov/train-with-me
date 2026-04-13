@@ -126,7 +126,7 @@ button {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.7rem;
-  background: #fff;
+  background: #0a1326;
 }
 
 #install-app {
@@ -161,6 +161,11 @@ dialog {
   margin-bottom: 0.25rem;
 }
 
+.exercise-name {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 #edit-sprint-sets,
 #edit-strength-fields textarea {
   width: 100%;
@@ -182,6 +187,11 @@ dialog {
 
 .inline-set-row {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.inline-exercise-row [data-role="exercise-name"] {
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .checkbox-label {
