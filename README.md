@@ -9,10 +9,11 @@ A beginner-friendly, single-page training tracker for:
 - Workout entry form with activity-specific fields:
   - Strength: multiple exercises per workout
     - each exercise has multiple sets
-    - each set has reps and either kg weight or body weight
+    - each set has reps and load type: kg, body weight, or band color
   - Run: distance (km), time (min), pace (min/km)
   - Sprint: ordered sprint sets with time (sec) + distance (m)
 - Edit and delete workout entries from the recent history table
+- Popup JSON editor for full-workout editing
 - Progress filters by activity and date range
 - Simple progress line charts for strength, run, and sprint
 - Backup tools: export/import JSON data

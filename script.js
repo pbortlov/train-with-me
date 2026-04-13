@@ -16,12 +16,14 @@ const addStrengthSetButton = document.getElementById("add-strength-set");
 const addStrengthExerciseButton = document.getElementById("add-strength-exercise");
 const currentStrengthSetsList = document.getElementById("current-strength-sets");
 const strengthExerciseList = document.getElementById("strength-exercise-list");
+const strengthSetLoadTypeInput = document.getElementById("strength-set-load-type");
 const strengthSetWeightInput = document.getElementById("strength-set-weight");
-const strengthBodyweightInput = document.getElementById("strength-set-bodyweight");
+const strengthSetBandColorInput = document.getElementById("strength-set-band-color");
 const filterActivityInput = document.getElementById("filter-activity");
 const filterFromDateInput = document.getElementById("filter-from-date");
 const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
+const filterStrengthLoadInput = document.getElementById("filter-strength-load");
 const chartGroupingInput = document.getElementById("chart-grouping");
 const chartsStatusEl = document.getElementById("charts-status");
 const strengthChartCanvas = document.getElementById("strength-chart");
@@ -35,6 +37,11 @@ const installAppButton = document.getElementById("install-app");
 const deleteConfirmDialog = document.getElementById("delete-confirm-dialog");
 const confirmDeleteWorkoutButton = document.getElementById("confirm-delete-workout");
 const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout");
+const editWorkoutDialog = document.getElementById("edit-workout-dialog");
+const editWorkoutJsonInput = document.getElementById("edit-workout-json");
+const editWorkoutStatusEl = document.getElementById("edit-workout-status");
+const saveEditWorkoutButton = document.getElementById("save-edit-workout");
+const cancelEditWorkoutButton = document.getElementById("cancel-edit-workout");
 
 const dateInput = document.getElementById("date");
 
@@ -54,6 +61,7 @@ let progressFilters = {
   activity: "all",
   fromDate: "",
   toDate: "",
+  strengthLoad: "all",
 };
 let chartGrouping = "day";
 let strengthChart = null;
@@ -61,6 +69,7 @@ let runChart = null;
 let sprintChart = null;
 let pendingDeleteWorkoutId = null;
 let deferredInstallPrompt = null;
+let editingPopupWorkoutId = null;
 
 hydrateGoalInputs();
 updateVisibleFields();
@@ -122,6 +131,7 @@ activityInput.addEventListener("change", updateVisibleFields);
 filterActivityInput.addEventListener("change", onFilterChange);
 filterFromDateInput.addEventListener("change", onFilterChange);
 filterToDateInput.addEventListener("change", onFilterChange);
+filterStrengthLoadInput.addEventListener("change", onFilterChange);
 clearFiltersButton.addEventListener("click", clearFilters);
 chartGroupingInput.addEventListener("change", () => {
   chartGrouping = chartGroupingInput.value || "day";
@@ -131,11 +141,18 @@ exportDataButton.addEventListener("click", exportBackupData);
 importDataFileInput.addEventListener("change", importBackupData);
 confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
 cancelDeleteWorkoutButton.addEventListener("click", cancelDeleteWorkout);
+saveEditWorkoutButton.addEventListener("click", saveEditedWorkout);
+cancelEditWorkoutButton.addEventListener("click", closeEditWorkoutDialog);
 installAppButton.addEventListener("click", installPwaApp);
-strengthBodyweightInput.addEventListener("change", () => {
-  strengthSetWeightInput.disabled = strengthBodyweightInput.checked;
-  if (strengthBodyweightInput.checked) {
+strengthSetLoadTypeInput.addEventListener("change", () => {
+  const loadType = strengthSetLoadTypeInput.value;
+  strengthSetWeightInput.disabled = loadType !== "kg";
+  strengthSetBandColorInput.disabled = loadType !== "band";
+  if (loadType !== "kg") {
     strengthSetWeightInput.value = "";
+  }
+  if (loadType !== "band") {
+    strengthSetBandColorInput.value = "";
   }
 });
 
@@ -144,6 +161,8 @@ window.addEventListener("beforeinstallprompt", (event) => {
   deferredInstallPrompt = event;
   installAppButton.style.display = "inline-block";
 });
+
+strengthSetLoadTypeInput.dispatchEvent(new Event("change"));
 
 addSprintSetButton.addEventListener("click", () => {
   const sprintTime = toNumberOrNull(valueOf("sprint-time-sec"));
@@ -169,27 +188,34 @@ addSprintSetButton.addEventListener("click", () => {
 addStrengthSetButton.addEventListener("click", () => {
   const reps = toNumberOrNull(valueOf("strength-set-reps"));
   const weight = toNumberOrNull(valueOf("strength-set-weight"));
-  const isBodyWeight = document.getElementById("strength-set-bodyweight").checked;
+  const loadType = valueOf("strength-set-load-type");
+  const bandColor = valueOf("strength-set-band-color");
 
   if (!isNumber(reps)) {
     setWorkoutFormStatus("Set reps are required.");
     return;
   }
 
-  if (!isBodyWeight && !isNumber(weight)) {
-    setWorkoutFormStatus("Set weight is required unless body weight is checked.");
+  if (loadType === "kg" && !isNumber(weight)) {
+    setWorkoutFormStatus("Set weight is required for kg load type.");
+    return;
+  }
+
+  if (loadType === "band" && !bandColor) {
+    setWorkoutFormStatus("Pick a band color for band load type.");
     return;
   }
 
   draftCurrentStrengthSets.push({
     reps,
-    weight: isBodyWeight ? null : weight,
-    isBodyWeight,
+    weight: loadType === "kg" ? weight : null,
+    loadType,
+    bandColor: loadType === "band" ? bandColor : "",
   });
 
   document.getElementById("strength-set-reps").value = "";
   document.getElementById("strength-set-weight").value = "";
-  document.getElementById("strength-set-bodyweight").checked = false;
+  document.getElementById("strength-set-band-color").value = "";
   renderCurrentStrengthSets();
   setWorkoutFormStatus("Strength set added.");
 });
@@ -207,7 +233,8 @@ addStrengthExerciseButton.addEventListener("click", () => {
       order: index + 1,
       reps: set.reps,
       weight: set.weight,
-      isBodyWeight: Boolean(set.isBodyWeight),
+      loadType: set.loadType || "kg",
+      bandColor: set.bandColor || "",
     })),
   });
 
@@ -246,7 +273,7 @@ historyBody.addEventListener("click", (event) => {
   }
 
   if (action === "edit") {
-    startEditingWorkout(id);
+    openEditWorkoutDialog(id);
   }
 });
 
@@ -415,11 +442,11 @@ function formatMainMetric(w) {
       return exercises
         .map((exercise) => {
           const setSummary = exercise.sets
-            .map((set) => `${set.reps} reps @ ${set.isBodyWeight ? "body weight" : `${set.weight}kg`}`)
+            .map((set) => `${set.reps} reps @ ${formatStrengthLoad(set)}`)
             .join(", ");
-          return `${escapeHtml(exercise.name)} (${setSummary})`;
+          return `<div class="metric-line">${escapeHtml(exercise.name)} (${setSummary})</div>`;
         })
-        .join(" • ");
+        .join("");
     }
 
     return "-";
@@ -492,35 +519,6 @@ function escapeHtml(text) {
     .replaceAll("'", "&#39;");
 }
 
-function startEditingWorkout(workoutId) {
-  const workout = workouts.find((item) => item.id === workoutId);
-  if (!workout) {
-    return;
-  }
-
-  editingWorkoutId = workoutId;
-  document.getElementById("date").value = workout.date ?? "";
-  document.getElementById("activity").value = workout.activity ?? "strength";
-  draftStrengthExercises = normalizeStrengthExercises(workout.strengthExercises);
-  draftCurrentStrengthSets = [];
-  document.getElementById("exercise-name").value = "";
-  document.getElementById("strength-set-reps").value = "";
-  document.getElementById("strength-set-weight").value = "";
-  document.getElementById("strength-set-bodyweight").checked = false;
-  strengthSetWeightInput.disabled = false;
-  document.getElementById("distance").value = workout.distance ?? "";
-  document.getElementById("time").value = workout.time ?? "";
-  document.getElementById("pace").value = workout.pace ?? "";
-  draftSprintSets = normalizeSprintSets(workout.sprintSets);
-  document.getElementById("notes").value = workout.notes ?? "";
-  renderCurrentStrengthSets();
-  renderStrengthExercises();
-  renderSprintSets();
-  updateVisibleFields();
-  workoutSubmitButton.textContent = "Update Workout";
-  workoutForm.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 function deleteWorkout(workoutId) {
   workouts = workouts.filter((workout) => workout.id !== workoutId);
 
@@ -546,6 +544,45 @@ function openDeleteConfirm(workoutId) {
   pendingDeleteWorkoutId = null;
 }
 
+function openEditWorkoutDialog(workoutId) {
+  const workout = workouts.find((item) => item.id === workoutId);
+  if (!workout) {
+    return;
+  }
+
+  editingPopupWorkoutId = workoutId;
+  editWorkoutJsonInput.value = JSON.stringify(workout, null, 2);
+  editWorkoutStatusEl.textContent = "";
+  editWorkoutDialog.showModal();
+}
+
+function closeEditWorkoutDialog() {
+  editingPopupWorkoutId = null;
+  editWorkoutDialog.close();
+}
+
+function saveEditedWorkout() {
+  if (!editingPopupWorkoutId) {
+    return;
+  }
+
+  try {
+    const parsedWorkout = JSON.parse(editWorkoutJsonInput.value);
+    const normalized = normalizeImportedWorkout(parsedWorkout);
+    normalized.id = editingPopupWorkoutId;
+    const index = workouts.findIndex((workout) => workout.id === editingPopupWorkoutId);
+    if (index >= 0) {
+      workouts[index] = normalized;
+      save(STORAGE_KEY_WORKOUTS, workouts);
+      editWorkoutStatusEl.textContent = "Workout updated.";
+      render();
+      closeEditWorkoutDialog();
+    }
+  } catch {
+    editWorkoutStatusEl.textContent = "Invalid JSON. Please fix and try again.";
+  }
+}
+
 function confirmDeleteWorkout() {
   if (pendingDeleteWorkoutId) {
     deleteWorkout(pendingDeleteWorkoutId);
@@ -565,7 +602,9 @@ function resetWorkoutForm() {
   draftStrengthExercises = [];
   draftCurrentStrengthSets = [];
   workoutForm.reset();
+  strengthSetLoadTypeInput.value = "kg";
   strengthSetWeightInput.disabled = false;
+  strengthSetBandColorInput.disabled = true;
   dateInput.valueAsDate = new Date();
   renderCurrentStrengthSets();
   renderStrengthExercises();
@@ -587,6 +626,7 @@ function onFilterChange() {
     activity: filterActivityInput.value || "all",
     fromDate: filterFromDateInput.value || "",
     toDate: filterToDateInput.value || "",
+    strengthLoad: filterStrengthLoadInput.value || "all",
   };
   render();
 }
@@ -595,6 +635,7 @@ function clearFilters() {
   filterActivityInput.value = "all";
   filterFromDateInput.value = "";
   filterToDateInput.value = "";
+  filterStrengthLoadInput.value = "all";
   onFilterChange();
 }
 
@@ -604,7 +645,13 @@ function getFilteredWorkouts() {
     const dateValue = workout.date || "";
     const fromMatch = !progressFilters.fromDate || (dateValue && dateValue >= progressFilters.fromDate);
     const toMatch = !progressFilters.toDate || (dateValue && dateValue <= progressFilters.toDate);
-    return activityMatch && fromMatch && toMatch;
+    const loadMatch =
+      progressFilters.strengthLoad === "all" ||
+      workout.activity !== "strength" ||
+      normalizeStrengthExercises(workout.strengthExercises).some((exercise) =>
+        exercise.sets.some((set) => set.loadType === progressFilters.strengthLoad),
+      );
+    return activityMatch && fromMatch && toMatch && loadMatch;
   });
 }
 
@@ -747,18 +794,7 @@ function importBackupData(event) {
         return;
       }
 
-      workouts = parsed.workouts.map((workout) => ({
-        id: workout.id || crypto.randomUUID(),
-        date: workout.date || "",
-        activity: workout.activity || "run",
-        strengthExercises: normalizeStrengthExercises(workout.strengthExercises),
-        distance: toNumberOrNull(workout.distance),
-        time: toNumberOrNull(workout.time),
-        pace: toNumberOrNull(workout.pace),
-        sprintSets: normalizeSprintSets(workout.sprintSets),
-        notes: typeof workout.notes === "string" ? workout.notes : "",
-        createdAt: isNumber(workout.createdAt) ? workout.createdAt : Date.now(),
-      }));
+      workouts = parsed.workouts.map((workout) => normalizeImportedWorkout(workout));
 
       goals = {
         strength: toNumberOrNull(parsed.goals.strength),
@@ -847,15 +883,31 @@ function normalizeStrengthExercises(exercises) {
     .map((exercise) => ({
       name: exercise.name.trim(),
       sets: exercise.sets
-        .filter((set) => isNumber(set?.reps) && (Boolean(set?.isBodyWeight) || isNumber(set?.weight)))
+        .filter((set) => isNumber(set?.reps))
         .map((set, index) => ({
           order: index + 1,
           reps: Number(set.reps),
-          weight: Boolean(set.isBodyWeight) ? null : Number(set.weight),
-          isBodyWeight: Boolean(set.isBodyWeight),
+          weight: set.loadType === "kg" && isNumber(set.weight) ? Number(set.weight) : null,
+          loadType: set.loadType === "band" || set.loadType === "bodyweight" ? set.loadType : "kg",
+          bandColor: typeof set.bandColor === "string" ? set.bandColor : "",
         })),
     }))
     .filter((exercise) => exercise.sets.length > 0);
+}
+
+function normalizeImportedWorkout(workout) {
+  return {
+    id: workout.id || crypto.randomUUID(),
+    date: workout.date || "",
+    activity: workout.activity || "run",
+    strengthExercises: normalizeStrengthExercises(workout.strengthExercises),
+    distance: toNumberOrNull(workout.distance),
+    time: toNumberOrNull(workout.time),
+    pace: toNumberOrNull(workout.pace),
+    sprintSets: normalizeSprintSets(workout.sprintSets),
+    notes: typeof workout.notes === "string" ? workout.notes : "",
+    createdAt: isNumber(workout.createdAt) ? workout.createdAt : Date.now(),
+  };
 }
 
 function renderCurrentStrengthSets() {
@@ -867,7 +919,7 @@ function renderCurrentStrengthSets() {
   currentStrengthSetsList.innerHTML = draftCurrentStrengthSets
     .map(
       (set, index) =>
-        `<li>Set #${index + 1}: ${set.reps} reps @ ${set.isBodyWeight ? "body weight" : `${formatNumber(set.weight)} kg`}</li>`,
+        `<li>Set #${index + 1}: ${set.reps} reps @ ${formatStrengthLoad(set)}</li>`,
     )
     .join("");
 }
@@ -881,11 +933,21 @@ function renderStrengthExercises() {
   strengthExerciseList.innerHTML = draftStrengthExercises
     .map((exercise, exerciseIndex) => {
       const setSummary = exercise.sets
-        .map((set) => `#${set.order}: ${set.reps} reps @ ${set.isBodyWeight ? "body weight" : `${formatNumber(set.weight)} kg`}`)
+        .map((set) => `#${set.order}: ${set.reps} reps @ ${formatStrengthLoad(set)}`)
         .join(", ");
       return `<li>${exerciseIndex + 1}. ${escapeHtml(exercise.name)} — ${setSummary}</li>`;
     })
     .join("");
+}
+
+function formatStrengthLoad(set) {
+  if (set.loadType === "bodyweight") {
+    return "body weight";
+  }
+  if (set.loadType === "band") {
+    return set.bandColor ? `band (${set.bandColor})` : "band";
+  }
+  return isNumber(set.weight) ? `${formatNumber(set.weight)} kg` : "kg";
 }
 
 function strengthBestWeight(workout) {

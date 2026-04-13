@@ -150,6 +150,15 @@ dialog {
   justify-content: flex-end;
 }
 
+.metric-line {
+  margin-bottom: 0.25rem;
+}
+
+#edit-workout-json {
+  width: 100%;
+  margin-bottom: 0.6rem;
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
