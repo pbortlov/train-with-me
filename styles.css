@@ -145,6 +145,12 @@ dialog {
   max-width: 980px;
 }
 
+#edit-workout-dialog {
+  width: min(95vw, 980px) !important;
+  max-width: 980px !important;
+  min-width: min(95vw, 680px);
+}
+
 .dialog-actions {
   display: flex;
   gap: 0.5rem;
