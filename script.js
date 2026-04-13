@@ -151,8 +151,8 @@ exportDataButton.addEventListener("click", exportBackupData);
 importDataFileInput.addEventListener("change", importBackupData);
 confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
 cancelDeleteWorkoutButton.addEventListener("click", cancelDeleteWorkout);
-saveEditWorkoutButton.addEventListener("click", saveEditedWorkout);
-cancelEditWorkoutButton.addEventListener("click", closeEditWorkoutDialog);
+addSafeEventListener(saveEditWorkoutButton, "click", saveEditedWorkout);
+addSafeEventListener(cancelEditWorkoutButton, "click", closeEditWorkoutDialog);
 installAppButton.addEventListener("click", installPwaApp);
 strengthSetLoadTypeInput.addEventListener("change", () => {
   const loadType = strengthSetLoadTypeInput.value;
@@ -555,6 +555,19 @@ function openDeleteConfirm(workoutId) {
 }
 
 function openEditWorkoutDialog(workoutId) {
+  if (
+    !editWorkoutDialog ||
+    !editDateInput ||
+    !editActivityInput ||
+    !editNotesInput ||
+    !editWorkoutStatusEl ||
+    !editSprintSetsInput ||
+    !editStrengthExercisesInput
+  ) {
+    alert("Edit popup UI is missing. Please hard refresh (Ctrl+Shift+R) after clearing cache.");
+    return;
+  }
+
   const workout = workouts.find((item) => item.id === workoutId);
   if (!workout) {
     return;
@@ -571,12 +584,23 @@ function openEditWorkoutDialog(workoutId) {
   editStrengthExercisesInput.value = formatStrengthExercisesForEditor(workout.strengthExercises);
   toggleEditDialogFields(workout.activity);
   editWorkoutStatusEl.textContent = "";
-  editWorkoutDialog.showModal();
+  if (typeof editWorkoutDialog.showModal === "function") {
+    editWorkoutDialog.showModal();
+  } else {
+    editWorkoutDialog.setAttribute("open", "true");
+  }
 }
 
 function closeEditWorkoutDialog() {
   editingPopupWorkoutId = null;
-  editWorkoutDialog.close();
+  if (!editWorkoutDialog) {
+    return;
+  }
+  if (typeof editWorkoutDialog.close === "function") {
+    editWorkoutDialog.close();
+  } else {
+    editWorkoutDialog.removeAttribute("open");
+  }
 }
 
 function saveEditedWorkout() {
@@ -868,6 +892,13 @@ if ("serviceWorker" in navigator) {
 
 function setWorkoutFormStatus(message) {
   workoutFormStatusEl.textContent = message;
+}
+
+function addSafeEventListener(element, eventName, handler) {
+  if (!element) {
+    return;
+  }
+  element.addEventListener(eventName, handler);
 }
 
 function toggleEditDialogFields(activity) {

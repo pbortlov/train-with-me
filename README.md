@@ -27,6 +27,7 @@ A beginner-friendly, single-page training tracker for:
 ## Run locally
 1. Open `index.html` in your browser.
 2. Add workouts and goals.
+3. If UI changes do not appear, hard refresh (`Ctrl+Shift+R`) and clear site storage/service worker cache.
 
 ## Publish with GitHub Pages
 1. Push this repo to GitHub.
