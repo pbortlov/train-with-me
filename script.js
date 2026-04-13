@@ -5,6 +5,7 @@ const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
 const historyBody = document.getElementById("history-body");
 const summaryEl = document.getElementById("summary");
+const personalRecordsEl = document.getElementById("personal-records");
 const goalProgressEl = document.getElementById("goal-progress");
 const workoutSubmitButton = workoutForm.querySelector('button[type="submit"]');
 const activityInput = document.getElementById("activity");
@@ -21,6 +22,7 @@ const filterActivityInput = document.getElementById("filter-activity");
 const filterFromDateInput = document.getElementById("filter-from-date");
 const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
+const chartGroupingInput = document.getElementById("chart-grouping");
 const chartsStatusEl = document.getElementById("charts-status");
 const strengthChartCanvas = document.getElementById("strength-chart");
 const runChartCanvas = document.getElementById("run-chart");
@@ -28,6 +30,11 @@ const sprintChartCanvas = document.getElementById("sprint-chart");
 const exportDataButton = document.getElementById("export-data");
 const importDataFileInput = document.getElementById("import-data-file");
 const backupStatusEl = document.getElementById("backup-status");
+const workoutFormStatusEl = document.getElementById("workout-form-status");
+const installAppButton = document.getElementById("install-app");
+const deleteConfirmDialog = document.getElementById("delete-confirm-dialog");
+const confirmDeleteWorkoutButton = document.getElementById("confirm-delete-workout");
+const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout");
 
 const dateInput = document.getElementById("date");
 
@@ -48,9 +55,12 @@ let progressFilters = {
   fromDate: "",
   toDate: "",
 };
+let chartGrouping = "day";
 let strengthChart = null;
 let runChart = null;
 let sprintChart = null;
+let pendingDeleteWorkoutId = null;
+let deferredInstallPrompt = null;
 
 hydrateGoalInputs();
 updateVisibleFields();
@@ -61,6 +71,7 @@ render();
 
 workoutForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  setWorkoutFormStatus("");
 
   const workout = {
     id: editingWorkoutId ?? crypto.randomUUID(),
@@ -75,6 +86,21 @@ workoutForm.addEventListener("submit", (event) => {
     createdAt: Date.now(),
   };
 
+  if (workout.activity === "strength" && workout.strengthExercises.length === 0) {
+    setWorkoutFormStatus("Please add at least one strength exercise before saving.");
+    return;
+  }
+
+  if (workout.activity === "run" && !isNumber(workout.distance) && !isNumber(workout.time) && !isNumber(workout.pace)) {
+    setWorkoutFormStatus("Please enter at least one run metric (distance, time, or pace).");
+    return;
+  }
+
+  if (workout.activity === "sprint" && workout.sprintSets.length === 0) {
+    setWorkoutFormStatus("Please add at least one sprint set before saving.");
+    return;
+  }
+
   if (editingWorkoutId) {
     const existingIndex = workouts.findIndex((savedWorkout) => savedWorkout.id === editingWorkoutId);
     if (existingIndex >= 0) {
@@ -88,6 +114,7 @@ workoutForm.addEventListener("submit", (event) => {
   }
   save(STORAGE_KEY_WORKOUTS, workouts);
   resetWorkoutForm();
+  setWorkoutFormStatus("Workout saved.");
   render();
 });
 
@@ -96,8 +123,15 @@ filterActivityInput.addEventListener("change", onFilterChange);
 filterFromDateInput.addEventListener("change", onFilterChange);
 filterToDateInput.addEventListener("change", onFilterChange);
 clearFiltersButton.addEventListener("click", clearFilters);
+chartGroupingInput.addEventListener("change", () => {
+  chartGrouping = chartGroupingInput.value || "day";
+  renderCharts();
+});
 exportDataButton.addEventListener("click", exportBackupData);
 importDataFileInput.addEventListener("change", importBackupData);
+confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
+cancelDeleteWorkoutButton.addEventListener("click", cancelDeleteWorkout);
+installAppButton.addEventListener("click", installPwaApp);
 strengthBodyweightInput.addEventListener("change", () => {
   strengthSetWeightInput.disabled = strengthBodyweightInput.checked;
   if (strengthBodyweightInput.checked) {
@@ -105,11 +139,18 @@ strengthBodyweightInput.addEventListener("change", () => {
   }
 });
 
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  installAppButton.style.display = "inline-block";
+});
+
 addSprintSetButton.addEventListener("click", () => {
   const sprintTime = toNumberOrNull(valueOf("sprint-time-sec"));
   const sprintDistance = toNumberOrNull(valueOf("sprint-distance-m"));
 
   if (!isNumber(sprintTime) || !isNumber(sprintDistance)) {
+    setWorkoutFormStatus("Sprint set needs both time (sec) and distance (m).");
     return;
   }
 
@@ -122,6 +163,7 @@ addSprintSetButton.addEventListener("click", () => {
   document.getElementById("sprint-time-sec").value = "";
   document.getElementById("sprint-distance-m").value = "";
   renderSprintSets();
+  setWorkoutFormStatus("Sprint set added.");
 });
 
 addStrengthSetButton.addEventListener("click", () => {
@@ -130,10 +172,12 @@ addStrengthSetButton.addEventListener("click", () => {
   const isBodyWeight = document.getElementById("strength-set-bodyweight").checked;
 
   if (!isNumber(reps)) {
+    setWorkoutFormStatus("Set reps are required.");
     return;
   }
 
   if (!isBodyWeight && !isNumber(weight)) {
+    setWorkoutFormStatus("Set weight is required unless body weight is checked.");
     return;
   }
 
@@ -147,11 +191,13 @@ addStrengthSetButton.addEventListener("click", () => {
   document.getElementById("strength-set-weight").value = "";
   document.getElementById("strength-set-bodyweight").checked = false;
   renderCurrentStrengthSets();
+  setWorkoutFormStatus("Strength set added.");
 });
 
 addStrengthExerciseButton.addEventListener("click", () => {
   const exerciseName = valueOf("exercise-name").trim();
   if (!exerciseName || !draftCurrentStrengthSets.length) {
+    setWorkoutFormStatus("Add an exercise name and at least one set.");
     return;
   }
 
@@ -169,6 +215,7 @@ addStrengthExerciseButton.addEventListener("click", () => {
   document.getElementById("exercise-name").value = "";
   renderCurrentStrengthSets();
   renderStrengthExercises();
+  setWorkoutFormStatus("Exercise added to workout.");
 });
 
 goalsForm.addEventListener("submit", (event) => {
@@ -194,7 +241,7 @@ historyBody.addEventListener("click", (event) => {
   }
 
   if (action === "delete") {
-    deleteWorkout(id);
+    openDeleteConfirm(id);
     return;
   }
 
@@ -205,9 +252,43 @@ historyBody.addEventListener("click", (event) => {
 
 function render() {
   renderSummary();
+  renderPersonalRecords();
   renderCharts();
   renderHistory();
   renderGoals();
+}
+
+function renderPersonalRecords() {
+  const strengthPR = workouts
+    .filter((w) => w.activity === "strength")
+    .map((w) => strengthBestWeight(w))
+    .filter((value) => isNumber(value))
+    .reduce((max, value) => Math.max(max, value), 0);
+
+  const runPR = workouts
+    .filter((w) => w.activity === "run" && isNumber(w.distance))
+    .reduce((max, w) => Math.max(max, w.distance), 0);
+
+  const sprintPR = workouts
+    .filter((w) => w.activity === "sprint")
+    .map((w) => sprintBestTime(w))
+    .filter((value) => isNumber(value))
+    .reduce((min, value) => Math.min(min, value), Infinity);
+
+  personalRecordsEl.innerHTML = `
+    <article class="badge">
+      <span class="label">PR Strength</span>
+      <span class="value">${strengthPR ? `${strengthPR} kg` : "-"}</span>
+    </article>
+    <article class="badge">
+      <span class="label">PR Run distance</span>
+      <span class="value">${runPR ? `${runPR} km` : "-"}</span>
+    </article>
+    <article class="badge">
+      <span class="label">PR Sprint time</span>
+      <span class="value">${Number.isFinite(sprintPR) ? `${sprintPR} sec` : "-"}</span>
+    </article>
+  `;
 }
 
 function renderSummary() {
@@ -451,6 +532,33 @@ function deleteWorkout(workoutId) {
   render();
 }
 
+function openDeleteConfirm(workoutId) {
+  pendingDeleteWorkoutId = workoutId;
+  if (typeof deleteConfirmDialog.showModal === "function") {
+    deleteConfirmDialog.showModal();
+    return;
+  }
+
+  const shouldDelete = confirm("Delete this workout?");
+  if (shouldDelete) {
+    deleteWorkout(workoutId);
+  }
+  pendingDeleteWorkoutId = null;
+}
+
+function confirmDeleteWorkout() {
+  if (pendingDeleteWorkoutId) {
+    deleteWorkout(pendingDeleteWorkoutId);
+  }
+  pendingDeleteWorkoutId = null;
+  deleteConfirmDialog.close();
+}
+
+function cancelDeleteWorkout() {
+  pendingDeleteWorkoutId = null;
+  deleteConfirmDialog.close();
+}
+
 function resetWorkoutForm() {
   editingWorkoutId = null;
   draftSprintSets = [];
@@ -521,9 +629,13 @@ function renderCharts() {
     .map((workout) => ({ x: workout.date, y: sprintBestTime(workout) }))
     .filter((point) => point.x && isNumber(point.y));
 
-  strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, strengthData, "kg", "#2f6fed");
-  runChart = createOrUpdateChart(runChart, runChartCanvas, runData, "km", "#16a34a");
-  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "sec", "#b42318");
+  const groupedStrengthData = groupChartPoints(strengthData, chartGrouping);
+  const groupedRunData = groupChartPoints(runData, chartGrouping);
+  const groupedSprintData = groupChartPoints(sprintData, chartGrouping);
+
+  strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, groupedStrengthData, "kg", "#2f6fed");
+  runChart = createOrUpdateChart(runChart, runChartCanvas, groupedRunData, "km", "#16a34a");
+  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, groupedSprintData, "sec", "#b42318");
 }
 
 function createOrUpdateChart(existingChart, canvas, points, unit, color) {
@@ -558,6 +670,48 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
       },
     },
   });
+}
+
+function groupChartPoints(points, mode) {
+  if (mode === "day") {
+    return points;
+  }
+
+  const grouped = new Map();
+  points.forEach((point) => {
+    const label = groupingLabel(point.x, mode);
+    if (!label) {
+      return;
+    }
+    const values = grouped.get(label) || [];
+    values.push(point.y);
+    grouped.set(label, values);
+  });
+
+  return [...grouped.entries()].map(([label, values]) => ({
+    x: label,
+    y: Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2)),
+  }));
+}
+
+function groupingLabel(dateText, mode) {
+  const date = new Date(dateText);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  if (mode === "month") {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  }
+
+  if (mode === "week") {
+    const firstDayOfYear = Date.UTC(date.getUTCFullYear(), 0, 1);
+    const dayOfYear = Math.floor((date.getTime() - firstDayOfYear) / 86400000) + 1;
+    const week = Math.ceil(dayOfYear / 7);
+    return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+  }
+
+  return dateText;
 }
 
 function exportBackupData() {
@@ -625,6 +779,28 @@ function importBackupData(event) {
   };
 
   reader.readAsText(file);
+}
+
+async function installPwaApp() {
+  if (!deferredInstallPrompt) {
+    workoutFormStatusEl.textContent = "Install prompt is not available on this device/browser yet.";
+    return;
+  }
+
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installAppButton.style.display = "none";
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js");
+  });
+}
+
+function setWorkoutFormStatus(message) {
+  workoutFormStatusEl.textContent = message;
 }
 
 function renderSprintSets() {

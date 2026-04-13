@@ -16,6 +16,7 @@ A beginner-friendly, single-page training tracker for:
 - Progress filters by activity and date range
 - Simple progress line charts for strength, run, and sprint
 - Backup tools: export/import JSON data
+- PWA support (install + offline cache shell)
 - Goal entry form
 - Simple progress summary
 - Recent workout history

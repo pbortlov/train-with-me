@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2f6fed" />
     <title>Train With Me</title>
+    <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -11,6 +13,7 @@
       <header class="card">
         <h1>Train With Me</h1>
         <p>Simple tracker for strength, running, and sprinting.</p>
+        <button type="button" id="install-app" class="ghost-button">Install App</button>
       </header>
 
       <section class="card">
@@ -98,6 +101,7 @@
           </label>
 
           <button type="submit">Save Workout</button>
+          <p id="workout-form-status" class="hint"></p>
         </form>
       </section>
 
@@ -158,9 +162,18 @@
             To date
             <input type="date" id="filter-to-date" />
           </label>
+          <label>
+            Chart trend mode
+            <select id="chart-grouping">
+              <option value="day">Daily</option>
+              <option value="week">Weekly</option>
+              <option value="month">Monthly</option>
+            </select>
+          </label>
           <button type="button" id="clear-filters">Clear Filters</button>
         </div>
         <div id="summary" class="summary"></div>
+        <div id="personal-records" class="summary"></div>
         <p id="charts-status" class="hint"></p>
         <div class="charts-grid">
           <article class="chart-card">
@@ -194,6 +207,14 @@
         </div>
       </section>
     </main>
+
+    <dialog id="delete-confirm-dialog">
+      <p>Delete this workout?</p>
+      <div class="dialog-actions">
+        <button type="button" id="confirm-delete-workout" class="danger-button">Delete</button>
+        <button type="button" id="cancel-delete-workout">Cancel</button>
+      </div>
+    </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
