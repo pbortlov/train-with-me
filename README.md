@@ -17,6 +17,7 @@ A beginner-friendly, single-page training tracker for:
 - Simple progress line charts for strength, run, and sprint
 - Backup tools: export/import JSON data
 - PWA support (install + offline cache shell)
+- Dark performance theme with high-contrast neon charts
 - Goal entry form
 - Simple progress summary
 - Recent workout history

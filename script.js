@@ -633,9 +633,9 @@ function renderCharts() {
   const groupedRunData = groupChartPoints(runData, chartGrouping);
   const groupedSprintData = groupChartPoints(sprintData, chartGrouping);
 
-  strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, groupedStrengthData, "kg", "#2f6fed");
-  runChart = createOrUpdateChart(runChart, runChartCanvas, groupedRunData, "km", "#16a34a");
-  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, groupedSprintData, "sec", "#b42318");
+  strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, groupedStrengthData, "kg", "#00E5FF");
+  runChart = createOrUpdateChart(runChart, runChartCanvas, groupedRunData, "km", "#6DFF5C");
+  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, groupedSprintData, "sec", "#FF7A00");
 }
 
 function createOrUpdateChart(existingChart, canvas, points, unit, color) {

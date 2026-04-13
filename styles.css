@@ -1,12 +1,14 @@
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  --bg: #f5f7fb;
-  --card: #ffffff;
-  --text: #162033;
-  --muted: #5b6880;
-  --accent: #2f6fed;
-  --border: #dce2ef;
+  --bg: #06080f;
+  --card: #111623;
+  --text: #f5f7ff;
+  --muted: #9aa7c7;
+  --accent: #00e5ff;
+  --border: #24324f;
+  --success: #6dff5c;
+  --danger: #ff4d6d;
 }
 
 * {
@@ -68,17 +70,19 @@ textarea {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.6rem 0.7rem;
-  background: #fff;
+  background: #0b1120;
+  color: var(--text);
 }
 
 button {
-  border: 0;
+  border: 1px solid #00e5ff66;
   border-radius: 10px;
   padding: 0.7rem 0.9rem;
   background: var(--accent);
-  color: #fff;
+  color: #001018;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 0 0.6rem #00e5ff44;
 }
 
 .hint {
@@ -167,7 +171,7 @@ dialog {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.6rem;
-  background: #f8faff;
+  background: #0a1326;
 }
 
 .badge .label {
@@ -189,7 +193,7 @@ dialog {
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: #e8eefc;
+  background: #1a2948;
   overflow: hidden;
   margin-top: 0.35rem;
 }
@@ -232,8 +236,10 @@ td {
 }
 
 .danger-button {
-  color: #b42318;
-  border-color: #f2c6c1;
+  color: #22000a;
+  border-color: #ff4d6d88;
+  background: var(--danger);
+  box-shadow: 0 0 0.6rem #ff4d6d55;
 }
 
 @media (max-width: 640px) {
