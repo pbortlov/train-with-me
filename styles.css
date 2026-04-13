@@ -141,7 +141,8 @@ dialog {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem;
-  max-width: 320px;
+  width: min(95vw, 980px);
+  max-width: 980px;
 }
 
 .dialog-actions {
