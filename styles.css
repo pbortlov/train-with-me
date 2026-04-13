@@ -155,7 +155,7 @@ dialog {
 }
 
 #edit-sprint-sets,
-#edit-strength-exercises {
+#edit-strength-fields textarea {
   width: 100%;
   margin-bottom: 0.6rem;
 }

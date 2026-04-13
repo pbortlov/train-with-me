@@ -45,7 +45,15 @@ const editDistanceInput = document.getElementById("edit-distance");
 const editTimeInput = document.getElementById("edit-time");
 const editPaceInput = document.getElementById("edit-pace");
 const editSprintSetsInput = document.getElementById("edit-sprint-sets");
-const editStrengthExercisesInput = document.getElementById("edit-strength-exercises");
+const editExerciseNameInput = document.getElementById("edit-exercise-name");
+const editStrengthRepsInput = document.getElementById("edit-strength-reps");
+const editStrengthLoadTypeInput = document.getElementById("edit-strength-load-type");
+const editStrengthWeightInput = document.getElementById("edit-strength-weight");
+const editStrengthBandColorInput = document.getElementById("edit-strength-band-color");
+const editAddStrengthSetButton = document.getElementById("edit-add-strength-set");
+const editAddStrengthExerciseButton = document.getElementById("edit-add-strength-exercise");
+const editCurrentStrengthSetsList = document.getElementById("edit-current-strength-sets");
+const editStrengthExercisesList = document.getElementById("edit-strength-exercises-list");
 const editRunFields = document.getElementById("edit-run-fields");
 const editSprintFields = document.getElementById("edit-sprint-fields");
 const editStrengthFields = document.getElementById("edit-strength-fields");
@@ -80,6 +88,8 @@ let sprintChart = null;
 let pendingDeleteWorkoutId = null;
 let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
+let editDraftCurrentStrengthSets = [];
+let editDraftStrengthExercises = [];
 
 hydrateGoalInputs();
 updateVisibleFields();
@@ -153,6 +163,19 @@ confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
 cancelDeleteWorkoutButton.addEventListener("click", cancelDeleteWorkout);
 addSafeEventListener(saveEditWorkoutButton, "click", saveEditedWorkout);
 addSafeEventListener(cancelEditWorkoutButton, "click", closeEditWorkoutDialog);
+addSafeEventListener(editAddStrengthSetButton, "click", addEditStrengthSet);
+addSafeEventListener(editAddStrengthExerciseButton, "click", addEditStrengthExercise);
+addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
+  const loadType = editStrengthLoadTypeInput.value;
+  editStrengthWeightInput.disabled = loadType !== "kg";
+  editStrengthBandColorInput.disabled = loadType !== "band";
+  if (loadType !== "kg") {
+    editStrengthWeightInput.value = "";
+  }
+  if (loadType !== "band") {
+    editStrengthBandColorInput.value = "";
+  }
+});
 installAppButton.addEventListener("click", installPwaApp);
 strengthSetLoadTypeInput.addEventListener("change", () => {
   const loadType = strengthSetLoadTypeInput.value;
@@ -173,6 +196,9 @@ window.addEventListener("beforeinstallprompt", (event) => {
 });
 
 strengthSetLoadTypeInput.dispatchEvent(new Event("change"));
+if (editStrengthLoadTypeInput) {
+  editStrengthLoadTypeInput.dispatchEvent(new Event("change"));
+}
 
 addSprintSetButton.addEventListener("click", () => {
   const sprintTime = toNumberOrNull(valueOf("sprint-time-sec"));
@@ -561,8 +587,7 @@ function openEditWorkoutDialog(workoutId) {
     !editActivityInput ||
     !editNotesInput ||
     !editWorkoutStatusEl ||
-    !editSprintSetsInput ||
-    !editStrengthExercisesInput
+    !editSprintSetsInput
   ) {
     alert("Edit popup UI is missing. Please hard refresh (Ctrl+Shift+R) after clearing cache.");
     return;
@@ -581,7 +606,16 @@ function openEditWorkoutDialog(workoutId) {
   editTimeInput.value = workout.time ?? "";
   editPaceInput.value = workout.pace ?? "";
   editSprintSetsInput.value = formatSprintSetsForEditor(workout.sprintSets);
-  editStrengthExercisesInput.value = formatStrengthExercisesForEditor(workout.strengthExercises);
+  editDraftStrengthExercises = normalizeStrengthExercises(workout.strengthExercises);
+  editDraftCurrentStrengthSets = [];
+  if (editExerciseNameInput) {
+    editExerciseNameInput.value = "";
+  }
+  if (editStrengthRepsInput) {
+    editStrengthRepsInput.value = "";
+  }
+  renderEditStrengthSets();
+  renderEditStrengthExercises();
   toggleEditDialogFields(workout.activity);
   editWorkoutStatusEl.textContent = "";
   if (typeof editWorkoutDialog.showModal === "function") {
@@ -622,7 +656,7 @@ function saveEditedWorkout() {
       time: editTimeInput.value,
       pace: editPaceInput.value,
       sprintSets: parseSprintSetsFromEditor(editSprintSetsInput.value),
-      strengthExercises: parseStrengthExercisesFromEditor(editStrengthExercisesInput.value),
+      strengthExercises: editDraftStrengthExercises,
     });
     normalized.id = editingPopupWorkoutId;
     const index = workouts.findIndex((workout) => workout.id === editingPopupWorkoutId);
@@ -904,7 +938,7 @@ function addSafeEventListener(element, eventName, handler) {
 function toggleEditDialogFields(activity) {
   editRunFields.style.display = activity === "run" ? "grid" : "none";
   editSprintFields.style.display = activity === "sprint" ? "grid" : "none";
-  editStrengthFields.style.display = activity === "strength" ? "grid" : "none";
+  editStrengthFields.style.display = activity === "strength" ? "block" : "none";
 }
 
 function formatSprintSetsForEditor(sprintSets) {
@@ -930,69 +964,81 @@ function parseSprintSetsFromEditor(text) {
     });
 }
 
-function formatStrengthExercisesForEditor(exercises) {
-  const normalized = normalizeStrengthExercises(exercises);
-  return normalized
+function addEditStrengthSet() {
+  const reps = toNumberOrNull(editStrengthRepsInput?.value);
+  const loadType = editStrengthLoadTypeInput?.value || "kg";
+  const weight = toNumberOrNull(editStrengthWeightInput?.value);
+  const bandColor = editStrengthBandColorInput?.value || "";
+
+  if (!isNumber(reps)) {
+    editWorkoutStatusEl.textContent = "Edit set reps are required.";
+    return;
+  }
+  if (loadType === "kg" && !isNumber(weight)) {
+    editWorkoutStatusEl.textContent = "Edit set kg weight is required.";
+    return;
+  }
+  if (loadType === "band" && !bandColor) {
+    editWorkoutStatusEl.textContent = "Choose a band color for band sets.";
+    return;
+  }
+
+  editDraftCurrentStrengthSets.push({
+    reps,
+    loadType,
+    weight: loadType === "kg" ? weight : null,
+    bandColor: loadType === "band" ? bandColor : "",
+  });
+  editStrengthRepsInput.value = "";
+  editStrengthWeightInput.value = "";
+  editStrengthBandColorInput.value = "";
+  renderEditStrengthSets();
+}
+
+function addEditStrengthExercise() {
+  const name = editExerciseNameInput?.value?.trim();
+  if (!name || !editDraftCurrentStrengthSets.length) {
+    editWorkoutStatusEl.textContent = "Add exercise name and at least one set.";
+    return;
+  }
+
+  editDraftStrengthExercises.push({
+    name,
+    sets: editDraftCurrentStrengthSets.map((set, index) => ({ ...set, order: index + 1 })),
+  });
+  editDraftCurrentStrengthSets = [];
+  editExerciseNameInput.value = "";
+  renderEditStrengthSets();
+  renderEditStrengthExercises();
+}
+
+function renderEditStrengthSets() {
+  if (!editCurrentStrengthSetsList) {
+    return;
+  }
+  if (!editDraftCurrentStrengthSets.length) {
+    editCurrentStrengthSetsList.innerHTML = "<li>No edit sets added yet.</li>";
+    return;
+  }
+  editCurrentStrengthSetsList.innerHTML = editDraftCurrentStrengthSets
+    .map((set, index) => `<li>Set #${index + 1}: ${set.reps} reps @ ${formatStrengthLoad(set)}</li>`)
+    .join("");
+}
+
+function renderEditStrengthExercises() {
+  if (!editStrengthExercisesList) {
+    return;
+  }
+  if (!editDraftStrengthExercises.length) {
+    editStrengthExercisesList.innerHTML = "<li>No edit exercises added yet.</li>";
+    return;
+  }
+  editStrengthExercisesList.innerHTML = editDraftStrengthExercises
     .map((exercise) => {
-      const setText = exercise.sets.map((set) => `${set.reps}@${formatStrengthLoadToken(set)}`).join(", ");
-      return `${exercise.name} | ${setText}`;
+      const sets = exercise.sets.map((set) => `${set.reps} reps @ ${formatStrengthLoad(set)}`).join(", ");
+      return `<li>${escapeHtml(exercise.name)} — ${sets}</li>`;
     })
-    .join("\n");
-}
-
-function parseStrengthExercisesFromEditor(text) {
-  if (!text.trim()) {
-    return [];
-  }
-
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [namePart, setsPart] = line.split("|").map((part) => part?.trim());
-      if (!namePart || !setsPart) {
-        throw new Error("Invalid strength line");
-      }
-
-      const sets = setsPart
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean)
-        .map((item) => {
-          const [repsText, loadTextRaw] = item.split("@").map((token) => token?.trim());
-          const reps = Number(repsText);
-          if (!Number.isFinite(reps) || !loadTextRaw) {
-            throw new Error("Invalid set format");
-          }
-
-          if (loadTextRaw === "bodyweight") {
-            return { reps, loadType: "bodyweight", weight: null, bandColor: "" };
-          }
-
-          if (loadTextRaw.startsWith("band:")) {
-            return { reps, loadType: "band", weight: null, bandColor: loadTextRaw.replace("band:", "").trim() };
-          }
-
-          const kgMatch = loadTextRaw.endsWith("kg") ? Number(loadTextRaw.replace("kg", "").trim()) : Number(loadTextRaw);
-          if (!Number.isFinite(kgMatch)) {
-            throw new Error("Invalid kg load");
-          }
-          return { reps, loadType: "kg", weight: kgMatch, bandColor: "" };
-        });
-
-      return { name: namePart, sets };
-    });
-}
-
-function formatStrengthLoadToken(set) {
-  if (set.loadType === "bodyweight") {
-    return "bodyweight";
-  }
-  if (set.loadType === "band") {
-    return `band:${set.bandColor || "unknown"}`;
-  }
-  return `${formatNumber(set.weight)}kg`;
+    .join("");
 }
 
 function renderSprintSets() {
