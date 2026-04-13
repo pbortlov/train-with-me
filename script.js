@@ -165,6 +165,9 @@ addSafeEventListener(saveEditWorkoutButton, "click", saveEditedWorkout);
 addSafeEventListener(cancelEditWorkoutButton, "click", closeEditWorkoutDialog);
 addSafeEventListener(editAddStrengthSetButton, "click", addEditStrengthSet);
 addSafeEventListener(editAddStrengthExerciseButton, "click", addEditStrengthExercise);
+addSafeEventListener(editStrengthExercisesList, "input", handleInlineStrengthEdit);
+addSafeEventListener(editStrengthExercisesList, "change", handleInlineStrengthEdit);
+addSafeEventListener(editStrengthExercisesList, "click", handleInlineStrengthDelete);
 addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
   const loadType = editStrengthLoadTypeInput.value;
   editStrengthWeightInput.disabled = loadType !== "kg";
@@ -1034,11 +1037,132 @@ function renderEditStrengthExercises() {
     return;
   }
   editStrengthExercisesList.innerHTML = editDraftStrengthExercises
-    .map((exercise) => {
-      const sets = exercise.sets.map((set) => `${set.reps} reps @ ${formatStrengthLoad(set)}`).join(", ");
-      return `<li>${escapeHtml(exercise.name)} — ${sets}</li>`;
+    .map((exercise, exerciseIndex) => {
+      const sets = exercise.sets
+        .map(
+          (set, setIndex) => `
+            <div class="inline-set-row">
+              <input type="number" min="0" data-role="set-reps" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${set.reps}" />
+              <select data-role="set-load-type" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}">
+                <option value="kg" ${set.loadType === "kg" ? "selected" : ""}>kg</option>
+                <option value="bodyweight" ${set.loadType === "bodyweight" ? "selected" : ""}>body weight</option>
+                <option value="band" ${set.loadType === "band" ? "selected" : ""}>band</option>
+              </select>
+              <input type="number" min="0" step="0.1" data-role="set-weight" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${
+                set.weight ?? ""
+              }" ${set.loadType !== "kg" ? "disabled" : ""} />
+              <input type="text" data-role="set-band-color" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${
+                set.bandColor || ""
+              }" placeholder="band color" ${set.loadType !== "band" ? "disabled" : ""} />
+              <button type="button" class="danger-button" data-role="delete-set" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}">Delete Set</button>
+            </div>
+          `,
+        )
+        .join("");
+      return `<li>
+        <div class="inline-exercise-row">
+          <input type="text" data-role="exercise-name" data-exercise-index="${exerciseIndex}" value="${escapeHtml(exercise.name)}" />
+          <button type="button" class="danger-button" data-role="delete-exercise" data-exercise-index="${exerciseIndex}">Delete Exercise</button>
+        </div>
+        ${sets}
+      </li>`;
     })
     .join("");
+}
+
+function handleInlineStrengthEdit(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const exerciseIndex = Number(target.dataset.exerciseIndex);
+  const setIndex = Number(target.dataset.setIndex);
+  const role = target.dataset.role;
+  if (!Number.isInteger(exerciseIndex) || !role) {
+    return;
+  }
+
+  const exercise = editDraftStrengthExercises[exerciseIndex];
+  if (!exercise) {
+    return;
+  }
+
+  if (role === "exercise-name") {
+    exercise.name = target.value.trim();
+    return;
+  }
+
+  if (!Number.isInteger(setIndex)) {
+    return;
+  }
+
+  const set = exercise.sets[setIndex];
+  if (!set) {
+    return;
+  }
+
+  if (role === "set-reps") {
+    const reps = Number(target.value);
+    if (Number.isFinite(reps)) {
+      set.reps = reps;
+    }
+  }
+
+  if (role === "set-load-type") {
+    set.loadType = target.value;
+    if (set.loadType !== "kg") {
+      set.weight = null;
+    }
+    if (set.loadType !== "band") {
+      set.bandColor = "";
+    }
+    renderEditStrengthExercises();
+  }
+
+  if (role === "set-weight") {
+    const weight = Number(target.value);
+    set.weight = Number.isFinite(weight) ? weight : null;
+  }
+
+  if (role === "set-band-color") {
+    set.bandColor = target.value.trim();
+  }
+}
+
+function handleInlineStrengthDelete(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const role = target.dataset.role;
+  if (!role) {
+    return;
+  }
+
+  const exerciseIndex = Number(target.dataset.exerciseIndex);
+  const setIndex = Number(target.dataset.setIndex);
+  if (!Number.isInteger(exerciseIndex)) {
+    return;
+  }
+
+  if (role === "delete-exercise") {
+    editDraftStrengthExercises.splice(exerciseIndex, 1);
+    renderEditStrengthExercises();
+    return;
+  }
+
+  if (role === "delete-set" && Number.isInteger(setIndex)) {
+    const exercise = editDraftStrengthExercises[exerciseIndex];
+    if (!exercise) {
+      return;
+    }
+    exercise.sets.splice(setIndex, 1);
+    if (!exercise.sets.length) {
+      editDraftStrengthExercises.splice(exerciseIndex, 1);
+    }
+    renderEditStrengthExercises();
+  }
 }
 
 function renderSprintSets() {
