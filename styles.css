@@ -1,0 +1,259 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --bg: #06080f;
+  --card: #111623;
+  --text: #f5f7ff;
+  --muted: #9aa7c7;
+  --accent: #00e5ff;
+  --border: #24324f;
+  --success: #6dff5c;
+  --danger: #ff4d6d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+label {
+  font-size: 0.92rem;
+  color: var(--muted);
+  display: grid;
+  gap: 0.35rem;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: #0b1120;
+  color: var(--text);
+}
+
+button {
+  border: 1px solid #00e5ff66;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  background: var(--accent);
+  color: #001018;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 0 0.6rem #00e5ff44;
+}
+
+.hint {
+  color: var(--muted);
+  margin: 0 0 0.6rem;
+  font-size: 0.9rem;
+}
+
+.activity-fields {
+  margin-top: 0.75rem;
+}
+
+.activity-fields.is-hidden {
+  display: none;
+}
+
+.sprint-sets-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.15rem;
+  color: var(--muted);
+}
+
+.detail-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.15rem;
+  color: var(--muted);
+}
+
+#progress-filters {
+  margin-bottom: 0.8rem;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.chart-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: #fff;
+}
+
+#install-app {
+  display: none;
+}
+
+input[type="file"] {
+  padding: 0.45rem;
+}
+
+dialog {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  max-width: 320px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.metric-line {
+  margin-bottom: 0.25rem;
+}
+
+#edit-workout-json {
+  width: 100%;
+  margin-bottom: 0.6rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.checkbox-label input {
+  width: auto;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.badge {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem;
+  background: #0a1326;
+}
+
+.badge .label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.badge .value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.goal-item {
+  margin: 0.5rem 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #1a2948;
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+
+.progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  padding: 0.55rem 0.35rem;
+  vertical-align: top;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.ghost-button {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.85rem;
+  margin-right: 0.35rem;
+}
+
+.danger-button {
+  color: #22000a;
+  border-color: #ff4d6d88;
+  background: var(--danger);
+  box-shadow: 0 0 0.6rem #ff4d6d55;
+}
+
+@media (max-width: 640px) {
+  .grid,
+  .summary {
+    grid-template-columns: 1fr;
+  }
+}
