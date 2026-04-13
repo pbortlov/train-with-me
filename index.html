@@ -243,9 +243,49 @@
     </dialog>
 
     <dialog id="edit-workout-dialog">
-      <h3>Edit Workout (JSON)</h3>
-      <p class="hint">You can edit all fields. For strength sets use loadType: "kg", "bodyweight", or "band".</p>
-      <textarea id="edit-workout-json" rows="14"></textarea>
+      <h3>Edit Workout</h3>
+      <form id="edit-workout-form">
+        <div class="grid">
+          <label>
+            Date
+            <input type="date" id="edit-date" required />
+          </label>
+          <label>
+            Activity
+            <input type="text" id="edit-activity" readonly />
+          </label>
+        </div>
+
+        <label>
+          Notes
+          <textarea id="edit-notes" rows="3"></textarea>
+        </label>
+
+        <div id="edit-run-fields" class="grid">
+          <label>
+            Distance (km)
+            <input type="number" id="edit-distance" min="0" step="0.01" />
+          </label>
+          <label>
+            Time (min)
+            <input type="number" id="edit-time" min="0" step="0.1" />
+          </label>
+          <label>
+            Pace (min/km)
+            <input type="number" id="edit-pace" min="0" step="0.01" />
+          </label>
+        </div>
+
+        <label id="edit-sprint-fields">
+          Sprint sets (one per line: timeSec,distanceM)
+          <textarea id="edit-sprint-sets" rows="4"></textarea>
+        </label>
+
+        <label id="edit-strength-fields">
+          Strength exercises (one per line: Exercise | 5@80kg, 8@bodyweight, 12@band:red)
+          <textarea id="edit-strength-exercises" rows="6"></textarea>
+        </label>
+      </form>
       <p id="edit-workout-status" class="hint"></p>
       <div class="dialog-actions">
         <button type="button" id="save-edit-workout">Save</button>

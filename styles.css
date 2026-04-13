@@ -154,9 +154,16 @@ dialog {
   margin-bottom: 0.25rem;
 }
 
-#edit-workout-json {
+#edit-sprint-sets,
+#edit-strength-exercises {
   width: 100%;
   margin-bottom: 0.6rem;
+}
+
+#edit-run-fields,
+#edit-sprint-fields,
+#edit-strength-fields {
+  display: none;
 }
 
 .checkbox-label {

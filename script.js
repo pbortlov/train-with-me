@@ -38,7 +38,17 @@ const deleteConfirmDialog = document.getElementById("delete-confirm-dialog");
 const confirmDeleteWorkoutButton = document.getElementById("confirm-delete-workout");
 const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout");
 const editWorkoutDialog = document.getElementById("edit-workout-dialog");
-const editWorkoutJsonInput = document.getElementById("edit-workout-json");
+const editDateInput = document.getElementById("edit-date");
+const editActivityInput = document.getElementById("edit-activity");
+const editNotesInput = document.getElementById("edit-notes");
+const editDistanceInput = document.getElementById("edit-distance");
+const editTimeInput = document.getElementById("edit-time");
+const editPaceInput = document.getElementById("edit-pace");
+const editSprintSetsInput = document.getElementById("edit-sprint-sets");
+const editStrengthExercisesInput = document.getElementById("edit-strength-exercises");
+const editRunFields = document.getElementById("edit-run-fields");
+const editSprintFields = document.getElementById("edit-sprint-fields");
+const editStrengthFields = document.getElementById("edit-strength-fields");
 const editWorkoutStatusEl = document.getElementById("edit-workout-status");
 const saveEditWorkoutButton = document.getElementById("save-edit-workout");
 const cancelEditWorkoutButton = document.getElementById("cancel-edit-workout");
@@ -551,7 +561,15 @@ function openEditWorkoutDialog(workoutId) {
   }
 
   editingPopupWorkoutId = workoutId;
-  editWorkoutJsonInput.value = JSON.stringify(workout, null, 2);
+  editDateInput.value = workout.date || "";
+  editActivityInput.value = capitalize(workout.activity || "run");
+  editNotesInput.value = workout.notes || "";
+  editDistanceInput.value = workout.distance ?? "";
+  editTimeInput.value = workout.time ?? "";
+  editPaceInput.value = workout.pace ?? "";
+  editSprintSetsInput.value = formatSprintSetsForEditor(workout.sprintSets);
+  editStrengthExercisesInput.value = formatStrengthExercisesForEditor(workout.strengthExercises);
+  toggleEditDialogFields(workout.activity);
   editWorkoutStatusEl.textContent = "";
   editWorkoutDialog.showModal();
 }
@@ -567,8 +585,21 @@ function saveEditedWorkout() {
   }
 
   try {
-    const parsedWorkout = JSON.parse(editWorkoutJsonInput.value);
-    const normalized = normalizeImportedWorkout(parsedWorkout);
+    const existingWorkout = workouts.find((workout) => workout.id === editingPopupWorkoutId);
+    if (!existingWorkout) {
+      return;
+    }
+
+    const normalized = normalizeImportedWorkout({
+      ...existingWorkout,
+      date: editDateInput.value,
+      notes: editNotesInput.value.trim(),
+      distance: editDistanceInput.value,
+      time: editTimeInput.value,
+      pace: editPaceInput.value,
+      sprintSets: parseSprintSetsFromEditor(editSprintSetsInput.value),
+      strengthExercises: parseStrengthExercisesFromEditor(editStrengthExercisesInput.value),
+    });
     normalized.id = editingPopupWorkoutId;
     const index = workouts.findIndex((workout) => workout.id === editingPopupWorkoutId);
     if (index >= 0) {
@@ -579,7 +610,7 @@ function saveEditedWorkout() {
       closeEditWorkoutDialog();
     }
   } catch {
-    editWorkoutStatusEl.textContent = "Invalid JSON. Please fix and try again.";
+    editWorkoutStatusEl.textContent = "Invalid edit format. Please check your lines and try again.";
   }
 }
 
@@ -837,6 +868,100 @@ if ("serviceWorker" in navigator) {
 
 function setWorkoutFormStatus(message) {
   workoutFormStatusEl.textContent = message;
+}
+
+function toggleEditDialogFields(activity) {
+  editRunFields.style.display = activity === "run" ? "grid" : "none";
+  editSprintFields.style.display = activity === "sprint" ? "grid" : "none";
+  editStrengthFields.style.display = activity === "strength" ? "grid" : "none";
+}
+
+function formatSprintSetsForEditor(sprintSets) {
+  const normalized = normalizeSprintSets(sprintSets);
+  return normalized.map((set) => `${set.time},${set.distance}`).join("\n");
+}
+
+function parseSprintSetsFromEditor(text) {
+  if (!text.trim()) {
+    return [];
+  }
+
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [timeValue, distanceValue] = line.split(",").map((value) => Number(value.trim()));
+      if (!Number.isFinite(timeValue) || !Number.isFinite(distanceValue)) {
+        throw new Error("Invalid sprint line");
+      }
+      return { time: timeValue, distance: distanceValue };
+    });
+}
+
+function formatStrengthExercisesForEditor(exercises) {
+  const normalized = normalizeStrengthExercises(exercises);
+  return normalized
+    .map((exercise) => {
+      const setText = exercise.sets.map((set) => `${set.reps}@${formatStrengthLoadToken(set)}`).join(", ");
+      return `${exercise.name} | ${setText}`;
+    })
+    .join("\n");
+}
+
+function parseStrengthExercisesFromEditor(text) {
+  if (!text.trim()) {
+    return [];
+  }
+
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [namePart, setsPart] = line.split("|").map((part) => part?.trim());
+      if (!namePart || !setsPart) {
+        throw new Error("Invalid strength line");
+      }
+
+      const sets = setsPart
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((item) => {
+          const [repsText, loadTextRaw] = item.split("@").map((token) => token?.trim());
+          const reps = Number(repsText);
+          if (!Number.isFinite(reps) || !loadTextRaw) {
+            throw new Error("Invalid set format");
+          }
+
+          if (loadTextRaw === "bodyweight") {
+            return { reps, loadType: "bodyweight", weight: null, bandColor: "" };
+          }
+
+          if (loadTextRaw.startsWith("band:")) {
+            return { reps, loadType: "band", weight: null, bandColor: loadTextRaw.replace("band:", "").trim() };
+          }
+
+          const kgMatch = loadTextRaw.endsWith("kg") ? Number(loadTextRaw.replace("kg", "").trim()) : Number(loadTextRaw);
+          if (!Number.isFinite(kgMatch)) {
+            throw new Error("Invalid kg load");
+          }
+          return { reps, loadType: "kg", weight: kgMatch, bandColor: "" };
+        });
+
+      return { name: namePart, sets };
+    });
+}
+
+function formatStrengthLoadToken(set) {
+  if (set.loadType === "bodyweight") {
+    return "bodyweight";
+  }
+  if (set.loadType === "band") {
+    return `band:${set.bandColor || "unknown"}`;
+  }
+  return `${formatNumber(set.weight)}kg`;
 }
 
 function renderSprintSets() {
