@@ -1,5 +1,6 @@
 const STORAGE_KEY_WORKOUTS = "twm_workouts_v1";
 const STORAGE_KEY_GOALS = "twm_goals_v1";
+const STORAGE_KEY_EXERCISES = "twm_exercise_library_v1";
 
 const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
@@ -64,6 +65,8 @@ const editStrengthFields = document.getElementById("edit-strength-fields");
 const editWorkoutStatusEl = document.getElementById("edit-workout-status");
 const saveEditWorkoutButton = document.getElementById("save-edit-workout");
 const cancelEditWorkoutButton = document.getElementById("cancel-edit-workout");
+const exerciseSuggestionsEl = document.getElementById("exercise-suggestions");
+const exerciseLibraryListEl = document.getElementById("exercise-library-list");
 
 const dateInput = document.getElementById("date");
 
@@ -75,6 +78,7 @@ let goals = load(STORAGE_KEY_GOALS, {
   run: null,
   sprint: null,
 });
+let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
 let editingWorkoutId = null;
 let draftSprintSets = [];
 let draftStrengthExercises = [];
@@ -96,6 +100,8 @@ let editDraftCurrentStrengthSets = [];
 let editDraftStrengthExercises = [];
 
 hydrateGoalInputs();
+syncExerciseLibraryFromWorkouts();
+renderExerciseLibrary();
 updateVisibleFields();
 renderSprintSets();
 renderCurrentStrengthSets();
@@ -172,6 +178,7 @@ addSafeEventListener(editAddStrengthExerciseButton, "click", addEditStrengthExer
 addSafeEventListener(editStrengthExercisesList, "input", handleInlineStrengthEdit);
 addSafeEventListener(editStrengthExercisesList, "change", handleInlineStrengthEdit);
 addSafeEventListener(editStrengthExercisesList, "click", handleInlineStrengthDelete);
+addSafeEventListener(exerciseLibraryListEl, "click", handleExerciseLibraryClick);
 addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
   const loadType = editStrengthLoadTypeInput.value;
   editStrengthWeightInput.disabled = loadType !== "kg";
@@ -292,6 +299,7 @@ addStrengthExerciseButton.addEventListener("click", () => {
       bandColor: set.bandColor || "",
     })),
   });
+  rememberExerciseName(exerciseName);
 
   draftCurrentStrengthSets = [];
   document.getElementById("exercise-name").value = "";
@@ -682,6 +690,8 @@ function saveEditedWorkout() {
     if (index >= 0) {
       workouts[index] = normalized;
       save(STORAGE_KEY_WORKOUTS, workouts);
+      syncExerciseLibraryFromWorkouts();
+      renderExerciseLibrary();
       editWorkoutStatusEl.textContent = "Workout updated.";
       render();
       closeEditWorkoutDialog();
@@ -903,6 +913,8 @@ function importBackupData(event) {
       }
 
       workouts = parsed.workouts.map((workout) => normalizeImportedWorkout(workout));
+      syncExerciseLibraryFromWorkouts();
+      renderExerciseLibrary();
 
       goals = {
         strength: toNumberOrNull(parsed.goals.strength),
@@ -1025,6 +1037,7 @@ function addEditStrengthExercise() {
     name,
     sets: editDraftCurrentStrengthSets.map((set, index) => ({ ...set, order: index + 1 })),
   });
+  rememberExerciseName(name);
   editDraftCurrentStrengthSets = [];
   editExerciseNameInput.value = "";
   renderEditStrengthSets();
@@ -1290,6 +1303,66 @@ function formatStrengthLoad(set) {
     return set.bandColor ? `band (${set.bandColor})` : "band";
   }
   return isNumber(set.weight) ? `${formatNumber(set.weight)} kg` : "kg";
+}
+
+function rememberExerciseName(name) {
+  const normalized = name?.trim();
+  if (!normalized) {
+    return;
+  }
+  if (!exerciseLibrary.includes(normalized)) {
+    exerciseLibrary.push(normalized);
+    exerciseLibrary.sort((a, b) => a.localeCompare(b));
+    save(STORAGE_KEY_EXERCISES, exerciseLibrary);
+    renderExerciseLibrary();
+  }
+}
+
+function syncExerciseLibraryFromWorkouts() {
+  const namesFromWorkouts = workouts
+    .flatMap((workout) => normalizeStrengthExercises(workout.strengthExercises).map((exercise) => exercise.name))
+    .filter(Boolean);
+  exerciseLibrary = [...new Set([...exerciseLibrary, ...namesFromWorkouts])].sort((a, b) => a.localeCompare(b));
+  save(STORAGE_KEY_EXERCISES, exerciseLibrary);
+}
+
+function renderExerciseLibrary() {
+  if (exerciseSuggestionsEl) {
+    exerciseSuggestionsEl.innerHTML = exerciseLibrary.map((name) => `<option value="${escapeHtml(name)}"></option>`).join("");
+  }
+
+  if (!exerciseLibraryListEl) {
+    return;
+  }
+
+  if (!exerciseLibrary.length) {
+    exerciseLibraryListEl.innerHTML = "<li>No saved exercises yet.</li>";
+    return;
+  }
+
+  exerciseLibraryListEl.innerHTML = exerciseLibrary
+    .map(
+      (name) =>
+        `<li><strong>${escapeHtml(name)}</strong> <button type="button" class="ghost-button danger-button" data-role="delete-exercise-library" data-name="${escapeHtml(name)}">Delete</button></li>`,
+    )
+    .join("");
+}
+
+function handleExerciseLibraryClick(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  if (target.dataset.role !== "delete-exercise-library") {
+    return;
+  }
+  const name = target.dataset.name;
+  if (!name) {
+    return;
+  }
+  exerciseLibrary = exerciseLibrary.filter((item) => item !== name);
+  save(STORAGE_KEY_EXERCISES, exerciseLibrary);
+  renderExerciseLibrary();
 }
 
 function strengthBestWeight(workout) {

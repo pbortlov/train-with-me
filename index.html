@@ -38,7 +38,7 @@
           <div id="strength-fields" class="grid activity-fields" data-activity="strength">
             <label>
               Exercise name
-              <input type="text" id="exercise-name" placeholder="e.g. Back squat" />
+              <input type="text" id="exercise-name" list="exercise-suggestions" placeholder="e.g. Back squat" />
             </label>
 
             <label>
@@ -232,7 +232,15 @@
           </table>
         </div>
       </section>
+
+      <section class="card">
+        <h2>Exercise Library</h2>
+        <p class="hint">Saved exercise names for quick reuse.</p>
+        <ul id="exercise-library-list" class="detail-list"></ul>
+      </section>
     </main>
+
+    <datalist id="exercise-suggestions"></datalist>
 
     <dialog id="delete-confirm-dialog">
       <p>Delete this workout?</p>
@@ -285,7 +293,7 @@
           <div class="grid">
             <label>
               Exercise name
-              <input type="text" id="edit-exercise-name" />
+              <input type="text" id="edit-exercise-name" list="exercise-suggestions" />
             </label>
             <label>
               Set reps

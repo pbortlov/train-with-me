@@ -14,6 +14,7 @@ A beginner-friendly, single-page training tracker for:
   - Sprint: ordered sprint sets with time (sec) + distance (m)
 - Edit and delete workout entries from the recent history table
 - Popup visual editor for full-workout editing
+- Exercise Library with reusable names and autocomplete
 - Progress filters by activity and date range
 - Simple progress line charts for strength, run, and sprint
 - Backup tools: export/import JSON data
