@@ -421,7 +421,7 @@ function renderSummary() {
 }
 
 function renderHistory() {
-  const filteredWorkouts = getFilteredWorkouts();
+  const filteredWorkouts = getFilteredWorkouts().slice().sort(compareWorkoutsByRecentDate);
 
   if (!filteredWorkouts.length) {
     const message = workouts.length
@@ -771,6 +771,15 @@ function getFilteredWorkouts() {
       );
     return activityMatch && fromMatch && toMatch && loadMatch;
   });
+}
+
+function compareWorkoutsByRecentDate(a, b) {
+  const dateComparison = (b.date || "").localeCompare(a.date || "");
+  if (dateComparison !== 0) {
+    return dateComparison;
+  }
+
+  return (b.createdAt || 0) - (a.createdAt || 0);
 }
 
 function renderCharts() {
