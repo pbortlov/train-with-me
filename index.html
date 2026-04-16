@@ -60,17 +60,17 @@
               <input type="number" id="strength-set-weight" min="0" step="0.1" placeholder="e.g. 60" />
             </label>
 
-            <label id="strength-set-band-color-label">
+            <label id="strength-set-band-color-label" class="band-color-field">
               Band color
-              <select id="strength-set-band-color">
-                <option value="">Select color</option>
-                <option value="yellow">Yellow</option>
-                <option value="red">Red</option>
-                <option value="black">Black</option>
-                <option value="purple">Purple</option>
-                <option value="green">Green</option>
-                <option value="blue">Blue</option>
-              </select>
+              <input type="hidden" id="strength-set-band-color" value="" />
+              <div class="band-color-picker" aria-label="Choose band color">
+                <button type="button" class="band-color-dot" data-band-color="yellow" data-resistance-label="extra light" aria-label="Yellow band, extra light" title="Yellow - extra light"></button>
+                <button type="button" class="band-color-dot" data-band-color="red" data-resistance-label="light" aria-label="Red band, light" title="Red - light"></button>
+                <button type="button" class="band-color-dot" data-band-color="black" data-resistance-label="medium" aria-label="Black band, medium" title="Black - medium"></button>
+                <button type="button" class="band-color-dot" data-band-color="purple" data-resistance-label="heavy" aria-label="Purple band, heavy" title="Purple - heavy"></button>
+                <button type="button" class="band-color-dot" data-band-color="green" data-resistance-label="extra heavy" aria-label="Green band, extra heavy" title="Green - extra heavy"></button>
+                <button type="button" class="band-color-dot" data-band-color="blue" data-resistance-label="strongest" aria-label="Blue band, strongest" title="Blue - strongest"></button>
+              </div>
             </label>
 
             <button type="button" id="add-strength-set">Add Set To Exercise</button>
@@ -82,17 +82,17 @@
           <div id="run-fields" class="grid activity-fields" data-activity="run">
             <label>
               Distance (km)
-              <input type="number" id="distance" min="0" step="0.01" placeholder="e.g. 5" />
+              <input type="number" id="distance" min="0" step="0.01" placeholder="e.g. 1.8" />
             </label>
 
             <label>
-              Time (min)
-              <input type="number" id="time" min="0" step="0.1" placeholder="e.g. 30" />
+              Time (hh:mm:ss)
+              <input type="text" id="time" inputmode="numeric" placeholder="e.g. 01:05:30" />
             </label>
 
             <label>
               Pace (min/km)
-              <input type="number" id="pace" min="0" step="0.01" placeholder="e.g. 6" />
+              <input type="text" id="pace" placeholder="Calculated automatically" readonly />
             </label>
           </div>
 
@@ -275,12 +275,12 @@
             <input type="number" id="edit-distance" min="0" step="0.01" />
           </label>
           <label>
-            Time (min)
-            <input type="number" id="edit-time" min="0" step="0.1" />
+            Time (hh:mm:ss)
+            <input type="text" id="edit-time" inputmode="numeric" />
           </label>
           <label>
             Pace (min/km)
-            <input type="number" id="edit-pace" min="0" step="0.01" />
+            <input type="text" id="edit-pace" readonly />
           </label>
         </div>
 
@@ -311,17 +311,17 @@
               Set weight (kg)
               <input type="number" id="edit-strength-weight" min="0" step="0.1" />
             </label>
-            <label id="edit-strength-band-color-label">
+            <label id="edit-strength-band-color-label" class="band-color-field">
               Band color
-              <select id="edit-strength-band-color">
-                <option value="">Select color</option>
-                <option value="yellow">Yellow</option>
-                <option value="red">Red</option>
-                <option value="black">Black</option>
-                <option value="purple">Purple</option>
-                <option value="green">Green</option>
-                <option value="blue">Blue</option>
-              </select>
+              <input type="hidden" id="edit-strength-band-color" value="" />
+              <div class="band-color-picker" aria-label="Choose band color">
+                <button type="button" class="band-color-dot" data-band-color="yellow" data-resistance-label="extra light" aria-label="Yellow band, extra light" title="Yellow - extra light"></button>
+                <button type="button" class="band-color-dot" data-band-color="red" data-resistance-label="light" aria-label="Red band, light" title="Red - light"></button>
+                <button type="button" class="band-color-dot" data-band-color="black" data-resistance-label="medium" aria-label="Black band, medium" title="Black - medium"></button>
+                <button type="button" class="band-color-dot" data-band-color="purple" data-resistance-label="heavy" aria-label="Purple band, heavy" title="Purple - heavy"></button>
+                <button type="button" class="band-color-dot" data-band-color="green" data-resistance-label="extra heavy" aria-label="Green band, extra heavy" title="Green - extra heavy"></button>
+                <button type="button" class="band-color-dot" data-band-color="blue" data-resistance-label="strongest" aria-label="Blue band, strongest" title="Blue - strongest"></button>
+              </div>
             </label>
           </div>
           <div class="dialog-actions">
