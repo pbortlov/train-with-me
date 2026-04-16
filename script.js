@@ -6,7 +6,6 @@ const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
 const historyBody = document.getElementById("history-body");
 const summaryEl = document.getElementById("summary");
-const personalRecordsEl = document.getElementById("personal-records");
 const goalProgressEl = document.getElementById("goal-progress");
 const workoutSubmitButton = workoutForm.querySelector('button[type="submit"]');
 const activityInput = document.getElementById("activity");
@@ -76,6 +75,7 @@ let workouts = load(STORAGE_KEY_WORKOUTS, []);
 let goals = load(STORAGE_KEY_GOALS, {
   strength: null,
   run: null,
+  runPace: null,
   sprint: null,
 });
 let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
@@ -313,6 +313,7 @@ goalsForm.addEventListener("submit", (event) => {
   goals = {
     strength: toNumberOrNull(valueOf("goal-strength")),
     run: toNumberOrNull(valueOf("goal-run")),
+    runPace: parseGoalPaceInput(valueOf("goal-run-pace")),
     sprint: toNumberOrNull(valueOf("goal-sprint")),
   };
   save(STORAGE_KEY_GOALS, goals);
@@ -342,43 +343,9 @@ historyBody.addEventListener("click", (event) => {
 
 function render() {
   renderSummary();
-  renderPersonalRecords();
   renderCharts();
   renderHistory();
   renderGoals();
-}
-
-function renderPersonalRecords() {
-  const strengthPR = workouts
-    .filter((w) => w.activity === "strength")
-    .map((w) => strengthBestWeight(w))
-    .filter((value) => isNumber(value))
-    .reduce((max, value) => Math.max(max, value), 0);
-
-  const runPR = workouts
-    .filter((w) => w.activity === "run" && isNumber(w.distance))
-    .reduce((max, w) => Math.max(max, w.distance), 0);
-
-  const sprintPR = workouts
-    .filter((w) => w.activity === "sprint")
-    .map((w) => sprintBestTime(w))
-    .filter((value) => isNumber(value))
-    .reduce((min, value) => Math.min(min, value), Infinity);
-
-  personalRecordsEl.innerHTML = `
-    <article class="badge">
-      <span class="label">PR Strength</span>
-      <span class="value">${strengthPR ? `${strengthPR} kg` : "-"}</span>
-    </article>
-    <article class="badge">
-      <span class="label">PR Run distance</span>
-      <span class="value">${runPR ? `${runPR} km` : "-"}</span>
-    </article>
-    <article class="badge">
-      <span class="label">PR Sprint time</span>
-      <span class="value">${Number.isFinite(sprintPR) ? `${sprintPR} sec` : "-"}</span>
-    </article>
-  `;
 }
 
 function renderSummary() {
@@ -462,6 +429,11 @@ function renderGoals() {
     .filter((w) => w.activity === "run" && isNumber(w.distance))
     .reduce((max, w) => Math.max(max, w.distance), 0);
 
+  const currentRunPace = workouts
+    .filter((w) => w.activity === "run" && isNumber(w.pace))
+    .map((w) => w.pace)
+    .reduce((min, paceValue) => Math.min(min, paceValue), Infinity);
+
   const currentSprint = workouts
     .filter((w) => w.activity === "sprint")
     .map((w) => sprintBestTime(w))
@@ -471,6 +443,7 @@ function renderGoals() {
   goalProgressEl.innerHTML = `
     ${goalRow("Strength", currentStrength, goals.strength, "kg", true)}
     ${goalRow("Run distance", currentRun, goals.run, "km", true)}
+    ${goalRow("Run best pace", Number.isFinite(currentRunPace) ? currentRunPace : null, goals.runPace, "min/km", false)}
     ${goalRow("Sprint best time", Number.isFinite(currentSprint) ? currentSprint : null, goals.sprint, "sec", false)}
   `;
 }
@@ -486,7 +459,7 @@ function goalRow(label, current, goal, unit, higherIsBetter) {
 
   return `
     <div class="goal-item">
-      <strong>${label}:</strong> ${formatNumber(safeCurrent)} / ${formatNumber(goal)} ${unit}
+      <strong>${label}:</strong> ${formatGoalValue(safeCurrent, unit)} / ${formatGoalValue(goal, unit)} ${unit}
       <div class="progress-bar"><span style="width:${percent.toFixed(0)}%"></span></div>
     </div>
   `;
@@ -495,7 +468,15 @@ function goalRow(label, current, goal, unit, higherIsBetter) {
 function hydrateGoalInputs() {
   document.getElementById("goal-strength").value = goals.strength ?? "";
   document.getElementById("goal-run").value = goals.run ?? "";
+  document.getElementById("goal-run-pace").value = isNumber(goals.runPace) ? formatGoalPace(goals.runPace) : "";
   document.getElementById("goal-sprint").value = goals.sprint ?? "";
+}
+
+function formatGoalValue(value, unit) {
+  if (!isNumber(value)) {
+    return "0";
+  }
+  return unit === "min/km" ? formatGoalPace(value) : formatNumber(value);
 }
 
 function formatMainMetric(w) {
@@ -547,6 +528,40 @@ function toNumberOrNull(value) {
 
 function isNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function parseGoalPaceInput(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parts = trimmed.split(":");
+  if (parts.length !== 2 || parts.some((part) => !/^\d+$/.test(part))) {
+    return null;
+  }
+
+  const [minutes, seconds] = parts.map(Number);
+  if (seconds > 59) {
+    return null;
+  }
+
+  return minutes + (seconds / 60);
+}
+
+function formatGoalPace(value) {
+  if (!isNumber(value) || value < 0) {
+    return "";
+  }
+
+  const totalSeconds = Math.round(value * 60);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function save(key, value) {
@@ -786,9 +801,9 @@ function renderCharts() {
     .map((workout) => ({ x: workout.date, y: strengthBestWeight(workout) }))
     .filter((point) => point.x && isNumber(point.y));
   const runData = filteredWorkouts
-    .filter((workout) => workout.activity === "run" && isNumber(workout.distance))
-    .map((workout) => ({ x: workout.date, y: workout.distance }))
-    .filter((point) => point.x);
+    .filter((workout) => workout.activity === "run" && isNumber(workout.pace))
+    .map((workout) => ({ x: workout.date, y: workout.pace }))
+    .filter((point) => point.x && isNumber(point.y));
   const sprintData = filteredWorkouts
     .filter((workout) => workout.activity === "sprint")
     .map((workout) => ({ x: workout.date, y: sprintBestTime(workout) }))
@@ -799,7 +814,7 @@ function renderCharts() {
   const groupedSprintData = groupChartPoints(sprintData, chartGrouping);
 
   strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, groupedStrengthData, "kg", "#00E5FF");
-  runChart = createOrUpdateChart(runChart, runChartCanvas, groupedRunData, "km", "#6DFF5C");
+  runChart = createOrUpdateChart(runChart, runChartCanvas, groupedRunData, "min/km", "#6DFF5C");
   sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, groupedSprintData, "sec", "#FF7A00");
 }
 
@@ -831,7 +846,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
       plugins: { legend: { display: false } },
       scales: {
         x: { type: "category", title: { display: true, text: "Date" } },
-        y: { title: { display: true, text: unit }, beginAtZero: true },
+        y: { title: { display: true, text: unit }, beginAtZero: unit !== "min/km" },
       },
     },
   });
@@ -919,6 +934,7 @@ function importBackupData(event) {
       goals = {
         strength: toNumberOrNull(parsed.goals.strength),
         run: toNumberOrNull(parsed.goals.run),
+        runPace: parseGoalPaceInput(parsed.goals.runPace) ?? toNumberOrNull(parsed.goals.runPace),
         sprint: toNumberOrNull(parsed.goals.sprint),
       };
 

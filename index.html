@@ -136,6 +136,11 @@
           </label>
 
           <label>
+            Run goal pace (min/km)
+            <input type="text" id="goal-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
+          </label>
+
+          <label>
             Sprint goal best time (sec)
             <input type="number" id="goal-sprint" min="0" step="0.01" placeholder="e.g. 14.2" />
           </label>
@@ -199,7 +204,6 @@
           <button type="button" id="clear-filters">Clear Filters</button>
         </div>
         <div id="summary" class="summary"></div>
-        <div id="personal-records" class="summary"></div>
         <p id="charts-status" class="hint"></p>
         <div class="charts-grid">
           <article class="chart-card">
@@ -207,7 +211,7 @@
             <canvas id="strength-chart" height="180"></canvas>
           </article>
           <article class="chart-card">
-            <h3>Run (Distance)</h3>
+            <h3>Run (Pace)</h3>
             <canvas id="run-chart" height="180"></canvas>
           </article>
           <article class="chart-card">
