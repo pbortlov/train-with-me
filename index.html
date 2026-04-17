@@ -136,6 +136,11 @@
           </label>
 
           <label>
+            Run goal pace (min/km)
+            <input type="text" id="goal-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
+          </label>
+
+          <label>
             Sprint goal best time (sec)
             <input type="number" id="goal-sprint" min="0" step="0.01" placeholder="e.g. 14.2" />
           </label>
@@ -182,9 +187,9 @@
           <label>
             Chart trend mode
             <select id="chart-grouping">
-              <option value="day">Daily</option>
               <option value="week">Weekly</option>
               <option value="month">Monthly</option>
+              <option value="quarter">Quarterly</option>
             </select>
           </label>
           <label>
@@ -207,7 +212,7 @@
             <canvas id="strength-chart" height="180"></canvas>
           </article>
           <article class="chart-card">
-            <h3>Run (Distance)</h3>
+            <h3>Run (Pace)</h3>
             <canvas id="run-chart" height="180"></canvas>
           </article>
           <article class="chart-card">
