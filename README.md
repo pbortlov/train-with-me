@@ -27,7 +27,7 @@ A beginner-friendly, single-page training tracker for:
   - run distance goal
   - run pace goal in `mm:ss`
   - sprint best-time goal
-- Simple progress summary
+- Simple progress summary with one set of top metrics
 - Recent workout history
 - Data saved in browser storage (LocalStorage)
 

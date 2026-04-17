@@ -6,7 +6,6 @@ const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
 const historyBody = document.getElementById("history-body");
 const summaryEl = document.getElementById("summary");
-const personalRecordsEl = document.getElementById("personal-records");
 const goalProgressEl = document.getElementById("goal-progress");
 const workoutSubmitButton = workoutForm.querySelector('button[type="submit"]');
 const activityInput = document.getElementById("activity");
@@ -369,43 +368,9 @@ historyBody.addEventListener("click", (event) => {
 
 function render() {
   renderSummary();
-  renderPersonalRecords();
   renderCharts();
   renderHistory();
   renderGoals();
-}
-
-function renderPersonalRecords() {
-  const strengthPR = workouts
-    .filter((w) => w.activity === "strength")
-    .map((w) => strengthBestWeight(w))
-    .filter((value) => isNumber(value))
-    .reduce((max, value) => Math.max(max, value), 0);
-
-  const runPR = workouts
-    .filter((w) => w.activity === "run" && isNumber(w.distance))
-    .reduce((max, w) => Math.max(max, w.distance), 0);
-
-  const sprintPR = workouts
-    .filter((w) => w.activity === "sprint")
-    .map((w) => sprintBestTime(w))
-    .filter((value) => isNumber(value))
-    .reduce((min, value) => Math.min(min, value), Infinity);
-
-  personalRecordsEl.innerHTML = `
-    <article class="badge">
-      <span class="label">PR Strength</span>
-      <span class="value">${strengthPR ? `${strengthPR} kg` : "-"}</span>
-    </article>
-    <article class="badge">
-      <span class="label">PR Run distance</span>
-      <span class="value">${runPR ? `${runPR} km` : "-"}</span>
-    </article>
-    <article class="badge">
-      <span class="label">PR Sprint time</span>
-      <span class="value">${Number.isFinite(sprintPR) ? `${sprintPR} sec` : "-"}</span>
-    </article>
-  `;
 }
 
 function renderSummary() {
