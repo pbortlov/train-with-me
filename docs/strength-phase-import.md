@@ -78,6 +78,7 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 - exercise weight is optional and can be left empty if it will be assigned later
 - slot notes are optional and are copied into the generated planned session notes
 - after import, the phase becomes a reusable template
+- program week 1 starts on the chosen start date and each later week is a rolling 7-day block from that anchor
 - saved templates can be loaded back into the phase form, edited, and saved again
 - saving a template refreshes its already planned generated sessions while preserving reviewed history
 - the actual calendar dates are created when the user chooses a start date in the app

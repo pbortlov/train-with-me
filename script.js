@@ -2286,11 +2286,14 @@ function regeneratePhaseInstanceFromTemplate(instance, template) {
 
 function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set()) {
   const generatedSessions = [];
+  const normalizedStartDate = new Date(startDate);
+  normalizedStartDate.setHours(0, 0, 0, 0);
+  const startWeekday = getProgramWeekday(normalizedStartDate);
   for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
+    const anchoredWeekStart = addDays(normalizedStartDate, weekIndex * 7);
     template.weekdaySlots.forEach((slot) => {
-      const monday = startOfWeek(startDate);
-      monday.setDate(monday.getDate() + (weekIndex * 7) + (slot.weekday - 1));
-      const sessionDate = formatDateInput(monday);
+      const slotOffset = ((slot.weekday - startWeekday) + 7) % 7;
+      const sessionDate = formatDateInput(addDays(anchoredWeekStart, slotOffset));
       if (reviewedDates.has(sessionDate)) {
         return;
       }
@@ -2311,6 +2314,12 @@ function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new
     });
   }
   return generatedSessions;
+}
+
+function getProgramWeekday(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  const day = date.getDay();
+  return day === 0 ? 7 : day;
 }
 
 function importStrengthPhase(event) {
