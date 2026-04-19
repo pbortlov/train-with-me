@@ -28,11 +28,57 @@ body {
 }
 
 .app {
-  max-width: 760px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 1rem;
   display: grid;
   gap: 1rem;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-header-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.view-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.nav-button.is-active {
+  background: var(--accent);
+  color: #001018;
+  border-color: #00e5ff66;
+}
+
+.view-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.view-panel.is-hidden {
+  display: none;
+}
+
+body:not(.coach-mode) .coach-only {
+  display: none !important;
 }
 
 .card {
@@ -115,6 +161,195 @@ button {
   margin: 0.5rem 0 0;
   padding-left: 1.15rem;
   color: var(--muted);
+}
+
+.calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+}
+
+.calendar-nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.calendar-day {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #0a1326;
+  padding: 0.75rem;
+  min-height: 15rem;
+  display: grid;
+  gap: 0.7rem;
+  align-content: start;
+}
+
+.calendar-day.is-today {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px #00e5ff44 inset;
+}
+
+.calendar-day-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  align-items: baseline;
+}
+
+.calendar-day-header h4 {
+  margin: 0;
+}
+
+.calendar-day-date {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.planner-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.planned-session-card,
+.review-card,
+.phase-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #081121;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.planned-session-card header,
+.review-card header,
+.phase-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.planned-session-card h5,
+.review-card h4,
+.phase-card h4 {
+  margin: 0;
+}
+
+.session-meta,
+.phase-meta,
+.review-meta {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.session-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status-planned {
+  background: #1f2c46;
+  color: #cfe2ff;
+}
+
+.status-completed {
+  background: #163820;
+  color: #8dffb4;
+}
+
+.status-modified {
+  background: #443213;
+  color: #ffd37a;
+}
+
+.status-missed {
+  background: #431c24;
+  color: #ff9caf;
+}
+
+.session-actions,
+.phase-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.phase-list,
+.review-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.phase-instance-grid,
+.review-diff-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.diff-panel {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: #0a1326;
+}
+
+.diff-panel h5 {
+  margin: 0 0 0.45rem;
+}
+
+.diff-panel pre,
+.diff-panel ul {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--muted);
+}
+
+.completion-block {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: #0a1326;
+  margin-bottom: 0.7rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.completion-block h4 {
+  margin: 0;
+}
+
+.completion-exercise-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.completion-exercise-row {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.goal-progress {
+  display: grid;
+  gap: 0.35rem;
 }
 
 #progress-filters {
@@ -400,12 +635,13 @@ td {
 }
 
 .ghost-button {
-  background: transparent;
-  color: var(--accent);
+  background: #0a1326;
+  color: var(--text);
   border: 1px solid var(--border);
   padding: 0.4rem 0.55rem;
   font-size: 0.85rem;
   margin-right: 0.35rem;
+  box-shadow: none;
 }
 
 .danger-button {
@@ -415,9 +651,35 @@ td {
   box-shadow: 0 0 0.6rem #ff4d6d55;
 }
 
+textarea {
+  resize: vertical;
+}
+
+@media (max-width: 980px) {
+  .calendar-grid,
+  .phase-instance-grid,
+  .review-diff-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
+  .app-header-top,
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .grid,
   .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-day {
+    min-height: auto;
+  }
+
+  .completion-exercise-row {
     grid-template-columns: 1fr;
   }
 }

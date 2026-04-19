@@ -1,6 +1,10 @@
 const STORAGE_KEY_WORKOUTS = "twm_workouts_v1";
 const STORAGE_KEY_GOALS = "twm_goals_v1";
 const STORAGE_KEY_EXERCISES = "twm_exercise_library_v1";
+const STORAGE_KEY_PLANNED_SESSIONS = "twm_planned_sessions_v2";
+const STORAGE_KEY_PHASE_TEMPLATES = "twm_phase_templates_v2";
+const STORAGE_KEY_PHASE_INSTANCES = "twm_phase_instances_v2";
+const STORAGE_KEY_UI_SETTINGS = "twm_ui_settings_v2";
 
 const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
@@ -70,6 +74,56 @@ const saveEditWorkoutButton = document.getElementById("save-edit-workout");
 const cancelEditWorkoutButton = document.getElementById("cancel-edit-workout");
 const exerciseSuggestionsEl = document.getElementById("exercise-suggestions");
 const exerciseLibraryListEl = document.getElementById("exercise-library-list");
+const coachModeToggle = document.getElementById("coach-mode-toggle");
+const viewNavButtons = document.querySelectorAll("[data-view-target]");
+const viewPanels = document.querySelectorAll(".view-panel");
+const plannerSummaryEl = document.getElementById("planner-summary");
+const calendarWeekLabelEl = document.getElementById("calendar-week-label");
+const calendarGridEl = document.getElementById("calendar-grid");
+const prevWeekButton = document.getElementById("prev-week");
+const nextWeekButton = document.getElementById("next-week");
+const currentWeekButton = document.getElementById("current-week");
+const plannedSessionForm = document.getElementById("planned-session-form");
+const plannedSessionIdInput = document.getElementById("planned-session-id");
+const plannedSessionDateInput = document.getElementById("planned-session-date");
+const plannedSessionTypeInput = document.getElementById("planned-session-type");
+const plannedSessionTitleInput = document.getElementById("planned-session-title");
+const plannedSessionNotesInput = document.getElementById("planned-session-notes");
+const plannedRunFields = document.getElementById("planned-run-fields");
+const plannedRunDistanceInput = document.getElementById("planned-run-distance");
+const plannedRunPaceInput = document.getElementById("planned-run-pace");
+const plannedSprintFields = document.getElementById("planned-sprint-fields");
+const plannedSprintBlocksInput = document.getElementById("planned-sprint-blocks");
+const plannedSessionStatusEl = document.getElementById("planned-session-status");
+const cancelPlannedSessionButton = document.getElementById("cancel-planned-session");
+const phaseImportForm = document.getElementById("phase-import-form");
+const phaseNameOverrideInput = document.getElementById("phase-name-override");
+const phaseImportFileInput = document.getElementById("phase-import-file");
+const phaseImportTextInput = document.getElementById("phase-import-text");
+const phaseImportStatusEl = document.getElementById("phase-import-status");
+const phaseTemplateListEl = document.getElementById("phase-template-list");
+const phaseInstanceListEl = document.getElementById("phase-instance-list");
+const reviewSummaryEl = document.getElementById("review-summary");
+const reviewSessionListEl = document.getElementById("review-session-list");
+const adherenceSummaryEl = document.getElementById("adherence-summary");
+const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
+const completionDialog = document.getElementById("completion-dialog");
+const completionForm = document.getElementById("completion-form");
+const completionSessionIdInput = document.getElementById("completion-session-id");
+const completionStatusInput = document.getElementById("completion-status");
+const completionDateInput = document.getElementById("completion-date");
+const completionSessionTitleEl = document.getElementById("completion-session-title");
+const completionRunFields = document.getElementById("completion-run-fields");
+const completionRunDistanceInput = document.getElementById("completion-run-distance");
+const completionRunTimeInput = document.getElementById("completion-run-time");
+const completionRunPaceInput = document.getElementById("completion-run-pace");
+const completionSprintFields = document.getElementById("completion-sprint-fields");
+const completionSprintSetsInput = document.getElementById("completion-sprint-sets");
+const completionStrengthFields = document.getElementById("completion-strength-fields");
+const completionStrengthBlocksEl = document.getElementById("completion-strength-blocks");
+const completionNoteInput = document.getElementById("completion-note");
+const completionStatusMessageEl = document.getElementById("completion-status-message");
+const cancelCompletionButton = document.getElementById("cancel-completion");
 const BAND_COLOR_OPTIONS = ["yellow", "red", "black", "purple", "green", "blue"];
 const BAND_COLOR_LABELS = {
   yellow: "extra light",
@@ -92,6 +146,14 @@ let goals = load(STORAGE_KEY_GOALS, {
   sprint: null,
 });
 let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
+let plannedSessions = load(STORAGE_KEY_PLANNED_SESSIONS, []).map((session) => normalizePlannedSession(session));
+let phaseTemplates = load(STORAGE_KEY_PHASE_TEMPLATES, []).map((template) => normalizePhaseTemplate(template));
+let phaseInstances = load(STORAGE_KEY_PHASE_INSTANCES, []).map((instance) => normalizePhaseInstance(instance));
+let uiSettings = load(STORAGE_KEY_UI_SETTINGS, {
+  currentView: "calendar",
+  coachMode: false,
+  currentWeekStart: formatDateInput(startOfWeek(new Date())),
+});
 let editingWorkoutId = null;
 let draftSprintSets = [];
 let draftStrengthExercises = [];
@@ -371,6 +433,13 @@ function render() {
   renderCharts();
   renderHistory();
   renderGoals();
+  renderPlannerSummary();
+  renderCalendar();
+  renderPhaseTemplates();
+  renderPhaseInstances();
+  renderReview();
+  renderAdherenceStats();
+  syncViewState();
 }
 
 function renderSummary() {
@@ -1160,10 +1229,14 @@ function groupingLabel(dateText, mode) {
 
 function exportBackupData() {
   const backupPayload = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     workouts,
     goals,
+    plannedSessions,
+    phaseTemplates,
+    phaseInstances,
+    uiSettings,
   };
 
   const fileBlob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: "application/json" });
@@ -1198,12 +1271,30 @@ function importBackupData(event) {
       goals = {
         strength: toNumberOrNull(parsed.goals.strength),
         run: toNumberOrNull(parsed.goals.run),
-        runPace: toNumberOrNull(parsed.goals.runPace),
+        runPace: parseGoalPaceInput(parsed.goals.runPace) ?? toNumberOrNull(parsed.goals.runPace),
         sprint: toNumberOrNull(parsed.goals.sprint),
+      };
+      plannedSessions = Array.isArray(parsed.plannedSessions)
+        ? parsed.plannedSessions.map((session) => normalizePlannedSession(session))
+        : [];
+      phaseTemplates = Array.isArray(parsed.phaseTemplates)
+        ? parsed.phaseTemplates.map((template) => normalizePhaseTemplate(template))
+        : [];
+      phaseInstances = Array.isArray(parsed.phaseInstances)
+        ? parsed.phaseInstances.map((instance) => normalizePhaseInstance(instance))
+        : [];
+      uiSettings = {
+        currentView: typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "calendar",
+        coachMode: Boolean(parsed.uiSettings?.coachMode),
+        currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
 
       save(STORAGE_KEY_WORKOUTS, workouts);
       save(STORAGE_KEY_GOALS, goals);
+      save(STORAGE_KEY_PLANNED_SESSIONS, plannedSessions);
+      save(STORAGE_KEY_PHASE_TEMPLATES, phaseTemplates);
+      save(STORAGE_KEY_PHASE_INSTANCES, phaseInstances);
+      save(STORAGE_KEY_UI_SETTINGS, uiSettings);
       hydrateGoalInputs();
       render();
       backupStatusEl.textContent = `Imported ${workouts.length} workout(s) successfully.`;
@@ -1682,3 +1773,1111 @@ function strengthBestWeight(workout) {
 
   return null;
 }
+
+function initializeV2() {
+  setCoachMode(uiSettings.coachMode);
+  bindV2Events();
+  plannedSessionDateInput.value = formatDateInput(new Date());
+  updatePlannedTypeFields();
+  render();
+}
+
+function bindV2Events() {
+  viewNavButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      setCurrentView(button.dataset.viewTarget || "calendar");
+    });
+  });
+
+  addSafeEventListener(coachModeToggle, "change", () => {
+    setCoachMode(Boolean(coachModeToggle.checked));
+  });
+  addSafeEventListener(prevWeekButton, "click", () => shiftCurrentWeek(-7));
+  addSafeEventListener(nextWeekButton, "click", () => shiftCurrentWeek(7));
+  addSafeEventListener(currentWeekButton, "click", () => {
+    uiSettings.currentWeekStart = formatDateInput(startOfWeek(new Date()));
+    savePlannerCollections();
+    render();
+  });
+  addSafeEventListener(plannedSessionTypeInput, "change", updatePlannedTypeFields);
+  addSafeEventListener(plannedSessionForm, "submit", savePlannedSessionFromForm);
+  addSafeEventListener(cancelPlannedSessionButton, "click", resetPlannedSessionForm);
+  addSafeEventListener(calendarGridEl, "click", handleCalendarAction);
+  addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
+  addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
+  addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
+  addSafeEventListener(phaseInstanceListEl, "click", handlePhaseInstanceAction);
+  addSafeEventListener(completionRunTimeInput, "input", syncCompletionRunPace);
+  addSafeEventListener(completionRunTimeInput, "change", syncCompletionRunPace);
+  addSafeEventListener(completionRunDistanceInput, "input", syncCompletionRunPace);
+  addSafeEventListener(completionForm, "submit", saveCompletedSession);
+  addSafeEventListener(cancelCompletionButton, "click", closeCompletionDialog);
+}
+
+function savePlannerCollections() {
+  save(STORAGE_KEY_PLANNED_SESSIONS, plannedSessions);
+  save(STORAGE_KEY_PHASE_TEMPLATES, phaseTemplates);
+  save(STORAGE_KEY_PHASE_INSTANCES, phaseInstances);
+  save(STORAGE_KEY_UI_SETTINGS, uiSettings);
+}
+
+function setCurrentView(view) {
+  uiSettings.currentView = ["calendar", "phases", "review", "stats"].includes(view) ? view : "calendar";
+  savePlannerCollections();
+  syncViewState();
+}
+
+function setCoachMode(enabled) {
+  uiSettings.coachMode = enabled;
+  document.body.classList.toggle("coach-mode", enabled);
+  if (coachModeToggle) {
+    coachModeToggle.checked = enabled;
+  }
+  savePlannerCollections();
+}
+
+function syncViewState() {
+  viewPanels.forEach((panel) => {
+    panel.classList.toggle("is-hidden", panel.dataset.view !== uiSettings.currentView);
+  });
+  viewNavButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.viewTarget === uiSettings.currentView);
+  });
+}
+
+function startOfWeek(value) {
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function addDays(dateInputValue, days) {
+  const date = new Date(dateInputValue);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function formatDateInput(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function normalizeDateInput(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return "";
+  }
+  return value;
+}
+
+function shiftCurrentWeek(days) {
+  uiSettings.currentWeekStart = formatDateInput(addDays(uiSettings.currentWeekStart, days));
+  savePlannerCollections();
+  render();
+}
+
+function getWeekDates(weekStart) {
+  return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+}
+
+function getPlannedSessionsForWeek(weekStart) {
+  const days = getWeekDates(weekStart).map((date) => formatDateInput(date));
+  return plannedSessions
+    .filter((session) => days.includes(session.date))
+    .sort((a, b) => (a.date === b.date ? (a.title || "").localeCompare(b.title || "") : a.date.localeCompare(b.date)));
+}
+
+function computeWeeklyAdherence(weekStart) {
+  const sessions = getPlannedSessionsForWeek(weekStart);
+  const completed = sessions.filter((session) => ["completed", "modified"].includes(session.status)).length;
+  const modified = sessions.filter((session) => session.status === "modified").length;
+  const missed = sessions.filter((session) => session.status === "missed").length;
+  return {
+    total: sessions.length,
+    completed,
+    modified,
+    missed,
+    planned: sessions.filter((session) => session.status === "planned").length,
+  };
+}
+
+function renderPlannerSummary() {
+  if (!plannerSummaryEl) {
+    return;
+  }
+  const stats = computeWeeklyAdherence(uiSettings.currentWeekStart);
+  plannerSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">This Week</span>
+      <span class="value">${stats.completed}/${stats.total || 0}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Modified</span>
+      <span class="value">${stats.modified}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Missed</span>
+      <span class="value">${stats.missed}</span>
+    </article>
+  `;
+}
+
+function renderCalendar() {
+  if (!calendarGridEl || !calendarWeekLabelEl) {
+    return;
+  }
+  const weekDates = getWeekDates(uiSettings.currentWeekStart);
+  const weekSessions = getPlannedSessionsForWeek(uiSettings.currentWeekStart);
+  calendarWeekLabelEl.textContent = `Week of ${formatHumanDate(weekDates[0])} to ${formatHumanDate(weekDates[6])}`;
+
+  calendarGridEl.innerHTML = weekDates
+    .map((date) => {
+      const dayKey = formatDateInput(date);
+      const daySessions = weekSessions.filter((session) => session.date === dayKey);
+      const isToday = dayKey === formatDateInput(new Date());
+      const sessionsMarkup = daySessions.length
+        ? daySessions.map((session) => renderPlannedSessionCard(session)).join("")
+        : `<p class="planner-empty">No planned sessions.</p>`;
+      return `
+        <article class="calendar-day${isToday ? " is-today" : ""}">
+          <div class="calendar-day-header">
+            <h4>${date.toLocaleDateString(undefined, { weekday: "short" })}</h4>
+            <span class="calendar-day-date">${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+          </div>
+          ${sessionsMarkup}
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderPlannedSessionCard(session) {
+  return `
+    <article class="planned-session-card">
+      <header>
+        <div>
+          <h5>${escapeHtml(session.title)}</h5>
+          <div class="session-meta">${capitalize(session.type)} • ${escapeHtml(formatPlannedSessionSummary(session))}</div>
+        </div>
+        <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
+      </header>
+      ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
+      <div class="session-actions">
+        <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
+        ${session.status === "planned"
+          ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Complete</button>
+             <button type="button" class="ghost-button danger-button" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
+          : `<button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`}
+        <button type="button" class="ghost-button danger-button" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
+      </div>
+    </article>
+  `;
+}
+
+function formatPlannedSessionSummary(session) {
+  if (session.type === "run") {
+    const parts = [];
+    if (isNumber(session.details?.distance)) {
+      parts.push(`${formatNumber(session.details.distance)} km`);
+    }
+    if (isNumber(session.details?.paceGoal)) {
+      parts.push(`${formatGoalPace(session.details.paceGoal)} target`);
+    }
+    return parts.join(" • ") || "planned run";
+  }
+
+  if (session.type === "sprint") {
+    const blocks = session.details?.blocks || [];
+    return blocks.map((block) => `${block.reps} x ${block.distance}m`).join(", ") || "planned sprint session";
+  }
+
+  const blocks = session.details?.blocks || [];
+  const exerciseCount = blocks.flatMap((block) => block.exercises || []).length;
+  return `${blocks.length} blocks • ${exerciseCount} exercises`;
+}
+
+function updatePlannedTypeFields() {
+  const selectedType = plannedSessionTypeInput?.value || "run";
+  if (plannedRunFields) {
+    plannedRunFields.classList.toggle("is-hidden", selectedType !== "run");
+  }
+  if (plannedSprintFields) {
+    plannedSprintFields.classList.toggle("is-hidden", selectedType !== "sprint");
+  }
+}
+
+function resetPlannedSessionForm() {
+  if (!plannedSessionForm) {
+    return;
+  }
+  plannedSessionForm.reset();
+  plannedSessionIdInput.value = "";
+  plannedSessionDateInput.value = formatDateInput(new Date());
+  plannedSessionTypeInput.value = "run";
+  updatePlannedTypeFields();
+  plannedSessionStatusEl.textContent = "";
+}
+
+function savePlannedSessionFromForm(event) {
+  event.preventDefault();
+  const type = plannedSessionTypeInput.value;
+  const session = {
+    id: plannedSessionIdInput.value || crypto.randomUUID(),
+    date: normalizeDateInput(plannedSessionDateInput.value),
+    type,
+    title: plannedSessionTitleInput.value.trim(),
+    source: "manual",
+    status: "planned",
+    notes: plannedSessionNotesInput.value.trim(),
+    details: type === "run"
+      ? {
+          distance: toNumberOrNull(plannedRunDistanceInput.value),
+          paceGoal: parseGoalPaceInput(plannedRunPaceInput.value),
+        }
+      : {
+          blocks: parseSprintPlanBlocks(plannedSprintBlocksInput.value),
+        },
+  };
+
+  if (!session.date || !session.title) {
+    plannedSessionStatusEl.textContent = "Planned sessions need a date and title.";
+    return;
+  }
+  if (type === "run" && !isNumber(session.details.distance)) {
+    plannedSessionStatusEl.textContent = "Run plans need a distance.";
+    return;
+  }
+  if (type === "sprint" && !session.details.blocks.length) {
+    plannedSessionStatusEl.textContent = "Sprint plans need at least one block.";
+    return;
+  }
+
+  const existingIndex = plannedSessions.findIndex((planned) => planned.id === session.id);
+  const normalized = normalizePlannedSession(existingIndex >= 0 ? { ...plannedSessions[existingIndex], ...session } : session);
+  if (existingIndex >= 0) {
+    plannedSessions[existingIndex] = normalized;
+  } else {
+    plannedSessions.push(normalized);
+  }
+  savePlannerCollections();
+  resetPlannedSessionForm();
+  plannedSessionStatusEl.textContent = "Planned session saved.";
+  render();
+}
+
+function parseSprintPlanBlocks(text) {
+  return String(text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^(\d+)\s*x\s*(\d+)\s*m$/i);
+      if (!match) {
+        return null;
+      }
+      return {
+        reps: Number(match[1]),
+        distance: Number(match[2]),
+      };
+    })
+    .filter(Boolean);
+}
+
+function handleCalendarAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const role = target.dataset.role;
+  const sessionId = target.dataset.id;
+  if (!role || !sessionId) {
+    return;
+  }
+
+  const session = plannedSessions.find((item) => item.id === sessionId);
+  if (!session) {
+    return;
+  }
+
+  if (role === "edit-planned-session") {
+    fillPlannedSessionForm(session);
+  }
+  if (role === "delete-planned-session") {
+    plannedSessions = plannedSessions.filter((item) => item.id !== sessionId);
+    savePlannerCollections();
+    render();
+  }
+  if (role === "miss-planned-session") {
+    session.status = "missed";
+    session.actual = null;
+    session.linkedWorkoutId = "";
+    savePlannerCollections();
+    render();
+  }
+  if (role === "reset-planned-session") {
+    session.status = "planned";
+    session.actual = null;
+    session.linkedWorkoutId = "";
+    session.modificationNote = "";
+    savePlannerCollections();
+    render();
+  }
+  if (role === "complete-planned-session") {
+    openCompletionDialog(session);
+  }
+}
+
+function fillPlannedSessionForm(session) {
+  plannedSessionIdInput.value = session.id;
+  plannedSessionDateInput.value = session.date;
+  plannedSessionTypeInput.value = session.type;
+  plannedSessionTitleInput.value = session.title;
+  plannedSessionNotesInput.value = session.notes || "";
+  if (session.type === "run") {
+    plannedRunDistanceInput.value = session.details?.distance ?? "";
+    plannedRunPaceInput.value = isNumber(session.details?.paceGoal) ? formatGoalPace(session.details.paceGoal) : "";
+  } else {
+    plannedSprintBlocksInput.value = (session.details?.blocks || []).map((block) => `${block.reps} x ${block.distance}m`).join("\n");
+  }
+  updatePlannedTypeFields();
+  setCurrentView("calendar");
+}
+
+function loadPhaseImportFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    phaseImportTextInput.value = String(reader.result || "");
+  };
+  reader.readAsText(file);
+}
+
+function importStrengthPhase(event) {
+  event.preventDefault();
+  try {
+    const imported = parseStrengthPhaseDefinition(phaseImportTextInput.value, phaseNameOverrideInput.value.trim());
+    phaseTemplates.unshift(normalizePhaseTemplate(imported));
+    savePlannerCollections();
+    phaseImportForm.reset();
+    phaseImportStatusEl.textContent = `Imported phase template "${imported.name}".`;
+    render();
+  } catch (error) {
+    phaseImportStatusEl.textContent = error instanceof Error ? error.message : "Could not import phase.";
+  }
+}
+
+function parseStrengthPhaseDefinition(text, overrideName) {
+  const lines = String(text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) {
+    throw new Error("Paste or import phase content first.");
+  }
+
+  const template = {
+    id: crypto.randomUUID(),
+    name: overrideName || "",
+    durationWeeks: 0,
+    weekdaySlots: [],
+    importedAt: Date.now(),
+  };
+
+  let currentSlot = null;
+  let currentBlock = null;
+
+  lines.forEach((line, index) => {
+    const columns = line.split(",").map((column) => column.trim());
+    const rowType = columns[0]?.toUpperCase();
+    if (rowType === "PHASE") {
+      template.name = overrideName || columns[1] || template.name;
+      template.durationWeeks = Number(columns[2]);
+      if (!template.name || !Number.isFinite(template.durationWeeks)) {
+        throw new Error(`Invalid PHASE row at line ${index + 1}.`);
+      }
+      return;
+    }
+    if (rowType === "SLOT") {
+      const weekday = parseWeekday(columns[1]);
+      currentSlot = {
+        id: crypto.randomUUID(),
+        weekday,
+        title: columns[2] || `Strength session ${template.weekdaySlots.length + 1}`,
+        blocks: [],
+      };
+      template.weekdaySlots.push(currentSlot);
+      currentBlock = null;
+      return;
+    }
+    if (rowType === "BLOCK") {
+      if (!currentSlot) {
+        throw new Error(`BLOCK row before SLOT at line ${index + 1}.`);
+      }
+      currentBlock = {
+        label: columns[1] || `Block ${currentSlot.blocks.length + 1}`,
+        durationMin: toNumberOrNull(columns[2]),
+        restSec: toNumberOrNull(columns[3]),
+        sets: toNumberOrNull(columns[4]),
+        exercises: [],
+      };
+      currentSlot.blocks.push(currentBlock);
+      return;
+    }
+    if (rowType === "EXERCISE") {
+      if (!currentBlock) {
+        throw new Error(`EXERCISE row before BLOCK at line ${index + 1}.`);
+      }
+      currentBlock.exercises.push({
+        code: columns[1] || `E${currentBlock.exercises.length + 1}`,
+        name: columns[2] || "Exercise",
+        reps: columns[3] || "",
+        notes: columns[4] || "",
+      });
+      return;
+    }
+    throw new Error(`Unknown row type "${columns[0]}" at line ${index + 1}.`);
+  });
+
+  if (!template.name || !template.durationWeeks || !template.weekdaySlots.length) {
+    throw new Error("A phase import needs PHASE metadata and at least one SLOT.");
+  }
+  return template;
+}
+
+function parseWeekday(value) {
+  const weekdayMap = {
+    monday: 1,
+    mon: 1,
+    tuesday: 2,
+    tue: 2,
+    tues: 2,
+    wednesday: 3,
+    wed: 3,
+    thursday: 4,
+    thu: 4,
+    thur: 4,
+    friday: 5,
+    fri: 5,
+    saturday: 6,
+    sat: 6,
+    sunday: 7,
+    sun: 7,
+  };
+  const key = String(value || "").trim().toLowerCase();
+  const parsed = weekdayMap[key];
+  if (!parsed) {
+    throw new Error(`Invalid weekday "${value}".`);
+  }
+  return parsed;
+}
+
+function renderPhaseTemplates() {
+  if (!phaseTemplateListEl) {
+    return;
+  }
+  if (!phaseTemplates.length) {
+    phaseTemplateListEl.innerHTML = "<p class=\"planner-empty\">No saved phase templates yet.</p>";
+    return;
+  }
+  phaseTemplateListEl.innerHTML = phaseTemplates
+    .map((template) => {
+      const slotSummary = template.weekdaySlots
+        .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}`)
+        .join(" • ");
+      return `
+        <article class="phase-card">
+          <header>
+            <div>
+              <h4>${escapeHtml(template.name)}</h4>
+              <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(slotSummary)}</div>
+            </div>
+          </header>
+          <div class="phase-instance-grid">
+            <label>
+              Start date
+              <input type="date" data-role="schedule-date" data-id="${template.id}" value="${formatDateInput(new Date())}" />
+            </label>
+            <div class="phase-actions">
+              <button type="button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
+              <button type="button" class="ghost-button danger-button" data-role="delete-phase-template" data-id="${template.id}">Delete</button>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function handlePhaseTemplateAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const role = target.dataset.role;
+  const id = target.dataset.id;
+  if (!role || !id) {
+    return;
+  }
+
+  if (role === "delete-phase-template") {
+    phaseTemplates = phaseTemplates.filter((template) => template.id !== id);
+    savePlannerCollections();
+    render();
+    return;
+  }
+
+  if (role === "schedule-phase") {
+    const template = phaseTemplates.find((item) => item.id === id);
+    const dateInput = phaseTemplateListEl.querySelector(`[data-role="schedule-date"][data-id="${id}"]`);
+    const startDate = normalizeDateInput(dateInput?.value || "");
+    if (!template || !startDate) {
+      return;
+    }
+    schedulePhaseTemplate(template, startDate);
+  }
+}
+
+function schedulePhaseTemplate(template, startDate) {
+  const instanceId = crypto.randomUUID();
+  const generatedSessionIds = [];
+  for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
+    template.weekdaySlots.forEach((slot) => {
+      const monday = startOfWeek(startDate);
+      monday.setDate(monday.getDate() + (weekIndex * 7) + (slot.weekday - 1));
+      const session = normalizePlannedSession({
+        id: crypto.randomUUID(),
+        date: formatDateInput(monday),
+        type: "strength",
+        title: slot.title,
+        source: "phase-generated",
+        phaseTemplateId: template.id,
+        phaseInstanceId: instanceId,
+        status: "planned",
+        details: { blocks: slot.blocks },
+      });
+      plannedSessions.push(session);
+      generatedSessionIds.push(session.id);
+    });
+  }
+
+  phaseInstances.unshift(
+    normalizePhaseInstance({
+      id: instanceId,
+      templateId: template.id,
+      templateName: template.name,
+      startDate,
+      durationWeeks: template.durationWeeks,
+      generatedSessionIds,
+      createdAt: Date.now(),
+    }),
+  );
+  savePlannerCollections();
+  render();
+}
+
+function renderPhaseInstances() {
+  if (!phaseInstanceListEl) {
+    return;
+  }
+  if (!phaseInstances.length) {
+    phaseInstanceListEl.innerHTML = "<p class=\"planner-empty\">No scheduled phases yet.</p>";
+    return;
+  }
+  phaseInstanceListEl.innerHTML = phaseInstances
+    .map((instance) => {
+      const endDate = formatDateInput(addDays(instance.startDate, (instance.durationWeeks * 7) - 1));
+      return `
+        <article class="phase-card">
+          <header>
+            <div>
+              <h4>${escapeHtml(instance.templateName || "Phase")}</h4>
+              <div class="phase-meta">${formatHumanDate(instance.startDate)} to ${formatHumanDate(endDate)} • ${instance.generatedSessionIds.length} sessions</div>
+            </div>
+          </header>
+          <div class="phase-actions">
+            <button type="button" class="ghost-button danger-button" data-role="delete-phase-instance" data-id="${instance.id}">Remove scheduled phase</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function handlePhaseInstanceAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  if (target.dataset.role !== "delete-phase-instance" || !target.dataset.id) {
+    return;
+  }
+  const instance = phaseInstances.find((item) => item.id === target.dataset.id);
+  if (!instance) {
+    return;
+  }
+  plannedSessions = plannedSessions.filter((session) => !instance.generatedSessionIds.includes(session.id));
+  phaseInstances = phaseInstances.filter((item) => item.id !== instance.id);
+  savePlannerCollections();
+  render();
+}
+
+function openCompletionDialog(session) {
+  if (!completionDialog || !completionForm) {
+    return;
+  }
+  completionForm.reset();
+  completionSessionIdInput.value = session.id;
+  completionDateInput.value = session.date;
+  completionSessionTitleEl.textContent = `${session.title} • ${capitalize(session.type)}`;
+  completionStatusInput.value = "completed";
+  completionStatusMessageEl.textContent = "";
+
+  completionRunFields.style.display = session.type === "run" ? "block" : "none";
+  completionSprintFields.style.display = session.type === "sprint" ? "block" : "none";
+  completionStrengthFields.style.display = session.type === "strength" ? "block" : "none";
+
+  if (session.type === "run") {
+    completionRunDistanceInput.value = session.details?.distance ?? "";
+    completionRunTimeInput.value = "";
+    completionRunPaceInput.value = "";
+  }
+  if (session.type === "sprint") {
+    completionSprintSetsInput.value = "";
+  }
+  if (session.type === "strength") {
+    renderCompletionStrengthBlocks(session);
+  }
+
+  if (typeof completionDialog.showModal === "function") {
+    completionDialog.showModal();
+  } else {
+    completionDialog.setAttribute("open", "true");
+  }
+}
+
+function closeCompletionDialog() {
+  if (!completionDialog) {
+    return;
+  }
+  if (typeof completionDialog.close === "function") {
+    completionDialog.close();
+  } else {
+    completionDialog.removeAttribute("open");
+  }
+}
+
+function renderCompletionStrengthBlocks(session) {
+  const blocks = session.details?.blocks || [];
+  completionStrengthBlocksEl.innerHTML = blocks
+    .map(
+      (block, blockIndex) => `
+        <div class="completion-block">
+          <h4>Block ${escapeHtml(block.label || String(blockIndex + 1))}</h4>
+          <div class="grid">
+            <label>
+              Actual sets
+              <input type="number" min="0" data-role="completion-block-sets" data-block-index="${blockIndex}" value="${block.sets ?? ""}" />
+            </label>
+            <label>
+              Block note
+              <input type="text" data-role="completion-block-note" data-block-index="${blockIndex}" placeholder="Optional note" />
+            </label>
+          </div>
+          <div class="completion-exercise-list">
+            ${(block.exercises || [])
+              .map(
+                (exercise, exerciseIndex) => `
+                  <div class="completion-exercise-row">
+                    <label class="checkbox-label">
+                      <input type="checkbox" data-role="completion-exercise-done" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" checked />
+                      ${escapeHtml(exercise.code || "")} ${escapeHtml(exercise.name)}
+                    </label>
+                    <label>
+                      Actual note
+                      <input type="text" data-role="completion-exercise-note" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" placeholder="Optional change note" />
+                    </label>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function syncCompletionRunPace() {
+  const distance = toNumberOrNull(completionRunDistanceInput.value);
+  const time = normalizeRunDurationInput(completionRunTimeInput.value);
+  completionRunTimeInput.value = time;
+  const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
+  completionRunPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
+}
+
+function saveCompletedSession(event) {
+  event.preventDefault();
+  const session = plannedSessions.find((item) => item.id === completionSessionIdInput.value);
+  if (!session) {
+    return;
+  }
+  const status = completionStatusInput.value === "modified" ? "modified" : "completed";
+  const modificationNote = completionNoteInput.value.trim();
+  let actual = null;
+  try {
+    if (session.type === "run") {
+      const distance = toNumberOrNull(completionRunDistanceInput.value);
+      const time = normalizeRunDurationInput(completionRunTimeInput.value);
+      const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
+      if (!isNumber(distance) || !time || !isNumber(pace)) {
+        completionStatusMessageEl.textContent = "Run completion needs distance and time.";
+        return;
+      }
+      actual = { distance, time, pace };
+    }
+    if (session.type === "sprint") {
+      const sprintSets = parseSprintSetsFromEditor(completionSprintSetsInput.value);
+      if (!sprintSets.length) {
+        completionStatusMessageEl.textContent = "Sprint completion needs at least one actual set.";
+        return;
+      }
+      actual = { sprintSets };
+    }
+    if (session.type === "strength") {
+      actual = { blocks: collectCompletedStrengthBlocks(session) };
+    }
+
+    const workout = createWorkoutFromPlannedSession(session, actual, modificationNote);
+    workouts.unshift(normalizeImportedWorkout(workout));
+    syncExerciseLibraryFromWorkouts();
+    renderExerciseLibrary();
+    save(STORAGE_KEY_WORKOUTS, workouts);
+    session.status = status;
+    session.actual = actual;
+    session.linkedWorkoutId = workout.id;
+    session.modificationNote = modificationNote;
+    savePlannerCollections();
+    closeCompletionDialog();
+    render();
+  } catch {
+    completionStatusMessageEl.textContent = "Could not save completion. Check the values and try again.";
+  }
+}
+
+function collectCompletedStrengthBlocks(session) {
+  const blocks = session.details?.blocks || [];
+  return blocks.map((block, blockIndex) => {
+    const actualSetsInput = completionStrengthBlocksEl.querySelector(`[data-role="completion-block-sets"][data-block-index="${blockIndex}"]`);
+    const blockNoteInput = completionStrengthBlocksEl.querySelector(`[data-role="completion-block-note"][data-block-index="${blockIndex}"]`);
+    return {
+      label: block.label,
+      actualSets: toNumberOrNull(actualSetsInput?.value) ?? block.sets ?? null,
+      note: blockNoteInput?.value?.trim() || "",
+      exercises: (block.exercises || []).map((exercise, exerciseIndex) => {
+        const doneInput = completionStrengthBlocksEl.querySelector(
+          `[data-role="completion-exercise-done"][data-block-index="${blockIndex}"][data-exercise-index="${exerciseIndex}"]`,
+        );
+        const noteInput = completionStrengthBlocksEl.querySelector(
+          `[data-role="completion-exercise-note"][data-block-index="${blockIndex}"][data-exercise-index="${exerciseIndex}"]`,
+        );
+        return {
+          code: exercise.code,
+          name: exercise.name,
+          reps: exercise.reps,
+          completed: Boolean(doneInput?.checked),
+          actualNote: noteInput?.value?.trim() || "",
+        };
+      }),
+    };
+  });
+}
+
+function createWorkoutFromPlannedSession(session, actual, modificationNote) {
+  if (session.type === "run") {
+    return {
+      id: crypto.randomUUID(),
+      date: session.date,
+      activity: "run",
+      distance: actual.distance,
+      time: actual.time,
+      pace: actual.pace,
+      notes: modificationNote || `Completed planned run: ${session.title}`,
+      sprintSets: [],
+      strengthExercises: [],
+      createdAt: Date.now(),
+    };
+  }
+  if (session.type === "sprint") {
+    return {
+      id: crypto.randomUUID(),
+      date: session.date,
+      activity: "sprint",
+      sprintSets: actual.sprintSets,
+      distance: null,
+      time: null,
+      pace: null,
+      strengthExercises: [],
+      notes: modificationNote || `Completed planned sprint: ${session.title}`,
+      createdAt: Date.now(),
+    };
+  }
+  return {
+    id: crypto.randomUUID(),
+    date: session.date,
+    activity: "strength",
+    strengthExercises: convertStrengthActualToWorkoutExercises(actual.blocks),
+    distance: null,
+    time: null,
+    pace: null,
+    sprintSets: [],
+    notes: modificationNote || `Completed planned strength: ${session.title}`,
+    createdAt: Date.now(),
+  };
+}
+
+function convertStrengthActualToWorkoutExercises(blocks) {
+  return blocks
+    .flatMap((block) => block.exercises.filter((exercise) => exercise.completed))
+    .map((exercise) => ({
+      name: exercise.name,
+      sets: [
+        {
+          reps: toNumberOrNull(String(exercise.reps).replace(/[^\d.]/g, "")) || 0,
+          loadType: "bodyweight",
+          weight: null,
+          bandColor: "",
+        },
+      ],
+    }))
+    .filter((exercise) => exercise.sets[0].reps > 0);
+}
+
+function renderReview() {
+  if (!reviewSessionListEl || !reviewSummaryEl) {
+    return;
+  }
+  const reviewedSessions = plannedSessions
+    .filter((session) => session.status !== "planned")
+    .slice()
+    .sort((a, b) => compareWorkoutsByRecentDate(a, b));
+  const modified = reviewedSessions.filter((session) => session.status === "modified").length;
+  const missed = reviewedSessions.filter((session) => session.status === "missed").length;
+  reviewSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Reviewed sessions</span>
+      <span class="value">${reviewedSessions.length}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Modified</span>
+      <span class="value">${modified}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Missed</span>
+      <span class="value">${missed}</span>
+    </article>
+  `;
+  if (!reviewedSessions.length) {
+    reviewSessionListEl.innerHTML = "<p class=\"planner-empty\">No completed or missed planned sessions yet.</p>";
+    return;
+  }
+  reviewSessionListEl.innerHTML = reviewedSessions
+    .map(
+      (session) => `
+        <article class="review-card">
+          <header>
+            <div>
+              <h4>${escapeHtml(session.title)}</h4>
+              <div class="review-meta">${formatHumanDate(session.date)} • ${capitalize(session.type)}</div>
+            </div>
+            <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
+          </header>
+          <div class="review-diff-grid">
+            <div class="diff-panel">
+              <h5>Planned</h5>
+              ${renderPlannedDiff(session)}
+            </div>
+            <div class="diff-panel">
+              <h5>Actual</h5>
+              ${renderActualDiff(session)}
+            </div>
+          </div>
+          ${session.modificationNote ? `<div class="review-meta">Note: ${escapeHtml(session.modificationNote)}</div>` : ""}
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderPlannedDiff(session) {
+  if (session.type === "run") {
+    return `<pre>${escapeHtml(formatPlannedSessionSummary(session))}</pre>`;
+  }
+  if (session.type === "sprint") {
+    return `<ul>${(session.details?.blocks || []).map((block) => `<li>${block.reps} x ${block.distance}m</li>`).join("")}</ul>`;
+  }
+  return `<ul>${(session.details?.blocks || [])
+    .map(
+      (block) =>
+        `<li>${escapeHtml(block.label)}: ${block.sets || "-"} sets • ${(block.exercises || []).map((exercise) => `${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)} (${escapeHtml(exercise.reps || "-")})`).join(", ")}</li>`,
+    )
+    .join("")}</ul>`;
+}
+
+function renderActualDiff(session) {
+  if (session.status === "missed") {
+    return "<pre>Missed session.</pre>";
+  }
+  if (session.type === "run") {
+    return `<pre>${escapeHtml(`${formatNumber(session.actual?.distance || 0)} km • ${session.actual?.time || ""} • ${formatRunPace(session.actual?.pace || 0)} min/km`)}</pre>`;
+  }
+  if (session.type === "sprint") {
+    return `<ul>${(session.actual?.sprintSets || []).map((set) => `<li>${formatNumber(set.distance)}m in ${formatNumber(set.time)}s</li>`).join("")}</ul>`;
+  }
+  return `<ul>${(session.actual?.blocks || [])
+    .map(
+      (block) =>
+        `<li>${escapeHtml(block.label)}: ${block.actualSets || "-"} sets • ${(block.exercises || [])
+          .map((exercise) => `${escapeHtml(exercise.code)} ${exercise.completed ? "done" : "skipped"}${exercise.actualNote ? ` (${escapeHtml(exercise.actualNote)})` : ""}`)
+          .join(", ")}</li>`,
+    )
+    .join("")}</ul>`;
+}
+
+function renderAdherenceStats() {
+  if (!adherenceSummaryEl || !adherenceBreakdownEl) {
+    return;
+  }
+  const weekStats = computeWeeklyAdherence(uiSettings.currentWeekStart);
+  const allSessions = plannedSessions.length;
+  const completedSessions = plannedSessions.filter((session) => ["completed", "modified"].includes(session.status)).length;
+  const completionRate = allSessions ? Math.round((completedSessions / allSessions) * 100) : 0;
+  adherenceSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Weekly adherence</span>
+      <span class="value">${weekStats.completed}/${weekStats.total || 0}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Overall completion</span>
+      <span class="value">${completionRate}%</span>
+    </article>
+    <article class="badge">
+      <span class="label">Planned sessions</span>
+      <span class="value">${allSessions}</span>
+    </article>
+  `;
+
+  const countsByType = ["strength", "run", "sprint"].map((type) => {
+    const planned = plannedSessions.filter((session) => session.type === type).length;
+    const completed = plannedSessions.filter((session) => session.type === type && ["completed", "modified"].includes(session.status)).length;
+    return { type, planned, completed };
+  });
+  adherenceBreakdownEl.innerHTML = countsByType
+    .map(
+      ({ type, planned, completed }) => `
+        <div class="goal-item">
+          <strong>${capitalize(type)} adherence:</strong> ${completed}/${planned || 0}
+          <div class="progress-bar"><span style="width:${planned ? Math.round((completed / planned) * 100) : 0}%"></span></div>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function weekdayName(weekday) {
+  return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday - 1] || "Unknown";
+}
+
+function formatHumanDate(value) {
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function normalizePlannedSession(session) {
+  return {
+    id: session.id || crypto.randomUUID(),
+    date: normalizeDateInput(session.date) || formatDateInput(new Date()),
+    type: ["run", "sprint", "strength"].includes(session.type) ? session.type : "run",
+    title: typeof session.title === "string" && session.title.trim() ? session.title.trim() : "Planned session",
+    source: session.source === "phase-generated" ? "phase-generated" : "manual",
+    phaseTemplateId: typeof session.phaseTemplateId === "string" ? session.phaseTemplateId : "",
+    phaseInstanceId: typeof session.phaseInstanceId === "string" ? session.phaseInstanceId : "",
+    status: ["planned", "completed", "modified", "missed"].includes(session.status) ? session.status : "planned",
+    notes: typeof session.notes === "string" ? session.notes : "",
+    linkedWorkoutId: typeof session.linkedWorkoutId === "string" ? session.linkedWorkoutId : "",
+    modificationNote: typeof session.modificationNote === "string" ? session.modificationNote : "",
+    actual: session.actual || null,
+    details: normalizePlannedDetails(session.type, session.details),
+    createdAt: isNumber(session.createdAt) ? session.createdAt : Date.now(),
+  };
+}
+
+function normalizePlannedDetails(type, details) {
+  if (type === "run") {
+    return {
+      distance: toNumberOrNull(details?.distance),
+      paceGoal: isNumber(details?.paceGoal) ? Number(details.paceGoal) : null,
+    };
+  }
+  if (type === "sprint") {
+    return {
+      blocks: Array.isArray(details?.blocks)
+        ? details.blocks
+            .map((block) => ({ reps: toNumberOrNull(block.reps), distance: toNumberOrNull(block.distance) }))
+            .filter((block) => isNumber(block.reps) && isNumber(block.distance))
+        : [],
+    };
+  }
+  return {
+    blocks: Array.isArray(details?.blocks)
+      ? details.blocks.map((block) => ({
+          label: block.label || "",
+          durationMin: toNumberOrNull(block.durationMin),
+          restSec: toNumberOrNull(block.restSec),
+          sets: toNumberOrNull(block.sets),
+          exercises: Array.isArray(block.exercises)
+            ? block.exercises.map((exercise) => ({
+                code: exercise.code || "",
+                name: exercise.name || "Exercise",
+                reps: exercise.reps || "",
+                notes: exercise.notes || "",
+              }))
+            : [],
+        }))
+      : [],
+  };
+}
+
+function normalizePhaseTemplate(template) {
+  return {
+    id: template.id || crypto.randomUUID(),
+    name: template.name || "Strength phase",
+    durationWeeks: toNumberOrNull(template.durationWeeks) || 1,
+    weekdaySlots: Array.isArray(template.weekdaySlots)
+      ? template.weekdaySlots.map((slot) => ({
+          id: slot.id || crypto.randomUUID(),
+          weekday: toNumberOrNull(slot.weekday) || 1,
+          title: slot.title || "Strength session",
+          blocks: normalizePlannedDetails("strength", { blocks: slot.blocks }).blocks,
+        }))
+      : [],
+    importedAt: isNumber(template.importedAt) ? template.importedAt : Date.now(),
+  };
+}
+
+function normalizePhaseInstance(instance) {
+  return {
+    id: instance.id || crypto.randomUUID(),
+    templateId: instance.templateId || "",
+    templateName: instance.templateName || "",
+    startDate: normalizeDateInput(instance.startDate) || formatDateInput(new Date()),
+    durationWeeks: toNumberOrNull(instance.durationWeeks) || 1,
+    generatedSessionIds: Array.isArray(instance.generatedSessionIds) ? instance.generatedSessionIds : [],
+    createdAt: isNumber(instance.createdAt) ? instance.createdAt : Date.now(),
+  };
+}
+
+initializeV2();
