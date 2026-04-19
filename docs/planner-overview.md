@@ -21,6 +21,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - manual run/sprint planning
   - generated strength sessions
   - `Log & Complete` flow for day-of-training execution without rewriting the plan
+  - `completed` vs `modified` is auto-detected from planned vs actual workout data
 - `Phases`
   - import one strength phase
   - store and edit reusable templates

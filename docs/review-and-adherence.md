@@ -37,8 +37,8 @@ For example:
 
 ## Status Meanings
 - `planned`: not yet completed
-- `completed`: completed without meaningful change
-- `modified`: completed with changes
+- `completed`: auto-detected when logged workout matches the plan closely enough
+- `modified`: auto-detected when the logged workout differs from the plan
 - `missed`: explicitly missed
 
 Modified sessions count toward weekly adherence but stay marked as modified in review.

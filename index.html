@@ -417,18 +417,12 @@
         <input type="hidden" id="completion-session-id" />
         <div class="grid">
           <label>
-            Status
-            <select id="completion-status">
-              <option value="completed">Completed as planned</option>
-              <option value="modified">Completed with changes</option>
-            </select>
-          </label>
-          <label>
             Date
             <input type="date" id="completion-date" readonly />
           </label>
         </div>
         <p id="completion-session-title" class="hint"></p>
+        <p class="hint">Status is detected automatically from planned vs actual.</p>
 
         <div id="completion-run-fields" class="completion-type-fields">
           <div class="grid">

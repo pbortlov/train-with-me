@@ -113,7 +113,6 @@ const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
 const completionDialog = document.getElementById("completion-dialog");
 const completionForm = document.getElementById("completion-form");
 const completionSessionIdInput = document.getElementById("completion-session-id");
-const completionStatusInput = document.getElementById("completion-status");
 const completionDateInput = document.getElementById("completion-date");
 const completionSessionTitleEl = document.getElementById("completion-session-title");
 const completionRunFields = document.getElementById("completion-run-fields");
@@ -2669,7 +2668,6 @@ function openCompletionDialog(session) {
   completionSessionIdInput.value = session.id;
   completionDateInput.value = session.date;
   completionSessionTitleEl.textContent = `${session.title} • ${capitalize(session.type)}`;
-  completionStatusInput.value = "completed";
   completionStatusMessageEl.textContent = "";
 
   completionRunFields.style.display = session.type === "run" ? "block" : "none";
@@ -2943,13 +2941,91 @@ function findCompletionSet(blockIndex, exerciseIndex, setId) {
   return completionStrengthDraft[blockIndex]?.exercises?.[exerciseIndex]?.actualSets?.find((set) => set.id === setId) || null;
 }
 
+function detectCompletedSessionStatus(session, actual) {
+  if (session.type !== "strength") {
+    return "completed";
+  }
+  return detectStrengthCompletionStatus(session, actual);
+}
+
+function detectStrengthCompletionStatus(session, actual) {
+  const plannedBlocks = session.details?.blocks || [];
+  const actualBlocks = actual?.blocks || [];
+  if (plannedBlocks.length !== actualBlocks.length) {
+    return "modified";
+  }
+
+  for (let blockIndex = 0; blockIndex < plannedBlocks.length; blockIndex += 1) {
+    const plannedBlock = plannedBlocks[blockIndex];
+    const actualBlock = actualBlocks[blockIndex];
+    if (!actualBlock || (actualBlock.label || "") !== (plannedBlock.label || "")) {
+      return "modified";
+    }
+
+    const plannedSetBaseline = getDefaultActualSets(plannedBlock.sets);
+    if (isNumber(plannedSetBaseline) && actualBlock.actualSets !== plannedSetBaseline) {
+      return "modified";
+    }
+
+    const plannedExercises = plannedBlock.exercises || [];
+    const actualExercises = actualBlock.exercises || [];
+    if (plannedExercises.length !== actualExercises.length) {
+      return "modified";
+    }
+
+    for (let exerciseIndex = 0; exerciseIndex < plannedExercises.length; exerciseIndex += 1) {
+      const plannedExercise = plannedExercises[exerciseIndex];
+      const actualExercise = actualExercises[exerciseIndex];
+      if (
+        !actualExercise ||
+        !actualExercise.completed ||
+        (actualExercise.code || "") !== (plannedExercise.code || "") ||
+        (actualExercise.name || "") !== (plannedExercise.name || "")
+      ) {
+        return "modified";
+      }
+
+      const actualSets = actualExercise.actualSets || [];
+      const plannedExerciseSetCount = plannedSetBaseline || actualSets.length;
+      if (actualSets.length !== plannedExerciseSetCount) {
+        return "modified";
+      }
+
+      const plannedRepBaseline = extractWorkoutRepCount(plannedExercise.reps);
+      const plannedWeightBaseline = isNumber(plannedExercise.weight) ? Number(plannedExercise.weight) : null;
+      for (let setIndex = 0; setIndex < actualSets.length; setIndex += 1) {
+        const actualSet = actualSets[setIndex];
+        if (!actualSet || !isNumber(actualSet.reps)) {
+          return "modified";
+        }
+        if (plannedRepBaseline && actualSet.reps !== plannedRepBaseline) {
+          return "modified";
+        }
+        if ((actualSet.loadType || "kg") !== "kg") {
+          return "modified";
+        }
+        if (isNumber(plannedWeightBaseline) && actualSet.weight !== plannedWeightBaseline) {
+          return "modified";
+        }
+        if (!isNumber(plannedWeightBaseline) && isNumber(actualSet.weight)) {
+          return "modified";
+        }
+        if ((actualSet.bandColor || "") !== "") {
+          return "modified";
+        }
+      }
+    }
+  }
+
+  return "completed";
+}
+
 function saveCompletedSession(event) {
   event.preventDefault();
   const session = plannedSessions.find((item) => item.id === completionSessionIdInput.value);
   if (!session) {
     return;
   }
-  const status = completionStatusInput.value === "modified" ? "modified" : "completed";
   const modificationNote = completionNoteInput.value.trim();
   let actual = null;
   try {
@@ -2981,6 +3057,8 @@ function saveCompletedSession(event) {
         return;
       }
     }
+
+    const status = detectCompletedSessionStatus(session, actual);
 
     const workout = createWorkoutFromPlannedSession(session, actual, modificationNote);
     workouts.unshift(normalizeImportedWorkout(workout));

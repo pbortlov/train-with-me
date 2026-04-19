@@ -16,6 +16,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength phase import from spreadsheet-style ordered rows
 - Editable strength phase templates that refresh already planned generated sessions
 - Strength sessions use `Log & Complete` with hybrid planned-vs-actual set logging
+- Strength completion status is detected automatically from planned vs actual data
 - Planned session statuses:
   - planned
   - completed
