@@ -58,13 +58,13 @@ BLOCK,A,15-20,60,3
 Defines one exercise inside the current block.
 
 ```text
-EXERCISE,<code>,<exercise name>,<reps>,<notes>,<weight kg optional>
+EXERCISE,<code>,<exercise name>,<rep prescription>,<notes>,<weight kg optional>
 ```
 
 Example:
 
 ```text
-EXERCISE,A1,Back squat,5,Heavy,100
+EXERCISE,A1,Back squat,2x8-10,Heavy,100
 ```
 
 ## Rules
@@ -72,6 +72,7 @@ EXERCISE,A1,Back squat,5,Heavy,100
 - `EXERCISE` must come after a `BLOCK`
 - weekdays should be written as common names like `Tuesday`, `Fri`, `Sunday`
 - block duration can be a single value like `15` or a range like `15-20`
+- rep prescription is free text and can be values like `10`, `8-10`, `2x10`, or `2x8-10`
 - exercise weight is optional and can be left empty if it will be assigned later
 - slot notes are optional and are copied into the generated planned session notes
 - after import, the phase becomes a reusable template
@@ -84,12 +85,12 @@ EXERCISE,A1,Back squat,5,Heavy,100
 PHASE,Phase 1,5
 SLOT,Tuesday,Strength A,Main lower-body day
 BLOCK,A,15-20,60,3
-EXERCISE,A1,Back squat,5,Heavy,100
-EXERCISE,A2,Barbell row,8,Control the eccentric,
+EXERCISE,A1,Back squat,2x8-10,Heavy,100
+EXERCISE,A2,Barbell row,8-10,Control the eccentric,
 BLOCK,B,10,45,2
 EXERCISE,B1,Walking lunge,10 each leg,
 SLOT,Friday,Strength B,Upper/lower mixed
 BLOCK,A,12,60,4
-EXERCISE,A1,Front squat,4,,80
-EXERCISE,A2,Pull-up,6,Pause at top,
+EXERCISE,A1,Front squat,2x10,,80
+EXERCISE,A2,Pull-up,10,Pause at top,
 ```

@@ -2856,7 +2856,7 @@ function convertStrengthActualToWorkoutExercises(blocks) {
       name: exercise.name,
       sets: [
         {
-          reps: toNumberOrNull(String(exercise.reps).replace(/[^\d.]/g, "")) || 0,
+          reps: extractWorkoutRepCount(exercise.reps),
           loadType: "bodyweight",
           weight: null,
           bandColor: "",
@@ -2864,6 +2864,17 @@ function convertStrengthActualToWorkoutExercises(blocks) {
       ],
     }))
     .filter((exercise) => exercise.sets[0].reps > 0);
+}
+
+function extractWorkoutRepCount(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) {
+    return 0;
+  }
+
+  const afterMultiplier = raw.includes("x") ? raw.split("x").pop() : raw;
+  const firstNumber = afterMultiplier.match(/\d+(?:\.\d+)?/);
+  return firstNumber ? Number(firstNumber[0]) : 0;
 }
 
 function renderReview() {
