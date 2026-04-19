@@ -1,42 +1,75 @@
 # Train With Me
 
-A beginner-friendly, single-page training tracker for:
+Train With Me V2 is a calendar-first training planner and workout tracker for:
 - strength training
 - running
 - sprinting
 
-## Features in Version 1
-- Workout entry form with activity-specific fields:
-  - Strength: multiple exercises per workout
-    - each exercise has multiple sets
-    - each set has reps and load type: kg, body weight, or band resistance color
-    - band resistance is selected from color dots with hover labels
-  - Run: distance (km), time (hh:mm:ss), pace auto-calculated in min/km
-  - Sprint: ordered sprint sets with time (sec) + distance (m)
-- Edit and delete workout entries from the recent history table
-- Popup visual editor for full-workout editing
-- Exercise Library with reusable names and autocomplete
-- Progress filters by activity and date range
-- Progress line charts for strength, run pace, and sprint
-- Chart grouping modes: weekly, monthly, quarterly
-- Backup tools: export/import JSON data
-- PWA support (install + offline cache shell)
-- Dark performance theme with high-contrast neon charts
-- Goal entry form with:
-  - strength goal
-  - run distance goal
-  - run pace goal in `mm:ss`
-  - sprint best-time goal
-- Simple progress summary with one set of top metrics
-- Recent workout history
-- Data saved in browser storage (LocalStorage)
+The app is designed to stay approachable for non-technical users by default, while advanced planning features live behind a `Geek / coach mode` toggle.
 
-## Run locally
+## V2 Features
+- Calendar-first weekly planning view
+- Manual planned sessions for:
+  - run
+  - sprint
+- Reusable strength phase templates
+- Strength phase import from spreadsheet-style ordered rows
+- Planned session statuses:
+  - planned
+  - completed
+  - modified
+  - missed
+- Separate Review page for planned vs actual comparison
+- Weekly adherence summaries such as `5/6`
+- Stats page with:
+  - goal progress
+  - adherence summaries
+  - strength / run pace / sprint charts
+- Actual workout logging with edit and delete support
+- Exercise library with saved exercise names
+- Backup export/import as JSON
+- PWA install support
+
+## Main Pages
+- `Calendar`: weekly plan, manual planning, session completion
+- `Phases`: import and schedule reusable strength phase templates
+- `Review`: planned vs actual review plus actual workout logging
+- `Stats`: goals, adherence summaries, charts, backup, and exercise library
+
+## Strength Phase Import
+V2 import focuses on `strength phases` only.
+
+Each imported file should describe one reusable phase using ordered rows such as:
+
+```text
+PHASE,Phase 1,5
+SLOT,Tuesday,Strength A
+BLOCK,A,15,60,3
+EXERCISE,A1,Back squat,5,Heavy
+EXERCISE,A2,Barbell row,8,
+SLOT,Friday,Strength B
+BLOCK,A,12,45,4
+EXERCISE,A1,Front squat,4,
+```
+
+See [docs/strength-phase-import.md](docs/strength-phase-import.md) for the exact contract.
+
+## Documentation
+V2 keeps decision and planning history in the repo:
+- [docs/product-principles.md](docs/product-principles.md)
+- [docs/agents.md](docs/agents.md)
+- [docs/planner-overview.md](docs/planner-overview.md)
+- [docs/review-and-adherence.md](docs/review-and-adherence.md)
+- [docs/strength-phase-import.md](docs/strength-phase-import.md)
+- [docs/decisions/0001-v2-calendar-first-planner.md](docs/decisions/0001-v2-calendar-first-planner.md)
+- [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
+
+## Run Locally
 1. Open `index.html` in your browser.
-2. Add workouts and goals.
+2. Use the top navigation to move between Calendar, Phases, Review, and Stats.
 3. If UI changes do not appear, hard refresh (`Ctrl+Shift+R`) and clear site storage/service worker cache.
 
-## Publish with GitHub Pages
+## Publish With GitHub Pages
 1. Push this repo to GitHub.
 2. In GitHub, go to **Settings** → **Pages**.
 3. Under **Build and deployment**:
