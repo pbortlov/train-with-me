@@ -45,11 +45,11 @@ Each imported file should describe one reusable phase using ordered rows such as
 ```text
 PHASE,Phase 1,5
 SLOT,Tuesday,Strength A,Main lower-body day
-BLOCK,A,15-20,60,3
+BLOCK,A,15-20 mins,90-120s,3
 EXERCISE,A1,Back squat,2x8-10,Heavy,100
 EXERCISE,A2,Barbell row,8-10,Control the eccentric,
 SLOT,Friday,Strength B,Upper/lower mixed
-BLOCK,A,12,45,4
+BLOCK,A,12 mins,45s,4
 EXERCISE,A1,Front squat,2x10,,80
 ```
 

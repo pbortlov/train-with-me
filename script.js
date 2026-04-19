@@ -2170,7 +2170,7 @@ function serializeStrengthPhaseDefinition(template) {
     rows.push(`SLOT,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
     slot.blocks.forEach((block) => {
       rows.push(
-        `BLOCK,${block.label || ""},${formatBlockDurationCsvValue(block)},${block.restSec ?? ""},${block.sets ?? ""}`,
+        `BLOCK,${block.label || ""},${formatBlockDurationCsvValue(block)},${formatBlockRestCsvValue(block)},${block.sets ?? ""}`,
       );
       (block.exercises || []).forEach((exercise) => {
         rows.push(
@@ -2186,13 +2186,28 @@ function formatBlockDurationCsvValue(block) {
   const min = toNumberOrNull(block?.durationMin);
   const max = toNumberOrNull(block?.durationMax);
   if (isNumber(min) && isNumber(max)) {
-    return `${formatNumber(min)}-${formatNumber(max)}`;
+    return `${formatNumber(min)}-${formatNumber(max)} mins`;
   }
   if (isNumber(min)) {
-    return formatNumber(min);
+    return `${formatNumber(min)} mins`;
   }
   if (isNumber(max)) {
-    return formatNumber(max);
+    return `${formatNumber(max)} mins`;
+  }
+  return "";
+}
+
+function formatBlockRestCsvValue(block) {
+  const min = toNumberOrNull(block?.restSec);
+  const max = toNumberOrNull(block?.restMaxSec);
+  if (isNumber(min) && isNumber(max)) {
+    return `${formatNumber(min)}-${formatNumber(max)}s`;
+  }
+  if (isNumber(min)) {
+    return `${formatNumber(min)}s`;
+  }
+  if (isNumber(max)) {
+    return `${formatNumber(max)}s`;
   }
   return "";
 }
@@ -2378,11 +2393,13 @@ function parseStrengthPhaseDefinition(text, overrideName) {
         throw new Error(`BLOCK row before SLOT at line ${index + 1}.`);
       }
       const duration = parseBlockDurationRange(columns[2]);
+      const rest = parseBlockRestRange(columns[3]);
       currentBlock = {
         label: columns[1] || `Block ${currentSlot.blocks.length + 1}`,
         durationMin: duration.durationMin,
         durationMax: duration.durationMax,
-        restSec: toNumberOrNull(columns[3]),
+        restSec: rest.restSec,
+        restMaxSec: rest.restMaxSec,
         sets: toNumberOrNull(columns[4]),
         exercises: [],
       };
@@ -2503,7 +2520,7 @@ function renderPhaseTemplateWorkouts(template) {
                         return `${escapeHtml(exercise.code || "")} ${escapeHtml(exercise.name)} (${escapeHtml(exercise.reps || "-")}${load})${note}`.trim();
                       })
                       .join(", ");
-                    const blockMeta = [formatBlockDuration(block), isNumber(block.restSec) ? `${formatNumber(block.restSec)} sec rest` : "", isNumber(block.sets) ? `${formatNumber(block.sets)} sets` : ""]
+                    const blockMeta = [formatBlockDuration(block), formatBlockRest(block) ? `${formatBlockRest(block)} rest` : "", isNumber(block.sets) ? `${formatNumber(block.sets)} sets` : ""]
                       .filter(Boolean)
                       .join(" • ");
                     return `
@@ -2946,6 +2963,7 @@ function renderPlannedDiff(session) {
       (block) =>
         `<li>${escapeHtml(block.label)}: ${[
           formatBlockDuration(block),
+          formatBlockRest(block) ? `${formatBlockRest(block)} rest` : "",
           block.sets ? `${escapeHtml(String(block.sets))} sets` : "",
           (block.exercises || [])
             .map(
@@ -3036,7 +3054,8 @@ function parseBlockDurationRange(value) {
     return { durationMin: null, durationMax: null };
   }
 
-  const rangeMatch = raw.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
+  const normalized = raw.toLowerCase().replace(/\s*mins?\.?\s*/g, "").trim();
+  const rangeMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
   if (rangeMatch) {
     return {
       durationMin: Number(rangeMatch[1]),
@@ -3045,7 +3064,7 @@ function parseBlockDurationRange(value) {
   }
 
   return {
-    durationMin: toNumberOrNull(raw),
+    durationMin: toNumberOrNull(normalized),
     durationMax: null,
   };
 }
@@ -3054,13 +3073,50 @@ function formatBlockDuration(block) {
   const min = toNumberOrNull(block?.durationMin);
   const max = toNumberOrNull(block?.durationMax);
   if (isNumber(min) && isNumber(max)) {
-    return `${formatNumber(min)}-${formatNumber(max)} min`;
+    return `${formatNumber(min)}-${formatNumber(max)} mins`;
   }
   if (isNumber(min)) {
-    return `${formatNumber(min)} min`;
+    return `${formatNumber(min)} mins`;
   }
   if (isNumber(max)) {
-    return `${formatNumber(max)} min`;
+    return `${formatNumber(max)} mins`;
+  }
+  return "";
+}
+
+function parseBlockRestRange(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return { restSec: null, restMaxSec: null };
+  }
+
+  const normalized = raw.toLowerCase().replace(/\s*secs?\.?\s*/g, "s").replace(/\s+/g, "");
+  const rangeMatch = normalized.match(/^(\d+(?:\.\d+)?)s?-(\d+(?:\.\d+)?)s?$/);
+  if (rangeMatch) {
+    return {
+      restSec: Number(rangeMatch[1]),
+      restMaxSec: Number(rangeMatch[2]),
+    };
+  }
+
+  const singleMatch = normalized.match(/^(\d+(?:\.\d+)?)s?$/);
+  return {
+    restSec: singleMatch ? Number(singleMatch[1]) : null,
+    restMaxSec: null,
+  };
+}
+
+function formatBlockRest(block) {
+  const min = toNumberOrNull(block?.restSec);
+  const max = toNumberOrNull(block?.restMaxSec);
+  if (isNumber(min) && isNumber(max)) {
+    return `${formatNumber(min)}-${formatNumber(max)}s`;
+  }
+  if (isNumber(min)) {
+    return `${formatNumber(min)}s`;
+  }
+  if (isNumber(max)) {
+    return `${formatNumber(max)}s`;
   }
   return "";
 }
@@ -3107,6 +3163,7 @@ function normalizePlannedDetails(type, details) {
           durationMin: toNumberOrNull(block.durationMin),
           durationMax: toNumberOrNull(block.durationMax),
           restSec: toNumberOrNull(block.restSec),
+          restMaxSec: toNumberOrNull(block.restMaxSec),
           sets: toNumberOrNull(block.sets),
           exercises: Array.isArray(block.exercises)
             ? block.exercises.map((exercise) => ({
