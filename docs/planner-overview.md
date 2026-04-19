@@ -23,6 +23,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 - `Phases`
   - import one strength phase
   - store and edit reusable templates
+  - inspect the workout structure inside each saved template
   - schedule a template onto real dates
   - refresh planned generated sessions for already scheduled instances when a template is updated
   - support slot notes, block time ranges, and optional exercise weight targets inside imported strength plans

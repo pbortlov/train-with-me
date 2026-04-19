@@ -301,6 +301,49 @@ button {
   gap: 0.75rem;
 }
 
+.phase-template-details {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0a1326;
+  padding: 0.65rem 0.75rem;
+}
+
+.phase-template-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.phase-template-workouts {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.phase-training-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #081121;
+  padding: 0.7rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.phase-training-card h5 {
+  margin: 0;
+}
+
+.phase-block-list {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.phase-training-line {
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
 .phase-instance-grid,
 .review-diff-grid {
   display: grid;

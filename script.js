@@ -2459,6 +2459,10 @@ function renderPhaseTemplates() {
               <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(slotSummary)}</div>
             </div>
           </header>
+          <details class="phase-template-details">
+            <summary>Show training details</summary>
+            ${renderPhaseTemplateWorkouts(template)}
+          </details>
           <div class="phase-instance-grid">
             <label>
               Start date
@@ -2474,6 +2478,58 @@ function renderPhaseTemplates() {
       `;
     })
     .join("");
+}
+
+function renderPhaseTemplateWorkouts(template) {
+  const slots = template.weekdaySlots || [];
+  if (!slots.length) {
+    return `<p class="planner-empty">No training slots in this phase.</p>`;
+  }
+
+  return `
+    <div class="phase-template-workouts">
+      ${slots
+        .map((slot) => {
+          const blocks = slot.blocks || [];
+          const blockMarkup = blocks.length
+            ? `
+              <ul class="phase-block-list">
+                ${blocks
+                  .map((block) => {
+                    const exerciseSummary = (block.exercises || [])
+                      .map((exercise) => {
+                        const load = isNumber(exercise.weight) ? ` @ ${formatNumber(exercise.weight)} kg` : "";
+                        const note = exercise.notes ? ` - ${escapeHtml(exercise.notes)}` : "";
+                        return `${escapeHtml(exercise.code || "")} ${escapeHtml(exercise.name)} (${escapeHtml(exercise.reps || "-")}${load})${note}`.trim();
+                      })
+                      .join(", ");
+                    const blockMeta = [formatBlockDuration(block), isNumber(block.restSec) ? `${formatNumber(block.restSec)} sec rest` : "", isNumber(block.sets) ? `${formatNumber(block.sets)} sets` : ""]
+                      .filter(Boolean)
+                      .join(" • ");
+                    return `
+                      <li>
+                        <strong>${escapeHtml(block.label || "Block")}</strong>
+                        ${blockMeta ? `<div class="phase-meta">${blockMeta}</div>` : ""}
+                        ${exerciseSummary ? `<div class="phase-training-line">${exerciseSummary}</div>` : ""}
+                      </li>
+                    `;
+                  })
+                  .join("")}
+              </ul>
+            `
+            : `<p class="planner-empty">No blocks in this slot.</p>`;
+
+          return `
+            <article class="phase-training-card">
+              <h5>${escapeHtml(weekdayName(slot.weekday))} • ${escapeHtml(slot.title)}</h5>
+              ${slot.notes ? `<div class="phase-meta">${escapeHtml(slot.notes)}</div>` : ""}
+              ${blockMarkup}
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
 }
 
 function handlePhaseTemplateAction(event) {

@@ -33,7 +33,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 
 ## Main Pages
 - `Calendar`: weekly plan, manual planning, session completion
-- `Phases`: import, edit, and schedule reusable strength phase templates
+- `Phases`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review plus actual workout logging
 - `Stats`: goals, adherence summaries, charts, backup, and exercise library
 
