@@ -6,7 +6,6 @@ const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
 const historyBody = document.getElementById("history-body");
 const summaryEl = document.getElementById("summary");
-const personalRecordsEl = document.getElementById("personal-records");
 const goalProgressEl = document.getElementById("goal-progress");
 const workoutSubmitButton = workoutForm.querySelector('button[type="submit"]');
 const activityInput = document.getElementById("activity");
@@ -32,6 +31,10 @@ const chartsStatusEl = document.getElementById("charts-status");
 const strengthChartCanvas = document.getElementById("strength-chart");
 const runChartCanvas = document.getElementById("run-chart");
 const sprintChartCanvas = document.getElementById("sprint-chart");
+const chartsGridEl = document.querySelector(".charts-grid");
+const strengthChartCard = strengthChartCanvas ? strengthChartCanvas.closest(".chart-card") : null;
+const runChartCard = runChartCanvas ? runChartCanvas.closest(".chart-card") : null;
+const sprintChartCard = sprintChartCanvas ? sprintChartCanvas.closest(".chart-card") : null;
 const exportDataButton = document.getElementById("export-data");
 const importDataFileInput = document.getElementById("import-data-file");
 const backupStatusEl = document.getElementById("backup-status");
@@ -67,15 +70,25 @@ const saveEditWorkoutButton = document.getElementById("save-edit-workout");
 const cancelEditWorkoutButton = document.getElementById("cancel-edit-workout");
 const exerciseSuggestionsEl = document.getElementById("exercise-suggestions");
 const exerciseLibraryListEl = document.getElementById("exercise-library-list");
+const BAND_COLOR_OPTIONS = ["yellow", "red", "black", "purple", "green", "blue"];
+const BAND_COLOR_LABELS = {
+  yellow: "extra light",
+  red: "light",
+  black: "medium",
+  purple: "heavy",
+  green: "extra heavy",
+  blue: "strongest",
+};
 
 const dateInput = document.getElementById("date");
 
 dateInput.valueAsDate = new Date();
 
-let workouts = load(STORAGE_KEY_WORKOUTS, []);
+let workouts = load(STORAGE_KEY_WORKOUTS, []).map((workout) => normalizeImportedWorkout(workout));
 let goals = load(STORAGE_KEY_GOALS, {
   strength: null,
   run: null,
+  runPace: null,
   sprint: null,
 });
 let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
@@ -89,7 +102,7 @@ let progressFilters = {
   toDate: "",
   strengthLoad: "all",
 };
-let chartGrouping = "day";
+let chartGrouping = "week";
 let strengthChart = null;
 let runChart = null;
 let sprintChart = null;
@@ -112,15 +125,20 @@ workoutForm.addEventListener("submit", (event) => {
   event.preventDefault();
   setWorkoutFormStatus("");
 
+  const selectedActivity = valueOf("activity");
+  const runDistance = toNumberOrNull(valueOf("distance"));
+  const runTime = normalizeRunDurationInput(valueOf("time"));
+  const runPace = calculateRunPace(runDistance, parseRunDurationToSeconds(runTime));
+
   const workout = {
     id: editingWorkoutId ?? crypto.randomUUID(),
     date: valueOf("date"),
-    activity: valueOf("activity"),
-    strengthExercises: valueOf("activity") === "strength" ? normalizeStrengthExercises(draftStrengthExercises) : [],
-    distance: toNumberOrNull(valueOf("distance")),
-    time: toNumberOrNull(valueOf("time")),
-    pace: toNumberOrNull(valueOf("pace")),
-    sprintSets: valueOf("activity") === "sprint" ? normalizeSprintSets(draftSprintSets) : [],
+    activity: selectedActivity,
+    strengthExercises: selectedActivity === "strength" ? normalizeStrengthExercises(draftStrengthExercises) : [],
+    distance: selectedActivity === "run" ? runDistance : toNumberOrNull(valueOf("distance")),
+    time: selectedActivity === "run" ? runTime : toNumberOrNull(valueOf("time")),
+    pace: selectedActivity === "run" ? runPace : toNumberOrNull(valueOf("pace")),
+    sprintSets: selectedActivity === "sprint" ? normalizeSprintSets(draftSprintSets) : [],
     notes: valueOf("notes")?.trim() || "",
     createdAt: Date.now(),
   };
@@ -130,8 +148,8 @@ workoutForm.addEventListener("submit", (event) => {
     return;
   }
 
-  if (workout.activity === "run" && !isNumber(workout.distance) && !isNumber(workout.time) && !isNumber(workout.pace)) {
-    setWorkoutFormStatus("Please enter at least one run metric (distance, time, or pace).");
+  if (workout.activity === "run" && (!isNumber(workout.distance) || !workout.time || !isNumber(workout.pace))) {
+    setWorkoutFormStatus("Please enter run distance in km and time in hh:mm:ss.");
     return;
   }
 
@@ -158,13 +176,16 @@ workoutForm.addEventListener("submit", (event) => {
 });
 
 activityInput.addEventListener("change", updateVisibleFields);
+addSafeEventListener(document.getElementById("distance"), "input", syncRunPaceFromInputs);
+addSafeEventListener(document.getElementById("time"), "input", syncRunPaceFromInputs);
+addSafeEventListener(document.getElementById("time"), "change", normalizeRunTimeField);
 filterActivityInput.addEventListener("change", onFilterChange);
 filterFromDateInput.addEventListener("change", onFilterChange);
 filterToDateInput.addEventListener("change", onFilterChange);
 filterStrengthLoadInput.addEventListener("change", onFilterChange);
 clearFiltersButton.addEventListener("click", clearFilters);
 chartGroupingInput.addEventListener("change", () => {
-  chartGrouping = chartGroupingInput.value || "day";
+  chartGrouping = chartGroupingInput.value || "week";
   renderCharts();
 });
 exportDataButton.addEventListener("click", exportBackupData);
@@ -173,16 +194,20 @@ confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
 cancelDeleteWorkoutButton.addEventListener("click", cancelDeleteWorkout);
 addSafeEventListener(saveEditWorkoutButton, "click", saveEditedWorkout);
 addSafeEventListener(cancelEditWorkoutButton, "click", closeEditWorkoutDialog);
+addSafeEventListener(editDistanceInput, "input", syncEditRunPaceFromInputs);
+addSafeEventListener(editTimeInput, "input", syncEditRunPaceFromInputs);
+addSafeEventListener(editTimeInput, "change", normalizeEditRunTimeField);
 addSafeEventListener(editAddStrengthSetButton, "click", addEditStrengthSet);
 addSafeEventListener(editAddStrengthExerciseButton, "click", addEditStrengthExercise);
 addSafeEventListener(editStrengthExercisesList, "input", handleInlineStrengthEdit);
 addSafeEventListener(editStrengthExercisesList, "change", handleInlineStrengthEdit);
 addSafeEventListener(editStrengthExercisesList, "click", handleInlineStrengthDelete);
 addSafeEventListener(exerciseLibraryListEl, "click", handleExerciseLibraryClick);
+document.addEventListener("click", handleBandColorPickerClick);
 addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
   const loadType = editStrengthLoadTypeInput.value;
   editStrengthWeightInput.disabled = loadType !== "kg";
-  editStrengthBandColorInput.disabled = loadType !== "band";
+  setBandColorPickerDisabled(editStrengthBandColorInput, loadType !== "band");
   if (editStrengthWeightLabel) {
     editStrengthWeightLabel.style.display = loadType === "kg" ? "grid" : "none";
   }
@@ -193,14 +218,14 @@ addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
     editStrengthWeightInput.value = "";
   }
   if (loadType !== "band") {
-    editStrengthBandColorInput.value = "";
+    setBandColorPickerValue(editStrengthBandColorInput, "");
   }
 });
 installAppButton.addEventListener("click", installPwaApp);
 strengthSetLoadTypeInput.addEventListener("change", () => {
   const loadType = strengthSetLoadTypeInput.value;
   strengthSetWeightInput.disabled = loadType !== "kg";
-  strengthSetBandColorInput.disabled = loadType !== "band";
+  setBandColorPickerDisabled(strengthSetBandColorInput, loadType !== "band");
   if (strengthSetWeightLabel) {
     strengthSetWeightLabel.style.display = loadType === "kg" ? "grid" : "none";
   }
@@ -211,7 +236,7 @@ strengthSetLoadTypeInput.addEventListener("change", () => {
     strengthSetWeightInput.value = "";
   }
   if (loadType !== "band") {
-    strengthSetBandColorInput.value = "";
+    setBandColorPickerValue(strengthSetBandColorInput, "");
   }
 });
 
@@ -277,7 +302,7 @@ addStrengthSetButton.addEventListener("click", () => {
 
   document.getElementById("strength-set-reps").value = "";
   document.getElementById("strength-set-weight").value = "";
-  document.getElementById("strength-set-band-color").value = "";
+  setBandColorPickerValue(strengthSetBandColorInput, "");
   renderCurrentStrengthSets();
   setWorkoutFormStatus("Strength set added.");
 });
@@ -313,6 +338,7 @@ goalsForm.addEventListener("submit", (event) => {
   goals = {
     strength: toNumberOrNull(valueOf("goal-strength")),
     run: toNumberOrNull(valueOf("goal-run")),
+    runPace: parseGoalPaceInput(valueOf("goal-run-pace")),
     sprint: toNumberOrNull(valueOf("goal-sprint")),
   };
   save(STORAGE_KEY_GOALS, goals);
@@ -342,43 +368,9 @@ historyBody.addEventListener("click", (event) => {
 
 function render() {
   renderSummary();
-  renderPersonalRecords();
   renderCharts();
   renderHistory();
   renderGoals();
-}
-
-function renderPersonalRecords() {
-  const strengthPR = workouts
-    .filter((w) => w.activity === "strength")
-    .map((w) => strengthBestWeight(w))
-    .filter((value) => isNumber(value))
-    .reduce((max, value) => Math.max(max, value), 0);
-
-  const runPR = workouts
-    .filter((w) => w.activity === "run" && isNumber(w.distance))
-    .reduce((max, w) => Math.max(max, w.distance), 0);
-
-  const sprintPR = workouts
-    .filter((w) => w.activity === "sprint")
-    .map((w) => sprintBestTime(w))
-    .filter((value) => isNumber(value))
-    .reduce((min, value) => Math.min(min, value), Infinity);
-
-  personalRecordsEl.innerHTML = `
-    <article class="badge">
-      <span class="label">PR Strength</span>
-      <span class="value">${strengthPR ? `${strengthPR} kg` : "-"}</span>
-    </article>
-    <article class="badge">
-      <span class="label">PR Run distance</span>
-      <span class="value">${runPR ? `${runPR} km` : "-"}</span>
-    </article>
-    <article class="badge">
-      <span class="label">PR Sprint time</span>
-      <span class="value">${Number.isFinite(sprintPR) ? `${sprintPR} sec` : "-"}</span>
-    </article>
-  `;
 }
 
 function renderSummary() {
@@ -421,7 +413,7 @@ function renderSummary() {
 }
 
 function renderHistory() {
-  const filteredWorkouts = getFilteredWorkouts();
+  const filteredWorkouts = getFilteredWorkouts().slice().sort(compareWorkoutsByRecentDate);
 
   if (!filteredWorkouts.length) {
     const message = workouts.length
@@ -462,6 +454,11 @@ function renderGoals() {
     .filter((w) => w.activity === "run" && isNumber(w.distance))
     .reduce((max, w) => Math.max(max, w.distance), 0);
 
+  const currentRunPace = workouts
+    .filter((w) => w.activity === "run" && isNumber(w.pace))
+    .map((w) => w.pace)
+    .reduce((min, paceValue) => Math.min(min, paceValue), Infinity);
+
   const currentSprint = workouts
     .filter((w) => w.activity === "sprint")
     .map((w) => sprintBestTime(w))
@@ -471,6 +468,7 @@ function renderGoals() {
   goalProgressEl.innerHTML = `
     ${goalRow("Strength", currentStrength, goals.strength, "kg", true)}
     ${goalRow("Run distance", currentRun, goals.run, "km", true)}
+    ${goalRow("Run best pace", Number.isFinite(currentRunPace) ? currentRunPace : null, goals.runPace, "min/km", false)}
     ${goalRow("Sprint best time", Number.isFinite(currentSprint) ? currentSprint : null, goals.sprint, "sec", false)}
   `;
 }
@@ -486,7 +484,7 @@ function goalRow(label, current, goal, unit, higherIsBetter) {
 
   return `
     <div class="goal-item">
-      <strong>${label}:</strong> ${formatNumber(safeCurrent)} / ${formatNumber(goal)} ${unit}
+      <strong>${label}:</strong> ${formatGoalValue(safeCurrent, unit)} / ${formatGoalValue(goal, unit)} ${unit}
       <div class="progress-bar"><span style="width:${percent.toFixed(0)}%"></span></div>
     </div>
   `;
@@ -495,7 +493,49 @@ function goalRow(label, current, goal, unit, higherIsBetter) {
 function hydrateGoalInputs() {
   document.getElementById("goal-strength").value = goals.strength ?? "";
   document.getElementById("goal-run").value = goals.run ?? "";
+  document.getElementById("goal-run-pace").value = isNumber(goals.runPace) ? formatGoalPace(goals.runPace) : "";
   document.getElementById("goal-sprint").value = goals.sprint ?? "";
+}
+
+function formatGoalValue(value, unit) {
+  if (!isNumber(value)) {
+    return "0";
+  }
+  return unit === "min/km" ? formatGoalPace(value) : formatNumber(value);
+}
+
+function parseGoalPaceInput(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parts = trimmed.split(":");
+  if (parts.length !== 2 || parts.some((part) => !/^\d+$/.test(part))) {
+    return null;
+  }
+
+  const [minutes, seconds] = parts.map(Number);
+  if (seconds > 59) {
+    return null;
+  }
+
+  return minutes + (seconds / 60);
+}
+
+function formatGoalPace(value) {
+  if (!isNumber(value) || value < 0) {
+    return "";
+  }
+
+  const totalSeconds = Math.round(value * 60);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function formatMainMetric(w) {
@@ -518,8 +558,8 @@ function formatMainMetric(w) {
   if (w.activity === "run") {
     const parts = [
       isNumber(w.distance) ? `${w.distance} km` : null,
-      isNumber(w.time) ? `${w.time} min` : null,
-      isNumber(w.pace) ? `${w.pace} min/km` : null,
+      formatRunDuration(w.time),
+      isNumber(w.pace) ? `${formatRunPace(w.pace)} min/km` : null,
     ].filter(Boolean);
     return parts.join(" • ") || "-";
   }
@@ -537,6 +577,74 @@ function valueOf(id) {
   return document.getElementById(id).value;
 }
 
+function renderBandColorDots(selectedColor, options = {}) {
+  const { role = null, exerciseIndex = null, setIndex = null, disabled = false } = options;
+  return BAND_COLOR_OPTIONS.map((color) => {
+    const isSelected = color === selectedColor;
+    const resistanceLabel = BAND_COLOR_LABELS[color] || color;
+    const roleAttributes = role ? ` data-role="${role}" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}"` : "";
+    return `<button type="button" class="band-color-dot${isSelected ? " is-selected" : ""}" data-band-color="${color}" data-resistance-label="${resistanceLabel}" aria-label="${capitalize(color)} band, ${resistanceLabel}" title="${capitalize(color)} - ${resistanceLabel}" aria-pressed="${isSelected ? "true" : "false"}"${disabled ? " disabled" : ""}${roleAttributes}></button>`;
+  }).join("");
+}
+
+function syncBandColorPicker(input) {
+  if (!input) {
+    return;
+  }
+  const field = input.closest(".band-color-field");
+  const picker = field?.querySelector(".band-color-picker");
+  if (!picker) {
+    return;
+  }
+
+  const selectedColor = input.value || "";
+  picker.querySelectorAll(".band-color-dot").forEach((dot) => {
+    const isSelected = dot.dataset.bandColor === selectedColor;
+    dot.classList.toggle("is-selected", isSelected);
+    dot.setAttribute("aria-pressed", isSelected ? "true" : "false");
+  });
+}
+
+function setBandColorPickerValue(input, value) {
+  if (!input) {
+    return;
+  }
+  input.value = BAND_COLOR_OPTIONS.includes(value) ? value : "";
+  syncBandColorPicker(input);
+}
+
+function setBandColorPickerDisabled(input, disabled) {
+  if (!input) {
+    return;
+  }
+  input.disabled = disabled;
+  const field = input.closest(".band-color-field");
+  const picker = field?.querySelector(".band-color-picker");
+  if (!picker) {
+    return;
+  }
+
+  picker.classList.toggle("is-disabled", disabled);
+  picker.querySelectorAll(".band-color-dot").forEach((dot) => {
+    dot.disabled = disabled;
+  });
+}
+
+function handleBandColorPickerClick(event) {
+  const dot = event.target.closest(".band-color-dot");
+  if (!(dot instanceof HTMLButtonElement) || dot.closest(".inline-band-color-picker")) {
+    return;
+  }
+
+  const field = dot.closest(".band-color-field");
+  const input = field?.querySelector('input[type="hidden"]');
+  if (!input || input.disabled) {
+    return;
+  }
+
+  setBandColorPickerValue(input, dot.dataset.bandColor || "");
+}
+
 function toNumberOrNull(value) {
   if (value === "" || value == null) {
     return null;
@@ -547,6 +655,118 @@ function toNumberOrNull(value) {
 
 function isNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function parseRunDurationToSeconds(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parts = trimmed.split(":");
+  if (parts.length !== 3 || parts.some((part) => !/^\d+$/.test(part))) {
+    return null;
+  }
+
+  const [hours, minutes, seconds] = parts.map(Number);
+  if (minutes > 59 || seconds > 59) {
+    return null;
+  }
+
+  return (hours * 3600) + (minutes * 60) + seconds;
+}
+
+function formatSecondsAsRunDuration(totalSeconds) {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
+    return null;
+  }
+
+  const rounded = Math.round(totalSeconds);
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const seconds = rounded % 60;
+  return [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
+}
+
+function normalizeRunDurationInput(value) {
+  const totalSeconds = parseRunDurationToSeconds(value);
+  return totalSeconds == null ? "" : formatSecondsAsRunDuration(totalSeconds);
+}
+
+function legacyRunMinutesToDuration(value) {
+  if (!isNumber(value) || value < 0) {
+    return "";
+  }
+
+  return formatSecondsAsRunDuration(value * 60) || "";
+}
+
+function formatRunDuration(value) {
+  if (typeof value === "string") {
+    return normalizeRunDurationInput(value) || null;
+  }
+
+  if (isNumber(value)) {
+    return legacyRunMinutesToDuration(value) || null;
+  }
+
+  return null;
+}
+
+function calculateRunPace(distanceKm, totalSeconds) {
+  if (!isNumber(distanceKm) || distanceKm <= 0 || !Number.isFinite(totalSeconds) || totalSeconds <= 0) {
+    return null;
+  }
+
+  return totalSeconds / 60 / distanceKm;
+}
+
+function formatRunPace(value) {
+  return formatNumber(value);
+}
+
+function syncRunPaceFromInputs() {
+  const distanceInput = document.getElementById("distance");
+  const timeInput = document.getElementById("time");
+  const paceInput = document.getElementById("pace");
+  if (!distanceInput || !timeInput || !paceInput) {
+    return;
+  }
+
+  const pace = calculateRunPace(toNumberOrNull(distanceInput.value), parseRunDurationToSeconds(timeInput.value));
+  paceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
+}
+
+function normalizeRunTimeField() {
+  const timeInput = document.getElementById("time");
+  if (!timeInput) {
+    return;
+  }
+
+  timeInput.value = normalizeRunDurationInput(timeInput.value);
+  syncRunPaceFromInputs();
+}
+
+function syncEditRunPaceFromInputs() {
+  if (!editDistanceInput || !editTimeInput || !editPaceInput) {
+    return;
+  }
+
+  const pace = calculateRunPace(toNumberOrNull(editDistanceInput.value), parseRunDurationToSeconds(editTimeInput.value));
+  editPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
+}
+
+function normalizeEditRunTimeField() {
+  if (!editTimeInput) {
+    return;
+  }
+
+  editTimeInput.value = normalizeRunDurationInput(editTimeInput.value);
+  syncEditRunPaceFromInputs();
 }
 
 function save(key, value) {
@@ -630,8 +850,8 @@ function openEditWorkoutDialog(workoutId) {
   editActivityInput.value = capitalize(workout.activity || "run");
   editNotesInput.value = workout.notes || "";
   editDistanceInput.value = workout.distance ?? "";
-  editTimeInput.value = workout.time ?? "";
-  editPaceInput.value = workout.pace ?? "";
+  editTimeInput.value = formatRunDuration(workout.time) || "";
+  editPaceInput.value = isNumber(workout.pace) ? formatRunPace(workout.pace) : "";
   editSprintSetsInput.value = formatSprintSetsForEditor(workout.sprintSets);
   editDraftStrengthExercises = normalizeStrengthExercises(workout.strengthExercises);
   editDraftCurrentStrengthSets = [];
@@ -641,9 +861,15 @@ function openEditWorkoutDialog(workoutId) {
   if (editStrengthRepsInput) {
     editStrengthRepsInput.value = "";
   }
+  if (editStrengthLoadTypeInput) {
+    editStrengthLoadTypeInput.value = "kg";
+    editStrengthLoadTypeInput.dispatchEvent(new Event("change"));
+  }
+  setBandColorPickerValue(editStrengthBandColorInput, "");
   renderEditStrengthSets();
   renderEditStrengthExercises();
   toggleEditDialogFields(workout.activity);
+  syncEditRunPaceFromInputs();
   editWorkoutStatusEl.textContent = "";
   if (typeof editWorkoutDialog.showModal === "function") {
     editWorkoutDialog.showModal();
@@ -685,6 +911,10 @@ function saveEditedWorkout() {
       sprintSets: parseSprintSetsFromEditor(editSprintSetsInput.value),
       strengthExercises: editDraftStrengthExercises,
     });
+    if (normalized.activity === "run" && (!isNumber(normalized.distance) || !normalized.time || !isNumber(normalized.pace))) {
+      editWorkoutStatusEl.textContent = "Run entries require distance in km and time in hh:mm:ss.";
+      return;
+    }
     normalized.id = editingPopupWorkoutId;
     const index = workouts.findIndex((workout) => workout.id === editingPopupWorkoutId);
     if (index >= 0) {
@@ -722,12 +952,14 @@ function resetWorkoutForm() {
   workoutForm.reset();
   strengthSetLoadTypeInput.value = "kg";
   strengthSetWeightInput.disabled = false;
-  strengthSetBandColorInput.disabled = true;
+  setBandColorPickerValue(strengthSetBandColorInput, "");
+  setBandColorPickerDisabled(strengthSetBandColorInput, true);
   dateInput.valueAsDate = new Date();
   renderCurrentStrengthSets();
   renderStrengthExercises();
   renderSprintSets();
   updateVisibleFields();
+  syncRunPaceFromInputs();
   workoutSubmitButton.textContent = "Save Workout";
 }
 
@@ -737,6 +969,10 @@ function updateVisibleFields() {
   activityFieldGroups.forEach((group) => {
     group.classList.toggle("is-hidden", group.dataset.activity !== selectedActivity);
   });
+
+  if (selectedActivity === "run") {
+    syncRunPaceFromInputs();
+  }
 }
 
 function onFilterChange() {
@@ -773,22 +1009,30 @@ function getFilteredWorkouts() {
   });
 }
 
+function compareWorkoutsByRecentDate(a, b) {
+  const dateComparison = (b.date || "").localeCompare(a.date || "");
+  if (dateComparison !== 0) {
+    return dateComparison;
+  }
+
+  return (b.createdAt || 0) - (a.createdAt || 0);
+}
+
 function renderCharts() {
   if (typeof Chart === "undefined") {
     chartsStatusEl.textContent = "Charts unavailable (Chart.js failed to load).";
     return;
   }
 
-  chartsStatusEl.textContent = "";
   const filteredWorkouts = getFilteredWorkouts().slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const strengthData = filteredWorkouts
     .filter((workout) => workout.activity === "strength")
     .map((workout) => ({ x: workout.date, y: strengthBestWeight(workout) }))
     .filter((point) => point.x && isNumber(point.y));
   const runData = filteredWorkouts
-    .filter((workout) => workout.activity === "run" && isNumber(workout.distance))
-    .map((workout) => ({ x: workout.date, y: workout.distance }))
-    .filter((point) => point.x);
+    .filter((workout) => workout.activity === "run" && isNumber(workout.pace))
+    .map((workout) => ({ x: workout.date, y: workout.pace }))
+    .filter((point) => point.x && isNumber(point.y));
   const sprintData = filteredWorkouts
     .filter((workout) => workout.activity === "sprint")
     .map((workout) => ({ x: workout.date, y: sprintBestTime(workout) }))
@@ -799,8 +1043,28 @@ function renderCharts() {
   const groupedSprintData = groupChartPoints(sprintData, chartGrouping);
 
   strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, groupedStrengthData, "kg", "#00E5FF");
-  runChart = createOrUpdateChart(runChart, runChartCanvas, groupedRunData, "km", "#6DFF5C");
+  runChart = createOrUpdateChart(runChart, runChartCanvas, groupedRunData, "min/km", "#6DFF5C");
   sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, groupedSprintData, "sec", "#FF7A00");
+
+  toggleChartCardVisibility(strengthChartCard, groupedStrengthData.length > 0);
+  toggleChartCardVisibility(runChartCard, groupedRunData.length > 0);
+  toggleChartCardVisibility(sprintChartCard, groupedSprintData.length > 0);
+
+  const hasVisibleCharts = groupedStrengthData.length > 0 || groupedRunData.length > 0 || groupedSprintData.length > 0;
+  if (chartsGridEl) {
+    chartsGridEl.classList.toggle("is-hidden", !hasVisibleCharts);
+  }
+
+  if (!filteredWorkouts.length) {
+    chartsStatusEl.textContent = workouts.length
+      ? "No charts to show for the current filters."
+      : "Charts will appear after you log your first workout.";
+    return;
+  }
+
+  chartsStatusEl.textContent = hasVisibleCharts
+    ? ""
+    : "No chartable data is available for the current filters.";
 }
 
 function createOrUpdateChart(existingChart, canvas, points, unit, color) {
@@ -810,6 +1074,11 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
 
   if (existingChart) {
     existingChart.destroy();
+    existingChart = null;
+  }
+
+  if (!points.length) {
+    return null;
   }
 
   return new Chart(canvas, {
@@ -831,17 +1100,21 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
       plugins: { legend: { display: false } },
       scales: {
         x: { type: "category", title: { display: true, text: "Date" } },
-        y: { title: { display: true, text: unit }, beginAtZero: true },
+        y: { title: { display: true, text: unit }, beginAtZero: unit !== "min/km" },
       },
     },
   });
 }
 
-function groupChartPoints(points, mode) {
-  if (mode === "day") {
-    return points;
+function toggleChartCardVisibility(card, isVisible) {
+  if (!card) {
+    return;
   }
 
+  card.classList.toggle("is-hidden", !isVisible);
+}
+
+function groupChartPoints(points, mode) {
   const grouped = new Map();
   points.forEach((point) => {
     const label = groupingLabel(point.x, mode);
@@ -865,6 +1138,11 @@ function groupingLabel(dateText, mode) {
     return "";
   }
 
+  if (mode === "quarter") {
+    const quarter = Math.floor(date.getUTCMonth() / 3) + 1;
+    return `${date.getUTCFullYear()}-Q${quarter}`;
+  }
+
   if (mode === "month") {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
   }
@@ -876,7 +1154,8 @@ function groupingLabel(dateText, mode) {
     return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
   }
 
-  return dateText;
+  const fallbackWeek = Math.ceil((Math.floor((date.getTime() - Date.UTC(date.getUTCFullYear(), 0, 1)) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(fallbackWeek).padStart(2, "0")}`;
 }
 
 function exportBackupData() {
@@ -919,6 +1198,7 @@ function importBackupData(event) {
       goals = {
         strength: toNumberOrNull(parsed.goals.strength),
         run: toNumberOrNull(parsed.goals.run),
+        runPace: toNumberOrNull(parsed.goals.runPace),
         sprint: toNumberOrNull(parsed.goals.sprint),
       };
 
@@ -1022,7 +1302,7 @@ function addEditStrengthSet() {
   });
   editStrengthRepsInput.value = "";
   editStrengthWeightInput.value = "";
-  editStrengthBandColorInput.value = "";
+  setBandColorPickerValue(editStrengthBandColorInput, "");
   renderEditStrengthSets();
 }
 
@@ -1080,9 +1360,14 @@ function renderEditStrengthExercises() {
               <input type="number" min="0" step="0.1" data-role="set-weight" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${
                 set.weight ?? ""
               }" ${set.loadType !== "kg" ? "disabled" : ""} />
-              <input type="text" data-role="set-band-color" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${
-                set.bandColor || ""
-              }" placeholder="band color" ${set.loadType !== "band" ? "disabled" : ""} />
+              <div class="band-color-picker inline-band-color-picker${set.loadType !== "band" ? " is-disabled" : ""}">
+                ${renderBandColorDots(set.bandColor || "", {
+                  role: "set-band-color-option",
+                  exerciseIndex,
+                  setIndex,
+                  disabled: set.loadType !== "band",
+                })}
+              </div>
               <button type="button" class="danger-button" data-role="delete-set" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}">Delete Set</button>
             </div>
           `,
@@ -1154,9 +1439,6 @@ function handleInlineStrengthEdit(event) {
     set.weight = Number.isFinite(weight) ? weight : null;
   }
 
-  if (role === "set-band-color") {
-    set.bandColor = target.value.trim();
-  }
 }
 
 function handleInlineStrengthDelete(event) {
@@ -1172,6 +1454,17 @@ function handleInlineStrengthDelete(event) {
   const exerciseIndex = Number(target.dataset.exerciseIndex);
   const setIndex = Number(target.dataset.setIndex);
   if (!Number.isInteger(exerciseIndex)) {
+    return;
+  }
+
+  if (role === "set-band-color-option" && Number.isInteger(setIndex)) {
+    const exercise = editDraftStrengthExercises[exerciseIndex];
+    const set = exercise?.sets[setIndex];
+    if (!set || set.loadType !== "band") {
+      return;
+    }
+    set.bandColor = target.dataset.bandColor || "";
+    renderEditStrengthExercises();
     return;
   }
 
@@ -1251,14 +1544,27 @@ function normalizeStrengthExercises(exercises) {
 }
 
 function normalizeImportedWorkout(workout) {
+  const activity = workout.activity || "run";
+  const normalizedDistance = toNumberOrNull(workout.distance);
+  const normalizedTime =
+    activity === "run"
+      ? typeof workout.time === "string"
+        ? normalizeRunDurationInput(workout.time)
+        : legacyRunMinutesToDuration(toNumberOrNull(workout.time))
+      : toNumberOrNull(workout.time);
+  const normalizedPace =
+    activity === "run"
+      ? calculateRunPace(normalizedDistance, parseRunDurationToSeconds(normalizedTime))
+      : toNumberOrNull(workout.pace);
+
   return {
     id: workout.id || crypto.randomUUID(),
     date: workout.date || "",
-    activity: workout.activity || "run",
+    activity,
     strengthExercises: normalizeStrengthExercises(workout.strengthExercises),
-    distance: toNumberOrNull(workout.distance),
-    time: toNumberOrNull(workout.time),
-    pace: toNumberOrNull(workout.pace),
+    distance: normalizedDistance,
+    time: normalizedTime,
+    pace: normalizedPace,
     sprintSets: normalizeSprintSets(workout.sprintSets),
     notes: typeof workout.notes === "string" ? workout.notes : "",
     createdAt: isNumber(workout.createdAt) ? workout.createdAt : Date.now(),
