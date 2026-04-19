@@ -2170,7 +2170,7 @@ function serializeStrengthPhaseDefinition(template) {
     rows.push(`SLOT,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
     slot.blocks.forEach((block) => {
       rows.push(
-        `BLOCK,${block.label || ""},${formatBlockDurationCsvValue(block)},${formatBlockRestCsvValue(block)},${block.sets ?? ""}`,
+        `BLOCK,${block.label || ""},${formatBlockDurationCsvValue(block)},${formatBlockRestCsvValue(block)},${block.sets || ""}`,
       );
       (block.exercises || []).forEach((exercise) => {
         rows.push(
@@ -2400,7 +2400,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
         durationMax: duration.durationMax,
         restSec: rest.restSec,
         restMaxSec: rest.restMaxSec,
-        sets: toNumberOrNull(columns[4]),
+        sets: normalizeSetPrescription(columns[4]),
         exercises: [],
       };
       currentSlot.blocks.push(currentBlock);
@@ -2520,7 +2520,11 @@ function renderPhaseTemplateWorkouts(template) {
                         return `${escapeHtml(exercise.code || "")} ${escapeHtml(exercise.name)} (${escapeHtml(exercise.reps || "-")}${load})${note}`.trim();
                       })
                       .join(", ");
-                    const blockMeta = [formatBlockDuration(block), formatBlockRest(block) ? `${formatBlockRest(block)} rest` : "", isNumber(block.sets) ? `${formatNumber(block.sets)} sets` : ""]
+                    const blockMeta = [
+                      formatBlockDuration(block),
+                      formatBlockRest(block) ? `${formatBlockRest(block)} rest` : "",
+                      block.sets ? `${escapeHtml(String(block.sets))} sets` : "",
+                    ]
                       .filter(Boolean)
                       .join(" • ");
                     return `
@@ -2707,7 +2711,7 @@ function renderCompletionStrengthBlocks(session) {
           <div class="grid">
             <label>
               Actual sets
-              <input type="number" min="0" data-role="completion-block-sets" data-block-index="${blockIndex}" value="${block.sets ?? ""}" />
+              <input type="number" min="0" data-role="completion-block-sets" data-block-index="${blockIndex}" value="${getDefaultActualSets(block.sets) ?? ""}" />
             </label>
             <label>
               Block note
@@ -2802,7 +2806,7 @@ function collectCompletedStrengthBlocks(session) {
     const blockNoteInput = completionStrengthBlocksEl.querySelector(`[data-role="completion-block-note"][data-block-index="${blockIndex}"]`);
     return {
       label: block.label,
-      actualSets: toNumberOrNull(actualSetsInput?.value) ?? block.sets ?? null,
+      actualSets: toNumberOrNull(actualSetsInput?.value) ?? getDefaultActualSets(block.sets),
       note: blockNoteInput?.value?.trim() || "",
       exercises: (block.exercises || []).map((exercise, exerciseIndex) => {
         const doneInput = completionStrengthBlocksEl.querySelector(
@@ -3121,6 +3125,27 @@ function formatBlockRest(block) {
   return "";
 }
 
+function normalizeSetPrescription(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+  const normalized = raw.replace(/\s+/g, "");
+  if (/^\d+(?:-\d+)?$/.test(normalized)) {
+    return normalized;
+  }
+  return raw;
+}
+
+function getDefaultActualSets(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return null;
+  }
+  const firstNumber = raw.match(/\d+(?:\.\d+)?/);
+  return firstNumber ? Number(firstNumber[0]) : null;
+}
+
 function normalizePlannedSession(session) {
   return {
     id: session.id || crypto.randomUUID(),
@@ -3164,7 +3189,7 @@ function normalizePlannedDetails(type, details) {
           durationMax: toNumberOrNull(block.durationMax),
           restSec: toNumberOrNull(block.restSec),
           restMaxSec: toNumberOrNull(block.restMaxSec),
-          sets: toNumberOrNull(block.sets),
+          sets: normalizeSetPrescription(block.sets),
           exercises: Array.isArray(block.exercises)
             ? block.exercises.map((exercise) => ({
                 code: exercise.code || "",

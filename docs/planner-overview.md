@@ -26,7 +26,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - inspect the workout structure inside each saved template
   - schedule a template onto real dates
   - refresh planned generated sessions for already scheduled instances when a template is updated
-  - support slot notes, block timing like `15 mins`, `15-20 mins`, `30s`, `90-120s`, and optional exercise weight targets inside imported strength plans
+  - support slot notes, block timing like `15 mins`, `15-20 mins`, `30s`, `90-120s`, set prescriptions like `3` or `3-4`, and optional exercise weight targets inside imported strength plans
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
   - planned vs actual comparisons
