@@ -77,6 +77,10 @@ body {
   display: none;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 body:not(.coach-mode) .coach-only {
   display: none !important;
 }

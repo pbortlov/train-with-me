@@ -112,10 +112,11 @@
         <article class="card">
           <h2>Phases</h2>
           <p class="hint">
-            Import one strength phase per file or paste. Each import creates a reusable phase template that can be scheduled
-            onto the calendar.
+            Import one strength phase per file or paste. Saved templates can also be loaded back here for editing, and
+            scheduled planned sessions will refresh from the updated template.
           </p>
           <form id="phase-import-form">
+            <input type="hidden" id="phase-edit-id" />
             <div class="grid">
               <label>
                 Phase name override
@@ -135,7 +136,8 @@
               ></textarea>
             </label>
             <div class="dialog-actions">
-              <button type="submit">Import strength phase</button>
+              <button type="submit" id="save-phase-button">Import strength phase</button>
+              <button type="button" id="cancel-phase-edit" class="ghost-button is-hidden">Cancel edit</button>
             </div>
             <p id="phase-import-status" class="hint"></p>
           </form>

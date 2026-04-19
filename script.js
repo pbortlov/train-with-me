@@ -97,9 +97,12 @@ const plannedSprintBlocksInput = document.getElementById("planned-sprint-blocks"
 const plannedSessionStatusEl = document.getElementById("planned-session-status");
 const cancelPlannedSessionButton = document.getElementById("cancel-planned-session");
 const phaseImportForm = document.getElementById("phase-import-form");
+const phaseEditIdInput = document.getElementById("phase-edit-id");
 const phaseNameOverrideInput = document.getElementById("phase-name-override");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
+const savePhaseButton = document.getElementById("save-phase-button");
+const cancelPhaseEditButton = document.getElementById("cancel-phase-edit");
 const phaseImportStatusEl = document.getElementById("phase-import-status");
 const phaseTemplateListEl = document.getElementById("phase-template-list");
 const phaseInstanceListEl = document.getElementById("phase-instance-list");
@@ -168,6 +171,7 @@ let chartGrouping = "week";
 let strengthChart = null;
 let runChart = null;
 let sprintChart = null;
+let editingPhaseTemplateId = "";
 let pendingDeleteWorkoutId = null;
 let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
@@ -1805,6 +1809,7 @@ function bindV2Events() {
   addSafeEventListener(calendarGridEl, "click", handleCalendarAction);
   addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
   addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
+  addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
   addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
   addSafeEventListener(phaseInstanceListEl, "click", handlePhaseInstanceAction);
   addSafeEventListener(completionRunTimeInput, "input", syncCompletionRunPace);
@@ -2159,14 +2164,165 @@ function loadPhaseImportFile(event) {
   reader.readAsText(file);
 }
 
+function serializeStrengthPhaseDefinition(template) {
+  const rows = [`PHASE,${template.name},${template.durationWeeks}`];
+  template.weekdaySlots.forEach((slot) => {
+    rows.push(`SLOT,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
+    slot.blocks.forEach((block) => {
+      rows.push(
+        `BLOCK,${block.label || ""},${formatBlockDurationCsvValue(block)},${block.restSec ?? ""},${block.sets ?? ""}`,
+      );
+      (block.exercises || []).forEach((exercise) => {
+        rows.push(
+          `EXERCISE,${exercise.code || ""},${exercise.name || ""},${exercise.reps || ""},${exercise.notes || ""},${exercise.weight ?? ""}`,
+        );
+      });
+    });
+  });
+  return rows.join("\n");
+}
+
+function formatBlockDurationCsvValue(block) {
+  const min = toNumberOrNull(block?.durationMin);
+  const max = toNumberOrNull(block?.durationMax);
+  if (isNumber(min) && isNumber(max)) {
+    return `${formatNumber(min)}-${formatNumber(max)}`;
+  }
+  if (isNumber(min)) {
+    return formatNumber(min);
+  }
+  if (isNumber(max)) {
+    return formatNumber(max);
+  }
+  return "";
+}
+
+function resetPhaseImportForm() {
+  if (phaseImportForm) {
+    phaseImportForm.reset();
+  }
+  editingPhaseTemplateId = "";
+  if (phaseEditIdInput) {
+    phaseEditIdInput.value = "";
+  }
+  if (savePhaseButton) {
+    savePhaseButton.textContent = "Import strength phase";
+  }
+  cancelPhaseEditButton?.classList.add("is-hidden");
+  if (phaseImportStatusEl) {
+    phaseImportStatusEl.textContent = "";
+  }
+}
+
+function startPhaseTemplateEdit(templateId) {
+  const template = phaseTemplates.find((item) => item.id === templateId);
+  if (!template || !phaseImportTextInput) {
+    return;
+  }
+  editingPhaseTemplateId = template.id;
+  if (phaseEditIdInput) {
+    phaseEditIdInput.value = template.id;
+  }
+  phaseNameOverrideInput.value = template.name;
+  phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
+  if (savePhaseButton) {
+    savePhaseButton.textContent = "Save phase changes";
+  }
+  cancelPhaseEditButton?.classList.remove("is-hidden");
+  phaseImportStatusEl.textContent = `Editing "${template.name}". Saving will refresh already planned generated sessions from this template.`;
+  phaseImportForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function regenerateScheduledPhaseInstances(template) {
+  let refreshedInstances = 0;
+  phaseInstances = phaseInstances.map((instance) => {
+    if (instance.templateId !== template.id) {
+      return instance;
+    }
+    refreshedInstances += 1;
+    return regeneratePhaseInstanceFromTemplate(instance, template);
+  });
+  return refreshedInstances;
+}
+
+function regeneratePhaseInstanceFromTemplate(instance, template) {
+  const reviewedSessions = plannedSessions.filter(
+    (session) => session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status !== "planned",
+  );
+  const reviewedDates = new Set(reviewedSessions.map((session) => session.date));
+  plannedSessions = plannedSessions.filter(
+    (session) => !(session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status === "planned"),
+  );
+
+  const regeneratedSessions = buildPhaseSessions(template, instance.startDate, instance.id, reviewedDates);
+  plannedSessions.push(...regeneratedSessions);
+
+  return normalizePhaseInstance({
+    ...instance,
+    templateId: template.id,
+    templateName: template.name,
+    durationWeeks: template.durationWeeks,
+    generatedSessionIds: [...reviewedSessions.map((session) => session.id), ...regeneratedSessions.map((session) => session.id)],
+  });
+}
+
+function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set()) {
+  const generatedSessions = [];
+  for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
+    template.weekdaySlots.forEach((slot) => {
+      const monday = startOfWeek(startDate);
+      monday.setDate(monday.getDate() + (weekIndex * 7) + (slot.weekday - 1));
+      const sessionDate = formatDateInput(monday);
+      if (reviewedDates.has(sessionDate)) {
+        return;
+      }
+      generatedSessions.push(
+        normalizePlannedSession({
+          id: crypto.randomUUID(),
+          date: sessionDate,
+          type: "strength",
+          title: slot.title,
+          source: "phase-generated",
+          phaseTemplateId: template.id,
+          phaseInstanceId: instanceId,
+          status: "planned",
+          notes: slot.notes,
+          details: { blocks: slot.blocks },
+        }),
+      );
+    });
+  }
+  return generatedSessions;
+}
+
 function importStrengthPhase(event) {
   event.preventDefault();
   try {
     const imported = parseStrengthPhaseDefinition(phaseImportTextInput.value, phaseNameOverrideInput.value.trim());
-    phaseTemplates.unshift(normalizePhaseTemplate(imported));
-    savePlannerCollections();
-    phaseImportForm.reset();
-    phaseImportStatusEl.textContent = `Imported phase template "${imported.name}".`;
+    const normalized = normalizePhaseTemplate(
+      editingPhaseTemplateId
+        ? {
+            ...imported,
+            id: editingPhaseTemplateId,
+            importedAt: phaseTemplates.find((template) => template.id === editingPhaseTemplateId)?.importedAt || Date.now(),
+          }
+        : imported,
+    );
+
+    if (editingPhaseTemplateId) {
+      phaseTemplates = phaseTemplates.map((template) => (template.id === editingPhaseTemplateId ? normalized : template));
+      const refreshedInstances = regenerateScheduledPhaseInstances(normalized);
+      savePlannerCollections();
+      resetPhaseImportForm();
+      phaseImportStatusEl.textContent = refreshedInstances
+        ? `Updated "${normalized.name}" and refreshed ${refreshedInstances} scheduled phase ${refreshedInstances === 1 ? "instance" : "instances"}.`
+        : `Updated "${normalized.name}".`;
+    } else {
+      phaseTemplates.unshift(normalizePhaseTemplate(imported));
+      savePlannerCollections();
+      resetPhaseImportForm();
+      phaseImportStatusEl.textContent = `Imported phase template "${imported.name}".`;
+    }
     render();
   } catch (error) {
     phaseImportStatusEl.textContent = error instanceof Error ? error.message : "Could not import phase.";
@@ -2309,6 +2465,7 @@ function renderPhaseTemplates() {
               <input type="date" data-role="schedule-date" data-id="${template.id}" value="${formatDateInput(new Date())}" />
             </label>
             <div class="phase-actions">
+              <button type="button" class="ghost-button" data-role="edit-phase-template" data-id="${template.id}">Edit</button>
               <button type="button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
               <button type="button" class="ghost-button danger-button" data-role="delete-phase-template" data-id="${template.id}">Delete</button>
             </div>
@@ -2332,8 +2489,16 @@ function handlePhaseTemplateAction(event) {
 
   if (role === "delete-phase-template") {
     phaseTemplates = phaseTemplates.filter((template) => template.id !== id);
+    if (editingPhaseTemplateId === id) {
+      resetPhaseImportForm();
+    }
     savePlannerCollections();
     render();
+    return;
+  }
+
+  if (role === "edit-phase-template") {
+    startPhaseTemplateEdit(id);
     return;
   }
 
@@ -2350,27 +2515,8 @@ function handlePhaseTemplateAction(event) {
 
 function schedulePhaseTemplate(template, startDate) {
   const instanceId = crypto.randomUUID();
-  const generatedSessionIds = [];
-  for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
-    template.weekdaySlots.forEach((slot) => {
-      const monday = startOfWeek(startDate);
-      monday.setDate(monday.getDate() + (weekIndex * 7) + (slot.weekday - 1));
-      const session = normalizePlannedSession({
-        id: crypto.randomUUID(),
-        date: formatDateInput(monday),
-        type: "strength",
-        title: slot.title,
-        source: "phase-generated",
-        phaseTemplateId: template.id,
-        phaseInstanceId: instanceId,
-        status: "planned",
-        notes: slot.notes,
-        details: { blocks: slot.blocks },
-      });
-      plannedSessions.push(session);
-      generatedSessionIds.push(session.id);
-    });
-  }
+  const generatedSessions = buildPhaseSessions(template, startDate, instanceId);
+  plannedSessions.push(...generatedSessions);
 
   phaseInstances.unshift(
     normalizePhaseInstance({
@@ -2379,7 +2525,7 @@ function schedulePhaseTemplate(template, startDate) {
       templateName: template.name,
       startDate,
       durationWeeks: template.durationWeeks,
-      generatedSessionIds,
+      generatedSessionIds: generatedSessions.map((session) => session.id),
       createdAt: Date.now(),
     }),
   );
