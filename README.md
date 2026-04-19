@@ -15,6 +15,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Reusable strength phase templates
 - Strength phase import from spreadsheet-style ordered rows
 - Editable strength phase templates that refresh already planned generated sessions
+- Strength sessions use `Log & Complete` with hybrid planned-vs-actual set logging
 - Planned session statuses:
   - planned
   - completed
@@ -32,7 +33,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - PWA install support
 
 ## Main Pages
-- `Calendar`: weekly plan, manual planning, session completion
+- `Calendar`: weekly plan, manual planning, and `Log & Complete` execution logging
 - `Phases`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review plus actual workout logging
 - `Stats`: goals, adherence summaries, charts, backup, and exercise library

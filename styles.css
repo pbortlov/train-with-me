@@ -391,7 +391,37 @@ button {
 .completion-exercise-row {
   display: grid;
   gap: 0.45rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #081121;
+  padding: 0.7rem;
+}
+
+.completion-exercise-header {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.completion-actual-sets {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.completion-actual-set-row {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: 0.7fr 1fr 1.2fr 1fr 1.5fr auto;
+  align-items: start;
+}
+
+.completion-set-order {
+  color: var(--muted);
+  font-size: 0.84rem;
+  align-self: center;
+}
+
+.completion-band-field {
+  min-width: 0;
 }
 
 .goal-progress {
@@ -596,6 +626,10 @@ dialog {
 
 @media (max-width: 720px) {
   .inline-set-row {
+    grid-template-columns: 1fr;
+  }
+
+  .completion-actual-set-row {
     grid-template-columns: 1fr;
   }
 }

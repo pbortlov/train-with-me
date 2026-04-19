@@ -20,6 +20,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - week-first layout
   - manual run/sprint planning
   - generated strength sessions
+  - `Log & Complete` flow for day-of-training execution without rewriting the plan
 - `Phases`
   - import one strength phase
   - store and edit reusable templates
@@ -30,6 +31,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
   - planned vs actual comparisons
+  - strength review includes actual per-set execution with load type, reps, and load details
   - actual workout logging
   - recent workouts
 - `Stats`

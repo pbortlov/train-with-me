@@ -22,7 +22,8 @@ Review compares:
 Review compares:
 - planned blocks
 - planned exercises inside each block
-- actual sets per block
+- actual per-set execution per exercise
+- actual load type, reps, weight, or band color for each logged set
 - completed or skipped exercises
 - per-exercise notes
 

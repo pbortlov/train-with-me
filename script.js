@@ -172,6 +172,7 @@ let strengthChart = null;
 let runChart = null;
 let sprintChart = null;
 let editingPhaseTemplateId = "";
+let completionStrengthDraft = [];
 let pendingDeleteWorkoutId = null;
 let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
@@ -1815,6 +1816,9 @@ function bindV2Events() {
   addSafeEventListener(completionRunTimeInput, "input", syncCompletionRunPace);
   addSafeEventListener(completionRunTimeInput, "change", syncCompletionRunPace);
   addSafeEventListener(completionRunDistanceInput, "input", syncCompletionRunPace);
+  addSafeEventListener(completionStrengthBlocksEl, "click", handleCompletionStrengthAction);
+  addSafeEventListener(completionStrengthBlocksEl, "input", handleCompletionStrengthInput);
+  addSafeEventListener(completionStrengthBlocksEl, "change", handleCompletionStrengthInput);
   addSafeEventListener(completionForm, "submit", saveCompletedSession);
   addSafeEventListener(cancelCompletionButton, "click", closeCompletionDialog);
 }
@@ -1973,7 +1977,7 @@ function renderPlannedSessionCard(session) {
       <div class="session-actions">
         <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
         ${session.status === "planned"
-          ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Complete</button>
+          ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
              <button type="button" class="ghost-button danger-button" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
           : `<button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`}
         <button type="button" class="ghost-button danger-button" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
@@ -2661,6 +2665,7 @@ function openCompletionDialog(session) {
     return;
   }
   completionForm.reset();
+  completionStrengthDraft = [];
   completionSessionIdInput.value = session.id;
   completionDateInput.value = session.date;
   completionSessionTitleEl.textContent = `${session.title} • ${capitalize(session.type)}`;
@@ -2680,7 +2685,8 @@ function openCompletionDialog(session) {
     completionSprintSetsInput.value = "";
   }
   if (session.type === "strength") {
-    renderCompletionStrengthBlocks(session);
+    completionStrengthDraft = buildCompletionStrengthDraft(session);
+    renderCompletionStrengthBlocks();
   }
 
   if (typeof completionDialog.showModal === "function") {
@@ -2694,6 +2700,7 @@ function closeCompletionDialog() {
   if (!completionDialog) {
     return;
   }
+  completionStrengthDraft = [];
   if (typeof completionDialog.close === "function") {
     completionDialog.close();
   } else {
@@ -2701,21 +2708,62 @@ function closeCompletionDialog() {
   }
 }
 
-function renderCompletionStrengthBlocks(session) {
+function buildCompletionStrengthDraft(session) {
   const blocks = session.details?.blocks || [];
+  return blocks.map((block, blockIndex) => {
+    const defaultSetCount = getDefaultActualSets(block.sets) || 1;
+    return {
+      label: block.label || String(blockIndex + 1),
+      plannedMeta: {
+        duration: formatBlockDuration(block),
+        rest: formatBlockRest(block),
+        sets: String(block.sets || ""),
+      },
+      actualSets: getDefaultActualSets(block.sets),
+      note: "",
+      exercises: (block.exercises || []).map((exercise) => ({
+        code: exercise.code || "",
+        name: exercise.name || "Exercise",
+        plannedReps: exercise.reps || "",
+        plannedNote: exercise.notes || "",
+        plannedWeight: isNumber(exercise.weight) ? exercise.weight : null,
+        completed: true,
+        actualNote: "",
+        actualSets: Array.from({ length: defaultSetCount }, (_, setIndex) => ({
+          id: crypto.randomUUID(),
+          order: setIndex + 1,
+          reps: extractWorkoutRepCount(exercise.reps) || null,
+          loadType: "kg",
+          weight: isNumber(exercise.weight) ? exercise.weight : null,
+          bandColor: "",
+        })),
+      })),
+    };
+  });
+}
+
+function renderCompletionStrengthBlocks() {
+  const blocks = completionStrengthDraft || [];
   completionStrengthBlocksEl.innerHTML = blocks
     .map(
       (block, blockIndex) => `
         <div class="completion-block">
           <h4>Block ${escapeHtml(block.label || String(blockIndex + 1))}</h4>
+          <div class="phase-meta">${[
+            block.plannedMeta?.duration || "",
+            block.plannedMeta?.rest ? `${block.plannedMeta.rest} rest` : "",
+            block.plannedMeta?.sets ? `${escapeHtml(block.plannedMeta.sets)} sets planned` : "",
+          ]
+            .filter(Boolean)
+            .join(" • ")}</div>
           <div class="grid">
             <label>
               Actual sets
-              <input type="number" min="0" data-role="completion-block-sets" data-block-index="${blockIndex}" value="${getDefaultActualSets(block.sets) ?? ""}" />
+              <input type="number" min="0" data-role="completion-block-sets" data-block-index="${blockIndex}" value="${block.actualSets ?? ""}" />
             </label>
             <label>
               Block note
-              <input type="text" data-role="completion-block-note" data-block-index="${blockIndex}" placeholder="Optional note" />
+              <input type="text" data-role="completion-block-note" data-block-index="${blockIndex}" placeholder="Optional note" value="${escapeHtml(block.note || "")}" />
             </label>
           </div>
           <div class="completion-exercise-list">
@@ -2723,13 +2771,45 @@ function renderCompletionStrengthBlocks(session) {
               .map(
                 (exercise, exerciseIndex) => `
                   <div class="completion-exercise-row">
-                    <label class="checkbox-label">
-                      <input type="checkbox" data-role="completion-exercise-done" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" checked />
-                      ${escapeHtml(exercise.code || "")} ${escapeHtml(exercise.name)}
-                    </label>
+                    <div class="completion-exercise-header">
+                      <label class="checkbox-label">
+                        <input type="checkbox" data-role="completion-exercise-done" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" ${exercise.completed ? "checked" : ""} />
+                        ${escapeHtml(exercise.code || "")} ${escapeHtml(exercise.name)}
+                      </label>
+                      <div class="phase-meta">Planned: ${escapeHtml(exercise.plannedReps || "-")}${isNumber(exercise.plannedWeight) ? ` @ ${escapeHtml(formatNumber(exercise.plannedWeight))} kg` : ""}${exercise.plannedNote ? ` - ${escapeHtml(exercise.plannedNote)}` : ""}</div>
+                    </div>
+                    <div class="completion-actual-sets">
+                      ${(exercise.actualSets || [])
+                        .map(
+                          (set, setIndex) => `
+                            <div class="completion-actual-set-row">
+                              <span class="completion-set-order">Set ${setIndex + 1}</span>
+                              <input type="number" min="0" data-role="completion-set-reps" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" data-set-id="${set.id}" value="${set.reps ?? ""}" placeholder="Reps" />
+                              <select data-role="completion-set-load-type" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" data-set-id="${set.id}">
+                                <option value="kg" ${set.loadType === "kg" ? "selected" : ""}>kg</option>
+                                <option value="bodyweight" ${set.loadType === "bodyweight" ? "selected" : ""}>body weight</option>
+                                <option value="band" ${set.loadType === "band" ? "selected" : ""}>band</option>
+                              </select>
+                              <input type="number" min="0" step="0.1" data-role="completion-set-weight" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" data-set-id="${set.id}" value="${set.weight ?? ""}" placeholder="Weight" ${set.loadType === "kg" ? "" : "disabled"} />
+                              <div class="band-color-field completion-band-field${set.loadType === "band" ? "" : " is-disabled"}">
+                                <input type="hidden" value="${escapeHtml(set.bandColor || "")}" />
+                                <div class="band-color-picker${set.loadType === "band" ? "" : " is-disabled"}">${renderBandColorDots(set.bandColor || "", {
+                                  role: "completion-set-band-color",
+                                  exerciseIndex,
+                                  setIndex,
+                                  disabled: set.loadType !== "band",
+                                }).replaceAll(`data-set-index="${setIndex}"`, `data-set-id="${set.id}"`)}</div>
+                              </div>
+                              <button type="button" class="ghost-button danger-button" data-role="remove-completion-set" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" data-set-id="${set.id}">Remove</button>
+                            </div>
+                          `,
+                        )
+                        .join("")}
+                      <button type="button" class="ghost-button" data-role="add-completion-set" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">Add set</button>
+                    </div>
                     <label>
                       Actual note
-                      <input type="text" data-role="completion-exercise-note" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" placeholder="Optional change note" />
+                      <input type="text" data-role="completion-exercise-note" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" placeholder="Optional change note" value="${escapeHtml(exercise.actualNote || "")}" />
                     </label>
                   </div>
                 `,
@@ -2748,6 +2828,119 @@ function syncCompletionRunPace() {
   completionRunTimeInput.value = time;
   const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
   completionRunPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
+}
+
+function handleCompletionStrengthAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const role = target.dataset.role;
+  const blockIndex = Number(target.dataset.blockIndex);
+  const exerciseIndex = Number(target.dataset.exerciseIndex);
+  const setId = target.dataset.setId || "";
+
+  if (role === "add-completion-set" && Number.isInteger(blockIndex) && Number.isInteger(exerciseIndex)) {
+    const exercise = completionStrengthDraft[blockIndex]?.exercises?.[exerciseIndex];
+    if (!exercise) {
+      return;
+    }
+    exercise.actualSets.push({
+      id: crypto.randomUUID(),
+      order: exercise.actualSets.length + 1,
+      reps: null,
+      loadType: "kg",
+      weight: null,
+      bandColor: "",
+    });
+    renderCompletionStrengthBlocks();
+    return;
+  }
+
+  if (role === "remove-completion-set" && Number.isInteger(blockIndex) && Number.isInteger(exerciseIndex) && setId) {
+    const exercise = completionStrengthDraft[blockIndex]?.exercises?.[exerciseIndex];
+    if (!exercise) {
+      return;
+    }
+    exercise.actualSets = exercise.actualSets.filter((set) => set.id !== setId);
+    renderCompletionStrengthBlocks();
+    return;
+  }
+
+  if (role === "completion-set-band-color" && Number.isInteger(blockIndex) && Number.isInteger(exerciseIndex) && setId) {
+    const set = findCompletionSet(blockIndex, exerciseIndex, setId);
+    if (!set || target.dataset.bandColor === undefined) {
+      return;
+    }
+    set.bandColor = target.dataset.bandColor;
+    renderCompletionStrengthBlocks();
+  }
+}
+
+function handleCompletionStrengthInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const role = target.dataset.role;
+  const blockIndex = Number(target.dataset.blockIndex);
+  const exerciseIndex = Number(target.dataset.exerciseIndex);
+  const setId = target.dataset.setId || "";
+
+  const block = completionStrengthDraft[blockIndex];
+  const exercise = block?.exercises?.[exerciseIndex];
+  if (!role || (!block && role !== "completion-block-sets" && role !== "completion-block-note")) {
+    return;
+  }
+
+  if (role === "completion-block-sets" && block && target instanceof HTMLInputElement) {
+    block.actualSets = toNumberOrNull(target.value);
+    return;
+  }
+  if (role === "completion-block-note" && block && target instanceof HTMLInputElement) {
+    block.note = target.value.trim();
+    return;
+  }
+  if (!exercise) {
+    return;
+  }
+  if (role === "completion-exercise-done" && target instanceof HTMLInputElement) {
+    exercise.completed = Boolean(target.checked);
+    return;
+  }
+  if (role === "completion-exercise-note" && target instanceof HTMLInputElement) {
+    exercise.actualNote = target.value.trim();
+    return;
+  }
+
+  const set = findCompletionSet(blockIndex, exerciseIndex, setId);
+  if (!set) {
+    return;
+  }
+  if (role === "completion-set-reps" && target instanceof HTMLInputElement) {
+    set.reps = toNumberOrNull(target.value);
+    return;
+  }
+  if (role === "completion-set-weight" && target instanceof HTMLInputElement) {
+    set.weight = toNumberOrNull(target.value);
+    return;
+  }
+  if (role === "completion-set-load-type" && target instanceof HTMLSelectElement) {
+    set.loadType = target.value === "band" || target.value === "bodyweight" ? target.value : "kg";
+    if (set.loadType !== "kg") {
+      set.weight = null;
+    }
+    if (set.loadType !== "band") {
+      set.bandColor = "";
+    }
+    renderCompletionStrengthBlocks();
+  }
+}
+
+function findCompletionSet(blockIndex, exerciseIndex, setId) {
+  return completionStrengthDraft[blockIndex]?.exercises?.[exerciseIndex]?.actualSets?.find((set) => set.id === setId) || null;
 }
 
 function saveCompletedSession(event) {
@@ -2780,6 +2973,13 @@ function saveCompletedSession(event) {
     }
     if (session.type === "strength") {
       actual = { blocks: collectCompletedStrengthBlocks(session) };
+      const actualStrengthSets = actual.blocks.flatMap((block) =>
+        (block.exercises || []).flatMap((exercise) => (exercise.completed ? exercise.actualSets || [] : [])),
+      );
+      if (!actualStrengthSets.length) {
+        completionStatusMessageEl.textContent = "Strength completion needs at least one logged set.";
+        return;
+      }
     }
 
     const workout = createWorkoutFromPlannedSession(session, actual, modificationNote);
@@ -2800,31 +3000,28 @@ function saveCompletedSession(event) {
 }
 
 function collectCompletedStrengthBlocks(session) {
-  const blocks = session.details?.blocks || [];
-  return blocks.map((block, blockIndex) => {
-    const actualSetsInput = completionStrengthBlocksEl.querySelector(`[data-role="completion-block-sets"][data-block-index="${blockIndex}"]`);
-    const blockNoteInput = completionStrengthBlocksEl.querySelector(`[data-role="completion-block-note"][data-block-index="${blockIndex}"]`);
-    return {
-      label: block.label,
-      actualSets: toNumberOrNull(actualSetsInput?.value) ?? getDefaultActualSets(block.sets),
-      note: blockNoteInput?.value?.trim() || "",
-      exercises: (block.exercises || []).map((exercise, exerciseIndex) => {
-        const doneInput = completionStrengthBlocksEl.querySelector(
-          `[data-role="completion-exercise-done"][data-block-index="${blockIndex}"][data-exercise-index="${exerciseIndex}"]`,
-        );
-        const noteInput = completionStrengthBlocksEl.querySelector(
-          `[data-role="completion-exercise-note"][data-block-index="${blockIndex}"][data-exercise-index="${exerciseIndex}"]`,
-        );
-        return {
-          code: exercise.code,
-          name: exercise.name,
-          reps: exercise.reps,
-          completed: Boolean(doneInput?.checked),
-          actualNote: noteInput?.value?.trim() || "",
-        };
-      }),
-    };
-  });
+  return (completionStrengthDraft || []).map((block) => ({
+    label: block.label,
+    plannedSets: block.plannedMeta?.sets || "",
+    actualSets: toNumberOrNull(block.actualSets),
+    note: block.note || "",
+    exercises: (block.exercises || []).map((exercise) => ({
+      code: exercise.code,
+      name: exercise.name,
+      reps: exercise.plannedReps,
+      completed: Boolean(exercise.completed),
+      actualNote: exercise.actualNote || "",
+      actualSets: (exercise.actualSets || [])
+        .map((set, index) => ({
+          order: index + 1,
+          reps: toNumberOrNull(set.reps),
+          loadType: set.loadType === "band" || set.loadType === "bodyweight" ? set.loadType : "kg",
+          weight: set.loadType === "kg" ? toNumberOrNull(set.weight) : null,
+          bandColor: set.loadType === "band" ? set.bandColor || "" : "",
+        }))
+        .filter((set) => isNumber(set.reps)),
+    })),
+  }));
 }
 
 function createWorkoutFromPlannedSession(session, actual, modificationNote) {
@@ -2875,16 +3072,17 @@ function convertStrengthActualToWorkoutExercises(blocks) {
     .flatMap((block) => block.exercises.filter((exercise) => exercise.completed))
     .map((exercise) => ({
       name: exercise.name,
-      sets: [
-        {
-          reps: extractWorkoutRepCount(exercise.reps),
-          loadType: "bodyweight",
-          weight: null,
-          bandColor: "",
-        },
-      ],
+      sets: (exercise.actualSets || [])
+        .map((set, index) => ({
+          order: index + 1,
+          reps: toNumberOrNull(set.reps),
+          loadType: set.loadType === "band" || set.loadType === "bodyweight" ? set.loadType : "kg",
+          weight: set.loadType === "kg" ? toNumberOrNull(set.weight) : null,
+          bandColor: set.loadType === "band" ? set.bandColor || "" : "",
+        }))
+        .filter((set) => isNumber(set.reps)),
     }))
-    .filter((exercise) => exercise.sets[0].reps > 0);
+    .filter((exercise) => exercise.sets.length > 0);
 }
 
 function extractWorkoutRepCount(value) {
@@ -2997,8 +3195,17 @@ function renderActualDiff(session) {
   return `<ul>${(session.actual?.blocks || [])
     .map(
       (block) =>
-        `<li>${escapeHtml(block.label)}: ${block.actualSets || "-"} sets • ${(block.exercises || [])
-          .map((exercise) => `${escapeHtml(exercise.code)} ${exercise.completed ? "done" : "skipped"}${exercise.actualNote ? ` (${escapeHtml(exercise.actualNote)})` : ""}`)
+        `<li>${escapeHtml(block.label)}: ${(block.actualSets ?? block.plannedSets) || "-"} sets • ${(block.exercises || [])
+          .map(
+            (exercise) =>
+              `${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)} ${
+                exercise.completed
+                  ? (exercise.actualSets || [])
+                      .map((set) => `${escapeHtml(formatNumber(set.reps))} reps @ ${escapeHtml(formatStrengthLoad(set))}`)
+                      .join(", ") || "done"
+                  : "skipped"
+              }${exercise.actualNote ? ` (${escapeHtml(exercise.actualNote)})` : ""}`,
+          )
           .join(", ")}</li>`,
     )
     .join("")}</ul>`;
