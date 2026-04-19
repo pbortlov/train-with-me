@@ -43,13 +43,13 @@ Each imported file should describe one reusable phase using ordered rows such as
 
 ```text
 PHASE,Phase 1,5
-SLOT,Tuesday,Strength A
-BLOCK,A,15,60,3
-EXERCISE,A1,Back squat,5,Heavy
-EXERCISE,A2,Barbell row,8,
-SLOT,Friday,Strength B
+SLOT,Tuesday,Strength A,Main lower-body day
+BLOCK,A,15-20,60,3
+EXERCISE,A1,Back squat,5,Heavy,100
+EXERCISE,A2,Barbell row,8,Control the eccentric,
+SLOT,Friday,Strength B,Upper/lower mixed
 BLOCK,A,12,45,4
-EXERCISE,A1,Front squat,4,
+EXERCISE,A1,Front squat,4,,80
 ```
 
 See [docs/strength-phase-import.md](docs/strength-phase-import.md) for the exact contract.

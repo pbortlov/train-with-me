@@ -1964,6 +1964,7 @@ function renderPlannedSessionCard(session) {
         <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
       </header>
       ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
+      ${session.notes ? `<div class="session-meta">${escapeHtml(session.notes)}</div>` : ""}
       <div class="session-actions">
         <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
         ${session.status === "planned"
@@ -1995,7 +1996,8 @@ function formatPlannedSessionSummary(session) {
 
   const blocks = session.details?.blocks || [];
   const exerciseCount = blocks.flatMap((block) => block.exercises || []).length;
-  return `${blocks.length} blocks • ${exerciseCount} exercises`;
+  const durationSummary = blocks.map((block) => formatBlockDuration(block)).filter(Boolean).join(", ");
+  return [durationSummary, `${blocks.length} blocks • ${exerciseCount} exercises`].filter(Boolean).join(" • ");
 }
 
 function updatePlannedTypeFields() {
@@ -2208,6 +2210,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
         id: crypto.randomUUID(),
         weekday,
         title: columns[2] || `Strength session ${template.weekdaySlots.length + 1}`,
+        notes: columns[3] || "",
         blocks: [],
       };
       template.weekdaySlots.push(currentSlot);
@@ -2218,9 +2221,11 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       if (!currentSlot) {
         throw new Error(`BLOCK row before SLOT at line ${index + 1}.`);
       }
+      const duration = parseBlockDurationRange(columns[2]);
       currentBlock = {
         label: columns[1] || `Block ${currentSlot.blocks.length + 1}`,
-        durationMin: toNumberOrNull(columns[2]),
+        durationMin: duration.durationMin,
+        durationMax: duration.durationMax,
         restSec: toNumberOrNull(columns[3]),
         sets: toNumberOrNull(columns[4]),
         exercises: [],
@@ -2237,6 +2242,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
         name: columns[2] || "Exercise",
         reps: columns[3] || "",
         notes: columns[4] || "",
+        weight: toNumberOrNull(columns[5]),
       });
       return;
     }
@@ -2287,7 +2293,7 @@ function renderPhaseTemplates() {
   phaseTemplateListEl.innerHTML = phaseTemplates
     .map((template) => {
       const slotSummary = template.weekdaySlots
-        .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}`)
+        .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}${slot.notes ? ` (${slot.notes})` : ""}`)
         .join(" • ");
       return `
         <article class="phase-card">
@@ -2358,6 +2364,7 @@ function schedulePhaseTemplate(template, startDate) {
         phaseTemplateId: template.id,
         phaseInstanceId: instanceId,
         status: "planned",
+        notes: slot.notes,
         details: { blocks: slot.blocks },
       });
       plannedSessions.push(session);
@@ -2720,10 +2727,24 @@ function renderPlannedDiff(session) {
   if (session.type === "sprint") {
     return `<ul>${(session.details?.blocks || []).map((block) => `<li>${block.reps} x ${block.distance}m</li>`).join("")}</ul>`;
   }
-  return `<ul>${(session.details?.blocks || [])
+  const notesMarkup = session.notes ? `<div class="review-meta">Slot notes: ${escapeHtml(session.notes)}</div>` : "";
+  return `${notesMarkup}<ul>${(session.details?.blocks || [])
     .map(
       (block) =>
-        `<li>${escapeHtml(block.label)}: ${block.sets || "-"} sets • ${(block.exercises || []).map((exercise) => `${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)} (${escapeHtml(exercise.reps || "-")})`).join(", ")}</li>`,
+        `<li>${escapeHtml(block.label)}: ${[
+          formatBlockDuration(block),
+          block.sets ? `${escapeHtml(String(block.sets))} sets` : "",
+          (block.exercises || [])
+            .map(
+              (exercise) =>
+                `${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)} (${escapeHtml(exercise.reps || "-")}${
+                  isNumber(exercise.weight) ? ` @ ${escapeHtml(formatNumber(exercise.weight))} kg` : ""
+                })${exercise.notes ? ` - ${escapeHtml(exercise.notes)}` : ""}`,
+            )
+            .join(", "),
+        ]
+          .filter(Boolean)
+          .join(" • ")}</li>`,
     )
     .join("")}</ul>`;
 }
@@ -2796,6 +2817,41 @@ function formatHumanDate(value) {
   return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+function parseBlockDurationRange(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return { durationMin: null, durationMax: null };
+  }
+
+  const rangeMatch = raw.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
+  if (rangeMatch) {
+    return {
+      durationMin: Number(rangeMatch[1]),
+      durationMax: Number(rangeMatch[2]),
+    };
+  }
+
+  return {
+    durationMin: toNumberOrNull(raw),
+    durationMax: null,
+  };
+}
+
+function formatBlockDuration(block) {
+  const min = toNumberOrNull(block?.durationMin);
+  const max = toNumberOrNull(block?.durationMax);
+  if (isNumber(min) && isNumber(max)) {
+    return `${formatNumber(min)}-${formatNumber(max)} min`;
+  }
+  if (isNumber(min)) {
+    return `${formatNumber(min)} min`;
+  }
+  if (isNumber(max)) {
+    return `${formatNumber(max)} min`;
+  }
+  return "";
+}
+
 function normalizePlannedSession(session) {
   return {
     id: session.id || crypto.randomUUID(),
@@ -2836,6 +2892,7 @@ function normalizePlannedDetails(type, details) {
       ? details.blocks.map((block) => ({
           label: block.label || "",
           durationMin: toNumberOrNull(block.durationMin),
+          durationMax: toNumberOrNull(block.durationMax),
           restSec: toNumberOrNull(block.restSec),
           sets: toNumberOrNull(block.sets),
           exercises: Array.isArray(block.exercises)
@@ -2844,6 +2901,7 @@ function normalizePlannedDetails(type, details) {
                 name: exercise.name || "Exercise",
                 reps: exercise.reps || "",
                 notes: exercise.notes || "",
+                weight: toNumberOrNull(exercise.weight),
               }))
             : [],
         }))
@@ -2861,6 +2919,7 @@ function normalizePhaseTemplate(template) {
           id: slot.id || crypto.randomUUID(),
           weekday: toNumberOrNull(slot.weekday) || 1,
           title: slot.title || "Strength session",
+          notes: typeof slot.notes === "string" ? slot.notes : "",
           blocks: normalizePlannedDetails("strength", { blocks: slot.blocks }).blocks,
         }))
       : [],
