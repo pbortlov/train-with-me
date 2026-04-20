@@ -20,6 +20,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Program weeks are anchored to the chosen phase start date, not calendar Monday
 - Calendar uses compact session cards with a popup training view so the week grid stays stable
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
+- Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
+- Sprint logging includes a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
 - Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
 - Planned session statuses:
   - planned

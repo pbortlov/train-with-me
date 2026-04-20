@@ -605,6 +605,32 @@ button {
   min-width: 0;
 }
 
+.completion-sprint-grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: 0.6fr 0.9fr 1.1fr 1.4fr;
+  align-items: center;
+}
+
+.completion-sprint-grid-header,
+.completion-sprint-cell {
+  min-width: 0;
+  font-size: 0.84rem;
+}
+
+.completion-sprint-grid-header {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.completion-sprint-input {
+  min-width: 0;
+}
+
+.completion-sprint-input input {
+  margin: 0;
+}
+
 .goal-progress {
   display: grid;
   gap: 0.35rem;
@@ -812,6 +838,14 @@ dialog {
 
   .completion-actual-set-row {
     grid-template-columns: 1fr;
+  }
+
+  .completion-sprint-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .completion-sprint-grid-header {
+    display: none;
   }
 }
 

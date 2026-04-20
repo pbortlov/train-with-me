@@ -19,6 +19,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - default landing page
   - week-first layout
   - manual run/sprint planning
+  - sprint plans use structured blocks with reps, distance, optional target time per rep, and optional rest
   - generated strength sessions
   - compact session cards with a popup training view so the day cell size stays stable
   - week cards show title first, time second, inline status at the lower right, and a contained `View training` button
@@ -35,6 +36,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
   - planned vs actual comparisons
+  - sprint review includes planned sprint blocks, actual sprint rows, and session feeling
   - strength review includes actual per-set execution with load type, reps, and load details
   - actual workout logging
   - recent workouts

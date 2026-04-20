@@ -95,7 +95,12 @@ const plannedRunFields = document.getElementById("planned-run-fields");
 const plannedRunDistanceInput = document.getElementById("planned-run-distance");
 const plannedRunPaceInput = document.getElementById("planned-run-pace");
 const plannedSprintFields = document.getElementById("planned-sprint-fields");
-const plannedSprintBlocksInput = document.getElementById("planned-sprint-blocks");
+const plannedSprintRepsInput = document.getElementById("planned-sprint-reps");
+const plannedSprintDistanceInput = document.getElementById("planned-sprint-distance");
+const plannedSprintTargetTimeInput = document.getElementById("planned-sprint-target-time");
+const plannedSprintRestInput = document.getElementById("planned-sprint-rest");
+const addPlannedSprintBlockButton = document.getElementById("add-planned-sprint-block");
+const plannedSprintBlocksListEl = document.getElementById("planned-sprint-blocks-list");
 const plannedSessionStatusEl = document.getElementById("planned-session-status");
 const cancelPlannedSessionButton = document.getElementById("cancel-planned-session");
 const phaseImportForm = document.getElementById("phase-import-form");
@@ -124,7 +129,8 @@ const completionRunDistanceInput = document.getElementById("completion-run-dista
 const completionRunTimeInput = document.getElementById("completion-run-time");
 const completionRunPaceInput = document.getElementById("completion-run-pace");
 const completionSprintFields = document.getElementById("completion-sprint-fields");
-const completionSprintSetsInput = document.getElementById("completion-sprint-sets");
+const completionSprintBlocksEl = document.getElementById("completion-sprint-blocks");
+const completionSprintFeelingInput = document.getElementById("completion-sprint-feeling");
 const completionStrengthFields = document.getElementById("completion-strength-fields");
 const completionStrengthBlocksEl = document.getElementById("completion-strength-blocks");
 const completionNoteInput = document.getElementById("completion-note");
@@ -139,6 +145,13 @@ const BAND_COLOR_LABELS = {
   green: "extra heavy",
   blue: "strongest",
 };
+const SPRINT_FEELING_OPTIONS = [
+  { value: "sharp", label: "Sharp ⚡" },
+  { value: "solid", label: "Solid 🙂" },
+  { value: "flat", label: "Flat 🪫" },
+  { value: "sluggish", label: "Sluggish 🐢" },
+  { value: "pain", label: "Pain ⚠️" },
+];
 
 const dateInput = document.getElementById("date");
 
@@ -162,6 +175,7 @@ let uiSettings = load(STORAGE_KEY_UI_SETTINGS, {
 });
 let editingWorkoutId = null;
 let draftSprintSets = [];
+let draftPlannedSprintBlocks = [];
 let draftStrengthExercises = [];
 let draftCurrentStrengthSets = [];
 let progressFilters = {
@@ -176,6 +190,7 @@ let runChart = null;
 let sprintChart = null;
 let editingPhaseTemplateId = "";
 let completionStrengthDraft = [];
+let completionSprintDraft = [];
 let selectedCalendarSessionId = "";
 let pendingDeleteWorkoutId = null;
 let deferredInstallPrompt = null;
@@ -188,6 +203,7 @@ syncExerciseLibraryFromWorkouts();
 renderExerciseLibrary();
 updateVisibleFields();
 renderSprintSets();
+renderPlannedSprintBlocks();
 renderCurrentStrengthSets();
 renderStrengthExercises();
 render();
@@ -646,10 +662,11 @@ function formatMainMetric(w) {
 
   const sprintSets = normalizeSprintSets(w.sprintSets);
   if (sprintSets.length) {
-    return sprintSets.map((set) => `#${set.order} ${set.distance}m/${set.time}s`).join(" • ");
+    const feeling = formatSprintFeeling(w.sprintFeeling);
+    return [sprintSets.map((set) => `#${set.order} ${set.distance}m/${set.time}s`).join(" • "), feeling].filter(Boolean).join(" • ");
   }
 
-  const parts = [isNumber(w.time) ? `${w.time} sec` : null, isNumber(w.distance) ? `${w.distance} m` : null].filter(Boolean);
+  const parts = [isNumber(w.time) ? `${w.time} sec` : null, isNumber(w.distance) ? `${w.distance} m` : null, formatSprintFeeling(w.sprintFeeling)].filter(Boolean);
   return parts.join(" • ") || "-";
 }
 
@@ -1614,6 +1631,11 @@ function normalizeSprintSets(sprintSets) {
     }));
 }
 
+function formatSprintFeeling(value) {
+  const option = SPRINT_FEELING_OPTIONS.find((item) => item.value === value);
+  return option ? option.label : "";
+}
+
 function sprintBestTime(workout) {
   const sprintSets = normalizeSprintSets(workout.sprintSets);
   if (sprintSets.length) {
@@ -1668,6 +1690,7 @@ function normalizeImportedWorkout(workout) {
     time: normalizedTime,
     pace: normalizedPace,
     sprintSets: normalizeSprintSets(workout.sprintSets),
+    sprintFeeling: typeof workout.sprintFeeling === "string" ? workout.sprintFeeling : "",
     notes: typeof workout.notes === "string" ? workout.notes : "",
     createdAt: isNumber(workout.createdAt) ? workout.createdAt : Date.now(),
   };
@@ -1813,6 +1836,8 @@ function bindV2Events() {
   addSafeEventListener(plannedSessionTypeInput, "change", updatePlannedTypeFields);
   addSafeEventListener(plannedSessionForm, "submit", savePlannedSessionFromForm);
   addSafeEventListener(cancelPlannedSessionButton, "click", resetPlannedSessionForm);
+  addSafeEventListener(addPlannedSprintBlockButton, "click", addPlannedSprintBlock);
+  addSafeEventListener(plannedSprintBlocksListEl, "click", handlePlannedSprintBlockAction);
   addSafeEventListener(calendarGridEl, "click", handleCalendarAction);
   addSafeEventListener(calendarSessionDetailEl, "click", handleCalendarAction);
   addSafeEventListener(calendarSessionDialog, "click", handleCalendarSessionDialogClick);
@@ -1830,6 +1855,7 @@ function bindV2Events() {
   addSafeEventListener(completionRunTimeInput, "input", syncCompletionRunPace);
   addSafeEventListener(completionRunTimeInput, "change", syncCompletionRunPace);
   addSafeEventListener(completionRunDistanceInput, "input", syncCompletionRunPace);
+  addSafeEventListener(completionSprintBlocksEl, "input", handleCompletionSprintInput);
   addSafeEventListener(completionStrengthBlocksEl, "click", handleCompletionStrengthAction);
   addSafeEventListener(completionStrengthBlocksEl, "input", handleCompletionStrengthInput);
   addSafeEventListener(completionStrengthBlocksEl, "change", handleCompletionStrengthInput);
@@ -2064,9 +2090,10 @@ function renderSessionStructure(session, mode) {
     const heading = mode === "planned" ? "Planned" : "Actual";
     const rows =
       mode === "planned"
-        ? (session.details?.blocks || []).map((block) => `${block.reps} x ${block.distance}m`)
+        ? (session.details?.blocks || []).map((block) => formatPlannedSprintBlock(block))
         : (session.actual?.sprintSets || []).map((set) => `${formatNumber(set.distance)}m in ${formatNumber(set.time)}s`);
-    return `<section class="session-structure"><h4>${heading}</h4><ul>${rows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}</ul></section>`;
+    const feeling = mode === "actual" ? formatSprintFeeling(session.actual?.feeling) : "";
+    return `<section class="session-structure"><h4>${heading}</h4><ul>${rows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}</ul>${feeling ? `<div class="review-meta">Feeling: ${escapeHtml(feeling)}</div>` : ""}</section>`;
   }
   return renderStrengthStructure(mode === "planned" ? session.details?.blocks || [] : session.actual?.blocks || [], {
     mode,
@@ -2149,7 +2176,7 @@ function formatPlannedSessionSummary(session) {
 
   if (session.type === "sprint") {
     const blocks = session.details?.blocks || [];
-    return blocks.map((block) => `${block.reps} x ${block.distance}m`).join(", ") || "planned sprint session";
+    return blocks.map((block) => formatPlannedSprintBlock(block)).join(", ") || "planned sprint session";
   }
 
   const blocks = session.details?.blocks || [];
@@ -2280,11 +2307,13 @@ function resetPlannedSessionForm() {
     return;
   }
   plannedSessionForm.reset();
+  draftPlannedSprintBlocks = [];
   plannedSessionIdInput.value = "";
   plannedSessionDateInput.value = formatDateInput(new Date());
   plannedSessionTypeInput.value = "run";
   updatePlannedTypeFields();
   plannedSessionStatusEl.textContent = "";
+  renderPlannedSprintBlocks();
 }
 
 function savePlannedSessionFromForm(event) {
@@ -2304,7 +2333,7 @@ function savePlannedSessionFromForm(event) {
           paceGoal: parseGoalPaceInput(plannedRunPaceInput.value),
         }
       : {
-          blocks: parseSprintPlanBlocks(plannedSprintBlocksInput.value),
+          blocks: normalizePlannedSprintBlocks(draftPlannedSprintBlocks),
         },
   };
 
@@ -2334,22 +2363,104 @@ function savePlannedSessionFromForm(event) {
   render();
 }
 
-function parseSprintPlanBlocks(text) {
-  return String(text || "")
-    .split("\n")
-    .map((line) => line.trim())
+function addPlannedSprintBlock() {
+  const reps = toNumberOrNull(plannedSprintRepsInput?.value);
+  const distance = toNumberOrNull(plannedSprintDistanceInput?.value);
+  const targetTime = toNumberOrNull(plannedSprintTargetTimeInput?.value);
+  const restSec = toNumberOrNull(plannedSprintRestInput?.value);
+  if (!isNumber(reps) || !isNumber(distance)) {
+    plannedSessionStatusEl.textContent = "Sprint block needs reps and meters.";
+    return;
+  }
+  draftPlannedSprintBlocks.push({
+    reps: Number(reps),
+    distance: Number(distance),
+    targetTime: isNumber(targetTime) ? Number(targetTime) : null,
+    restSec: isNumber(restSec) ? Number(restSec) : null,
+  });
+  if (plannedSprintRepsInput) plannedSprintRepsInput.value = "";
+  if (plannedSprintDistanceInput) plannedSprintDistanceInput.value = "";
+  if (plannedSprintTargetTimeInput) plannedSprintTargetTimeInput.value = "";
+  if (plannedSprintRestInput) plannedSprintRestInput.value = "";
+  plannedSessionStatusEl.textContent = "Sprint block added.";
+  renderPlannedSprintBlocks();
+}
+
+function handlePlannedSprintBlockAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  if (target.dataset.role !== "delete-planned-sprint-block") {
+    return;
+  }
+  const index = Number(target.dataset.index);
+  if (!Number.isInteger(index)) {
+    return;
+  }
+  draftPlannedSprintBlocks.splice(index, 1);
+  renderPlannedSprintBlocks();
+}
+
+function renderPlannedSprintBlocks() {
+  if (!plannedSprintBlocksListEl) {
+    return;
+  }
+  if (!draftPlannedSprintBlocks.length) {
+    plannedSprintBlocksListEl.innerHTML = "<li>No sprint blocks yet.</li>";
+    return;
+  }
+  plannedSprintBlocksListEl.innerHTML = draftPlannedSprintBlocks
+    .map(
+      (block, index) => `
+        <li>
+          ${escapeHtml(formatPlannedSprintBlock(block))}
+          <button type="button" class="ghost-button" data-role="delete-planned-sprint-block" data-index="${index}">Remove</button>
+        </li>`,
+    )
+    .join("");
+}
+
+function normalizePlannedSprintBlocks(blocks) {
+  if (!Array.isArray(blocks)) {
+    return [];
+  }
+  return blocks
+    .map((block) => ({
+      reps: toNumberOrNull(block?.reps),
+      distance: toNumberOrNull(block?.distance),
+      targetTime: toNumberOrNull(block?.targetTime),
+      restSec: toNumberOrNull(block?.restSec),
+    }))
+    .filter((block) => isNumber(block.reps) && isNumber(block.distance))
+    .map((block) => ({
+      reps: Number(block.reps),
+      distance: Number(block.distance),
+      targetTime: isNumber(block.targetTime) ? Number(block.targetTime) : null,
+      restSec: isNumber(block.restSec) ? Number(block.restSec) : null,
+    }));
+}
+
+function formatPlannedSprintBlock(block) {
+  const referenceTime = getPlannedSprintReferenceTime(block);
+  return [
+    `${formatNumber(block.reps)} x ${formatNumber(block.distance)}m`,
+    isNumber(block.targetTime)
+      ? `@ ${formatNumber(block.targetTime)}s`
+      : isNumber(referenceTime)
+        ? `best ${formatNumber(referenceTime)}s`
+        : "",
+    isNumber(block.restSec) ? `${formatNumber(block.restSec)}s rest` : "",
+  ]
     .filter(Boolean)
-    .map((line) => {
-      const match = line.match(/^(\d+)\s*x\s*(\d+)\s*m$/i);
-      if (!match) {
-        return null;
-      }
-      return {
-        reps: Number(match[1]),
-        distance: Number(match[2]),
-      };
-    })
-    .filter(Boolean);
+    .join(" • ");
+}
+
+function getPlannedSprintReferenceTime(block) {
+  if (isNumber(block?.targetTime)) {
+    return Number(block.targetTime);
+  }
+  return findBestSprintTimeForDistance(block?.distance);
 }
 
 function handleCalendarAction(event) {
@@ -2455,10 +2566,13 @@ function fillPlannedSessionForm(session) {
   plannedSessionTitleInput.value = session.title;
   plannedSessionNotesInput.value = session.notes || "";
   if (session.type === "run") {
+    draftPlannedSprintBlocks = [];
+    renderPlannedSprintBlocks();
     plannedRunDistanceInput.value = session.details?.distance ?? "";
     plannedRunPaceInput.value = isNumber(session.details?.paceGoal) ? formatGoalPace(session.details.paceGoal) : "";
   } else {
-    plannedSprintBlocksInput.value = (session.details?.blocks || []).map((block) => `${block.reps} x ${block.distance}m`).join("\n");
+    draftPlannedSprintBlocks = normalizePlannedSprintBlocks(session.details?.blocks || []);
+    renderPlannedSprintBlocks();
   }
   updatePlannedTypeFields();
   setCurrentView("calendar");
@@ -2950,6 +3064,7 @@ function openCompletionDialog(session) {
   }
   completionForm.reset();
   completionStrengthDraft = [];
+  completionSprintDraft = [];
   completionSessionIdInput.value = session.id;
   completionDateInput.value = session.date;
   completionSessionTitleEl.textContent = `${session.title} • ${capitalize(session.type)}`;
@@ -2965,7 +3080,11 @@ function openCompletionDialog(session) {
     completionRunPaceInput.value = "";
   }
   if (session.type === "sprint") {
-    completionSprintSetsInput.value = "";
+    completionSprintDraft = buildCompletionSprintDraft(session);
+    if (completionSprintFeelingInput) {
+      completionSprintFeelingInput.value = "";
+    }
+    renderCompletionSprintBlocks();
   }
   if (session.type === "strength") {
     completionStrengthDraft = buildCompletionStrengthDraft(session);
@@ -2984,11 +3103,118 @@ function closeCompletionDialog() {
     return;
   }
   completionStrengthDraft = [];
+  completionSprintDraft = [];
   if (typeof completionDialog.close === "function") {
     completionDialog.close();
   } else {
     completionDialog.removeAttribute("open");
   }
+}
+
+function buildCompletionSprintDraft(session) {
+  return normalizePlannedSprintBlocks(session.details?.blocks || []).map((block, blockIndex) => ({
+    label: `Block ${blockIndex + 1}`,
+    reps: Number(block.reps),
+    distance: Number(block.distance),
+    targetTime: isNumber(block.targetTime) ? Number(block.targetTime) : null,
+    restSec: isNumber(block.restSec) ? Number(block.restSec) : null,
+    bestPreviousTime: findBestSprintTimeForDistance(block.distance),
+    rows: Array.from({ length: Number(block.reps) }, (_, repIndex) => ({
+      order: repIndex + 1,
+      distance: Number(block.distance),
+      targetTime: isNumber(block.targetTime) ? Number(block.targetTime) : null,
+      actualTime: null,
+    })),
+  }));
+}
+
+function renderCompletionSprintBlocks() {
+  if (!completionSprintBlocksEl) {
+    return;
+  }
+  if (!completionSprintDraft.length) {
+    completionSprintBlocksEl.innerHTML = "<p class=\"planner-empty\">No planned sprint blocks.</p>";
+    return;
+  }
+  completionSprintBlocksEl.innerHTML = completionSprintDraft
+    .map(
+      (block, blockIndex) => `
+        <div class="completion-block completion-sprint-block">
+          <h4>${escapeHtml(block.label)}</h4>
+          <div class="phase-meta">${escapeHtml(formatPlannedSprintBlock(block))}</div>
+          <div class="completion-sprint-grid">
+            <div class="completion-sprint-grid-header">Rep</div>
+            <div class="completion-sprint-grid-header">Meters</div>
+            <div class="completion-sprint-grid-header">Reference</div>
+            <div class="completion-sprint-grid-header">Actual time (sec)</div>
+            ${(block.rows || [])
+              .map(
+                (row, rowIndex) => `
+                  <div class="completion-sprint-cell">${row.order}</div>
+                  <div class="completion-sprint-cell">${escapeHtml(formatNumber(row.distance))}m</div>
+                  <div class="completion-sprint-cell">${formatSprintReferenceCell(row, block)}</div>
+                  <label class="completion-sprint-input">
+                    <input type="number" min="0" step="0.01" data-role="completion-sprint-time" data-block-index="${blockIndex}" data-row-index="${rowIndex}" value="${row.actualTime ?? ""}" />
+                  </label>`,
+              )
+              .join("")}
+          </div>
+        </div>`,
+    )
+    .join("");
+}
+
+function formatSprintReferenceCell(row, block) {
+  if (isNumber(row?.targetTime)) {
+    return `${escapeHtml(formatNumber(row.targetTime))}s target`;
+  }
+  if (isNumber(block?.bestPreviousTime)) {
+    return `${escapeHtml(formatNumber(block.bestPreviousTime))}s best`;
+  }
+  return "-";
+}
+
+function handleCompletionSprintInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) {
+    return;
+  }
+  if (target.dataset.role !== "completion-sprint-time") {
+    return;
+  }
+  const blockIndex = Number(target.dataset.blockIndex);
+  const rowIndex = Number(target.dataset.rowIndex);
+  const row = completionSprintDraft?.[blockIndex]?.rows?.[rowIndex];
+  if (!row) {
+    return;
+  }
+  row.actualTime = toNumberOrNull(target.value);
+}
+
+function collectCompletedSprintSets() {
+  return (completionSprintDraft || [])
+    .flatMap((block) => block.rows || [])
+    .map((row, index) => ({
+      order: index + 1,
+      time: toNumberOrNull(row.actualTime),
+      distance: toNumberOrNull(row.distance),
+      targetTime: toNumberOrNull(row.targetTime),
+    }))
+    .filter((set) => isNumber(set.time) && isNumber(set.distance));
+}
+
+function findBestSprintTimeForDistance(distance) {
+  const value = toNumberOrNull(distance);
+  if (!isNumber(value)) {
+    return null;
+  }
+  const matchingTimes = workouts
+    .filter((workout) => workout.activity === "sprint")
+    .flatMap((workout) => normalizeSprintSets(workout.sprintSets))
+    .filter((set) => Number(set.distance) === Number(value))
+    .map((set) => Number(set.time))
+    .filter((time) => isNumber(time));
+  return matchingTimes.length ? Math.min(...matchingTimes) : null;
 }
 
 function buildCompletionStrengthDraft(session) {
@@ -3325,12 +3551,16 @@ function saveCompletedSession(event) {
       actual = { distance, time, pace };
     }
     if (session.type === "sprint") {
-      const sprintSets = parseSprintSetsFromEditor(completionSprintSetsInput.value);
-      if (!sprintSets.length) {
-        completionStatusMessageEl.textContent = "Sprint completion needs at least one actual set.";
+      const sprintSets = collectCompletedSprintSets();
+      const expectedSprintSets = (completionSprintDraft || []).reduce((sum, block) => sum + ((block.rows || []).length), 0);
+      if (!sprintSets.length || sprintSets.length !== expectedSprintSets) {
+        completionStatusMessageEl.textContent = "Sprint completion needs a time for every planned rep.";
         return;
       }
-      actual = { sprintSets };
+      actual = {
+        sprintSets,
+        feeling: completionSprintFeelingInput?.value || "",
+      };
     }
     if (session.type === "strength") {
       actual = { blocks: collectCompletedStrengthBlocks(session) };
@@ -3408,6 +3638,7 @@ function createWorkoutFromPlannedSession(session, actual, modificationNote) {
       date: session.date,
       activity: "sprint",
       sprintSets: actual.sprintSets,
+      sprintFeeling: actual.feeling || "",
       distance: null,
       time: null,
       pace: null,
@@ -3520,7 +3751,7 @@ function renderPlannedDiff(session) {
     return `<pre>${escapeHtml(formatPlannedSessionSummary(session))}</pre>`;
   }
   if (session.type === "sprint") {
-    return `<ul>${(session.details?.blocks || []).map((block) => `<li>${block.reps} x ${block.distance}m</li>`).join("")}</ul>`;
+    return `<ul>${(session.details?.blocks || []).map((block) => `<li>${escapeHtml(formatPlannedSprintBlock(block))}</li>`).join("")}</ul>`;
   }
   return renderStrengthStructure(session.details?.blocks || [], { mode: "planned", notes: session.notes });
 }
@@ -3533,7 +3764,10 @@ function renderActualDiff(session) {
     return `<pre>${escapeHtml(`${formatNumber(session.actual?.distance || 0)} km • ${session.actual?.time || ""} • ${formatRunPace(session.actual?.pace || 0)} min/km`)}</pre>`;
   }
   if (session.type === "sprint") {
-    return `<ul>${(session.actual?.sprintSets || []).map((set) => `<li>${formatNumber(set.distance)}m in ${formatNumber(set.time)}s</li>`).join("")}</ul>`;
+    return `
+      <ul>${(session.actual?.sprintSets || []).map((set) => `<li>${formatNumber(set.distance)}m in ${formatNumber(set.time)}s</li>`).join("")}</ul>
+      ${formatSprintFeeling(session.actual?.feeling) ? `<div class="review-meta">Feeling: ${escapeHtml(formatSprintFeeling(session.actual?.feeling))}</div>` : ""}
+    `;
   }
   return renderStrengthStructure(session.actual?.blocks || [], { mode: "actual" });
 }
@@ -3924,9 +4158,7 @@ function normalizePlannedDetails(type, details) {
   if (type === "sprint") {
     return {
       blocks: Array.isArray(details?.blocks)
-        ? details.blocks
-            .map((block) => ({ reps: toNumberOrNull(block.reps), distance: toNumberOrNull(block.distance) }))
-            .filter((block) => isNumber(block.reps) && isNumber(block.distance))
+        ? normalizePlannedSprintBlocks(details.blocks)
         : [],
     };
   }

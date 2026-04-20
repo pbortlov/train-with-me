@@ -16,6 +16,7 @@ Review compares:
 Review compares:
 - planned sprint blocks
 - actual sprint sets
+- session feeling
 - modification note if changed
 
 ### Strength

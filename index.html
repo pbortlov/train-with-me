@@ -91,14 +91,29 @@
             </div>
 
             <div id="planned-sprint-fields" class="planned-type-fields" data-planned-type="sprint">
-              <label>
-                Sprint blocks
-                <textarea
-                  id="planned-sprint-blocks"
-                  rows="4"
-                  placeholder="One block per line, e.g. 6 x 100m&#10;4 x 60m"
-                ></textarea>
-              </label>
+              <p class="hint">Add sprint blocks with reps, meters, optional target time per rep, and optional rest.</p>
+              <div class="grid">
+                <label>
+                  Reps
+                  <input type="number" id="planned-sprint-reps" min="1" step="1" placeholder="e.g. 6" />
+                </label>
+                <label>
+                  Meters
+                  <input type="number" id="planned-sprint-distance" min="1" step="1" placeholder="e.g. 100" />
+                </label>
+                <label>
+                  Target time per rep (sec, optional)
+                  <input type="number" id="planned-sprint-target-time" min="0" step="0.01" placeholder="Leave empty to use best previous time" />
+                </label>
+                <label>
+                  Rest (sec, optional)
+                  <input type="number" id="planned-sprint-rest" min="0" step="1" placeholder="e.g. 90" />
+                </label>
+              </div>
+              <div class="dialog-actions">
+                <button type="button" id="add-planned-sprint-block">Add sprint block</button>
+              </div>
+              <ol id="planned-sprint-blocks-list" class="detail-list"></ol>
             </div>
 
             <div class="dialog-actions">
@@ -450,9 +465,18 @@
         </div>
 
         <div id="completion-sprint-fields" class="completion-type-fields">
+          <p class="hint">Sprint rows are generated from the planned reps and meters. Enter only the actual time for each rep.</p>
+          <div id="completion-sprint-blocks"></div>
           <label>
-            Actual sprint sets (timeSec,distanceM)
-            <textarea id="completion-sprint-sets" rows="4"></textarea>
+            Sprint feeling
+            <select id="completion-sprint-feeling">
+              <option value="">Select feeling</option>
+              <option value="sharp">Sharp ⚡</option>
+              <option value="solid">Solid 🙂</option>
+              <option value="flat">Flat 🪫</option>
+              <option value="sluggish">Sluggish 🐢</option>
+              <option value="pain">Pain ⚠️</option>
+            </select>
           </label>
         </div>
 
