@@ -1,6 +1,10 @@
 const STORAGE_KEY_WORKOUTS = "twm_workouts_v1";
 const STORAGE_KEY_GOALS = "twm_goals_v1";
 const STORAGE_KEY_EXERCISES = "twm_exercise_library_v1";
+const STORAGE_KEY_PLANNED_SESSIONS = "twm_planned_sessions_v2";
+const STORAGE_KEY_PHASE_TEMPLATES = "twm_phase_templates_v2";
+const STORAGE_KEY_PHASE_INSTANCES = "twm_phase_instances_v2";
+const STORAGE_KEY_UI_SETTINGS = "twm_ui_settings_v2";
 
 const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
@@ -70,6 +74,68 @@ const saveEditWorkoutButton = document.getElementById("save-edit-workout");
 const cancelEditWorkoutButton = document.getElementById("cancel-edit-workout");
 const exerciseSuggestionsEl = document.getElementById("exercise-suggestions");
 const exerciseLibraryListEl = document.getElementById("exercise-library-list");
+const coachModeToggle = document.getElementById("coach-mode-toggle");
+const viewNavButtons = document.querySelectorAll("[data-view-target]");
+const viewPanels = document.querySelectorAll(".view-panel");
+const plannerSummaryEl = document.getElementById("planner-summary");
+const calendarWeekLabelEl = document.getElementById("calendar-week-label");
+const calendarGridEl = document.getElementById("calendar-grid");
+const calendarSessionDialog = document.getElementById("calendar-session-dialog");
+const calendarSessionDetailEl = document.getElementById("calendar-session-detail");
+const prevWeekButton = document.getElementById("prev-week");
+const nextWeekButton = document.getElementById("next-week");
+const currentWeekButton = document.getElementById("current-week");
+const plannedSessionForm = document.getElementById("planned-session-form");
+const plannedSessionIdInput = document.getElementById("planned-session-id");
+const plannedSessionDateInput = document.getElementById("planned-session-date");
+const plannedSessionTypeInput = document.getElementById("planned-session-type");
+const plannedSessionTitleInput = document.getElementById("planned-session-title");
+const plannedSessionNotesInput = document.getElementById("planned-session-notes");
+const plannedRunFields = document.getElementById("planned-run-fields");
+const plannedRunDistanceInput = document.getElementById("planned-run-distance");
+const plannedRunPaceInput = document.getElementById("planned-run-pace");
+const plannedSprintFields = document.getElementById("planned-sprint-fields");
+const plannedSprintRepsInput = document.getElementById("planned-sprint-reps");
+const plannedSprintDistanceInput = document.getElementById("planned-sprint-distance");
+const plannedSprintTargetTimeInput = document.getElementById("planned-sprint-target-time");
+const plannedSprintRestInput = document.getElementById("planned-sprint-rest");
+const addPlannedSprintBlockButton = document.getElementById("add-planned-sprint-block");
+const plannedSprintBlocksListEl = document.getElementById("planned-sprint-blocks-list");
+const plannedSessionStatusEl = document.getElementById("planned-session-status");
+const cancelPlannedSessionButton = document.getElementById("cancel-planned-session");
+const phaseImportForm = document.getElementById("phase-import-form");
+const phaseEditIdInput = document.getElementById("phase-edit-id");
+const phaseNameOverrideInput = document.getElementById("phase-name-override");
+const phaseImportFileInput = document.getElementById("phase-import-file");
+const phaseImportTextInput = document.getElementById("phase-import-text");
+const savePhaseButton = document.getElementById("save-phase-button");
+const cancelPhaseEditButton = document.getElementById("cancel-phase-edit");
+const phaseImportStatusEl = document.getElementById("phase-import-status");
+const phaseTemplateListEl = document.getElementById("phase-template-list");
+const phaseInstanceListEl = document.getElementById("phase-instance-list");
+const reviewSummaryEl = document.getElementById("review-summary");
+const reviewSessionListEl = document.getElementById("review-session-list");
+const adherenceSummaryEl = document.getElementById("adherence-summary");
+const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
+const strengthProgressStatusEl = document.getElementById("strength-progress-status");
+const strengthProgressBoardEl = document.getElementById("strength-progress-board");
+const completionDialog = document.getElementById("completion-dialog");
+const completionForm = document.getElementById("completion-form");
+const completionSessionIdInput = document.getElementById("completion-session-id");
+const completionDateInput = document.getElementById("completion-date");
+const completionSessionTitleEl = document.getElementById("completion-session-title");
+const completionRunFields = document.getElementById("completion-run-fields");
+const completionRunDistanceInput = document.getElementById("completion-run-distance");
+const completionRunTimeInput = document.getElementById("completion-run-time");
+const completionRunPaceInput = document.getElementById("completion-run-pace");
+const completionSprintFields = document.getElementById("completion-sprint-fields");
+const completionSprintBlocksEl = document.getElementById("completion-sprint-blocks");
+const completionSprintFeelingInput = document.getElementById("completion-sprint-feeling");
+const completionStrengthFields = document.getElementById("completion-strength-fields");
+const completionStrengthBlocksEl = document.getElementById("completion-strength-blocks");
+const completionNoteInput = document.getElementById("completion-note");
+const completionStatusMessageEl = document.getElementById("completion-status-message");
+const cancelCompletionButton = document.getElementById("cancel-completion");
 const BAND_COLOR_OPTIONS = ["yellow", "red", "black", "purple", "green", "blue"];
 const BAND_COLOR_LABELS = {
   yellow: "extra light",
@@ -79,6 +145,13 @@ const BAND_COLOR_LABELS = {
   green: "extra heavy",
   blue: "strongest",
 };
+const SPRINT_FEELING_OPTIONS = [
+  { value: "sharp", label: "Sharp ⚡" },
+  { value: "solid", label: "Solid 🙂" },
+  { value: "flat", label: "Flat 🪫" },
+  { value: "sluggish", label: "Sluggish 🐢" },
+  { value: "pain", label: "Pain ⚠️" },
+];
 
 const dateInput = document.getElementById("date");
 
@@ -92,8 +165,17 @@ let goals = load(STORAGE_KEY_GOALS, {
   sprint: null,
 });
 let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
+let plannedSessions = load(STORAGE_KEY_PLANNED_SESSIONS, []).map((session) => normalizePlannedSession(session));
+let phaseTemplates = load(STORAGE_KEY_PHASE_TEMPLATES, []).map((template) => normalizePhaseTemplate(template));
+let phaseInstances = load(STORAGE_KEY_PHASE_INSTANCES, []).map((instance) => normalizePhaseInstance(instance));
+let uiSettings = load(STORAGE_KEY_UI_SETTINGS, {
+  currentView: "calendar",
+  coachMode: false,
+  currentWeekStart: formatDateInput(startOfWeek(new Date())),
+});
 let editingWorkoutId = null;
 let draftSprintSets = [];
+let draftPlannedSprintBlocks = [];
 let draftStrengthExercises = [];
 let draftCurrentStrengthSets = [];
 let progressFilters = {
@@ -106,6 +188,10 @@ let chartGrouping = "week";
 let strengthChart = null;
 let runChart = null;
 let sprintChart = null;
+let editingPhaseTemplateId = "";
+let completionStrengthDraft = [];
+let completionSprintDraft = [];
+let selectedCalendarSessionId = "";
 let pendingDeleteWorkoutId = null;
 let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
@@ -117,6 +203,7 @@ syncExerciseLibraryFromWorkouts();
 renderExerciseLibrary();
 updateVisibleFields();
 renderSprintSets();
+renderPlannedSprintBlocks();
 renderCurrentStrengthSets();
 renderStrengthExercises();
 render();
@@ -371,6 +458,15 @@ function render() {
   renderCharts();
   renderHistory();
   renderGoals();
+  renderPlannerSummary();
+  renderCalendar();
+  renderCalendarSessionDetail();
+  renderPhaseTemplates();
+  renderPhaseInstances();
+  renderReview();
+  renderAdherenceStats();
+  renderStrengthProgressBoard();
+  syncViewState();
 }
 
 function renderSummary() {
@@ -566,10 +662,11 @@ function formatMainMetric(w) {
 
   const sprintSets = normalizeSprintSets(w.sprintSets);
   if (sprintSets.length) {
-    return sprintSets.map((set) => `#${set.order} ${set.distance}m/${set.time}s`).join(" • ");
+    const feeling = formatSprintFeeling(w.sprintFeeling);
+    return [sprintSets.map((set) => `#${set.order} ${set.distance}m/${set.time}s`).join(" • "), feeling].filter(Boolean).join(" • ");
   }
 
-  const parts = [isNumber(w.time) ? `${w.time} sec` : null, isNumber(w.distance) ? `${w.distance} m` : null].filter(Boolean);
+  const parts = [isNumber(w.time) ? `${w.time} sec` : null, isNumber(w.distance) ? `${w.distance} m` : null, formatSprintFeeling(w.sprintFeeling)].filter(Boolean);
   return parts.join(" • ") || "-";
 }
 
@@ -1160,10 +1257,14 @@ function groupingLabel(dateText, mode) {
 
 function exportBackupData() {
   const backupPayload = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     workouts,
     goals,
+    plannedSessions,
+    phaseTemplates,
+    phaseInstances,
+    uiSettings,
   };
 
   const fileBlob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: "application/json" });
@@ -1198,12 +1299,30 @@ function importBackupData(event) {
       goals = {
         strength: toNumberOrNull(parsed.goals.strength),
         run: toNumberOrNull(parsed.goals.run),
-        runPace: toNumberOrNull(parsed.goals.runPace),
+        runPace: parseGoalPaceInput(parsed.goals.runPace) ?? toNumberOrNull(parsed.goals.runPace),
         sprint: toNumberOrNull(parsed.goals.sprint),
+      };
+      plannedSessions = Array.isArray(parsed.plannedSessions)
+        ? parsed.plannedSessions.map((session) => normalizePlannedSession(session))
+        : [];
+      phaseTemplates = Array.isArray(parsed.phaseTemplates)
+        ? parsed.phaseTemplates.map((template) => normalizePhaseTemplate(template))
+        : [];
+      phaseInstances = Array.isArray(parsed.phaseInstances)
+        ? parsed.phaseInstances.map((instance) => normalizePhaseInstance(instance))
+        : [];
+      uiSettings = {
+        currentView: typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "calendar",
+        coachMode: Boolean(parsed.uiSettings?.coachMode),
+        currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
 
       save(STORAGE_KEY_WORKOUTS, workouts);
       save(STORAGE_KEY_GOALS, goals);
+      save(STORAGE_KEY_PLANNED_SESSIONS, plannedSessions);
+      save(STORAGE_KEY_PHASE_TEMPLATES, phaseTemplates);
+      save(STORAGE_KEY_PHASE_INSTANCES, phaseInstances);
+      save(STORAGE_KEY_UI_SETTINGS, uiSettings);
       hydrateGoalInputs();
       render();
       backupStatusEl.textContent = `Imported ${workouts.length} workout(s) successfully.`;
@@ -1512,6 +1631,11 @@ function normalizeSprintSets(sprintSets) {
     }));
 }
 
+function formatSprintFeeling(value) {
+  const option = SPRINT_FEELING_OPTIONS.find((item) => item.value === value);
+  return option ? option.label : "";
+}
+
 function sprintBestTime(workout) {
   const sprintSets = normalizeSprintSets(workout.sprintSets);
   if (sprintSets.length) {
@@ -1566,6 +1690,7 @@ function normalizeImportedWorkout(workout) {
     time: normalizedTime,
     pace: normalizedPace,
     sprintSets: normalizeSprintSets(workout.sprintSets),
+    sprintFeeling: typeof workout.sprintFeeling === "string" ? workout.sprintFeeling : "",
     notes: typeof workout.notes === "string" ? workout.notes : "",
     createdAt: isNumber(workout.createdAt) ? workout.createdAt : Date.now(),
   };
@@ -1682,3 +1807,2412 @@ function strengthBestWeight(workout) {
 
   return null;
 }
+
+function initializeV2() {
+  setCoachMode(uiSettings.coachMode);
+  bindV2Events();
+  plannedSessionDateInput.value = formatDateInput(new Date());
+  updatePlannedTypeFields();
+  render();
+}
+
+function bindV2Events() {
+  viewNavButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      setCurrentView(button.dataset.viewTarget || "calendar");
+    });
+  });
+
+  addSafeEventListener(coachModeToggle, "change", () => {
+    setCoachMode(Boolean(coachModeToggle.checked));
+  });
+  addSafeEventListener(prevWeekButton, "click", () => shiftCurrentWeek(-7));
+  addSafeEventListener(nextWeekButton, "click", () => shiftCurrentWeek(7));
+  addSafeEventListener(currentWeekButton, "click", () => {
+    uiSettings.currentWeekStart = formatDateInput(startOfWeek(new Date()));
+    savePlannerCollections();
+    render();
+  });
+  addSafeEventListener(plannedSessionTypeInput, "change", updatePlannedTypeFields);
+  addSafeEventListener(plannedSessionForm, "submit", savePlannedSessionFromForm);
+  addSafeEventListener(cancelPlannedSessionButton, "click", resetPlannedSessionForm);
+  addSafeEventListener(addPlannedSprintBlockButton, "click", addPlannedSprintBlock);
+  addSafeEventListener(plannedSprintBlocksListEl, "click", handlePlannedSprintBlockAction);
+  addSafeEventListener(calendarGridEl, "click", handleCalendarAction);
+  addSafeEventListener(calendarSessionDetailEl, "click", handleCalendarAction);
+  addSafeEventListener(calendarSessionDialog, "click", handleCalendarSessionDialogClick);
+  addSafeEventListener(calendarSessionDialog, "close", () => {
+    if (selectedCalendarSessionId) {
+      selectedCalendarSessionId = "";
+      renderCalendar();
+    }
+  });
+  addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
+  addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
+  addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
+  addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
+  addSafeEventListener(phaseInstanceListEl, "click", handlePhaseInstanceAction);
+  addSafeEventListener(completionRunTimeInput, "input", syncCompletionRunPace);
+  addSafeEventListener(completionRunTimeInput, "change", syncCompletionRunPace);
+  addSafeEventListener(completionRunDistanceInput, "input", syncCompletionRunPace);
+  addSafeEventListener(completionSprintBlocksEl, "input", handleCompletionSprintInput);
+  addSafeEventListener(completionStrengthBlocksEl, "click", handleCompletionStrengthAction);
+  addSafeEventListener(completionStrengthBlocksEl, "input", handleCompletionStrengthInput);
+  addSafeEventListener(completionStrengthBlocksEl, "change", handleCompletionStrengthInput);
+  addSafeEventListener(completionForm, "submit", saveCompletedSession);
+  addSafeEventListener(cancelCompletionButton, "click", closeCompletionDialog);
+}
+
+function savePlannerCollections() {
+  save(STORAGE_KEY_PLANNED_SESSIONS, plannedSessions);
+  save(STORAGE_KEY_PHASE_TEMPLATES, phaseTemplates);
+  save(STORAGE_KEY_PHASE_INSTANCES, phaseInstances);
+  save(STORAGE_KEY_UI_SETTINGS, uiSettings);
+}
+
+function setCurrentView(view) {
+  uiSettings.currentView = ["calendar", "phases", "review", "stats"].includes(view) ? view : "calendar";
+  savePlannerCollections();
+  syncViewState();
+}
+
+function setCoachMode(enabled) {
+  uiSettings.coachMode = enabled;
+  document.body.classList.toggle("coach-mode", enabled);
+  if (coachModeToggle) {
+    coachModeToggle.checked = enabled;
+  }
+  savePlannerCollections();
+}
+
+function syncViewState() {
+  viewPanels.forEach((panel) => {
+    panel.classList.toggle("is-hidden", panel.dataset.view !== uiSettings.currentView);
+  });
+  viewNavButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.viewTarget === uiSettings.currentView);
+  });
+}
+
+function startOfWeek(value) {
+  const date = value instanceof Date ? new Date(value) : new Date(value);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function addDays(dateInputValue, days) {
+  const date = new Date(dateInputValue);
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function formatDateInput(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function normalizeDateInput(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return "";
+  }
+  return value;
+}
+
+function shiftCurrentWeek(days) {
+  uiSettings.currentWeekStart = formatDateInput(addDays(uiSettings.currentWeekStart, days));
+  savePlannerCollections();
+  render();
+}
+
+function getWeekDates(weekStart) {
+  return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+}
+
+function getPlannedSessionsForWeek(weekStart) {
+  const days = getWeekDates(weekStart).map((date) => formatDateInput(date));
+  return plannedSessions
+    .filter((session) => days.includes(session.date))
+    .sort((a, b) => (a.date === b.date ? (a.title || "").localeCompare(b.title || "") : a.date.localeCompare(b.date)));
+}
+
+function computeWeeklyAdherence(weekStart) {
+  const sessions = getPlannedSessionsForWeek(weekStart);
+  const completed = sessions.filter((session) => ["completed", "modified"].includes(session.status)).length;
+  const modified = sessions.filter((session) => session.status === "modified").length;
+  const missed = sessions.filter((session) => session.status === "missed").length;
+  return {
+    total: sessions.length,
+    completed,
+    modified,
+    missed,
+    planned: sessions.filter((session) => session.status === "planned").length,
+  };
+}
+
+function renderPlannerSummary() {
+  if (!plannerSummaryEl) {
+    return;
+  }
+  const stats = computeWeeklyAdherence(uiSettings.currentWeekStart);
+  plannerSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">This Week</span>
+      <span class="value">${stats.completed}/${stats.total || 0}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Modified</span>
+      <span class="value">${stats.modified}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Missed</span>
+      <span class="value">${stats.missed}</span>
+    </article>
+  `;
+}
+
+function renderCalendar() {
+  if (!calendarGridEl || !calendarWeekLabelEl) {
+    return;
+  }
+  const weekDates = getWeekDates(uiSettings.currentWeekStart);
+  const weekSessions = getPlannedSessionsForWeek(uiSettings.currentWeekStart);
+  const availableSessionIds = new Set(weekSessions.map((session) => session.id));
+  if (!selectedCalendarSessionId || !availableSessionIds.has(selectedCalendarSessionId)) {
+    selectedCalendarSessionId = weekSessions[0]?.id || "";
+  }
+  calendarWeekLabelEl.textContent = `Week of ${formatHumanDate(weekDates[0])} to ${formatHumanDate(weekDates[6])}`;
+
+  calendarGridEl.innerHTML = weekDates
+    .map((date) => {
+      const dayKey = formatDateInput(date);
+      const daySessions = weekSessions.filter((session) => session.date === dayKey);
+      const isToday = dayKey === formatDateInput(new Date());
+      const sessionsMarkup = daySessions.length
+        ? daySessions.map((session) => renderPlannedSessionCard(session)).join("")
+        : `<p class="planner-empty">No planned sessions.</p>`;
+      return `
+        <article class="calendar-day${isToday ? " is-today" : ""}">
+          <div class="calendar-day-header">
+            <h4>${date.toLocaleDateString(undefined, { weekday: "short" })}</h4>
+            <span class="calendar-day-date">${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+          </div>
+          ${sessionsMarkup}
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderPlannedSessionCard(session) {
+  const primaryMeta = session.type === "strength"
+    ? formatStrengthSessionTotalDuration(session)
+    : `${capitalize(session.type)} • ${formatPlannedSessionSummary(session)}`;
+  return `
+    <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}">
+      <div class="planned-session-title">${escapeHtml(session.title)}</div>
+      <div class="planned-session-time">${escapeHtml(primaryMeta)}</div>
+      <div class="planned-session-footer">
+        <span class="planned-session-status-inline status-${session.status}">${escapeHtml(session.status)}</span>
+      </div>
+      <button type="button" class="ghost-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">View training</button>
+    </article>
+  `;
+}
+
+function renderCalendarSessionDetail() {
+  if (!calendarSessionDetailEl) {
+    return;
+  }
+  const session = plannedSessions.find((item) => item.id === selectedCalendarSessionId);
+  if (!session) {
+    calendarSessionDetailEl.innerHTML = "";
+    if (calendarSessionDialog?.open) {
+      closeCalendarSessionDialog();
+    }
+    return;
+  }
+
+  const headerMeta = [formatHumanDate(session.date), capitalize(session.type)];
+  if (session.type === "strength") {
+    headerMeta.push(formatStrengthSessionTotalDuration(session));
+  }
+
+  calendarSessionDetailEl.innerHTML = `
+    <article class="card session-detail-card session-detail-modal-card">
+      <header class="session-detail-modal-header">
+        <div>
+          <p class="hint">Training view</p>
+          <h3>${escapeHtml(session.title)}</h3>
+          <div class="session-meta">${escapeHtml(headerMeta.join(" • "))}</div>
+        </div>
+        <div class="session-detail-modal-controls">
+          <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
+          <button type="button" class="ghost-button" data-role="close-calendar-session-dialog">Close</button>
+        </div>
+      </header>
+      ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
+      ${session.notes ? `<div class="session-meta">${escapeHtml(session.notes)}</div>` : ""}
+      <div class="session-detail-body">
+        ${renderSessionStructure(session, "planned")}
+        ${
+          session.status !== "planned" && session.actual
+            ? `<div class="session-detail-split">${renderSessionStructure(session, "actual")}</div>`
+            : ""
+        }
+      </div>
+      <div class="session-actions">
+        <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
+        ${
+          session.status === "planned"
+            ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
+               <button type="button" class="ghost-button danger-button" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
+            : `<button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`
+        }
+        <button type="button" class="ghost-button danger-button" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderSessionStructure(session, mode) {
+  if (session.type === "run") {
+    const heading = mode === "planned" ? "Planned" : "Actual";
+    const value =
+      mode === "planned"
+        ? formatPlannedSessionSummary(session)
+        : `${formatNumber(session.actual?.distance || 0)} km • ${session.actual?.time || ""} • ${formatRunPace(session.actual?.pace || 0)} min/km`;
+    return `<section class="session-structure"><h4>${heading}</h4><pre>${escapeHtml(value)}</pre></section>`;
+  }
+  if (session.type === "sprint") {
+    const heading = mode === "planned" ? "Planned" : "Actual";
+    const rows =
+      mode === "planned"
+        ? (session.details?.blocks || []).map((block) => formatPlannedSprintBlock(block))
+        : (session.actual?.sprintSets || []).map((set) => `${formatNumber(set.distance)}m in ${formatNumber(set.time)}s`);
+    const feeling = mode === "actual" ? formatSprintFeeling(session.actual?.feeling) : "";
+    return `<section class="session-structure"><h4>${heading}</h4><ul>${rows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}</ul>${feeling ? `<div class="review-meta">Feeling: ${escapeHtml(feeling)}</div>` : ""}</section>`;
+  }
+  return renderStrengthStructure(mode === "planned" ? session.details?.blocks || [] : session.actual?.blocks || [], {
+    mode,
+    title: mode === "planned" ? "Planned" : "Actual",
+    notes: mode === "planned" ? session.notes : "",
+  });
+}
+
+function renderStrengthStructure(blocks, options = {}) {
+  const { mode = "planned", title = "", notes = "" } = options;
+  return `
+    <section class="session-structure">
+      ${title ? `<h4>${escapeHtml(title)}</h4>` : ""}
+      ${notes ? `<div class="review-meta">Notes: ${escapeHtml(notes)}</div>` : ""}
+      ${
+        blocks.length
+          ? blocks
+              .map((block, blockIndex) => renderStrengthBlockCard(block, blockIndex, mode))
+              .join("")
+          : `<p class="planner-empty">No strength detail.</p>`
+      }
+    </section>
+  `;
+}
+
+function renderStrengthBlockCard(block, blockIndex, mode) {
+  const meta =
+    mode === "planned"
+      ? [formatBlockDuration(block), formatBlockRest(block) ? `${formatBlockRest(block)} rest` : "", block.sets ? `${escapeHtml(String(block.sets))} sets` : ""]
+      : [block.actualSets || block.plannedSets ? `${escapeHtml(String(block.actualSets || block.plannedSets))} sets` : "", block.note ? `Note: ${escapeHtml(block.note)}` : ""];
+  const exercises = mode === "planned" ? block.exercises || [] : block.exercises || [];
+  return `
+    <article class="strength-block-card">
+      <div class="strength-block-header">
+        <h5>${escapeHtml(block.label || `Block ${blockIndex + 1}`)}</h5>
+        <div class="phase-meta">${meta.filter(Boolean).join(" • ")}</div>
+      </div>
+      <div class="strength-exercise-list">
+        ${exercises.length ? exercises.map((exercise) => renderStrengthExerciseRow(exercise, mode)).join("") : `<p class="planner-empty">No exercises.</p>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderStrengthExerciseRow(exercise, mode) {
+  const code = exercise.code ? `<span class="exercise-code">${escapeHtml(exercise.code)}</span>` : "";
+  const name = `<strong class="exercise-highlight">${escapeHtml(exercise.name || "Exercise")}</strong>`;
+  if (mode === "planned") {
+    const detail = [
+      escapeHtml(exercise.reps || "-"),
+      isNumber(exercise.weight) ? `@ ${escapeHtml(formatNumber(exercise.weight))} kg` : "",
+      exercise.notes ? escapeHtml(exercise.notes) : "",
+    ]
+      .filter(Boolean)
+      .join(" • ");
+    return `<div class="strength-exercise-row">${code}${name}<span class="strength-exercise-detail">${detail}</span></div>`;
+  }
+  const setRows = (exercise.actualSets || [])
+    .map((set) => `<div class="strength-set-row">Set ${escapeHtml(String(set.order || 0))}: ${escapeHtml(formatNumber(set.reps))} reps @ ${escapeHtml(formatStrengthLoad(set))}</div>`)
+    .join("");
+  return `
+    <div class="strength-exercise-row${exercise.completed ? "" : " is-skipped"}">
+      ${code}${name}
+      <div class="strength-exercise-detail">${exercise.completed ? setRows || "Completed" : "Skipped"}${exercise.actualNote ? `<div class="phase-meta">${escapeHtml(exercise.actualNote)}</div>` : ""}</div>
+    </div>
+  `;
+}
+
+function formatPlannedSessionSummary(session) {
+  if (session.type === "run") {
+    const parts = [];
+    if (isNumber(session.details?.distance)) {
+      parts.push(`${formatNumber(session.details.distance)} km`);
+    }
+    if (isNumber(session.details?.paceGoal)) {
+      parts.push(`${formatGoalPace(session.details.paceGoal)} target`);
+    }
+    return parts.join(" • ") || "planned run";
+  }
+
+  if (session.type === "sprint") {
+    const blocks = session.details?.blocks || [];
+    return blocks.map((block) => formatPlannedSprintBlock(block)).join(", ") || "planned sprint session";
+  }
+
+  const blocks = session.details?.blocks || [];
+  const exerciseCount = blocks.flatMap((block) => block.exercises || []).length;
+  const durationSummary = blocks.map((block) => formatBlockDuration(block)).filter(Boolean).join(", ");
+  return [durationSummary, `${blocks.length} blocks • ${exerciseCount} exercises`].filter(Boolean).join(" • ");
+}
+
+function formatStrengthSessionTotalDuration(session) {
+  const total = getStrengthSessionTotalDuration(session);
+  if (!total) {
+    return "Time not set";
+  }
+
+  const roundedMin = Math.ceil(total.minMinutes);
+  const roundedMax = Math.ceil(total.maxMinutes);
+  if (roundedMin === roundedMax) {
+    return `${formatNumber(roundedMin)} mins`;
+  }
+  return `${formatNumber(roundedMin)}-${formatNumber(roundedMax)} mins`;
+}
+
+function getStrengthSessionTotalDuration(session) {
+  if (session.type !== "strength") {
+    return null;
+  }
+
+  const warmUp = parseWarmUpDuration(session.notes);
+  let minMinutes = warmUp.minMinutes;
+  let maxMinutes = warmUp.maxMinutes;
+  let hasDuration = warmUp.hasDuration;
+
+  (session.details?.blocks || []).forEach((block) => {
+    const blockDuration = getStrengthBlockTotalDuration(block);
+    minMinutes += blockDuration.minMinutes;
+    maxMinutes += blockDuration.maxMinutes;
+    hasDuration = hasDuration || blockDuration.hasDuration;
+  });
+
+  if (!hasDuration) {
+    return null;
+  }
+
+  return { minMinutes, maxMinutes };
+}
+
+function parseWarmUpDuration(notes) {
+  const match = String(notes || "").match(/(?:^|\n)\s*Warm Up:\s*([^\n]+)/i);
+  if (!match) {
+    return { minMinutes: 0, maxMinutes: 0, hasDuration: false };
+  }
+
+  const duration = parseBlockDurationRange(match[1]);
+  const minMinutes = isNumber(duration.durationMin) ? Number(duration.durationMin) : isNumber(duration.durationMax) ? Number(duration.durationMax) : 0;
+  const maxMinutes = isNumber(duration.durationMax) ? Number(duration.durationMax) : minMinutes;
+  return {
+    minMinutes,
+    maxMinutes,
+    hasDuration: minMinutes > 0 || maxMinutes > 0,
+  };
+}
+
+function getStrengthBlockTotalDuration(block) {
+  const durationBounds = getBlockDurationBounds(block);
+  const setBounds = getSetPrescriptionBounds(block?.sets);
+  const restBounds = getBlockRestBounds(block);
+  const minRestCount = Math.max(setBounds.minSets - 1, 0);
+  const maxRestCount = Math.max(setBounds.maxSets - 1, 0);
+  return {
+    minMinutes: durationBounds.minMinutes + (minRestCount * restBounds.minSeconds) / 60,
+    maxMinutes: durationBounds.maxMinutes + (maxRestCount * restBounds.maxSeconds) / 60,
+    hasDuration: durationBounds.hasDuration || restBounds.hasDuration,
+  };
+}
+
+function getBlockDurationBounds(block) {
+  const min = toNumberOrNull(block?.durationMin);
+  const max = toNumberOrNull(block?.durationMax);
+  const minMinutes = isNumber(min) ? Number(min) : isNumber(max) ? Number(max) : 0;
+  const maxMinutes = isNumber(max) ? Number(max) : minMinutes;
+  return {
+    minMinutes,
+    maxMinutes,
+    hasDuration: isNumber(min) || isNumber(max),
+  };
+}
+
+function getBlockRestBounds(block) {
+  const min = toNumberOrNull(block?.restSec);
+  const max = toNumberOrNull(block?.restMaxSec);
+  const minSeconds = isNumber(min) ? Number(min) : isNumber(max) ? Number(max) : 0;
+  const maxSeconds = isNumber(max) ? Number(max) : minSeconds;
+  return {
+    minSeconds,
+    maxSeconds,
+    hasDuration: isNumber(min) || isNumber(max),
+  };
+}
+
+function getSetPrescriptionBounds(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return { minSets: 0, maxSets: 0 };
+  }
+  const match = raw.match(/^(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?$/);
+  if (!match) {
+    const firstNumber = raw.match(/\d+(?:\.\d+)?/);
+    const parsed = firstNumber ? Number(firstNumber[0]) : 0;
+    return { minSets: parsed, maxSets: parsed };
+  }
+  const minSets = Number(match[1]);
+  const maxSets = match[2] ? Number(match[2]) : minSets;
+  return { minSets, maxSets };
+}
+
+function updatePlannedTypeFields() {
+  const selectedType = plannedSessionTypeInput?.value || "run";
+  if (plannedRunFields) {
+    plannedRunFields.classList.toggle("is-hidden", selectedType !== "run");
+  }
+  if (plannedSprintFields) {
+    plannedSprintFields.classList.toggle("is-hidden", selectedType !== "sprint");
+  }
+}
+
+function resetPlannedSessionForm() {
+  if (!plannedSessionForm) {
+    return;
+  }
+  plannedSessionForm.reset();
+  draftPlannedSprintBlocks = [];
+  plannedSessionIdInput.value = "";
+  plannedSessionDateInput.value = formatDateInput(new Date());
+  plannedSessionTypeInput.value = "run";
+  updatePlannedTypeFields();
+  plannedSessionStatusEl.textContent = "";
+  renderPlannedSprintBlocks();
+}
+
+function savePlannedSessionFromForm(event) {
+  event.preventDefault();
+  const type = plannedSessionTypeInput.value;
+  const session = {
+    id: plannedSessionIdInput.value || crypto.randomUUID(),
+    date: normalizeDateInput(plannedSessionDateInput.value),
+    type,
+    title: plannedSessionTitleInput.value.trim(),
+    source: "manual",
+    status: "planned",
+    notes: plannedSessionNotesInput.value.trim(),
+    details: type === "run"
+      ? {
+          distance: toNumberOrNull(plannedRunDistanceInput.value),
+          paceGoal: parseGoalPaceInput(plannedRunPaceInput.value),
+        }
+      : {
+          blocks: normalizePlannedSprintBlocks(draftPlannedSprintBlocks),
+        },
+  };
+
+  if (!session.date || !session.title) {
+    plannedSessionStatusEl.textContent = "Planned sessions need a date and title.";
+    return;
+  }
+  if (type === "run" && !isNumber(session.details.distance)) {
+    plannedSessionStatusEl.textContent = "Run plans need a distance.";
+    return;
+  }
+  if (type === "sprint" && !session.details.blocks.length) {
+    plannedSessionStatusEl.textContent = "Sprint plans need at least one block.";
+    return;
+  }
+
+  const existingIndex = plannedSessions.findIndex((planned) => planned.id === session.id);
+  const normalized = normalizePlannedSession(existingIndex >= 0 ? { ...plannedSessions[existingIndex], ...session } : session);
+  if (existingIndex >= 0) {
+    plannedSessions[existingIndex] = normalized;
+  } else {
+    plannedSessions.push(normalized);
+  }
+  savePlannerCollections();
+  resetPlannedSessionForm();
+  plannedSessionStatusEl.textContent = "Planned session saved.";
+  render();
+}
+
+function addPlannedSprintBlock() {
+  const reps = toNumberOrNull(plannedSprintRepsInput?.value);
+  const distance = toNumberOrNull(plannedSprintDistanceInput?.value);
+  const targetTime = toNumberOrNull(plannedSprintTargetTimeInput?.value);
+  const restSec = toNumberOrNull(plannedSprintRestInput?.value);
+  if (!isNumber(reps) || !isNumber(distance)) {
+    plannedSessionStatusEl.textContent = "Sprint block needs reps and meters.";
+    return;
+  }
+  draftPlannedSprintBlocks.push({
+    reps: Number(reps),
+    distance: Number(distance),
+    targetTime: isNumber(targetTime) ? Number(targetTime) : null,
+    restSec: isNumber(restSec) ? Number(restSec) : null,
+  });
+  if (plannedSprintRepsInput) plannedSprintRepsInput.value = "";
+  if (plannedSprintDistanceInput) plannedSprintDistanceInput.value = "";
+  if (plannedSprintTargetTimeInput) plannedSprintTargetTimeInput.value = "";
+  if (plannedSprintRestInput) plannedSprintRestInput.value = "";
+  plannedSessionStatusEl.textContent = "Sprint block added.";
+  renderPlannedSprintBlocks();
+}
+
+function handlePlannedSprintBlockAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  if (target.dataset.role !== "delete-planned-sprint-block") {
+    return;
+  }
+  const index = Number(target.dataset.index);
+  if (!Number.isInteger(index)) {
+    return;
+  }
+  draftPlannedSprintBlocks.splice(index, 1);
+  renderPlannedSprintBlocks();
+}
+
+function renderPlannedSprintBlocks() {
+  if (!plannedSprintBlocksListEl) {
+    return;
+  }
+  if (!draftPlannedSprintBlocks.length) {
+    plannedSprintBlocksListEl.innerHTML = "<li>No sprint blocks yet.</li>";
+    return;
+  }
+  plannedSprintBlocksListEl.innerHTML = draftPlannedSprintBlocks
+    .map(
+      (block, index) => `
+        <li>
+          ${escapeHtml(formatPlannedSprintBlock(block))}
+          <button type="button" class="ghost-button" data-role="delete-planned-sprint-block" data-index="${index}">Remove</button>
+        </li>`,
+    )
+    .join("");
+}
+
+function normalizePlannedSprintBlocks(blocks) {
+  if (!Array.isArray(blocks)) {
+    return [];
+  }
+  return blocks
+    .map((block) => ({
+      reps: toNumberOrNull(block?.reps),
+      distance: toNumberOrNull(block?.distance),
+      targetTime: toNumberOrNull(block?.targetTime),
+      restSec: toNumberOrNull(block?.restSec),
+    }))
+    .filter((block) => isNumber(block.reps) && isNumber(block.distance))
+    .map((block) => ({
+      reps: Number(block.reps),
+      distance: Number(block.distance),
+      targetTime: isNumber(block.targetTime) ? Number(block.targetTime) : null,
+      restSec: isNumber(block.restSec) ? Number(block.restSec) : null,
+    }));
+}
+
+function formatPlannedSprintBlock(block) {
+  const referenceTime = getPlannedSprintReferenceTime(block);
+  return [
+    `${formatNumber(block.reps)} x ${formatNumber(block.distance)}m`,
+    isNumber(block.targetTime)
+      ? `@ ${formatNumber(block.targetTime)}s`
+      : isNumber(referenceTime)
+        ? `best ${formatNumber(referenceTime)}s`
+        : "",
+    isNumber(block.restSec) ? `${formatNumber(block.restSec)}s rest` : "",
+  ]
+    .filter(Boolean)
+    .join(" • ");
+}
+
+function getPlannedSprintReferenceTime(block) {
+  if (isNumber(block?.targetTime)) {
+    return Number(block.targetTime);
+  }
+  return findBestSprintTimeForDistance(block?.distance);
+}
+
+function handleCalendarAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const role = target.dataset.role;
+  if (role === "close-calendar-session-dialog") {
+    closeCalendarSessionDialog();
+    return;
+  }
+  const sessionId = target.dataset.id;
+  if (!role || !sessionId) {
+    return;
+  }
+
+  const session = plannedSessions.find((item) => item.id === sessionId);
+  if (!session) {
+    return;
+  }
+
+  if (role === "select-planned-session") {
+    openCalendarSessionDialog(sessionId);
+    return;
+  }
+
+  if (role === "edit-planned-session") {
+    closeCalendarSessionDialog();
+    fillPlannedSessionForm(session);
+  }
+  if (role === "delete-planned-session") {
+    closeCalendarSessionDialog();
+    plannedSessions = plannedSessions.filter((item) => item.id !== sessionId);
+    if (selectedCalendarSessionId === sessionId) {
+      selectedCalendarSessionId = "";
+    }
+    savePlannerCollections();
+    render();
+  }
+  if (role === "miss-planned-session") {
+    session.status = "missed";
+    session.actual = null;
+    session.linkedWorkoutId = "";
+    savePlannerCollections();
+    render();
+  }
+  if (role === "reset-planned-session") {
+    session.status = "planned";
+    session.actual = null;
+    session.linkedWorkoutId = "";
+    session.modificationNote = "";
+    savePlannerCollections();
+    render();
+  }
+  if (role === "complete-planned-session") {
+    closeCalendarSessionDialog();
+    openCompletionDialog(session);
+  }
+}
+
+function handleCalendarSessionDialogClick(event) {
+  if (event.target === calendarSessionDialog) {
+    closeCalendarSessionDialog();
+  }
+}
+
+function openCalendarSessionDialog(sessionId) {
+  selectedCalendarSessionId = sessionId;
+  renderCalendar();
+  renderCalendarSessionDetail();
+  if (!calendarSessionDialog) {
+    return;
+  }
+  if (typeof calendarSessionDialog.showModal === "function") {
+    if (!calendarSessionDialog.open) {
+      calendarSessionDialog.showModal();
+    }
+    return;
+  }
+  calendarSessionDialog.setAttribute("open", "true");
+}
+
+function closeCalendarSessionDialog() {
+  if (!calendarSessionDialog) {
+    return;
+  }
+  if (typeof calendarSessionDialog.close === "function" && calendarSessionDialog.open) {
+    calendarSessionDialog.close();
+  } else {
+    calendarSessionDialog.removeAttribute("open");
+  }
+  if (selectedCalendarSessionId) {
+    selectedCalendarSessionId = "";
+    renderCalendar();
+  }
+}
+
+function fillPlannedSessionForm(session) {
+  plannedSessionIdInput.value = session.id;
+  plannedSessionDateInput.value = session.date;
+  plannedSessionTypeInput.value = session.type;
+  plannedSessionTitleInput.value = session.title;
+  plannedSessionNotesInput.value = session.notes || "";
+  if (session.type === "run") {
+    draftPlannedSprintBlocks = [];
+    renderPlannedSprintBlocks();
+    plannedRunDistanceInput.value = session.details?.distance ?? "";
+    plannedRunPaceInput.value = isNumber(session.details?.paceGoal) ? formatGoalPace(session.details.paceGoal) : "";
+  } else {
+    draftPlannedSprintBlocks = normalizePlannedSprintBlocks(session.details?.blocks || []);
+    renderPlannedSprintBlocks();
+  }
+  updatePlannedTypeFields();
+  setCurrentView("calendar");
+}
+
+function loadPhaseImportFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    phaseImportTextInput.value = String(reader.result || "");
+  };
+  reader.readAsText(file);
+}
+
+function serializeStrengthPhaseDefinition(template) {
+  const rows = [`PHASE,${template.name},${template.durationWeeks}`];
+  template.weekdaySlots.forEach((slot) => {
+    rows.push(`SLOT,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
+    slot.blocks.forEach((block) => {
+      rows.push(
+        `BLOCK,${block.label || ""},${formatBlockDurationCsvValue(block)},${formatBlockRestCsvValue(block)},${block.sets || ""}`,
+      );
+      (block.exercises || []).forEach((exercise) => {
+        rows.push(
+          `EXERCISE,${exercise.code || ""},${exercise.name || ""},${exercise.reps || ""},${exercise.notes || ""},${exercise.weight ?? ""}`,
+        );
+      });
+    });
+  });
+  return rows.join("\n");
+}
+
+function formatBlockDurationCsvValue(block) {
+  const min = toNumberOrNull(block?.durationMin);
+  const max = toNumberOrNull(block?.durationMax);
+  if (isNumber(min) && isNumber(max)) {
+    return `${formatNumber(min)}-${formatNumber(max)} mins`;
+  }
+  if (isNumber(min)) {
+    return `${formatNumber(min)} mins`;
+  }
+  if (isNumber(max)) {
+    return `${formatNumber(max)} mins`;
+  }
+  return "";
+}
+
+function formatBlockRestCsvValue(block) {
+  const min = toNumberOrNull(block?.restSec);
+  const max = toNumberOrNull(block?.restMaxSec);
+  if (isNumber(min) && isNumber(max)) {
+    return `${formatNumber(min)}-${formatNumber(max)}s`;
+  }
+  if (isNumber(min)) {
+    return `${formatNumber(min)}s`;
+  }
+  if (isNumber(max)) {
+    return `${formatNumber(max)}s`;
+  }
+  return "";
+}
+
+function resetPhaseImportForm() {
+  if (phaseImportForm) {
+    phaseImportForm.reset();
+  }
+  editingPhaseTemplateId = "";
+  if (phaseEditIdInput) {
+    phaseEditIdInput.value = "";
+  }
+  if (savePhaseButton) {
+    savePhaseButton.textContent = "Import strength phase";
+  }
+  cancelPhaseEditButton?.classList.add("is-hidden");
+  if (phaseImportStatusEl) {
+    phaseImportStatusEl.textContent = "";
+  }
+}
+
+function startPhaseTemplateEdit(templateId) {
+  const template = phaseTemplates.find((item) => item.id === templateId);
+  if (!template || !phaseImportTextInput) {
+    return;
+  }
+  editingPhaseTemplateId = template.id;
+  if (phaseEditIdInput) {
+    phaseEditIdInput.value = template.id;
+  }
+  phaseNameOverrideInput.value = template.name;
+  phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
+  if (savePhaseButton) {
+    savePhaseButton.textContent = "Save phase changes";
+  }
+  cancelPhaseEditButton?.classList.remove("is-hidden");
+  phaseImportStatusEl.textContent = `Editing "${template.name}". Saving will refresh already planned generated sessions from this template.`;
+  phaseImportForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function regenerateScheduledPhaseInstances(template) {
+  let refreshedInstances = 0;
+  phaseInstances = phaseInstances.map((instance) => {
+    if (instance.templateId !== template.id) {
+      return instance;
+    }
+    refreshedInstances += 1;
+    return regeneratePhaseInstanceFromTemplate(instance, template);
+  });
+  return refreshedInstances;
+}
+
+function regeneratePhaseInstanceFromTemplate(instance, template) {
+  const reviewedSessions = plannedSessions.filter(
+    (session) => session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status !== "planned",
+  );
+  const reviewedDates = new Set(reviewedSessions.map((session) => session.date));
+  plannedSessions = plannedSessions.filter(
+    (session) => !(session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status === "planned"),
+  );
+
+  const regeneratedSessions = buildPhaseSessions(template, instance.startDate, instance.id, reviewedDates);
+  plannedSessions.push(...regeneratedSessions);
+
+  return normalizePhaseInstance({
+    ...instance,
+    templateId: template.id,
+    templateName: template.name,
+    durationWeeks: template.durationWeeks,
+    generatedSessionIds: [...reviewedSessions.map((session) => session.id), ...regeneratedSessions.map((session) => session.id)],
+  });
+}
+
+function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set()) {
+  const generatedSessions = [];
+  const normalizedStartDate = new Date(startDate);
+  normalizedStartDate.setHours(0, 0, 0, 0);
+  const startWeekday = getProgramWeekday(normalizedStartDate);
+  for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
+    const anchoredWeekStart = addDays(normalizedStartDate, weekIndex * 7);
+    template.weekdaySlots.forEach((slot) => {
+      const slotOffset = ((slot.weekday - startWeekday) + 7) % 7;
+      const sessionDate = formatDateInput(addDays(anchoredWeekStart, slotOffset));
+      if (reviewedDates.has(sessionDate)) {
+        return;
+      }
+      generatedSessions.push(
+        normalizePlannedSession({
+          id: crypto.randomUUID(),
+          date: sessionDate,
+          type: "strength",
+          title: slot.title,
+          source: "phase-generated",
+          phaseTemplateId: template.id,
+          phaseInstanceId: instanceId,
+          status: "planned",
+          notes: slot.notes,
+          details: { blocks: slot.blocks },
+        }),
+      );
+    });
+  }
+  return generatedSessions;
+}
+
+function getProgramWeekday(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  const day = date.getDay();
+  return day === 0 ? 7 : day;
+}
+
+function importStrengthPhase(event) {
+  event.preventDefault();
+  try {
+    const imported = parseStrengthPhaseDefinition(phaseImportTextInput.value, phaseNameOverrideInput.value.trim());
+    const normalized = normalizePhaseTemplate(
+      editingPhaseTemplateId
+        ? {
+            ...imported,
+            id: editingPhaseTemplateId,
+            importedAt: phaseTemplates.find((template) => template.id === editingPhaseTemplateId)?.importedAt || Date.now(),
+          }
+        : imported,
+    );
+
+    if (editingPhaseTemplateId) {
+      phaseTemplates = phaseTemplates.map((template) => (template.id === editingPhaseTemplateId ? normalized : template));
+      const refreshedInstances = regenerateScheduledPhaseInstances(normalized);
+      savePlannerCollections();
+      resetPhaseImportForm();
+      phaseImportStatusEl.textContent = refreshedInstances
+        ? `Updated "${normalized.name}" and refreshed ${refreshedInstances} scheduled phase ${refreshedInstances === 1 ? "instance" : "instances"}.`
+        : `Updated "${normalized.name}".`;
+    } else {
+      phaseTemplates.unshift(normalizePhaseTemplate(imported));
+      savePlannerCollections();
+      resetPhaseImportForm();
+      phaseImportStatusEl.textContent = `Imported phase template "${imported.name}".`;
+    }
+    render();
+  } catch (error) {
+    phaseImportStatusEl.textContent = error instanceof Error ? error.message : "Could not import phase.";
+  }
+}
+
+function parseStrengthPhaseDefinition(text, overrideName) {
+  const lines = String(text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (!lines.length) {
+    throw new Error("Paste or import phase content first.");
+  }
+
+  const template = {
+    id: crypto.randomUUID(),
+    name: overrideName || "",
+    durationWeeks: 0,
+    weekdaySlots: [],
+    importedAt: Date.now(),
+  };
+
+  let currentSlot = null;
+  let currentBlock = null;
+
+  lines.forEach((line, index) => {
+    const columns = line.split(",").map((column) => column.trim());
+    const rowType = columns[0]?.toUpperCase();
+    if (rowType === "PHASE") {
+      template.name = overrideName || columns[1] || template.name;
+      template.durationWeeks = Number(columns[2]);
+      if (!template.name || !Number.isFinite(template.durationWeeks)) {
+        throw new Error(`Invalid PHASE row at line ${index + 1}.`);
+      }
+      return;
+    }
+    if (rowType === "SLOT") {
+      const weekday = parseWeekday(columns[1]);
+      currentSlot = {
+        id: crypto.randomUUID(),
+        weekday,
+        title: columns[2] || `Strength session ${template.weekdaySlots.length + 1}`,
+        notes: columns[3] || "",
+        blocks: [],
+      };
+      template.weekdaySlots.push(currentSlot);
+      currentBlock = null;
+      return;
+    }
+    if (rowType === "BLOCK") {
+      if (!currentSlot) {
+        throw new Error(`BLOCK row before SLOT at line ${index + 1}.`);
+      }
+      const duration = parseBlockDurationRange(columns[2]);
+      const rest = parseBlockRestRange(columns[3]);
+      currentBlock = {
+        label: columns[1] || `Block ${currentSlot.blocks.length + 1}`,
+        durationMin: duration.durationMin,
+        durationMax: duration.durationMax,
+        restSec: rest.restSec,
+        restMaxSec: rest.restMaxSec,
+        sets: normalizeSetPrescription(columns[4]),
+        exercises: [],
+      };
+      currentSlot.blocks.push(currentBlock);
+      return;
+    }
+    if (rowType === "EXERCISE") {
+      if (!currentBlock) {
+        throw new Error(`EXERCISE row before BLOCK at line ${index + 1}.`);
+      }
+      currentBlock.exercises.push({
+        code: columns[1] || `E${currentBlock.exercises.length + 1}`,
+        name: columns[2] || "Exercise",
+        reps: columns[3] || "",
+        notes: columns[4] || "",
+        weight: toNumberOrNull(columns[5]),
+      });
+      return;
+    }
+    throw new Error(`Unknown row type "${columns[0]}" at line ${index + 1}.`);
+  });
+
+  if (!template.name || !template.durationWeeks || !template.weekdaySlots.length) {
+    throw new Error("A phase import needs PHASE metadata and at least one SLOT.");
+  }
+  return template;
+}
+
+function parseWeekday(value) {
+  const weekdayMap = {
+    monday: 1,
+    mon: 1,
+    tuesday: 2,
+    tue: 2,
+    tues: 2,
+    wednesday: 3,
+    wed: 3,
+    thursday: 4,
+    thu: 4,
+    thur: 4,
+    friday: 5,
+    fri: 5,
+    saturday: 6,
+    sat: 6,
+    sunday: 7,
+    sun: 7,
+  };
+  const key = String(value || "").trim().toLowerCase();
+  const parsed = weekdayMap[key];
+  if (!parsed) {
+    throw new Error(`Invalid weekday "${value}".`);
+  }
+  return parsed;
+}
+
+function renderPhaseTemplates() {
+  if (!phaseTemplateListEl) {
+    return;
+  }
+  if (!phaseTemplates.length) {
+    phaseTemplateListEl.innerHTML = "<p class=\"planner-empty\">No saved phase templates yet.</p>";
+    return;
+  }
+  phaseTemplateListEl.innerHTML = phaseTemplates
+    .map((template) => {
+      const slotSummary = template.weekdaySlots
+        .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}${slot.notes ? ` (${slot.notes})` : ""}`)
+        .join(" • ");
+      return `
+        <article class="phase-card">
+          <header>
+            <div>
+              <h4>${escapeHtml(template.name)}</h4>
+              <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(slotSummary)}</div>
+            </div>
+          </header>
+          <details class="phase-template-details">
+            <summary>Show training details</summary>
+            ${renderPhaseTemplateWorkouts(template)}
+          </details>
+          <div class="phase-instance-grid">
+            <label>
+              Start date
+              <input type="date" data-role="schedule-date" data-id="${template.id}" value="${formatDateInput(new Date())}" />
+            </label>
+            <div class="phase-actions">
+              <button type="button" class="ghost-button" data-role="edit-phase-template" data-id="${template.id}">Edit</button>
+              <button type="button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
+              <button type="button" class="ghost-button danger-button" data-role="delete-phase-template" data-id="${template.id}">Delete</button>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderPhaseTemplateWorkouts(template) {
+  const slots = template.weekdaySlots || [];
+  if (!slots.length) {
+    return `<p class="planner-empty">No training slots in this phase.</p>`;
+  }
+
+  return `
+    <div class="phase-template-workouts">
+      ${slots
+        .map((slot) => {
+          return `
+            <article class="phase-training-card">
+              <h5>${escapeHtml(weekdayName(slot.weekday))} • ${escapeHtml(slot.title)}</h5>
+              ${slot.notes ? `<div class="phase-meta">${escapeHtml(slot.notes)}</div>` : ""}
+              ${renderStrengthStructure(slot.blocks || [], { mode: "planned" })}
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function handlePhaseTemplateAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const role = target.dataset.role;
+  const id = target.dataset.id;
+  if (!role || !id) {
+    return;
+  }
+
+  if (role === "delete-phase-template") {
+    phaseTemplates = phaseTemplates.filter((template) => template.id !== id);
+    if (editingPhaseTemplateId === id) {
+      resetPhaseImportForm();
+    }
+    savePlannerCollections();
+    render();
+    return;
+  }
+
+  if (role === "edit-phase-template") {
+    startPhaseTemplateEdit(id);
+    return;
+  }
+
+  if (role === "schedule-phase") {
+    const template = phaseTemplates.find((item) => item.id === id);
+    const dateInput = phaseTemplateListEl.querySelector(`[data-role="schedule-date"][data-id="${id}"]`);
+    const startDate = normalizeDateInput(dateInput?.value || "");
+    if (!template || !startDate) {
+      return;
+    }
+    schedulePhaseTemplate(template, startDate);
+  }
+}
+
+function schedulePhaseTemplate(template, startDate) {
+  const instanceId = crypto.randomUUID();
+  const generatedSessions = buildPhaseSessions(template, startDate, instanceId);
+  plannedSessions.push(...generatedSessions);
+
+  phaseInstances.unshift(
+    normalizePhaseInstance({
+      id: instanceId,
+      templateId: template.id,
+      templateName: template.name,
+      startDate,
+      durationWeeks: template.durationWeeks,
+      generatedSessionIds: generatedSessions.map((session) => session.id),
+      createdAt: Date.now(),
+    }),
+  );
+  savePlannerCollections();
+  render();
+}
+
+function renderPhaseInstances() {
+  if (!phaseInstanceListEl) {
+    return;
+  }
+  if (!phaseInstances.length) {
+    phaseInstanceListEl.innerHTML = "<p class=\"planner-empty\">No scheduled phases yet.</p>";
+    return;
+  }
+  phaseInstanceListEl.innerHTML = phaseInstances
+    .map((instance) => {
+      const endDate = formatDateInput(addDays(instance.startDate, (instance.durationWeeks * 7) - 1));
+      return `
+        <article class="phase-card">
+          <header>
+            <div>
+              <h4>${escapeHtml(instance.templateName || "Phase")}</h4>
+              <div class="phase-meta">${formatHumanDate(instance.startDate)} to ${formatHumanDate(endDate)} • ${instance.generatedSessionIds.length} sessions</div>
+            </div>
+          </header>
+          <div class="phase-actions">
+            <button type="button" class="ghost-button danger-button" data-role="delete-phase-instance" data-id="${instance.id}">Remove scheduled phase</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function handlePhaseInstanceAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  if (target.dataset.role !== "delete-phase-instance" || !target.dataset.id) {
+    return;
+  }
+  const instance = phaseInstances.find((item) => item.id === target.dataset.id);
+  if (!instance) {
+    return;
+  }
+  plannedSessions = plannedSessions.filter((session) => !instance.generatedSessionIds.includes(session.id));
+  phaseInstances = phaseInstances.filter((item) => item.id !== instance.id);
+  savePlannerCollections();
+  render();
+}
+
+function openCompletionDialog(session) {
+  if (!completionDialog || !completionForm) {
+    return;
+  }
+  completionForm.reset();
+  completionStrengthDraft = [];
+  completionSprintDraft = [];
+  completionSessionIdInput.value = session.id;
+  completionDateInput.value = session.date;
+  completionSessionTitleEl.textContent = `${session.title} • ${capitalize(session.type)}`;
+  completionStatusMessageEl.textContent = "";
+
+  completionRunFields.style.display = session.type === "run" ? "block" : "none";
+  completionSprintFields.style.display = session.type === "sprint" ? "block" : "none";
+  completionStrengthFields.style.display = session.type === "strength" ? "block" : "none";
+
+  if (session.type === "run") {
+    completionRunDistanceInput.value = session.details?.distance ?? "";
+    completionRunTimeInput.value = "";
+    completionRunPaceInput.value = "";
+  }
+  if (session.type === "sprint") {
+    completionSprintDraft = buildCompletionSprintDraft(session);
+    if (completionSprintFeelingInput) {
+      completionSprintFeelingInput.value = "";
+    }
+    renderCompletionSprintBlocks();
+  }
+  if (session.type === "strength") {
+    completionStrengthDraft = buildCompletionStrengthDraft(session);
+    renderCompletionStrengthBlocks();
+  }
+
+  if (typeof completionDialog.showModal === "function") {
+    completionDialog.showModal();
+  } else {
+    completionDialog.setAttribute("open", "true");
+  }
+}
+
+function closeCompletionDialog() {
+  if (!completionDialog) {
+    return;
+  }
+  completionStrengthDraft = [];
+  completionSprintDraft = [];
+  if (typeof completionDialog.close === "function") {
+    completionDialog.close();
+  } else {
+    completionDialog.removeAttribute("open");
+  }
+}
+
+function buildCompletionSprintDraft(session) {
+  return normalizePlannedSprintBlocks(session.details?.blocks || []).map((block, blockIndex) => ({
+    label: `Block ${blockIndex + 1}`,
+    reps: Number(block.reps),
+    distance: Number(block.distance),
+    targetTime: isNumber(block.targetTime) ? Number(block.targetTime) : null,
+    restSec: isNumber(block.restSec) ? Number(block.restSec) : null,
+    bestPreviousTime: findBestSprintTimeForDistance(block.distance),
+    rows: Array.from({ length: Number(block.reps) }, (_, repIndex) => ({
+      order: repIndex + 1,
+      distance: Number(block.distance),
+      targetTime: isNumber(block.targetTime) ? Number(block.targetTime) : null,
+      actualTime: null,
+    })),
+  }));
+}
+
+function renderCompletionSprintBlocks() {
+  if (!completionSprintBlocksEl) {
+    return;
+  }
+  if (!completionSprintDraft.length) {
+    completionSprintBlocksEl.innerHTML = "<p class=\"planner-empty\">No planned sprint blocks.</p>";
+    return;
+  }
+  completionSprintBlocksEl.innerHTML = completionSprintDraft
+    .map(
+      (block, blockIndex) => `
+        <div class="completion-block completion-sprint-block">
+          <h4>${escapeHtml(block.label)}</h4>
+          <div class="phase-meta">${escapeHtml(formatPlannedSprintBlock(block))}</div>
+          <div class="completion-sprint-grid">
+            <div class="completion-sprint-grid-header">Rep</div>
+            <div class="completion-sprint-grid-header">Meters</div>
+            <div class="completion-sprint-grid-header">Reference</div>
+            <div class="completion-sprint-grid-header">Actual time (sec)</div>
+            ${(block.rows || [])
+              .map(
+                (row, rowIndex) => `
+                  <div class="completion-sprint-cell">${row.order}</div>
+                  <div class="completion-sprint-cell">${escapeHtml(formatNumber(row.distance))}m</div>
+                  <div class="completion-sprint-cell">${formatSprintReferenceCell(row, block)}</div>
+                  <label class="completion-sprint-input">
+                    <input type="number" min="0" step="0.01" data-role="completion-sprint-time" data-block-index="${blockIndex}" data-row-index="${rowIndex}" value="${row.actualTime ?? ""}" />
+                  </label>`,
+              )
+              .join("")}
+          </div>
+        </div>`,
+    )
+    .join("");
+}
+
+function formatSprintReferenceCell(row, block) {
+  if (isNumber(row?.targetTime)) {
+    return `${escapeHtml(formatNumber(row.targetTime))}s target`;
+  }
+  if (isNumber(block?.bestPreviousTime)) {
+    return `${escapeHtml(formatNumber(block.bestPreviousTime))}s best`;
+  }
+  return "-";
+}
+
+function handleCompletionSprintInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) {
+    return;
+  }
+  if (target.dataset.role !== "completion-sprint-time") {
+    return;
+  }
+  const blockIndex = Number(target.dataset.blockIndex);
+  const rowIndex = Number(target.dataset.rowIndex);
+  const row = completionSprintDraft?.[blockIndex]?.rows?.[rowIndex];
+  if (!row) {
+    return;
+  }
+  row.actualTime = toNumberOrNull(target.value);
+}
+
+function collectCompletedSprintSets() {
+  return (completionSprintDraft || [])
+    .flatMap((block) => block.rows || [])
+    .map((row, index) => ({
+      order: index + 1,
+      time: toNumberOrNull(row.actualTime),
+      distance: toNumberOrNull(row.distance),
+      targetTime: toNumberOrNull(row.targetTime),
+    }))
+    .filter((set) => isNumber(set.time) && isNumber(set.distance));
+}
+
+function findBestSprintTimeForDistance(distance) {
+  const value = toNumberOrNull(distance);
+  if (!isNumber(value)) {
+    return null;
+  }
+  const matchingTimes = workouts
+    .filter((workout) => workout.activity === "sprint")
+    .flatMap((workout) => normalizeSprintSets(workout.sprintSets))
+    .filter((set) => Number(set.distance) === Number(value))
+    .map((set) => Number(set.time))
+    .filter((time) => isNumber(time));
+  return matchingTimes.length ? Math.min(...matchingTimes) : null;
+}
+
+function buildCompletionStrengthDraft(session) {
+  const blocks = session.details?.blocks || [];
+  return blocks.map((block, blockIndex) => {
+    const defaultSetCount = getDefaultActualSets(block.sets) || 1;
+    return {
+      label: block.label || String(blockIndex + 1),
+      plannedMeta: {
+        duration: formatBlockDuration(block),
+        rest: formatBlockRest(block),
+        sets: String(block.sets || ""),
+      },
+      actualSets: getDefaultActualSets(block.sets),
+      note: "",
+      exercises: (block.exercises || []).map((exercise) => ({
+        code: exercise.code || "",
+        name: exercise.name || "Exercise",
+        plannedReps: exercise.reps || "",
+        plannedNote: exercise.notes || "",
+        plannedWeight: isNumber(exercise.weight) ? exercise.weight : null,
+        completed: true,
+        actualNote: "",
+        actualSets: Array.from({ length: defaultSetCount }, (_, setIndex) => ({
+          id: crypto.randomUUID(),
+          order: setIndex + 1,
+          reps: extractWorkoutRepCount(exercise.reps) || null,
+          loadType: "kg",
+          weight: isNumber(exercise.weight) ? exercise.weight : null,
+          bandColor: "",
+        })),
+      })),
+    };
+  });
+}
+
+function renderCompletionStrengthBlocks() {
+  const blocks = completionStrengthDraft || [];
+  completionStrengthBlocksEl.innerHTML = blocks
+    .map(
+      (block, blockIndex) => `
+        <div class="completion-block">
+          <h4>Block ${escapeHtml(block.label || String(blockIndex + 1))}</h4>
+          <div class="phase-meta">${[
+            block.plannedMeta?.duration || "",
+            block.plannedMeta?.rest ? `${block.plannedMeta.rest} rest` : "",
+            block.plannedMeta?.sets ? `${escapeHtml(block.plannedMeta.sets)} sets planned` : "",
+          ]
+            .filter(Boolean)
+            .join(" • ")}</div>
+          <div class="grid">
+            <label>
+              Actual sets
+              <input type="number" min="0" data-role="completion-block-sets" data-block-index="${blockIndex}" value="${block.actualSets ?? ""}" />
+            </label>
+            <label>
+              Block note
+              <input type="text" data-role="completion-block-note" data-block-index="${blockIndex}" placeholder="Optional note" value="${escapeHtml(block.note || "")}" />
+            </label>
+          </div>
+          <div class="completion-exercise-list">
+            ${(block.exercises || [])
+              .map(
+                (exercise, exerciseIndex) => `
+                  <div class="completion-exercise-row">
+                    <div class="completion-exercise-header">
+                      <label class="checkbox-label">
+                        <input type="checkbox" data-role="completion-exercise-done" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" ${exercise.completed ? "checked" : ""} />
+                        ${escapeHtml(exercise.code || "")} ${escapeHtml(exercise.name)}
+                      </label>
+                      <div class="phase-meta">Planned: ${escapeHtml(exercise.plannedReps || "-")}${isNumber(exercise.plannedWeight) ? ` @ ${escapeHtml(formatNumber(exercise.plannedWeight))} kg` : ""}${exercise.plannedNote ? ` - ${escapeHtml(exercise.plannedNote)}` : ""}</div>
+                    </div>
+                    <div class="completion-actual-sets">
+                      ${(exercise.actualSets || [])
+                        .map(
+                          (set, setIndex) => `
+                            <div class="completion-actual-set-row">
+                              <span class="completion-set-order">Set ${setIndex + 1}</span>
+                              <input type="number" min="0" data-role="completion-set-reps" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" data-set-id="${set.id}" value="${set.reps ?? ""}" placeholder="Reps" />
+                              <select data-role="completion-set-load-type" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" data-set-id="${set.id}">
+                                <option value="kg" ${set.loadType === "kg" ? "selected" : ""}>kg</option>
+                                <option value="bodyweight" ${set.loadType === "bodyweight" ? "selected" : ""}>body weight</option>
+                                <option value="band" ${set.loadType === "band" ? "selected" : ""}>band</option>
+                              </select>
+                              <input type="number" min="0" step="0.1" data-role="completion-set-weight" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" data-set-id="${set.id}" value="${set.weight ?? ""}" placeholder="Weight" ${set.loadType === "kg" ? "" : "disabled"} />
+                              <div class="band-color-field completion-band-field${set.loadType === "band" ? "" : " is-disabled"}">
+                                <input type="hidden" value="${escapeHtml(set.bandColor || "")}" />
+                                <div class="band-color-picker${set.loadType === "band" ? "" : " is-disabled"}">${renderBandColorDots(set.bandColor || "", {
+                                  role: "completion-set-band-color",
+                                  exerciseIndex,
+                                  setIndex,
+                                  disabled: set.loadType !== "band",
+                                }).replaceAll(`data-set-index="${setIndex}"`, `data-set-id="${set.id}"`)}</div>
+                              </div>
+                              <button type="button" class="ghost-button danger-button" data-role="remove-completion-set" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" data-set-id="${set.id}">Remove</button>
+                            </div>
+                          `,
+                        )
+                        .join("")}
+                      <button type="button" class="ghost-button" data-role="add-completion-set" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">Add set</button>
+                    </div>
+                    <label>
+                      Actual note
+                      <input type="text" data-role="completion-exercise-note" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}" placeholder="Optional change note" value="${escapeHtml(exercise.actualNote || "")}" />
+                    </label>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function syncCompletionRunPace() {
+  const distance = toNumberOrNull(completionRunDistanceInput.value);
+  const time = normalizeRunDurationInput(completionRunTimeInput.value);
+  completionRunTimeInput.value = time;
+  const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
+  completionRunPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
+}
+
+function handleCompletionStrengthAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const role = target.dataset.role;
+  const blockIndex = Number(target.dataset.blockIndex);
+  const exerciseIndex = Number(target.dataset.exerciseIndex);
+  const setId = target.dataset.setId || "";
+
+  if (role === "add-completion-set" && Number.isInteger(blockIndex) && Number.isInteger(exerciseIndex)) {
+    const exercise = completionStrengthDraft[blockIndex]?.exercises?.[exerciseIndex];
+    if (!exercise) {
+      return;
+    }
+    exercise.actualSets.push({
+      id: crypto.randomUUID(),
+      order: exercise.actualSets.length + 1,
+      reps: null,
+      loadType: "kg",
+      weight: null,
+      bandColor: "",
+    });
+    renderCompletionStrengthBlocks();
+    return;
+  }
+
+  if (role === "remove-completion-set" && Number.isInteger(blockIndex) && Number.isInteger(exerciseIndex) && setId) {
+    const exercise = completionStrengthDraft[blockIndex]?.exercises?.[exerciseIndex];
+    if (!exercise) {
+      return;
+    }
+    exercise.actualSets = exercise.actualSets.filter((set) => set.id !== setId);
+    renderCompletionStrengthBlocks();
+    return;
+  }
+
+  if (role === "completion-set-band-color" && Number.isInteger(blockIndex) && Number.isInteger(exerciseIndex) && setId) {
+    const set = findCompletionSet(blockIndex, exerciseIndex, setId);
+    if (!set || target.dataset.bandColor === undefined) {
+      return;
+    }
+    set.bandColor = target.dataset.bandColor;
+    renderCompletionStrengthBlocks();
+  }
+}
+
+function handleCompletionStrengthInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const role = target.dataset.role;
+  const blockIndex = Number(target.dataset.blockIndex);
+  const exerciseIndex = Number(target.dataset.exerciseIndex);
+  const setId = target.dataset.setId || "";
+
+  const block = completionStrengthDraft[blockIndex];
+  const exercise = block?.exercises?.[exerciseIndex];
+  if (!role || (!block && role !== "completion-block-sets" && role !== "completion-block-note")) {
+    return;
+  }
+
+  if (role === "completion-block-sets" && block && target instanceof HTMLInputElement) {
+    block.actualSets = toNumberOrNull(target.value);
+    return;
+  }
+  if (role === "completion-block-note" && block && target instanceof HTMLInputElement) {
+    block.note = target.value.trim();
+    return;
+  }
+  if (!exercise) {
+    return;
+  }
+  if (role === "completion-exercise-done" && target instanceof HTMLInputElement) {
+    exercise.completed = Boolean(target.checked);
+    return;
+  }
+  if (role === "completion-exercise-note" && target instanceof HTMLInputElement) {
+    exercise.actualNote = target.value.trim();
+    return;
+  }
+
+  const set = findCompletionSet(blockIndex, exerciseIndex, setId);
+  if (!set) {
+    return;
+  }
+  if (role === "completion-set-reps" && target instanceof HTMLInputElement) {
+    set.reps = toNumberOrNull(target.value);
+    return;
+  }
+  if (role === "completion-set-weight" && target instanceof HTMLInputElement) {
+    set.weight = toNumberOrNull(target.value);
+    return;
+  }
+  if (role === "completion-set-load-type" && target instanceof HTMLSelectElement) {
+    set.loadType = target.value === "band" || target.value === "bodyweight" ? target.value : "kg";
+    if (set.loadType !== "kg") {
+      set.weight = null;
+    }
+    if (set.loadType !== "band") {
+      set.bandColor = "";
+    }
+    renderCompletionStrengthBlocks();
+  }
+}
+
+function findCompletionSet(blockIndex, exerciseIndex, setId) {
+  return completionStrengthDraft[blockIndex]?.exercises?.[exerciseIndex]?.actualSets?.find((set) => set.id === setId) || null;
+}
+
+function detectCompletedSessionStatus(session, actual) {
+  if (session.type !== "strength") {
+    return "completed";
+  }
+  return detectStrengthCompletionStatus(session, actual);
+}
+
+function detectStrengthCompletionStatus(session, actual) {
+  const plannedBlocks = session.details?.blocks || [];
+  const actualBlocks = actual?.blocks || [];
+  if (plannedBlocks.length !== actualBlocks.length) {
+    return "modified";
+  }
+
+  for (let blockIndex = 0; blockIndex < plannedBlocks.length; blockIndex += 1) {
+    const plannedBlock = plannedBlocks[blockIndex];
+    const actualBlock = actualBlocks[blockIndex];
+    if (!actualBlock || (actualBlock.label || "") !== (plannedBlock.label || "")) {
+      return "modified";
+    }
+
+    const plannedSetBaseline = getDefaultActualSets(plannedBlock.sets);
+    if (isNumber(plannedSetBaseline) && actualBlock.actualSets !== plannedSetBaseline) {
+      return "modified";
+    }
+
+    const plannedExercises = plannedBlock.exercises || [];
+    const actualExercises = actualBlock.exercises || [];
+    if (plannedExercises.length !== actualExercises.length) {
+      return "modified";
+    }
+
+    for (let exerciseIndex = 0; exerciseIndex < plannedExercises.length; exerciseIndex += 1) {
+      const plannedExercise = plannedExercises[exerciseIndex];
+      const actualExercise = actualExercises[exerciseIndex];
+      if (
+        !actualExercise ||
+        !actualExercise.completed ||
+        (actualExercise.code || "") !== (plannedExercise.code || "") ||
+        (actualExercise.name || "") !== (plannedExercise.name || "")
+      ) {
+        return "modified";
+      }
+
+      const actualSets = actualExercise.actualSets || [];
+      const plannedExerciseSetCount = plannedSetBaseline || actualSets.length;
+      if (actualSets.length !== plannedExerciseSetCount) {
+        return "modified";
+      }
+
+      const plannedRepBaseline = extractWorkoutRepCount(plannedExercise.reps);
+      const plannedWeightBaseline = isNumber(plannedExercise.weight) ? Number(plannedExercise.weight) : null;
+      for (let setIndex = 0; setIndex < actualSets.length; setIndex += 1) {
+        const actualSet = actualSets[setIndex];
+        if (!actualSet || !isNumber(actualSet.reps)) {
+          return "modified";
+        }
+        if (plannedRepBaseline && actualSet.reps !== plannedRepBaseline) {
+          return "modified";
+        }
+        if ((actualSet.loadType || "kg") !== "kg") {
+          return "modified";
+        }
+        if (isNumber(plannedWeightBaseline) && actualSet.weight !== plannedWeightBaseline) {
+          return "modified";
+        }
+        if (!isNumber(plannedWeightBaseline) && isNumber(actualSet.weight)) {
+          return "modified";
+        }
+        if ((actualSet.bandColor || "") !== "") {
+          return "modified";
+        }
+      }
+    }
+  }
+
+  return "completed";
+}
+
+function saveCompletedSession(event) {
+  event.preventDefault();
+  const session = plannedSessions.find((item) => item.id === completionSessionIdInput.value);
+  if (!session) {
+    return;
+  }
+  const modificationNote = completionNoteInput.value.trim();
+  let actual = null;
+  try {
+    if (session.type === "run") {
+      const distance = toNumberOrNull(completionRunDistanceInput.value);
+      const time = normalizeRunDurationInput(completionRunTimeInput.value);
+      const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
+      if (!isNumber(distance) || !time || !isNumber(pace)) {
+        completionStatusMessageEl.textContent = "Run completion needs distance and time.";
+        return;
+      }
+      actual = { distance, time, pace };
+    }
+    if (session.type === "sprint") {
+      const sprintSets = collectCompletedSprintSets();
+      const expectedSprintSets = (completionSprintDraft || []).reduce((sum, block) => sum + ((block.rows || []).length), 0);
+      if (!sprintSets.length || sprintSets.length !== expectedSprintSets) {
+        completionStatusMessageEl.textContent = "Sprint completion needs a time for every planned rep.";
+        return;
+      }
+      actual = {
+        sprintSets,
+        feeling: completionSprintFeelingInput?.value || "",
+      };
+    }
+    if (session.type === "strength") {
+      actual = { blocks: collectCompletedStrengthBlocks(session) };
+      const actualStrengthSets = actual.blocks.flatMap((block) =>
+        (block.exercises || []).flatMap((exercise) => (exercise.completed ? exercise.actualSets || [] : [])),
+      );
+      if (!actualStrengthSets.length) {
+        completionStatusMessageEl.textContent = "Strength completion needs at least one logged set.";
+        return;
+      }
+    }
+
+    const status = detectCompletedSessionStatus(session, actual);
+
+    const workout = createWorkoutFromPlannedSession(session, actual, modificationNote);
+    workouts.unshift(normalizeImportedWorkout(workout));
+    syncExerciseLibraryFromWorkouts();
+    renderExerciseLibrary();
+    save(STORAGE_KEY_WORKOUTS, workouts);
+    session.status = status;
+    session.actual = actual;
+    session.linkedWorkoutId = workout.id;
+    session.modificationNote = modificationNote;
+    savePlannerCollections();
+    closeCompletionDialog();
+    render();
+  } catch {
+    completionStatusMessageEl.textContent = "Could not save completion. Check the values and try again.";
+  }
+}
+
+function collectCompletedStrengthBlocks(session) {
+  return (completionStrengthDraft || []).map((block) => ({
+    label: block.label,
+    plannedSets: block.plannedMeta?.sets || "",
+    actualSets: toNumberOrNull(block.actualSets),
+    note: block.note || "",
+    exercises: (block.exercises || []).map((exercise) => ({
+      code: exercise.code,
+      name: exercise.name,
+      reps: exercise.plannedReps,
+      completed: Boolean(exercise.completed),
+      actualNote: exercise.actualNote || "",
+      actualSets: (exercise.actualSets || [])
+        .map((set, index) => ({
+          order: index + 1,
+          reps: toNumberOrNull(set.reps),
+          loadType: set.loadType === "band" || set.loadType === "bodyweight" ? set.loadType : "kg",
+          weight: set.loadType === "kg" ? toNumberOrNull(set.weight) : null,
+          bandColor: set.loadType === "band" ? set.bandColor || "" : "",
+        }))
+        .filter((set) => isNumber(set.reps)),
+    })),
+  }));
+}
+
+function createWorkoutFromPlannedSession(session, actual, modificationNote) {
+  if (session.type === "run") {
+    return {
+      id: crypto.randomUUID(),
+      date: session.date,
+      activity: "run",
+      distance: actual.distance,
+      time: actual.time,
+      pace: actual.pace,
+      notes: modificationNote || `Completed planned run: ${session.title}`,
+      sprintSets: [],
+      strengthExercises: [],
+      createdAt: Date.now(),
+    };
+  }
+  if (session.type === "sprint") {
+    return {
+      id: crypto.randomUUID(),
+      date: session.date,
+      activity: "sprint",
+      sprintSets: actual.sprintSets,
+      sprintFeeling: actual.feeling || "",
+      distance: null,
+      time: null,
+      pace: null,
+      strengthExercises: [],
+      notes: modificationNote || `Completed planned sprint: ${session.title}`,
+      createdAt: Date.now(),
+    };
+  }
+  return {
+    id: crypto.randomUUID(),
+    date: session.date,
+    activity: "strength",
+    strengthExercises: convertStrengthActualToWorkoutExercises(actual.blocks),
+    distance: null,
+    time: null,
+    pace: null,
+    sprintSets: [],
+    notes: modificationNote || `Completed planned strength: ${session.title}`,
+    createdAt: Date.now(),
+  };
+}
+
+function convertStrengthActualToWorkoutExercises(blocks) {
+  return blocks
+    .flatMap((block) => block.exercises.filter((exercise) => exercise.completed))
+    .map((exercise) => ({
+      name: exercise.name,
+      sets: (exercise.actualSets || [])
+        .map((set, index) => ({
+          order: index + 1,
+          reps: toNumberOrNull(set.reps),
+          loadType: set.loadType === "band" || set.loadType === "bodyweight" ? set.loadType : "kg",
+          weight: set.loadType === "kg" ? toNumberOrNull(set.weight) : null,
+          bandColor: set.loadType === "band" ? set.bandColor || "" : "",
+        }))
+        .filter((set) => isNumber(set.reps)),
+    }))
+    .filter((exercise) => exercise.sets.length > 0);
+}
+
+function extractWorkoutRepCount(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) {
+    return 0;
+  }
+
+  const afterMultiplier = raw.includes("x") ? raw.split("x").pop() : raw;
+  const firstNumber = afterMultiplier.match(/\d+(?:\.\d+)?/);
+  return firstNumber ? Number(firstNumber[0]) : 0;
+}
+
+function renderReview() {
+  if (!reviewSessionListEl || !reviewSummaryEl) {
+    return;
+  }
+  const reviewedSessions = plannedSessions
+    .filter((session) => session.status !== "planned")
+    .slice()
+    .sort((a, b) => compareWorkoutsByRecentDate(a, b));
+  const modified = reviewedSessions.filter((session) => session.status === "modified").length;
+  const missed = reviewedSessions.filter((session) => session.status === "missed").length;
+  reviewSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Reviewed sessions</span>
+      <span class="value">${reviewedSessions.length}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Modified</span>
+      <span class="value">${modified}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Missed</span>
+      <span class="value">${missed}</span>
+    </article>
+  `;
+  if (!reviewedSessions.length) {
+    reviewSessionListEl.innerHTML = "<p class=\"planner-empty\">No completed or missed planned sessions yet.</p>";
+    return;
+  }
+  reviewSessionListEl.innerHTML = reviewedSessions
+    .map(
+      (session) => `
+        <article class="review-card">
+          <header>
+            <div>
+              <h4>${escapeHtml(session.title)}</h4>
+              <div class="review-meta">${formatHumanDate(session.date)} • ${capitalize(session.type)}</div>
+            </div>
+            <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
+          </header>
+          <div class="review-diff-grid">
+            <div class="diff-panel">
+              <h5>Planned</h5>
+              ${renderPlannedDiff(session)}
+            </div>
+            <div class="diff-panel">
+              <h5>Actual</h5>
+              ${renderActualDiff(session)}
+            </div>
+          </div>
+          ${session.modificationNote ? `<div class="review-meta">Note: ${escapeHtml(session.modificationNote)}</div>` : ""}
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderPlannedDiff(session) {
+  if (session.type === "run") {
+    return `<pre>${escapeHtml(formatPlannedSessionSummary(session))}</pre>`;
+  }
+  if (session.type === "sprint") {
+    return `<ul>${(session.details?.blocks || []).map((block) => `<li>${escapeHtml(formatPlannedSprintBlock(block))}</li>`).join("")}</ul>`;
+  }
+  return renderStrengthStructure(session.details?.blocks || [], { mode: "planned", notes: session.notes });
+}
+
+function renderActualDiff(session) {
+  if (session.status === "missed") {
+    return "<pre>Missed session.</pre>";
+  }
+  if (session.type === "run") {
+    return `<pre>${escapeHtml(`${formatNumber(session.actual?.distance || 0)} km • ${session.actual?.time || ""} • ${formatRunPace(session.actual?.pace || 0)} min/km`)}</pre>`;
+  }
+  if (session.type === "sprint") {
+    return `
+      <ul>${(session.actual?.sprintSets || []).map((set) => `<li>${formatNumber(set.distance)}m in ${formatNumber(set.time)}s</li>`).join("")}</ul>
+      ${formatSprintFeeling(session.actual?.feeling) ? `<div class="review-meta">Feeling: ${escapeHtml(formatSprintFeeling(session.actual?.feeling))}</div>` : ""}
+    `;
+  }
+  return renderStrengthStructure(session.actual?.blocks || [], { mode: "actual" });
+}
+
+function renderAdherenceStats() {
+  if (!adherenceSummaryEl || !adherenceBreakdownEl) {
+    return;
+  }
+  const weekStats = computeWeeklyAdherence(uiSettings.currentWeekStart);
+  const allSessions = plannedSessions.length;
+  const completedSessions = plannedSessions.filter((session) => ["completed", "modified"].includes(session.status)).length;
+  const completionRate = allSessions ? Math.round((completedSessions / allSessions) * 100) : 0;
+  adherenceSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Weekly adherence</span>
+      <span class="value">${weekStats.completed}/${weekStats.total || 0}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Overall completion</span>
+      <span class="value">${completionRate}%</span>
+    </article>
+    <article class="badge">
+      <span class="label">Planned sessions</span>
+      <span class="value">${allSessions}</span>
+    </article>
+  `;
+
+  const countsByType = ["strength", "run", "sprint"].map((type) => {
+    const planned = plannedSessions.filter((session) => session.type === type).length;
+    const completed = plannedSessions.filter((session) => session.type === type && ["completed", "modified"].includes(session.status)).length;
+    return { type, planned, completed };
+  });
+  adherenceBreakdownEl.innerHTML = countsByType
+    .map(
+      ({ type, planned, completed }) => `
+        <div class="goal-item">
+          <strong>${capitalize(type)} adherence:</strong> ${completed}/${planned || 0}
+          <div class="progress-bar"><span style="width:${planned ? Math.round((completed / planned) * 100) : 0}%"></span></div>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function renderStrengthProgressBoard() {
+  if (!strengthProgressBoardEl || !strengthProgressStatusEl) {
+    return;
+  }
+  const rows = buildStrengthProgressRows();
+  if (!rows.length) {
+    strengthProgressStatusEl.textContent = "No completed planned strength sessions yet.";
+    strengthProgressBoardEl.innerHTML = "";
+    return;
+  }
+
+  strengthProgressStatusEl.textContent = "Latest planned vs actual and previous-week actual progression by exercise.";
+  strengthProgressBoardEl.innerHTML = rows
+    .map(
+      (row) => `
+        <article class="exercise-progress-card">
+          <header>
+            <div>
+              <h4>${escapeHtml(row.name)}</h4>
+              <div class="phase-meta">${formatHumanDate(row.date)}${row.code ? ` • ${escapeHtml(row.code)}` : ""}</div>
+            </div>
+            <div class="exercise-progress-badges">
+              <span class="session-status ${progressBadgeClass(row.planStatus)}">${escapeHtml(row.planStatus)}</span>
+              <span class="session-status ${progressBadgeClass(row.improvementStatus)}">${escapeHtml(row.improvementStatus)}</span>
+            </div>
+          </header>
+          <div class="exercise-progress-grid">
+            <div>
+              <h5>Planned</h5>
+              <div class="strength-exercise-detail">${escapeHtml(row.plannedSummary)}</div>
+            </div>
+            <div>
+              <h5>Actual</h5>
+              <div class="strength-exercise-detail">${escapeHtml(row.actualSummary)}</div>
+            </div>
+            <div>
+              <h5>Previous Actual</h5>
+              <div class="strength-exercise-detail">${escapeHtml(row.previousSummary)}</div>
+            </div>
+          </div>
+          <div class="phase-meta">${escapeHtml(row.explanation)}</div>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function buildStrengthProgressRows() {
+  const entriesByName = new Map();
+  plannedSessions
+    .filter((session) => session.type === "strength" && ["completed", "modified"].includes(session.status) && session.actual?.blocks?.length)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach((session) => {
+      const plannedBlocks = session.details?.blocks || [];
+      const actualBlocks = session.actual?.blocks || [];
+      actualBlocks.forEach((actualBlock, blockIndex) => {
+        const plannedBlock = plannedBlocks[blockIndex] || { exercises: [], sets: "" };
+        (actualBlock.exercises || []).forEach((actualExercise, exerciseIndex) => {
+          if (!actualExercise.completed) {
+            return;
+          }
+          const plannedExercise = plannedBlock.exercises?.[exerciseIndex] || {};
+          const key = normalizeExerciseKey(actualExercise.name || plannedExercise.name || "");
+          if (!key) {
+            return;
+          }
+          const entry = {
+            date: session.date,
+            code: actualExercise.code || plannedExercise.code || "",
+            name: actualExercise.name || plannedExercise.name || "Exercise",
+            plannedExercise,
+            plannedBlock,
+            actualExercise,
+          };
+          const list = entriesByName.get(key) || [];
+          list.push(entry);
+          entriesByName.set(key, list);
+        });
+      });
+    });
+
+  return [...entriesByName.values()]
+    .map((entries) => {
+      const current = entries[entries.length - 1];
+      const previous = entries.length > 1 ? entries[entries.length - 2] : null;
+      const plannedSnapshot = buildPlannedExerciseSnapshot(current.plannedExercise, current.plannedBlock);
+      const actualSnapshot = buildActualExerciseSnapshot(current.actualExercise);
+      const previousSnapshot = previous ? buildActualExerciseSnapshot(previous.actualExercise) : null;
+      const planStatus = evaluatePlanStatus(plannedSnapshot, actualSnapshot);
+      const improvement = evaluateImprovementStatus(previousSnapshot, actualSnapshot);
+      return {
+        date: current.date,
+        code: current.code,
+        name: current.name,
+        plannedSummary: formatPlannedProgressSnapshot(plannedSnapshot),
+        actualSummary: formatActualProgressSnapshot(actualSnapshot),
+        previousSummary: previousSnapshot ? formatActualProgressSnapshot(previousSnapshot) : "No previous logged week",
+        planStatus: planStatus.label,
+        improvementStatus: improvement.label,
+        explanation: `${planStatus.explanation} ${improvement.explanation}`.trim(),
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function normalizeExerciseKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function buildPlannedExerciseSnapshot(exercise, block) {
+  return {
+    repsText: exercise?.reps || "-",
+    repsBase: extractWorkoutRepCount(exercise?.reps),
+    weight: isNumber(exercise?.weight) ? Number(exercise.weight) : null,
+    setsText: String(block?.sets || ""),
+    setsBase: getDefaultActualSets(block?.sets) || 0,
+  };
+}
+
+function buildActualExerciseSnapshot(exercise) {
+  const sets = exercise?.actualSets || [];
+  const kgSets = sets.filter((set) => set.loadType === "kg" && isNumber(set.weight));
+  const maxWeight = kgSets.length ? Math.max(...kgSets.map((set) => Number(set.weight))) : null;
+  const maxReps = sets.length ? Math.max(...sets.map((set) => Number(set.reps))) : 0;
+  return {
+    totalSets: sets.length,
+    maxWeight,
+    maxReps,
+    loadTypes: [...new Set(sets.map((set) => set.loadType || "kg"))],
+    summary: sets.map((set) => `${formatNumber(set.reps)} reps @ ${formatStrengthLoad(set)}`).join(", "),
+  };
+}
+
+function formatPlannedProgressSnapshot(snapshot) {
+  return [snapshot.setsText ? `${snapshot.setsText} sets` : "", snapshot.repsText, isNumber(snapshot.weight) ? `@ ${formatNumber(snapshot.weight)} kg` : ""]
+    .filter(Boolean)
+    .join(" • ");
+}
+
+function formatActualProgressSnapshot(snapshot) {
+  if (!snapshot) {
+    return "No previous logged week";
+  }
+  return [snapshot.totalSets ? `${snapshot.totalSets} sets` : "", snapshot.summary || "", snapshot.maxWeight ? `top ${formatNumber(snapshot.maxWeight)} kg` : ""]
+    .filter(Boolean)
+    .join(" • ");
+}
+
+function evaluatePlanStatus(planned, actual) {
+  if (actual.totalSets === planned.setsBase && actual.maxReps === planned.repsBase && actual.maxWeight === planned.weight) {
+    return { label: "Matched plan", explanation: "Actual sets, reps, and top weight matched the plan." };
+  }
+  if (
+    actual.totalSets >= planned.setsBase &&
+    actual.maxReps >= planned.repsBase &&
+    ((isNumber(actual.maxWeight) && isNumber(planned.weight) && actual.maxWeight > planned.weight) || (!isNumber(planned.weight) && !isNumber(actual.maxWeight)))
+  ) {
+    return { label: "Exceeded plan", explanation: "Actual execution met or exceeded the planned prescription." };
+  }
+  if (
+    actual.totalSets < planned.setsBase ||
+    (planned.repsBase && actual.maxReps < planned.repsBase) ||
+    (isNumber(planned.weight) && (!isNumber(actual.maxWeight) || actual.maxWeight < planned.weight))
+  ) {
+    return { label: "Below plan", explanation: "Actual execution landed below the planned prescription." };
+  }
+  return { label: "Modified from plan", explanation: "Actual execution differed from the planned prescription." };
+}
+
+function evaluateImprovementStatus(previous, current) {
+  if (!previous) {
+    return { label: "First logged week", explanation: "This is the first completed week for this exercise." };
+  }
+  if (
+    isNumber(current.maxWeight) &&
+    isNumber(previous.maxWeight) &&
+    current.maxWeight > previous.maxWeight &&
+    current.maxReps >= previous.maxReps - 2
+  ) {
+    return { label: "Improved", explanation: "You handled a heavier top weight without a major rep drop." };
+  }
+  if (current.maxWeight === previous.maxWeight && current.maxReps > previous.maxReps) {
+    return { label: "Improved", explanation: "You hit more reps at the same top weight." };
+  }
+  if (current.maxWeight === previous.maxWeight && current.maxReps === previous.maxReps && current.totalSets > previous.totalSets) {
+    return { label: "Improved", explanation: "You matched the top set and added more completed work." };
+  }
+  if (current.maxWeight === previous.maxWeight && current.maxReps === previous.maxReps && current.totalSets === previous.totalSets) {
+    return { label: "Matched", explanation: "You repeated the previous week with the same output." };
+  }
+  if (
+    (isNumber(current.maxWeight) && isNumber(previous.maxWeight) && current.maxWeight > previous.maxWeight) ||
+    current.maxReps > previous.maxReps ||
+    current.totalSets > previous.totalSets
+  ) {
+    return { label: "Partial / mixed", explanation: "One metric improved, but another dropped enough to make it mixed." };
+  }
+  return { label: "Below previous", explanation: "This week landed below the previous completed week." };
+}
+
+function progressBadgeClass(label) {
+  if (label === "Improved" || label === "Exceeded plan" || label === "Matched plan") {
+    return "status-completed";
+  }
+  if (label === "Partial / mixed" || label === "Modified from plan") {
+    return "status-modified";
+  }
+  if (label === "Below previous" || label === "Below plan") {
+    return "status-missed";
+  }
+  return "status-planned";
+}
+
+function weekdayName(weekday) {
+  return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday - 1] || "Unknown";
+}
+
+function formatHumanDate(value) {
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function parseBlockDurationRange(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return { durationMin: null, durationMax: null };
+  }
+
+  const normalized = raw.toLowerCase().replace(/\s*mins?\.?\s*/g, "").trim();
+  const rangeMatch = normalized.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
+  if (rangeMatch) {
+    return {
+      durationMin: Number(rangeMatch[1]),
+      durationMax: Number(rangeMatch[2]),
+    };
+  }
+
+  return {
+    durationMin: toNumberOrNull(normalized),
+    durationMax: null,
+  };
+}
+
+function formatBlockDuration(block) {
+  const min = toNumberOrNull(block?.durationMin);
+  const max = toNumberOrNull(block?.durationMax);
+  if (isNumber(min) && isNumber(max)) {
+    return `${formatNumber(min)}-${formatNumber(max)} mins`;
+  }
+  if (isNumber(min)) {
+    return `${formatNumber(min)} mins`;
+  }
+  if (isNumber(max)) {
+    return `${formatNumber(max)} mins`;
+  }
+  return "";
+}
+
+function parseBlockRestRange(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return { restSec: null, restMaxSec: null };
+  }
+
+  const normalized = raw.toLowerCase().replace(/\s*secs?\.?\s*/g, "s").replace(/\s+/g, "");
+  const rangeMatch = normalized.match(/^(\d+(?:\.\d+)?)s?-(\d+(?:\.\d+)?)s?$/);
+  if (rangeMatch) {
+    return {
+      restSec: Number(rangeMatch[1]),
+      restMaxSec: Number(rangeMatch[2]),
+    };
+  }
+
+  const singleMatch = normalized.match(/^(\d+(?:\.\d+)?)s?$/);
+  return {
+    restSec: singleMatch ? Number(singleMatch[1]) : null,
+    restMaxSec: null,
+  };
+}
+
+function formatBlockRest(block) {
+  const min = toNumberOrNull(block?.restSec);
+  const max = toNumberOrNull(block?.restMaxSec);
+  if (isNumber(min) && isNumber(max)) {
+    return `${formatNumber(min)}-${formatNumber(max)}s`;
+  }
+  if (isNumber(min)) {
+    return `${formatNumber(min)}s`;
+  }
+  if (isNumber(max)) {
+    return `${formatNumber(max)}s`;
+  }
+  return "";
+}
+
+function normalizeSetPrescription(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "";
+  }
+  const normalized = raw.replace(/\s+/g, "");
+  if (/^\d+(?:-\d+)?$/.test(normalized)) {
+    return normalized;
+  }
+  return raw;
+}
+
+function getDefaultActualSets(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return null;
+  }
+  const firstNumber = raw.match(/\d+(?:\.\d+)?/);
+  return firstNumber ? Number(firstNumber[0]) : null;
+}
+
+function normalizePlannedSession(session) {
+  return {
+    id: session.id || crypto.randomUUID(),
+    date: normalizeDateInput(session.date) || formatDateInput(new Date()),
+    type: ["run", "sprint", "strength"].includes(session.type) ? session.type : "run",
+    title: typeof session.title === "string" && session.title.trim() ? session.title.trim() : "Planned session",
+    source: session.source === "phase-generated" ? "phase-generated" : "manual",
+    phaseTemplateId: typeof session.phaseTemplateId === "string" ? session.phaseTemplateId : "",
+    phaseInstanceId: typeof session.phaseInstanceId === "string" ? session.phaseInstanceId : "",
+    status: ["planned", "completed", "modified", "missed"].includes(session.status) ? session.status : "planned",
+    notes: typeof session.notes === "string" ? session.notes : "",
+    linkedWorkoutId: typeof session.linkedWorkoutId === "string" ? session.linkedWorkoutId : "",
+    modificationNote: typeof session.modificationNote === "string" ? session.modificationNote : "",
+    actual: session.actual || null,
+    details: normalizePlannedDetails(session.type, session.details),
+    createdAt: isNumber(session.createdAt) ? session.createdAt : Date.now(),
+  };
+}
+
+function normalizePlannedDetails(type, details) {
+  if (type === "run") {
+    return {
+      distance: toNumberOrNull(details?.distance),
+      paceGoal: isNumber(details?.paceGoal) ? Number(details.paceGoal) : null,
+    };
+  }
+  if (type === "sprint") {
+    return {
+      blocks: Array.isArray(details?.blocks)
+        ? normalizePlannedSprintBlocks(details.blocks)
+        : [],
+    };
+  }
+  return {
+    blocks: Array.isArray(details?.blocks)
+      ? details.blocks.map((block) => ({
+          label: block.label || "",
+          durationMin: toNumberOrNull(block.durationMin),
+          durationMax: toNumberOrNull(block.durationMax),
+          restSec: toNumberOrNull(block.restSec),
+          restMaxSec: toNumberOrNull(block.restMaxSec),
+          sets: normalizeSetPrescription(block.sets),
+          exercises: Array.isArray(block.exercises)
+            ? block.exercises.map((exercise) => ({
+                code: exercise.code || "",
+                name: exercise.name || "Exercise",
+                reps: exercise.reps || "",
+                notes: exercise.notes || "",
+                weight: toNumberOrNull(exercise.weight),
+              }))
+            : [],
+        }))
+      : [],
+  };
+}
+
+function normalizePhaseTemplate(template) {
+  return {
+    id: template.id || crypto.randomUUID(),
+    name: template.name || "Strength phase",
+    durationWeeks: toNumberOrNull(template.durationWeeks) || 1,
+    weekdaySlots: Array.isArray(template.weekdaySlots)
+      ? template.weekdaySlots.map((slot) => ({
+          id: slot.id || crypto.randomUUID(),
+          weekday: toNumberOrNull(slot.weekday) || 1,
+          title: slot.title || "Strength session",
+          notes: typeof slot.notes === "string" ? slot.notes : "",
+          blocks: normalizePlannedDetails("strength", { blocks: slot.blocks }).blocks,
+        }))
+      : [],
+    importedAt: isNumber(template.importedAt) ? template.importedAt : Date.now(),
+  };
+}
+
+function normalizePhaseInstance(instance) {
+  return {
+    id: instance.id || crypto.randomUUID(),
+    templateId: instance.templateId || "",
+    templateName: instance.templateName || "",
+    startDate: normalizeDateInput(instance.startDate) || formatDateInput(new Date()),
+    durationWeeks: toNumberOrNull(instance.durationWeeks) || 1,
+    generatedSessionIds: Array.isArray(instance.generatedSessionIds) ? instance.generatedSessionIds : [],
+    createdAt: isNumber(instance.createdAt) ? instance.createdAt : Date.now(),
+  };
+}
+
+initializeV2();

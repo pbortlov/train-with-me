@@ -10,237 +10,417 @@
   </head>
   <body>
     <main class="app">
-      <header class="card">
-        <h1>Train With Me</h1>
-        <p>Simple tracker for strength, running, and sprinting.</p>
-        <button type="button" id="install-app">Install App</button>
+      <header class="card app-header">
+        <div class="app-header-top">
+          <div>
+            <h1>Train With Me</h1>
+            <p>V2 planner: calendar-first training, adherence review, and reusable strength phases.</p>
+          </div>
+          <div class="header-actions">
+            <label class="checkbox-label coach-toggle">
+              <input type="checkbox" id="coach-mode-toggle" />
+              Geek / coach mode
+            </label>
+            <button type="button" id="install-app">Install App</button>
+          </div>
+        </div>
+        <nav class="view-nav" aria-label="Main navigation">
+          <button type="button" class="ghost-button nav-button" data-view-target="calendar">Calendar</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="phases">Phases</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="review">Review</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="stats">Stats</button>
+        </nav>
       </header>
 
-      <section class="card">
-        <h2>Add Workout</h2>
-        <form id="workout-form">
-          <div class="grid">
+      <section class="view-panel" data-view="calendar">
+        <article class="card">
+          <div class="calendar-toolbar">
+            <div>
+              <h2>Calendar</h2>
+              <p class="hint">Plan the week first. Use Log &amp; Complete when the real workout differs from the plan.</p>
+            </div>
+            <div class="calendar-nav">
+              <button type="button" class="ghost-button" id="prev-week">Previous week</button>
+              <button type="button" class="ghost-button" id="current-week">Today</button>
+              <button type="button" class="ghost-button" id="next-week">Next week</button>
+            </div>
+          </div>
+          <div class="summary" id="planner-summary"></div>
+          <p id="calendar-week-label" class="hint"></p>
+          <div class="calendar-layout">
+            <div id="calendar-grid" class="calendar-grid"></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Manual Plan</h3>
+          <p class="hint">Use this for run and sprint sessions. Strength plans should usually come from a phase template.</p>
+          <form id="planned-session-form">
+            <input type="hidden" id="planned-session-id" />
+            <div class="grid">
+              <label>
+                Date
+                <input type="date" id="planned-session-date" required />
+              </label>
+              <label>
+                Session type
+                <select id="planned-session-type" required>
+                  <option value="run">Run</option>
+                  <option value="sprint">Sprint</option>
+                </select>
+              </label>
+              <label>
+                Title
+                <input type="text" id="planned-session-title" placeholder="e.g. Easy run or Speed work" required />
+              </label>
+              <label class="coach-only">
+                Notes
+                <input type="text" id="planned-session-notes" placeholder="Optional planning note" />
+              </label>
+            </div>
+
+            <div id="planned-run-fields" class="grid planned-type-fields" data-planned-type="run">
+              <label>
+                Planned distance (km)
+                <input type="number" id="planned-run-distance" min="0" step="0.01" placeholder="e.g. 8" />
+              </label>
+              <label>
+                Target pace (mm:ss)
+                <input type="text" id="planned-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
+              </label>
+            </div>
+
+            <div id="planned-sprint-fields" class="planned-type-fields" data-planned-type="sprint">
+              <p class="hint">Add sprint blocks with reps, meters, optional target time per rep, and optional rest.</p>
+              <div class="grid">
+                <label>
+                  Reps
+                  <input type="number" id="planned-sprint-reps" min="1" step="1" placeholder="e.g. 6" />
+                </label>
+                <label>
+                  Meters
+                  <input type="number" id="planned-sprint-distance" min="1" step="1" placeholder="e.g. 100" />
+                </label>
+                <label>
+                  Target time per rep (sec, optional)
+                  <input type="number" id="planned-sprint-target-time" min="0" step="0.01" placeholder="Leave empty to use best previous time" />
+                </label>
+                <label>
+                  Rest (sec, optional)
+                  <input type="number" id="planned-sprint-rest" min="0" step="1" placeholder="e.g. 90" />
+                </label>
+              </div>
+              <div class="dialog-actions">
+                <button type="button" id="add-planned-sprint-block">Add sprint block</button>
+              </div>
+              <ol id="planned-sprint-blocks-list" class="detail-list"></ol>
+            </div>
+
+            <div class="dialog-actions">
+              <button type="submit" id="save-planned-session">Save planned session</button>
+              <button type="button" id="cancel-planned-session" class="ghost-button">Cancel edit</button>
+            </div>
+            <p id="planned-session-status" class="hint"></p>
+          </form>
+        </article>
+      </section>
+
+      <section class="view-panel" data-view="phases">
+        <article class="card">
+          <h2>Phases</h2>
+          <p class="hint">
+            Import one strength phase per file or paste. Saved templates can also be loaded back here for editing, and
+            scheduled planned sessions will refresh from the updated template. Program weeks start from the chosen start date.
+          </p>
+          <form id="phase-import-form">
+            <input type="hidden" id="phase-edit-id" />
+            <div class="grid">
+              <label>
+                Phase name override
+                <input type="text" id="phase-name-override" placeholder="Optional; import can define the name" />
+              </label>
+              <label>
+                Import CSV file
+                <input type="file" id="phase-import-file" accept=".csv,text/csv,.txt,text/plain" />
+              </label>
+            </div>
             <label>
-              Date
-              <input type="date" id="date" required />
+              Phase import content
+              <textarea
+                id="phase-import-text"
+                rows="10"
+                placeholder="PHASE,Phase 1,5&#10;SLOT,Tuesday,Strength A,Main lower-body day&#10;BLOCK,A,15-20 mins,90-120s,3-4&#10;EXERCISE,A1,Back squat,2x8-10,Heavy,100"
+              ></textarea>
+            </label>
+            <div class="dialog-actions">
+              <button type="submit" id="save-phase-button">Import strength phase</button>
+              <button type="button" id="cancel-phase-edit" class="ghost-button is-hidden">Cancel edit</button>
+            </div>
+            <p id="phase-import-status" class="hint"></p>
+          </form>
+        </article>
+
+        <article class="card">
+          <h3>Saved phase templates</h3>
+          <div id="phase-template-list" class="phase-list"></div>
+        </article>
+
+        <article class="card">
+          <h3>Scheduled phase instances</h3>
+          <div id="phase-instance-list" class="phase-list"></div>
+        </article>
+      </section>
+
+      <section class="view-panel" data-view="review">
+        <article class="card">
+          <h2>Review</h2>
+          <p class="hint">Compare what was planned with what was actually done. Modified sessions stay visible here.</p>
+          <div id="review-summary" class="summary"></div>
+          <div id="review-session-list" class="review-list"></div>
+        </article>
+
+        <article class="card">
+          <h3>Log Actual Workout</h3>
+          <form id="workout-form">
+            <div class="grid">
+              <label>
+                Date
+                <input type="date" id="date" required />
+              </label>
+
+              <label>
+                Activity
+                <select id="activity" required>
+                  <option value="strength">Strength</option>
+                  <option value="run">Run</option>
+                  <option value="sprint">Sprint</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="strength-fields" class="grid activity-fields" data-activity="strength">
+              <label>
+                Exercise name
+                <input type="text" id="exercise-name" list="exercise-suggestions" placeholder="e.g. Back squat" />
+              </label>
+
+              <label>
+                Set reps
+                <input type="number" id="strength-set-reps" min="0" placeholder="e.g. 5" />
+              </label>
+
+              <label>
+                Load type
+                <select id="strength-set-load-type">
+                  <option value="kg">kg</option>
+                  <option value="bodyweight">Body weight</option>
+                  <option value="band">Band</option>
+                </select>
+              </label>
+
+              <label id="strength-set-weight-label">
+                Set weight (kg)
+                <input type="number" id="strength-set-weight" min="0" step="0.1" placeholder="e.g. 60" />
+              </label>
+
+              <label id="strength-set-band-color-label" class="band-color-field">
+                Band color
+                <input type="hidden" id="strength-set-band-color" value="" />
+                <div class="band-color-picker" aria-label="Choose band color">
+                  <button type="button" class="band-color-dot" data-band-color="yellow" data-resistance-label="extra light" aria-label="Yellow band, extra light" title="Yellow - extra light"></button>
+                  <button type="button" class="band-color-dot" data-band-color="red" data-resistance-label="light" aria-label="Red band, light" title="Red - light"></button>
+                  <button type="button" class="band-color-dot" data-band-color="black" data-resistance-label="medium" aria-label="Black band, medium" title="Black - medium"></button>
+                  <button type="button" class="band-color-dot" data-band-color="purple" data-resistance-label="heavy" aria-label="Purple band, heavy" title="Purple - heavy"></button>
+                  <button type="button" class="band-color-dot" data-band-color="green" data-resistance-label="extra heavy" aria-label="Green band, extra heavy" title="Green - extra heavy"></button>
+                  <button type="button" class="band-color-dot" data-band-color="blue" data-resistance-label="strongest" aria-label="Blue band, strongest" title="Blue - strongest"></button>
+                </div>
+              </label>
+
+              <button type="button" id="add-strength-set">Add Set To Exercise</button>
+              <button type="button" id="add-strength-exercise">Add Exercise To Workout</button>
+              <ul id="current-strength-sets" class="detail-list"></ul>
+            </div>
+            <ul id="strength-exercise-list" class="detail-list"></ul>
+
+            <div id="run-fields" class="grid activity-fields" data-activity="run">
+              <label>
+                Distance (km)
+                <input type="number" id="distance" min="0" step="0.01" placeholder="e.g. 1.8" />
+              </label>
+
+              <label>
+                Time (hh:mm:ss)
+                <input type="text" id="time" inputmode="numeric" placeholder="e.g. 01:05:30" />
+              </label>
+
+              <label>
+                Pace (min/km)
+                <input type="text" id="pace" placeholder="Calculated automatically" readonly />
+              </label>
+            </div>
+
+            <div id="sprint-fields" class="activity-fields" data-activity="sprint">
+              <p class="hint">Add each sprint set in order (seconds + meters).</p>
+              <div class="grid">
+                <label>
+                  Sprint time (sec)
+                  <input type="number" id="sprint-time-sec" min="0" step="0.01" placeholder="e.g. 14.2" />
+                </label>
+                <label>
+                  Sprint distance (m)
+                  <input type="number" id="sprint-distance-m" min="0" step="1" placeholder="e.g. 100" />
+                </label>
+                <button type="button" id="add-sprint-set">Add Sprint Set</button>
+              </div>
+              <ol id="sprint-sets-list" class="sprint-sets-list"></ol>
+            </div>
+
+            <label>
+              Notes
+              <textarea id="notes" rows="3" placeholder="How did it feel?"></textarea>
+            </label>
+
+            <button type="submit">Save Workout</button>
+            <p id="workout-form-status" class="hint"></p>
+          </form>
+        </article>
+
+        <article class="card">
+          <h3>Recent Workouts</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Main Metric</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="view-panel" data-view="stats">
+        <article class="card">
+          <h2>Stats</h2>
+          <div id="adherence-summary" class="summary"></div>
+          <div id="adherence-breakdown" class="goal-progress"></div>
+        </article>
+
+        <article class="card">
+          <h3>Goals</h3>
+          <form id="goals-form" class="grid">
+            <label>
+              Strength goal (kg)
+              <input type="number" id="goal-strength" min="0" step="0.1" placeholder="e.g. 100" />
             </label>
 
             <label>
-              Activity
-              <select id="activity" required>
+              Run goal distance (km)
+              <input type="number" id="goal-run" min="0" step="0.01" placeholder="e.g. 10" />
+            </label>
+
+            <label>
+              Run goal pace (min/km)
+              <input type="text" id="goal-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
+            </label>
+
+            <label>
+              Sprint goal best time (sec)
+              <input type="number" id="goal-sprint" min="0" step="0.01" placeholder="e.g. 14.2" />
+            </label>
+
+            <button type="submit">Save Goals</button>
+          </form>
+
+          <div id="goal-progress" class="goal-progress"></div>
+        </article>
+
+        <article class="card">
+          <h3>Backup</h3>
+          <p class="hint">Export your data to a JSON file, or import a backup file.</p>
+          <div class="grid">
+            <button type="button" id="export-data">Export Data (JSON)</button>
+            <label>
+              Import JSON file
+              <input type="file" id="import-data-file" accept=".json,application/json" />
+            </label>
+          </div>
+          <p id="backup-status" class="hint"></p>
+        </article>
+
+        <article class="card">
+          <h3>Strength Progress Board</h3>
+          <p id="strength-progress-status" class="hint"></p>
+          <div id="strength-progress-board" class="strength-progress-board"></div>
+        </article>
+
+        <article class="card">
+          <h3>Progress</h3>
+          <div class="grid" id="progress-filters">
+            <label>
+              Filter activity
+              <select id="filter-activity">
+                <option value="all">All</option>
                 <option value="strength">Strength</option>
                 <option value="run">Run</option>
                 <option value="sprint">Sprint</option>
               </select>
             </label>
-          </div>
-
-          <div id="strength-fields" class="grid activity-fields" data-activity="strength">
             <label>
-              Exercise name
-              <input type="text" id="exercise-name" list="exercise-suggestions" placeholder="e.g. Back squat" />
+              From date
+              <input type="date" id="filter-from-date" />
             </label>
-
             <label>
-              Set reps
-              <input type="number" id="strength-set-reps" min="0" placeholder="e.g. 5" />
+              To date
+              <input type="date" id="filter-to-date" />
             </label>
-
             <label>
-              Load type
-              <select id="strength-set-load-type">
-                <option value="kg">kg</option>
-                <option value="bodyweight">Body weight</option>
-                <option value="band">Band</option>
+              Chart trend mode
+              <select id="chart-grouping">
+                <option value="week">Weekly</option>
+                <option value="month">Monthly</option>
+                <option value="quarter">Quarterly</option>
               </select>
             </label>
-
-            <label id="strength-set-weight-label">
-              Set weight (kg)
-              <input type="number" id="strength-set-weight" min="0" step="0.1" placeholder="e.g. 60" />
-            </label>
-
-            <label id="strength-set-band-color-label" class="band-color-field">
-              Band color
-              <input type="hidden" id="strength-set-band-color" value="" />
-              <div class="band-color-picker" aria-label="Choose band color">
-                <button type="button" class="band-color-dot" data-band-color="yellow" data-resistance-label="extra light" aria-label="Yellow band, extra light" title="Yellow - extra light"></button>
-                <button type="button" class="band-color-dot" data-band-color="red" data-resistance-label="light" aria-label="Red band, light" title="Red - light"></button>
-                <button type="button" class="band-color-dot" data-band-color="black" data-resistance-label="medium" aria-label="Black band, medium" title="Black - medium"></button>
-                <button type="button" class="band-color-dot" data-band-color="purple" data-resistance-label="heavy" aria-label="Purple band, heavy" title="Purple - heavy"></button>
-                <button type="button" class="band-color-dot" data-band-color="green" data-resistance-label="extra heavy" aria-label="Green band, extra heavy" title="Green - extra heavy"></button>
-                <button type="button" class="band-color-dot" data-band-color="blue" data-resistance-label="strongest" aria-label="Blue band, strongest" title="Blue - strongest"></button>
-              </div>
-            </label>
-
-            <button type="button" id="add-strength-set">Add Set To Exercise</button>
-            <button type="button" id="add-strength-exercise">Add Exercise To Workout</button>
-            <ul id="current-strength-sets" class="detail-list"></ul>
-          </div>
-          <ul id="strength-exercise-list" class="detail-list"></ul>
-
-          <div id="run-fields" class="grid activity-fields" data-activity="run">
             <label>
-              Distance (km)
-              <input type="number" id="distance" min="0" step="0.01" placeholder="e.g. 1.8" />
+              Strength load
+              <select id="filter-strength-load">
+                <option value="all">All</option>
+                <option value="kg">kg only</option>
+                <option value="bodyweight">Body weight only</option>
+                <option value="band">Band only</option>
+              </select>
             </label>
-
-            <label>
-              Time (hh:mm:ss)
-              <input type="text" id="time" inputmode="numeric" placeholder="e.g. 01:05:30" />
-            </label>
-
-            <label>
-              Pace (min/km)
-              <input type="text" id="pace" placeholder="Calculated automatically" readonly />
-            </label>
+            <button type="button" id="clear-filters">Clear Filters</button>
           </div>
-
-          <div id="sprint-fields" class="activity-fields" data-activity="sprint">
-            <p class="hint">Add each sprint set in order (seconds + meters).</p>
-            <div class="grid">
-              <label>
-                Sprint time (sec)
-                <input type="number" id="sprint-time-sec" min="0" step="0.01" placeholder="e.g. 14.2" />
-              </label>
-              <label>
-                Sprint distance (m)
-                <input type="number" id="sprint-distance-m" min="0" step="1" placeholder="e.g. 100" />
-              </label>
-              <button type="button" id="add-sprint-set">Add Sprint Set</button>
-            </div>
-            <ol id="sprint-sets-list" class="sprint-sets-list"></ol>
+          <div id="summary" class="summary"></div>
+          <p id="charts-status" class="hint"></p>
+          <div class="charts-grid">
+            <article class="chart-card">
+              <h4>Strength (Best Weight)</h4>
+              <canvas id="strength-chart" height="180"></canvas>
+            </article>
+            <article class="chart-card">
+              <h4>Run (Pace)</h4>
+              <canvas id="run-chart" height="180"></canvas>
+            </article>
+            <article class="chart-card">
+              <h4>Sprint (Best Time)</h4>
+              <canvas id="sprint-chart" height="180"></canvas>
+            </article>
           </div>
+        </article>
 
-          <label>
-            Notes
-            <textarea id="notes" rows="3" placeholder="How did it feel?"></textarea>
-          </label>
-
-          <button type="submit">Save Workout</button>
-          <p id="workout-form-status" class="hint"></p>
-        </form>
-      </section>
-
-      <section class="card">
-        <h2>Goals</h2>
-        <form id="goals-form" class="grid">
-          <label>
-            Strength goal (kg)
-            <input type="number" id="goal-strength" min="0" step="0.1" placeholder="e.g. 100" />
-          </label>
-
-          <label>
-            Run goal distance (km)
-            <input type="number" id="goal-run" min="0" step="0.01" placeholder="e.g. 10" />
-          </label>
-
-          <label>
-            Run goal pace (min/km)
-            <input type="text" id="goal-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
-          </label>
-
-          <label>
-            Sprint goal best time (sec)
-            <input type="number" id="goal-sprint" min="0" step="0.01" placeholder="e.g. 14.2" />
-          </label>
-
-          <button type="submit">Save Goals</button>
-        </form>
-
-        <div id="goal-progress" class="goal-progress"></div>
-      </section>
-
-      <section class="card">
-        <h2>Backup</h2>
-        <p class="hint">Export your data to a JSON file, or import a backup file.</p>
-        <div class="grid">
-          <button type="button" id="export-data">Export Data (JSON)</button>
-          <label>
-            Import JSON file
-            <input type="file" id="import-data-file" accept=".json,application/json" />
-          </label>
-        </div>
-        <p id="backup-status" class="hint"></p>
-      </section>
-
-      <section class="card">
-        <h2>Progress</h2>
-        <div class="grid" id="progress-filters">
-          <label>
-            Filter activity
-            <select id="filter-activity">
-              <option value="all">All</option>
-              <option value="strength">Strength</option>
-              <option value="run">Run</option>
-              <option value="sprint">Sprint</option>
-            </select>
-          </label>
-          <label>
-            From date
-            <input type="date" id="filter-from-date" />
-          </label>
-          <label>
-            To date
-            <input type="date" id="filter-to-date" />
-          </label>
-          <label>
-            Chart trend mode
-            <select id="chart-grouping">
-              <option value="week">Weekly</option>
-              <option value="month">Monthly</option>
-              <option value="quarter">Quarterly</option>
-            </select>
-          </label>
-          <label>
-            Strength load
-            <select id="filter-strength-load">
-              <option value="all">All</option>
-              <option value="kg">kg only</option>
-              <option value="bodyweight">Body weight only</option>
-              <option value="band">Band only</option>
-            </select>
-          </label>
-          <button type="button" id="clear-filters">Clear Filters</button>
-        </div>
-        <div id="summary" class="summary"></div>
-        <p id="charts-status" class="hint"></p>
-        <div class="charts-grid">
-          <article class="chart-card">
-            <h3>Strength (Best Weight)</h3>
-            <canvas id="strength-chart" height="180"></canvas>
-          </article>
-          <article class="chart-card">
-            <h3>Run (Pace)</h3>
-            <canvas id="run-chart" height="180"></canvas>
-          </article>
-          <article class="chart-card">
-            <h3>Sprint (Best Time)</h3>
-            <canvas id="sprint-chart" height="180"></canvas>
-          </article>
-        </div>
-
-        <h3>Recent Workouts</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Main Metric</th>
-                <th>Notes</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="history-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Exercise Library</h2>
-        <p class="hint">Saved exercise names for quick reuse.</p>
-        <ul id="exercise-library-list" class="detail-list"></ul>
+        <article class="card">
+          <h3>Exercise Library</h3>
+          <p class="hint">Saved exercise names for quick reuse.</p>
+          <ul id="exercise-library-list" class="detail-list"></ul>
+        </article>
       </section>
     </main>
 
@@ -252,6 +432,73 @@
         <button type="button" id="confirm-delete-workout" class="danger-button">Delete</button>
         <button type="button" id="cancel-delete-workout">Cancel</button>
       </div>
+    </dialog>
+
+    <dialog id="completion-dialog">
+      <form id="completion-form">
+        <h3>Log &amp; Complete Planned Session</h3>
+        <input type="hidden" id="completion-session-id" />
+        <div class="grid">
+          <label>
+            Date
+            <input type="date" id="completion-date" readonly />
+          </label>
+        </div>
+        <p id="completion-session-title" class="hint"></p>
+        <p class="hint">Status is detected automatically from planned vs actual.</p>
+
+        <div id="completion-run-fields" class="completion-type-fields">
+          <div class="grid">
+            <label>
+              Actual distance (km)
+              <input type="number" id="completion-run-distance" min="0" step="0.01" />
+            </label>
+            <label>
+              Actual time (hh:mm:ss)
+              <input type="text" id="completion-run-time" inputmode="numeric" />
+            </label>
+            <label>
+              Actual pace (min/km)
+              <input type="text" id="completion-run-pace" readonly />
+            </label>
+          </div>
+        </div>
+
+        <div id="completion-sprint-fields" class="completion-type-fields">
+          <p class="hint">Sprint rows are generated from the planned reps and meters. Enter only the actual time for each rep.</p>
+          <div id="completion-sprint-blocks"></div>
+          <label>
+            Sprint feeling
+            <select id="completion-sprint-feeling">
+              <option value="">Select feeling</option>
+              <option value="sharp">Sharp ⚡</option>
+              <option value="solid">Solid 🙂</option>
+              <option value="flat">Flat 🪫</option>
+              <option value="sluggish">Sluggish 🐢</option>
+              <option value="pain">Pain ⚠️</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="completion-strength-fields" class="completion-type-fields">
+          <div id="completion-strength-blocks"></div>
+        </div>
+
+        <label>
+          Modification note
+          <textarea id="completion-note" rows="3" placeholder="Explain what changed if needed"></textarea>
+        </label>
+
+        <div class="dialog-actions">
+          <button type="submit">Log &amp; Complete</button>
+          <button type="button" id="cancel-completion" class="ghost-button">Cancel</button>
+        </div>
+        <p id="completion-status-message" class="hint"></p>
+      </form>
+    </dialog>
+
+    <dialog id="calendar-session-dialog" class="calendar-session-dialog">
+      <div id="calendar-session-detail" class="calendar-session-detail"></div>
     </dialog>
 
     <dialog id="edit-workout-dialog">
