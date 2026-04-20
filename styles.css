@@ -240,6 +240,12 @@ button {
   gap: 0.55rem;
 }
 
+.planned-session-card {
+  width: 100%;
+  min-width: 0;
+  align-content: start;
+}
+
 .planned-session-card header,
 .review-card header,
 .phase-card header {
@@ -258,6 +264,71 @@ button {
 .planned-session-card.is-selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px #00e5ff44 inset;
+}
+
+.planned-session-title {
+  min-width: 0;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.planned-session-time {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planned-session-footer {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.planned-session-status-inline {
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.planned-session-status-inline.status-planned {
+  color: #cfe2ff;
+}
+
+.planned-session-status-inline.status-completed {
+  color: #8dffb4;
+}
+
+.planned-session-status-inline.status-modified {
+  color: #ffd37a;
+}
+
+.planned-session-status-inline.status-missed {
+  color: #ff9caf;
+}
+
+.planned-session-button {
+  width: 100%;
+  min-width: 0;
+  margin-right: 0;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .session-meta,

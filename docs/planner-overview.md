@@ -21,6 +21,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - manual run/sprint planning
   - generated strength sessions
   - compact session cards with a popup training view so the day cell size stays stable
+  - week cards show title first, time second, inline status at the lower right, and a contained `View training` button
   - `Log & Complete` flow for day-of-training execution without rewriting the plan
   - `completed` vs `modified` is auto-detected from planned vs actual workout data
 - `Phases`

@@ -19,6 +19,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength completion status is detected automatically from planned vs actual data
 - Program weeks are anchored to the chosen phase start date, not calendar Monday
 - Calendar uses compact session cards with a popup training view so the week grid stays stable
+- Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
 - Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
 - Planned session statuses:
   - planned

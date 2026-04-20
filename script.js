@@ -1986,14 +1986,12 @@ function renderPlannedSessionCard(session) {
     : `${capitalize(session.type)} • ${formatPlannedSessionSummary(session)}`;
   return `
     <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}">
-      <header>
-        <div>
-          <h5>${escapeHtml(session.title)}</h5>
-          <div class="session-meta">${escapeHtml(primaryMeta)}</div>
-        </div>
-        <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
-      </header>
-      <button type="button" class="ghost-button" data-role="select-planned-session" data-id="${session.id}">View training</button>
+      <div class="planned-session-title">${escapeHtml(session.title)}</div>
+      <div class="planned-session-time">${escapeHtml(primaryMeta)}</div>
+      <div class="planned-session-footer">
+        <span class="planned-session-status-inline status-${session.status}">${escapeHtml(session.status)}</span>
+      </div>
+      <button type="button" class="ghost-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">View training</button>
     </article>
   `;
 }
