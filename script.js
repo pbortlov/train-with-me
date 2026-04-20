@@ -80,6 +80,7 @@ const viewPanels = document.querySelectorAll(".view-panel");
 const plannerSummaryEl = document.getElementById("planner-summary");
 const calendarWeekLabelEl = document.getElementById("calendar-week-label");
 const calendarGridEl = document.getElementById("calendar-grid");
+const calendarSessionDialog = document.getElementById("calendar-session-dialog");
 const calendarSessionDetailEl = document.getElementById("calendar-session-detail");
 const prevWeekButton = document.getElementById("prev-week");
 const nextWeekButton = document.getElementById("next-week");
@@ -1814,6 +1815,13 @@ function bindV2Events() {
   addSafeEventListener(cancelPlannedSessionButton, "click", resetPlannedSessionForm);
   addSafeEventListener(calendarGridEl, "click", handleCalendarAction);
   addSafeEventListener(calendarSessionDetailEl, "click", handleCalendarAction);
+  addSafeEventListener(calendarSessionDialog, "click", handleCalendarSessionDialogClick);
+  addSafeEventListener(calendarSessionDialog, "close", () => {
+    if (selectedCalendarSessionId) {
+      selectedCalendarSessionId = "";
+      renderCalendar();
+    }
+  });
   addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
   addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
   addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
@@ -1973,18 +1981,19 @@ function renderCalendar() {
 }
 
 function renderPlannedSessionCard(session) {
+  const primaryMeta = session.type === "strength"
+    ? formatStrengthSessionTotalDuration(session)
+    : `${capitalize(session.type)} • ${formatPlannedSessionSummary(session)}`;
   return `
     <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}">
       <header>
         <div>
           <h5>${escapeHtml(session.title)}</h5>
-          <div class="session-meta">${capitalize(session.type)} • ${escapeHtml(formatPlannedSessionSummary(session))}</div>
+          <div class="session-meta">${escapeHtml(primaryMeta)}</div>
         </div>
         <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
       </header>
-      ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
-      ${session.notes ? `<div class="session-meta">${escapeHtml(session.notes)}</div>` : ""}
-      <button type="button" class="ghost-button" data-role="select-planned-session" data-id="${session.id}">View details</button>
+      <button type="button" class="ghost-button" data-role="select-planned-session" data-id="${session.id}">View training</button>
     </article>
   `;
 }
@@ -1995,23 +2004,30 @@ function renderCalendarSessionDetail() {
   }
   const session = plannedSessions.find((item) => item.id === selectedCalendarSessionId);
   if (!session) {
-    calendarSessionDetailEl.innerHTML = `
-      <article class="card">
-        <h3>Session Detail</h3>
-        <p class="planner-empty">Select a planned session to see the full training structure.</p>
-      </article>
-    `;
+    calendarSessionDetailEl.innerHTML = "";
+    if (calendarSessionDialog?.open) {
+      closeCalendarSessionDialog();
+    }
     return;
   }
 
+  const headerMeta = [formatHumanDate(session.date), capitalize(session.type)];
+  if (session.type === "strength") {
+    headerMeta.push(formatStrengthSessionTotalDuration(session));
+  }
+
   calendarSessionDetailEl.innerHTML = `
-    <article class="card session-detail-card">
-      <header class="session-detail-header">
+    <article class="card session-detail-card session-detail-modal-card">
+      <header class="session-detail-modal-header">
         <div>
+          <p class="hint">Training view</p>
           <h3>${escapeHtml(session.title)}</h3>
-          <div class="session-meta">${formatHumanDate(session.date)} • ${capitalize(session.type)}</div>
+          <div class="session-meta">${escapeHtml(headerMeta.join(" • "))}</div>
         </div>
-        <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
+        <div class="session-detail-modal-controls">
+          <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
+          <button type="button" class="ghost-button" data-role="close-calendar-session-dialog">Close</button>
+        </div>
       </header>
       ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
       ${session.notes ? `<div class="session-meta">${escapeHtml(session.notes)}</div>` : ""}
@@ -2144,6 +2160,113 @@ function formatPlannedSessionSummary(session) {
   return [durationSummary, `${blocks.length} blocks • ${exerciseCount} exercises`].filter(Boolean).join(" • ");
 }
 
+function formatStrengthSessionTotalDuration(session) {
+  const total = getStrengthSessionTotalDuration(session);
+  if (!total) {
+    return "Time not set";
+  }
+
+  const roundedMin = Math.ceil(total.minMinutes);
+  const roundedMax = Math.ceil(total.maxMinutes);
+  if (roundedMin === roundedMax) {
+    return `${formatNumber(roundedMin)} mins`;
+  }
+  return `${formatNumber(roundedMin)}-${formatNumber(roundedMax)} mins`;
+}
+
+function getStrengthSessionTotalDuration(session) {
+  if (session.type !== "strength") {
+    return null;
+  }
+
+  const warmUp = parseWarmUpDuration(session.notes);
+  let minMinutes = warmUp.minMinutes;
+  let maxMinutes = warmUp.maxMinutes;
+  let hasDuration = warmUp.hasDuration;
+
+  (session.details?.blocks || []).forEach((block) => {
+    const blockDuration = getStrengthBlockTotalDuration(block);
+    minMinutes += blockDuration.minMinutes;
+    maxMinutes += blockDuration.maxMinutes;
+    hasDuration = hasDuration || blockDuration.hasDuration;
+  });
+
+  if (!hasDuration) {
+    return null;
+  }
+
+  return { minMinutes, maxMinutes };
+}
+
+function parseWarmUpDuration(notes) {
+  const match = String(notes || "").match(/(?:^|\n)\s*Warm Up:\s*([^\n]+)/i);
+  if (!match) {
+    return { minMinutes: 0, maxMinutes: 0, hasDuration: false };
+  }
+
+  const duration = parseBlockDurationRange(match[1]);
+  const minMinutes = isNumber(duration.durationMin) ? Number(duration.durationMin) : isNumber(duration.durationMax) ? Number(duration.durationMax) : 0;
+  const maxMinutes = isNumber(duration.durationMax) ? Number(duration.durationMax) : minMinutes;
+  return {
+    minMinutes,
+    maxMinutes,
+    hasDuration: minMinutes > 0 || maxMinutes > 0,
+  };
+}
+
+function getStrengthBlockTotalDuration(block) {
+  const durationBounds = getBlockDurationBounds(block);
+  const setBounds = getSetPrescriptionBounds(block?.sets);
+  const restBounds = getBlockRestBounds(block);
+  const minRestCount = Math.max(setBounds.minSets - 1, 0);
+  const maxRestCount = Math.max(setBounds.maxSets - 1, 0);
+  return {
+    minMinutes: durationBounds.minMinutes + (minRestCount * restBounds.minSeconds) / 60,
+    maxMinutes: durationBounds.maxMinutes + (maxRestCount * restBounds.maxSeconds) / 60,
+    hasDuration: durationBounds.hasDuration || restBounds.hasDuration,
+  };
+}
+
+function getBlockDurationBounds(block) {
+  const min = toNumberOrNull(block?.durationMin);
+  const max = toNumberOrNull(block?.durationMax);
+  const minMinutes = isNumber(min) ? Number(min) : isNumber(max) ? Number(max) : 0;
+  const maxMinutes = isNumber(max) ? Number(max) : minMinutes;
+  return {
+    minMinutes,
+    maxMinutes,
+    hasDuration: isNumber(min) || isNumber(max),
+  };
+}
+
+function getBlockRestBounds(block) {
+  const min = toNumberOrNull(block?.restSec);
+  const max = toNumberOrNull(block?.restMaxSec);
+  const minSeconds = isNumber(min) ? Number(min) : isNumber(max) ? Number(max) : 0;
+  const maxSeconds = isNumber(max) ? Number(max) : minSeconds;
+  return {
+    minSeconds,
+    maxSeconds,
+    hasDuration: isNumber(min) || isNumber(max),
+  };
+}
+
+function getSetPrescriptionBounds(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return { minSets: 0, maxSets: 0 };
+  }
+  const match = raw.match(/^(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?$/);
+  if (!match) {
+    const firstNumber = raw.match(/\d+(?:\.\d+)?/);
+    const parsed = firstNumber ? Number(firstNumber[0]) : 0;
+    return { minSets: parsed, maxSets: parsed };
+  }
+  const minSets = Number(match[1]);
+  const maxSets = match[2] ? Number(match[2]) : minSets;
+  return { minSets, maxSets };
+}
+
 function updatePlannedTypeFields() {
   const selectedType = plannedSessionTypeInput?.value || "run";
   if (plannedRunFields) {
@@ -2237,6 +2360,10 @@ function handleCalendarAction(event) {
     return;
   }
   const role = target.dataset.role;
+  if (role === "close-calendar-session-dialog") {
+    closeCalendarSessionDialog();
+    return;
+  }
   const sessionId = target.dataset.id;
   if (!role || !sessionId) {
     return;
@@ -2248,16 +2375,16 @@ function handleCalendarAction(event) {
   }
 
   if (role === "select-planned-session") {
-    selectedCalendarSessionId = sessionId;
-    renderCalendar();
-    renderCalendarSessionDetail();
+    openCalendarSessionDialog(sessionId);
     return;
   }
 
   if (role === "edit-planned-session") {
+    closeCalendarSessionDialog();
     fillPlannedSessionForm(session);
   }
   if (role === "delete-planned-session") {
+    closeCalendarSessionDialog();
     plannedSessions = plannedSessions.filter((item) => item.id !== sessionId);
     if (selectedCalendarSessionId === sessionId) {
       selectedCalendarSessionId = "";
@@ -2281,7 +2408,45 @@ function handleCalendarAction(event) {
     render();
   }
   if (role === "complete-planned-session") {
+    closeCalendarSessionDialog();
     openCompletionDialog(session);
+  }
+}
+
+function handleCalendarSessionDialogClick(event) {
+  if (event.target === calendarSessionDialog) {
+    closeCalendarSessionDialog();
+  }
+}
+
+function openCalendarSessionDialog(sessionId) {
+  selectedCalendarSessionId = sessionId;
+  renderCalendar();
+  renderCalendarSessionDetail();
+  if (!calendarSessionDialog) {
+    return;
+  }
+  if (typeof calendarSessionDialog.showModal === "function") {
+    if (!calendarSessionDialog.open) {
+      calendarSessionDialog.showModal();
+    }
+    return;
+  }
+  calendarSessionDialog.setAttribute("open", "true");
+}
+
+function closeCalendarSessionDialog() {
+  if (!calendarSessionDialog) {
+    return;
+  }
+  if (typeof calendarSessionDialog.close === "function" && calendarSessionDialog.open) {
+    calendarSessionDialog.close();
+  } else {
+    calendarSessionDialog.removeAttribute("open");
+  }
+  if (selectedCalendarSessionId) {
+    selectedCalendarSessionId = "";
+    renderCalendar();
   }
 }
 

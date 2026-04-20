@@ -18,7 +18,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength sessions use `Log & Complete` with hybrid planned-vs-actual set logging
 - Strength completion status is detected automatically from planned vs actual data
 - Program weeks are anchored to the chosen phase start date, not calendar Monday
-- Calendar uses compact session cards with a full selected-session detail panel
+- Calendar uses compact session cards with a popup training view so the week grid stays stable
 - Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
 - Planned session statuses:
   - planned
@@ -37,7 +37,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - PWA install support
 
 ## Main Pages
-- `Calendar`: weekly plan, compact session cards, selected-session detail, and `Log & Complete` execution logging
+- `Calendar`: weekly plan, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Phases`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review plus actual workout logging
 - `Stats`: goals, adherence summaries, charts, backup, and exercise library
@@ -59,6 +59,8 @@ EXERCISE,A1,Front squat,2x10,,80
 ```
 
 See [docs/strength-phase-import.md](docs/strength-phase-import.md) for the exact contract.
+
+Slot notes can also include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`. The Calendar uses that together with block durations and planned rests to show total strength-session time on the card.
 
 ## Documentation
 V2 keeps decision and planning history in the repo:

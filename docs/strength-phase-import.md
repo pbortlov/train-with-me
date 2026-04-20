@@ -77,6 +77,7 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 - rep prescription is free text and can be values like `10`, `8-10`, `2x10`, or `2x8-10`
 - exercise weight is optional and can be left empty if it will be assigned later
 - slot notes are optional and are copied into the generated planned session notes
+- slot notes can include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`; the Calendar uses that together with block durations and planned rests to show total strength-session time
 - after import, the phase becomes a reusable template
 - program week 1 starts on the chosen start date and each later week is a rolling 7-day block from that anchor
 - saved templates can be loaded back into the phase form, edited, and saved again

@@ -187,10 +187,7 @@ button {
 }
 
 .calendar-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 2.1fr) minmax(18rem, 1fr);
-  gap: 1rem;
-  align-items: start;
+  display: block;
 }
 
 .calendar-day {
@@ -356,6 +353,42 @@ button {
 .calendar-session-detail {
   display: grid;
   gap: 0.75rem;
+}
+
+.calendar-session-dialog {
+  width: min(94vw, 860px);
+  max-width: 860px;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.calendar-session-dialog::backdrop {
+  background: rgba(4, 10, 19, 0.76);
+  backdrop-filter: blur(4px);
+}
+
+.calendar-session-detail {
+  padding: 1rem;
+}
+
+.session-detail-modal-card {
+  margin: 0;
+}
+
+.session-detail-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.session-detail-modal-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .session-detail-header {
@@ -853,7 +886,6 @@ textarea {
 }
 
 @media (max-width: 980px) {
-  .calendar-layout,
   .calendar-grid,
   .exercise-progress-grid,
   .phase-instance-grid,
@@ -874,11 +906,27 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .calendar-session-dialog {
+    width: 100vw;
+    max-width: none;
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  .calendar-session-detail {
+    min-height: 100vh;
+    padding: 0.75rem;
+  }
+
   .calendar-day {
     min-height: auto;
   }
 
   .completion-exercise-row {
     grid-template-columns: 1fr;
+  }
+
+  .session-detail-modal-header {
+    flex-direction: column;
   }
 }
