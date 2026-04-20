@@ -80,6 +80,7 @@ const viewPanels = document.querySelectorAll(".view-panel");
 const plannerSummaryEl = document.getElementById("planner-summary");
 const calendarWeekLabelEl = document.getElementById("calendar-week-label");
 const calendarGridEl = document.getElementById("calendar-grid");
+const calendarSessionDetailEl = document.getElementById("calendar-session-detail");
 const prevWeekButton = document.getElementById("prev-week");
 const nextWeekButton = document.getElementById("next-week");
 const currentWeekButton = document.getElementById("current-week");
@@ -110,6 +111,8 @@ const reviewSummaryEl = document.getElementById("review-summary");
 const reviewSessionListEl = document.getElementById("review-session-list");
 const adherenceSummaryEl = document.getElementById("adherence-summary");
 const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
+const strengthProgressStatusEl = document.getElementById("strength-progress-status");
+const strengthProgressBoardEl = document.getElementById("strength-progress-board");
 const completionDialog = document.getElementById("completion-dialog");
 const completionForm = document.getElementById("completion-form");
 const completionSessionIdInput = document.getElementById("completion-session-id");
@@ -172,6 +175,7 @@ let runChart = null;
 let sprintChart = null;
 let editingPhaseTemplateId = "";
 let completionStrengthDraft = [];
+let selectedCalendarSessionId = "";
 let pendingDeleteWorkoutId = null;
 let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
@@ -439,10 +443,12 @@ function render() {
   renderGoals();
   renderPlannerSummary();
   renderCalendar();
+  renderCalendarSessionDetail();
   renderPhaseTemplates();
   renderPhaseInstances();
   renderReview();
   renderAdherenceStats();
+  renderStrengthProgressBoard();
   syncViewState();
 }
 
@@ -1807,6 +1813,7 @@ function bindV2Events() {
   addSafeEventListener(plannedSessionForm, "submit", savePlannedSessionFromForm);
   addSafeEventListener(cancelPlannedSessionButton, "click", resetPlannedSessionForm);
   addSafeEventListener(calendarGridEl, "click", handleCalendarAction);
+  addSafeEventListener(calendarSessionDetailEl, "click", handleCalendarAction);
   addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
   addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
   addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
@@ -1938,6 +1945,10 @@ function renderCalendar() {
   }
   const weekDates = getWeekDates(uiSettings.currentWeekStart);
   const weekSessions = getPlannedSessionsForWeek(uiSettings.currentWeekStart);
+  const availableSessionIds = new Set(weekSessions.map((session) => session.id));
+  if (!selectedCalendarSessionId || !availableSessionIds.has(selectedCalendarSessionId)) {
+    selectedCalendarSessionId = weekSessions[0]?.id || "";
+  }
   calendarWeekLabelEl.textContent = `Week of ${formatHumanDate(weekDates[0])} to ${formatHumanDate(weekDates[6])}`;
 
   calendarGridEl.innerHTML = weekDates
@@ -1963,7 +1974,7 @@ function renderCalendar() {
 
 function renderPlannedSessionCard(session) {
   return `
-    <article class="planned-session-card">
+    <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}">
       <header>
         <div>
           <h5>${escapeHtml(session.title)}</h5>
@@ -1973,15 +1984,140 @@ function renderPlannedSessionCard(session) {
       </header>
       ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
       ${session.notes ? `<div class="session-meta">${escapeHtml(session.notes)}</div>` : ""}
+      <button type="button" class="ghost-button" data-role="select-planned-session" data-id="${session.id}">View details</button>
+    </article>
+  `;
+}
+
+function renderCalendarSessionDetail() {
+  if (!calendarSessionDetailEl) {
+    return;
+  }
+  const session = plannedSessions.find((item) => item.id === selectedCalendarSessionId);
+  if (!session) {
+    calendarSessionDetailEl.innerHTML = `
+      <article class="card">
+        <h3>Session Detail</h3>
+        <p class="planner-empty">Select a planned session to see the full training structure.</p>
+      </article>
+    `;
+    return;
+  }
+
+  calendarSessionDetailEl.innerHTML = `
+    <article class="card session-detail-card">
+      <header class="session-detail-header">
+        <div>
+          <h3>${escapeHtml(session.title)}</h3>
+          <div class="session-meta">${formatHumanDate(session.date)} • ${capitalize(session.type)}</div>
+        </div>
+        <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
+      </header>
+      ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
+      ${session.notes ? `<div class="session-meta">${escapeHtml(session.notes)}</div>` : ""}
+      <div class="session-detail-body">
+        ${renderSessionStructure(session, "planned")}
+        ${
+          session.status !== "planned" && session.actual
+            ? `<div class="session-detail-split">${renderSessionStructure(session, "actual")}</div>`
+            : ""
+        }
+      </div>
       <div class="session-actions">
         <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
-        ${session.status === "planned"
-          ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
-             <button type="button" class="ghost-button danger-button" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
-          : `<button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`}
+        ${
+          session.status === "planned"
+            ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
+               <button type="button" class="ghost-button danger-button" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
+            : `<button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`
+        }
         <button type="button" class="ghost-button danger-button" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
       </div>
     </article>
+  `;
+}
+
+function renderSessionStructure(session, mode) {
+  if (session.type === "run") {
+    const heading = mode === "planned" ? "Planned" : "Actual";
+    const value =
+      mode === "planned"
+        ? formatPlannedSessionSummary(session)
+        : `${formatNumber(session.actual?.distance || 0)} km • ${session.actual?.time || ""} • ${formatRunPace(session.actual?.pace || 0)} min/km`;
+    return `<section class="session-structure"><h4>${heading}</h4><pre>${escapeHtml(value)}</pre></section>`;
+  }
+  if (session.type === "sprint") {
+    const heading = mode === "planned" ? "Planned" : "Actual";
+    const rows =
+      mode === "planned"
+        ? (session.details?.blocks || []).map((block) => `${block.reps} x ${block.distance}m`)
+        : (session.actual?.sprintSets || []).map((set) => `${formatNumber(set.distance)}m in ${formatNumber(set.time)}s`);
+    return `<section class="session-structure"><h4>${heading}</h4><ul>${rows.map((row) => `<li>${escapeHtml(row)}</li>`).join("")}</ul></section>`;
+  }
+  return renderStrengthStructure(mode === "planned" ? session.details?.blocks || [] : session.actual?.blocks || [], {
+    mode,
+    title: mode === "planned" ? "Planned" : "Actual",
+    notes: mode === "planned" ? session.notes : "",
+  });
+}
+
+function renderStrengthStructure(blocks, options = {}) {
+  const { mode = "planned", title = "", notes = "" } = options;
+  return `
+    <section class="session-structure">
+      ${title ? `<h4>${escapeHtml(title)}</h4>` : ""}
+      ${notes ? `<div class="review-meta">Notes: ${escapeHtml(notes)}</div>` : ""}
+      ${
+        blocks.length
+          ? blocks
+              .map((block, blockIndex) => renderStrengthBlockCard(block, blockIndex, mode))
+              .join("")
+          : `<p class="planner-empty">No strength detail.</p>`
+      }
+    </section>
+  `;
+}
+
+function renderStrengthBlockCard(block, blockIndex, mode) {
+  const meta =
+    mode === "planned"
+      ? [formatBlockDuration(block), formatBlockRest(block) ? `${formatBlockRest(block)} rest` : "", block.sets ? `${escapeHtml(String(block.sets))} sets` : ""]
+      : [block.actualSets || block.plannedSets ? `${escapeHtml(String(block.actualSets || block.plannedSets))} sets` : "", block.note ? `Note: ${escapeHtml(block.note)}` : ""];
+  const exercises = mode === "planned" ? block.exercises || [] : block.exercises || [];
+  return `
+    <article class="strength-block-card">
+      <div class="strength-block-header">
+        <h5>${escapeHtml(block.label || `Block ${blockIndex + 1}`)}</h5>
+        <div class="phase-meta">${meta.filter(Boolean).join(" • ")}</div>
+      </div>
+      <div class="strength-exercise-list">
+        ${exercises.length ? exercises.map((exercise) => renderStrengthExerciseRow(exercise, mode)).join("") : `<p class="planner-empty">No exercises.</p>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderStrengthExerciseRow(exercise, mode) {
+  const code = exercise.code ? `<span class="exercise-code">${escapeHtml(exercise.code)}</span>` : "";
+  const name = `<strong class="exercise-highlight">${escapeHtml(exercise.name || "Exercise")}</strong>`;
+  if (mode === "planned") {
+    const detail = [
+      escapeHtml(exercise.reps || "-"),
+      isNumber(exercise.weight) ? `@ ${escapeHtml(formatNumber(exercise.weight))} kg` : "",
+      exercise.notes ? escapeHtml(exercise.notes) : "",
+    ]
+      .filter(Boolean)
+      .join(" • ");
+    return `<div class="strength-exercise-row">${code}${name}<span class="strength-exercise-detail">${detail}</span></div>`;
+  }
+  const setRows = (exercise.actualSets || [])
+    .map((set) => `<div class="strength-set-row">Set ${escapeHtml(String(set.order || 0))}: ${escapeHtml(formatNumber(set.reps))} reps @ ${escapeHtml(formatStrengthLoad(set))}</div>`)
+    .join("");
+  return `
+    <div class="strength-exercise-row${exercise.completed ? "" : " is-skipped"}">
+      ${code}${name}
+      <div class="strength-exercise-detail">${exercise.completed ? setRows || "Completed" : "Skipped"}${exercise.actualNote ? `<div class="phase-meta">${escapeHtml(exercise.actualNote)}</div>` : ""}</div>
+    </div>
   `;
 }
 
@@ -2111,11 +2247,21 @@ function handleCalendarAction(event) {
     return;
   }
 
+  if (role === "select-planned-session") {
+    selectedCalendarSessionId = sessionId;
+    renderCalendar();
+    renderCalendarSessionDetail();
+    return;
+  }
+
   if (role === "edit-planned-session") {
     fillPlannedSessionForm(session);
   }
   if (role === "delete-planned-session") {
     plannedSessions = plannedSessions.filter((item) => item.id !== sessionId);
+    if (selectedCalendarSessionId === sessionId) {
+      selectedCalendarSessionId = "";
+    }
     savePlannerCollections();
     render();
   }
@@ -2519,44 +2665,11 @@ function renderPhaseTemplateWorkouts(template) {
     <div class="phase-template-workouts">
       ${slots
         .map((slot) => {
-          const blocks = slot.blocks || [];
-          const blockMarkup = blocks.length
-            ? `
-              <ul class="phase-block-list">
-                ${blocks
-                  .map((block) => {
-                    const exerciseSummary = (block.exercises || [])
-                      .map((exercise) => {
-                        const load = isNumber(exercise.weight) ? ` @ ${formatNumber(exercise.weight)} kg` : "";
-                        const note = exercise.notes ? ` - ${escapeHtml(exercise.notes)}` : "";
-                        return `${escapeHtml(exercise.code || "")} ${escapeHtml(exercise.name)} (${escapeHtml(exercise.reps || "-")}${load})${note}`.trim();
-                      })
-                      .join(", ");
-                    const blockMeta = [
-                      formatBlockDuration(block),
-                      formatBlockRest(block) ? `${formatBlockRest(block)} rest` : "",
-                      block.sets ? `${escapeHtml(String(block.sets))} sets` : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" • ");
-                    return `
-                      <li>
-                        <strong>${escapeHtml(block.label || "Block")}</strong>
-                        ${blockMeta ? `<div class="phase-meta">${blockMeta}</div>` : ""}
-                        ${exerciseSummary ? `<div class="phase-training-line">${exerciseSummary}</div>` : ""}
-                      </li>
-                    `;
-                  })
-                  .join("")}
-              </ul>
-            `
-            : `<p class="planner-empty">No blocks in this slot.</p>`;
-
           return `
             <article class="phase-training-card">
               <h5>${escapeHtml(weekdayName(slot.weekday))} • ${escapeHtml(slot.title)}</h5>
               ${slot.notes ? `<div class="phase-meta">${escapeHtml(slot.notes)}</div>` : ""}
-              ${blockMarkup}
+              ${renderStrengthStructure(slot.blocks || [], { mode: "planned" })}
             </article>
           `;
         })
@@ -3246,27 +3359,7 @@ function renderPlannedDiff(session) {
   if (session.type === "sprint") {
     return `<ul>${(session.details?.blocks || []).map((block) => `<li>${block.reps} x ${block.distance}m</li>`).join("")}</ul>`;
   }
-  const notesMarkup = session.notes ? `<div class="review-meta">Slot notes: ${escapeHtml(session.notes)}</div>` : "";
-  return `${notesMarkup}<ul>${(session.details?.blocks || [])
-    .map(
-      (block) =>
-        `<li>${escapeHtml(block.label)}: ${[
-          formatBlockDuration(block),
-          formatBlockRest(block) ? `${formatBlockRest(block)} rest` : "",
-          block.sets ? `${escapeHtml(String(block.sets))} sets` : "",
-          (block.exercises || [])
-            .map(
-              (exercise) =>
-                `${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)} (${escapeHtml(exercise.reps || "-")}${
-                  isNumber(exercise.weight) ? ` @ ${escapeHtml(formatNumber(exercise.weight))} kg` : ""
-                })${exercise.notes ? ` - ${escapeHtml(exercise.notes)}` : ""}`,
-            )
-            .join(", "),
-        ]
-          .filter(Boolean)
-          .join(" • ")}</li>`,
-    )
-    .join("")}</ul>`;
+  return renderStrengthStructure(session.details?.blocks || [], { mode: "planned", notes: session.notes });
 }
 
 function renderActualDiff(session) {
@@ -3279,23 +3372,7 @@ function renderActualDiff(session) {
   if (session.type === "sprint") {
     return `<ul>${(session.actual?.sprintSets || []).map((set) => `<li>${formatNumber(set.distance)}m in ${formatNumber(set.time)}s</li>`).join("")}</ul>`;
   }
-  return `<ul>${(session.actual?.blocks || [])
-    .map(
-      (block) =>
-        `<li>${escapeHtml(block.label)}: ${(block.actualSets ?? block.plannedSets) || "-"} sets • ${(block.exercises || [])
-          .map(
-            (exercise) =>
-              `${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)} ${
-                exercise.completed
-                  ? (exercise.actualSets || [])
-                      .map((set) => `${escapeHtml(formatNumber(set.reps))} reps @ ${escapeHtml(formatStrengthLoad(set))}`)
-                      .join(", ") || "done"
-                  : "skipped"
-              }${exercise.actualNote ? ` (${escapeHtml(exercise.actualNote)})` : ""}`,
-          )
-          .join(", ")}</li>`,
-    )
-    .join("")}</ul>`;
+  return renderStrengthStructure(session.actual?.blocks || [], { mode: "actual" });
 }
 
 function renderAdherenceStats() {
@@ -3336,6 +3413,221 @@ function renderAdherenceStats() {
       `,
     )
     .join("");
+}
+
+function renderStrengthProgressBoard() {
+  if (!strengthProgressBoardEl || !strengthProgressStatusEl) {
+    return;
+  }
+  const rows = buildStrengthProgressRows();
+  if (!rows.length) {
+    strengthProgressStatusEl.textContent = "No completed planned strength sessions yet.";
+    strengthProgressBoardEl.innerHTML = "";
+    return;
+  }
+
+  strengthProgressStatusEl.textContent = "Latest planned vs actual and previous-week actual progression by exercise.";
+  strengthProgressBoardEl.innerHTML = rows
+    .map(
+      (row) => `
+        <article class="exercise-progress-card">
+          <header>
+            <div>
+              <h4>${escapeHtml(row.name)}</h4>
+              <div class="phase-meta">${formatHumanDate(row.date)}${row.code ? ` • ${escapeHtml(row.code)}` : ""}</div>
+            </div>
+            <div class="exercise-progress-badges">
+              <span class="session-status ${progressBadgeClass(row.planStatus)}">${escapeHtml(row.planStatus)}</span>
+              <span class="session-status ${progressBadgeClass(row.improvementStatus)}">${escapeHtml(row.improvementStatus)}</span>
+            </div>
+          </header>
+          <div class="exercise-progress-grid">
+            <div>
+              <h5>Planned</h5>
+              <div class="strength-exercise-detail">${escapeHtml(row.plannedSummary)}</div>
+            </div>
+            <div>
+              <h5>Actual</h5>
+              <div class="strength-exercise-detail">${escapeHtml(row.actualSummary)}</div>
+            </div>
+            <div>
+              <h5>Previous Actual</h5>
+              <div class="strength-exercise-detail">${escapeHtml(row.previousSummary)}</div>
+            </div>
+          </div>
+          <div class="phase-meta">${escapeHtml(row.explanation)}</div>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function buildStrengthProgressRows() {
+  const entriesByName = new Map();
+  plannedSessions
+    .filter((session) => session.type === "strength" && ["completed", "modified"].includes(session.status) && session.actual?.blocks?.length)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .forEach((session) => {
+      const plannedBlocks = session.details?.blocks || [];
+      const actualBlocks = session.actual?.blocks || [];
+      actualBlocks.forEach((actualBlock, blockIndex) => {
+        const plannedBlock = plannedBlocks[blockIndex] || { exercises: [], sets: "" };
+        (actualBlock.exercises || []).forEach((actualExercise, exerciseIndex) => {
+          if (!actualExercise.completed) {
+            return;
+          }
+          const plannedExercise = plannedBlock.exercises?.[exerciseIndex] || {};
+          const key = normalizeExerciseKey(actualExercise.name || plannedExercise.name || "");
+          if (!key) {
+            return;
+          }
+          const entry = {
+            date: session.date,
+            code: actualExercise.code || plannedExercise.code || "",
+            name: actualExercise.name || plannedExercise.name || "Exercise",
+            plannedExercise,
+            plannedBlock,
+            actualExercise,
+          };
+          const list = entriesByName.get(key) || [];
+          list.push(entry);
+          entriesByName.set(key, list);
+        });
+      });
+    });
+
+  return [...entriesByName.values()]
+    .map((entries) => {
+      const current = entries[entries.length - 1];
+      const previous = entries.length > 1 ? entries[entries.length - 2] : null;
+      const plannedSnapshot = buildPlannedExerciseSnapshot(current.plannedExercise, current.plannedBlock);
+      const actualSnapshot = buildActualExerciseSnapshot(current.actualExercise);
+      const previousSnapshot = previous ? buildActualExerciseSnapshot(previous.actualExercise) : null;
+      const planStatus = evaluatePlanStatus(plannedSnapshot, actualSnapshot);
+      const improvement = evaluateImprovementStatus(previousSnapshot, actualSnapshot);
+      return {
+        date: current.date,
+        code: current.code,
+        name: current.name,
+        plannedSummary: formatPlannedProgressSnapshot(plannedSnapshot),
+        actualSummary: formatActualProgressSnapshot(actualSnapshot),
+        previousSummary: previousSnapshot ? formatActualProgressSnapshot(previousSnapshot) : "No previous logged week",
+        planStatus: planStatus.label,
+        improvementStatus: improvement.label,
+        explanation: `${planStatus.explanation} ${improvement.explanation}`.trim(),
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function normalizeExerciseKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function buildPlannedExerciseSnapshot(exercise, block) {
+  return {
+    repsText: exercise?.reps || "-",
+    repsBase: extractWorkoutRepCount(exercise?.reps),
+    weight: isNumber(exercise?.weight) ? Number(exercise.weight) : null,
+    setsText: String(block?.sets || ""),
+    setsBase: getDefaultActualSets(block?.sets) || 0,
+  };
+}
+
+function buildActualExerciseSnapshot(exercise) {
+  const sets = exercise?.actualSets || [];
+  const kgSets = sets.filter((set) => set.loadType === "kg" && isNumber(set.weight));
+  const maxWeight = kgSets.length ? Math.max(...kgSets.map((set) => Number(set.weight))) : null;
+  const maxReps = sets.length ? Math.max(...sets.map((set) => Number(set.reps))) : 0;
+  return {
+    totalSets: sets.length,
+    maxWeight,
+    maxReps,
+    loadTypes: [...new Set(sets.map((set) => set.loadType || "kg"))],
+    summary: sets.map((set) => `${formatNumber(set.reps)} reps @ ${formatStrengthLoad(set)}`).join(", "),
+  };
+}
+
+function formatPlannedProgressSnapshot(snapshot) {
+  return [snapshot.setsText ? `${snapshot.setsText} sets` : "", snapshot.repsText, isNumber(snapshot.weight) ? `@ ${formatNumber(snapshot.weight)} kg` : ""]
+    .filter(Boolean)
+    .join(" • ");
+}
+
+function formatActualProgressSnapshot(snapshot) {
+  if (!snapshot) {
+    return "No previous logged week";
+  }
+  return [snapshot.totalSets ? `${snapshot.totalSets} sets` : "", snapshot.summary || "", snapshot.maxWeight ? `top ${formatNumber(snapshot.maxWeight)} kg` : ""]
+    .filter(Boolean)
+    .join(" • ");
+}
+
+function evaluatePlanStatus(planned, actual) {
+  if (actual.totalSets === planned.setsBase && actual.maxReps === planned.repsBase && actual.maxWeight === planned.weight) {
+    return { label: "Matched plan", explanation: "Actual sets, reps, and top weight matched the plan." };
+  }
+  if (
+    actual.totalSets >= planned.setsBase &&
+    actual.maxReps >= planned.repsBase &&
+    ((isNumber(actual.maxWeight) && isNumber(planned.weight) && actual.maxWeight > planned.weight) || (!isNumber(planned.weight) && !isNumber(actual.maxWeight)))
+  ) {
+    return { label: "Exceeded plan", explanation: "Actual execution met or exceeded the planned prescription." };
+  }
+  if (
+    actual.totalSets < planned.setsBase ||
+    (planned.repsBase && actual.maxReps < planned.repsBase) ||
+    (isNumber(planned.weight) && (!isNumber(actual.maxWeight) || actual.maxWeight < planned.weight))
+  ) {
+    return { label: "Below plan", explanation: "Actual execution landed below the planned prescription." };
+  }
+  return { label: "Modified from plan", explanation: "Actual execution differed from the planned prescription." };
+}
+
+function evaluateImprovementStatus(previous, current) {
+  if (!previous) {
+    return { label: "First logged week", explanation: "This is the first completed week for this exercise." };
+  }
+  if (
+    isNumber(current.maxWeight) &&
+    isNumber(previous.maxWeight) &&
+    current.maxWeight > previous.maxWeight &&
+    current.maxReps >= previous.maxReps - 2
+  ) {
+    return { label: "Improved", explanation: "You handled a heavier top weight without a major rep drop." };
+  }
+  if (current.maxWeight === previous.maxWeight && current.maxReps > previous.maxReps) {
+    return { label: "Improved", explanation: "You hit more reps at the same top weight." };
+  }
+  if (current.maxWeight === previous.maxWeight && current.maxReps === previous.maxReps && current.totalSets > previous.totalSets) {
+    return { label: "Improved", explanation: "You matched the top set and added more completed work." };
+  }
+  if (current.maxWeight === previous.maxWeight && current.maxReps === previous.maxReps && current.totalSets === previous.totalSets) {
+    return { label: "Matched", explanation: "You repeated the previous week with the same output." };
+  }
+  if (
+    (isNumber(current.maxWeight) && isNumber(previous.maxWeight) && current.maxWeight > previous.maxWeight) ||
+    current.maxReps > previous.maxReps ||
+    current.totalSets > previous.totalSets
+  ) {
+    return { label: "Partial / mixed", explanation: "One metric improved, but another dropped enough to make it mixed." };
+  }
+  return { label: "Below previous", explanation: "This week landed below the previous completed week." };
+}
+
+function progressBadgeClass(label) {
+  if (label === "Improved" || label === "Exceeded plan" || label === "Matched plan") {
+    return "status-completed";
+  }
+  if (label === "Partial / mixed" || label === "Modified from plan") {
+    return "status-modified";
+  }
+  if (label === "Below previous" || label === "Below plan") {
+    return "status-missed";
+  }
+  return "status-planned";
 }
 
 function weekdayName(weekday) {

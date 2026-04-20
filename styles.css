@@ -186,15 +186,23 @@ button {
   gap: 0.75rem;
 }
 
+.calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(18rem, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .calendar-day {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: #0a1326;
   padding: 0.75rem;
-  min-height: 15rem;
+  min-height: 11rem;
   display: grid;
   gap: 0.7rem;
   align-content: start;
+  overflow: hidden;
 }
 
 .calendar-day.is-today {
@@ -248,6 +256,11 @@ button {
 .review-card h4,
 .phase-card h4 {
   margin: 0;
+}
+
+.planned-session-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px #00e5ff44 inset;
 }
 
 .session-meta,
@@ -332,23 +345,87 @@ button {
   margin: 0;
 }
 
-.phase-block-list {
-  margin: 0;
-  padding-left: 1rem;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.phase-training-line {
-  color: var(--text);
-  font-size: 0.88rem;
-}
-
 .phase-instance-grid,
 .review-diff-grid {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.session-detail-card,
+.calendar-session-detail {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.session-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.session-detail-header h3,
+.session-structure h4,
+.strength-block-header h5 {
+  margin: 0;
+}
+
+.session-detail-body,
+.session-detail-split,
+.session-structure {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.strength-block-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0a1326;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.strength-block-header {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.strength-exercise-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.strength-exercise-row {
+  display: grid;
+  gap: 0.16rem;
+  padding-left: 0.2rem;
+  border-left: 2px solid #21314e;
+}
+
+.strength-exercise-row.is-skipped {
+  opacity: 0.65;
+}
+
+.exercise-code {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.exercise-highlight {
+  color: #7dd3fc;
+}
+
+.strength-exercise-detail {
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.strength-set-row {
+  color: var(--text);
 }
 
 .diff-panel {
@@ -678,6 +755,45 @@ dialog {
   margin: 0.5rem 0;
 }
 
+.strength-progress-board {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.exercise-progress-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #0a1326;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.exercise-progress-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.exercise-progress-card h4,
+.exercise-progress-card h5 {
+  margin: 0;
+}
+
+.exercise-progress-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.exercise-progress-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .progress-bar {
   width: 100%;
   height: 10px;
@@ -737,7 +853,9 @@ textarea {
 }
 
 @media (max-width: 980px) {
+  .calendar-layout,
   .calendar-grid,
+  .exercise-progress-grid,
   .phase-instance-grid,
   .review-diff-grid {
     grid-template-columns: 1fr;

@@ -18,6 +18,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength sessions use `Log & Complete` with hybrid planned-vs-actual set logging
 - Strength completion status is detected automatically from planned vs actual data
 - Program weeks are anchored to the chosen phase start date, not calendar Monday
+- Calendar uses compact session cards with a full selected-session detail panel
+- Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
 - Planned session statuses:
   - planned
   - completed
@@ -35,7 +37,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - PWA install support
 
 ## Main Pages
-- `Calendar`: weekly plan, manual planning, and `Log & Complete` execution logging
+- `Calendar`: weekly plan, compact session cards, selected-session detail, and `Log & Complete` execution logging
 - `Phases`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review plus actual workout logging
 - `Stats`: goals, adherence summaries, charts, backup, and exercise library

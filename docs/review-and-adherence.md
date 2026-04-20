@@ -27,6 +27,12 @@ Review compares:
 - completed or skipped exercises
 - per-exercise notes
 
+## Strength Progress
+The stats page also tracks strength exercise progress by:
+- latest planned vs latest actual
+- latest actual vs previous actual
+- rule-based status markers for matched plan, exceeded plan, improved, mixed, or below previous
+
 ## Adherence
 Weekly adherence is defined as:
 
