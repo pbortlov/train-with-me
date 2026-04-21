@@ -22,6 +22,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
 - Sprint logging includes a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
+- Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
 - Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
 - Planned session statuses:
   - planned

@@ -12,6 +12,8 @@ Review compares:
 - actual pace
 - modification note if changed
 
+Run actual pace is calculated automatically from logged distance and logged time.
+
 ### Sprint
 Review compares:
 - planned sprint blocks

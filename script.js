@@ -82,6 +82,16 @@ const calendarWeekLabelEl = document.getElementById("calendar-week-label");
 const calendarGridEl = document.getElementById("calendar-grid");
 const calendarSessionDialog = document.getElementById("calendar-session-dialog");
 const calendarSessionDetailEl = document.getElementById("calendar-session-detail");
+const plannedRunEditDialog = document.getElementById("planned-run-edit-dialog");
+const plannedRunEditForm = document.getElementById("planned-run-edit-form");
+const plannedRunEditIdInput = document.getElementById("planned-run-edit-id");
+const plannedRunEditDateInput = document.getElementById("planned-run-edit-date");
+const plannedRunEditTitleInput = document.getElementById("planned-run-edit-title");
+const plannedRunEditDistanceInput = document.getElementById("planned-run-edit-distance");
+const plannedRunEditPaceInput = document.getElementById("planned-run-edit-pace");
+const plannedRunEditNotesInput = document.getElementById("planned-run-edit-notes");
+const plannedRunEditStatusEl = document.getElementById("planned-run-edit-status");
+const cancelPlannedRunEditButton = document.getElementById("cancel-planned-run-edit");
 const prevWeekButton = document.getElementById("prev-week");
 const nextWeekButton = document.getElementById("next-week");
 const currentWeekButton = document.getElementById("current-week");
@@ -777,6 +787,30 @@ function parseRunDurationToSeconds(value) {
   return (hours * 3600) + (minutes * 60) + seconds;
 }
 
+function parseFlexibleRunDurationToSeconds(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parts = trimmed.split(":");
+  if ((parts.length !== 2 && parts.length !== 3) || parts.some((part) => !/^\d+$/.test(part))) {
+    return null;
+  }
+
+  const numbers = parts.map(Number);
+  const [hours, minutes, seconds] = parts.length === 3 ? numbers : [0, numbers[0], numbers[1]];
+  if (seconds > 59 || (parts.length === 3 && minutes > 59)) {
+    return null;
+  }
+
+  return (hours * 3600) + (minutes * 60) + seconds;
+}
+
 function formatSecondsAsRunDuration(totalSeconds) {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
     return null;
@@ -791,6 +825,11 @@ function formatSecondsAsRunDuration(totalSeconds) {
 
 function normalizeRunDurationInput(value) {
   const totalSeconds = parseRunDurationToSeconds(value);
+  return totalSeconds == null ? "" : formatSecondsAsRunDuration(totalSeconds);
+}
+
+function normalizeFlexibleRunDurationInput(value) {
+  const totalSeconds = parseFlexibleRunDurationToSeconds(value);
   return totalSeconds == null ? "" : formatSecondsAsRunDuration(totalSeconds);
 }
 
@@ -1853,7 +1892,7 @@ function bindV2Events() {
   addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
   addSafeEventListener(phaseInstanceListEl, "click", handlePhaseInstanceAction);
   addSafeEventListener(completionRunTimeInput, "input", syncCompletionRunPace);
-  addSafeEventListener(completionRunTimeInput, "change", syncCompletionRunPace);
+  addSafeEventListener(completionRunTimeInput, "change", normalizeCompletionRunTimeField);
   addSafeEventListener(completionRunDistanceInput, "input", syncCompletionRunPace);
   addSafeEventListener(completionSprintBlocksEl, "input", handleCompletionSprintInput);
   addSafeEventListener(completionStrengthBlocksEl, "click", handleCompletionStrengthAction);
@@ -1861,6 +1900,13 @@ function bindV2Events() {
   addSafeEventListener(completionStrengthBlocksEl, "change", handleCompletionStrengthInput);
   addSafeEventListener(completionForm, "submit", saveCompletedSession);
   addSafeEventListener(cancelCompletionButton, "click", closeCompletionDialog);
+  addSafeEventListener(plannedRunEditForm, "submit", savePlannedRunEdit);
+  addSafeEventListener(cancelPlannedRunEditButton, "click", closePlannedRunEditDialog);
+  addSafeEventListener(plannedRunEditDialog, "click", (event) => {
+    if (event.target === plannedRunEditDialog) {
+      closePlannedRunEditDialog();
+    }
+  });
 }
 
 function savePlannerCollections() {
@@ -2490,7 +2536,11 @@ function handleCalendarAction(event) {
 
   if (role === "edit-planned-session") {
     closeCalendarSessionDialog();
-    fillPlannedSessionForm(session);
+    if (session.type === "run") {
+      openPlannedRunEditDialog(session);
+    } else {
+      fillPlannedSessionForm(session);
+    }
   }
   if (role === "delete-planned-session") {
     closeCalendarSessionDialog();
@@ -2557,6 +2607,71 @@ function closeCalendarSessionDialog() {
     selectedCalendarSessionId = "";
     renderCalendar();
   }
+}
+
+function openPlannedRunEditDialog(session) {
+  if (!plannedRunEditDialog || !plannedRunEditForm) {
+    fillPlannedSessionForm(session);
+    return;
+  }
+  plannedRunEditForm.reset();
+  plannedRunEditIdInput.value = session.id;
+  plannedRunEditDateInput.value = session.date;
+  plannedRunEditTitleInput.value = session.title;
+  plannedRunEditDistanceInput.value = session.details?.distance ?? "";
+  plannedRunEditPaceInput.value = isNumber(session.details?.paceGoal) ? formatGoalPace(session.details.paceGoal) : "";
+  plannedRunEditNotesInput.value = session.notes || "";
+  plannedRunEditStatusEl.textContent = "";
+
+  if (typeof plannedRunEditDialog.showModal === "function") {
+    plannedRunEditDialog.showModal();
+  } else {
+    plannedRunEditDialog.setAttribute("open", "true");
+  }
+}
+
+function closePlannedRunEditDialog() {
+  if (!plannedRunEditDialog) {
+    return;
+  }
+  if (typeof plannedRunEditDialog.close === "function" && plannedRunEditDialog.open) {
+    plannedRunEditDialog.close();
+  } else {
+    plannedRunEditDialog.removeAttribute("open");
+  }
+}
+
+function savePlannedRunEdit(event) {
+  event.preventDefault();
+  const session = plannedSessions.find((item) => item.id === plannedRunEditIdInput.value);
+  if (!session || session.type !== "run") {
+    plannedRunEditStatusEl.textContent = "Planned run was not found.";
+    return;
+  }
+
+  const date = normalizeDateInput(plannedRunEditDateInput.value);
+  const title = plannedRunEditTitleInput.value.trim();
+  const distance = toNumberOrNull(plannedRunEditDistanceInput.value);
+  const paceGoal = parseGoalPaceInput(plannedRunEditPaceInput.value);
+  if (!date || !title || !isNumber(distance)) {
+    plannedRunEditStatusEl.textContent = "Planned run needs date, title, and distance.";
+    return;
+  }
+  if (plannedRunEditPaceInput.value.trim() && !isNumber(paceGoal)) {
+    plannedRunEditStatusEl.textContent = "Target pace must use mm:ss.";
+    return;
+  }
+
+  session.date = date;
+  session.title = title;
+  session.notes = plannedRunEditNotesInput.value.trim();
+  session.details = {
+    distance,
+    paceGoal: isNumber(paceGoal) ? paceGoal : null,
+  };
+  savePlannerCollections();
+  closePlannedRunEditDialog();
+  render();
 }
 
 function fillPlannedSessionForm(session) {
@@ -3333,10 +3448,15 @@ function renderCompletionStrengthBlocks() {
 
 function syncCompletionRunPace() {
   const distance = toNumberOrNull(completionRunDistanceInput.value);
-  const time = normalizeRunDurationInput(completionRunTimeInput.value);
-  completionRunTimeInput.value = time;
-  const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
+  const totalSeconds = parseFlexibleRunDurationToSeconds(completionRunTimeInput.value);
+  const pace = calculateRunPace(distance, totalSeconds);
   completionRunPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
+}
+
+function normalizeCompletionRunTimeField() {
+  const normalized = normalizeFlexibleRunDurationInput(completionRunTimeInput.value);
+  completionRunTimeInput.value = normalized || completionRunTimeInput.value;
+  syncCompletionRunPace();
 }
 
 function handleCompletionStrengthAction(event) {
@@ -3542,12 +3662,14 @@ function saveCompletedSession(event) {
   try {
     if (session.type === "run") {
       const distance = toNumberOrNull(completionRunDistanceInput.value);
-      const time = normalizeRunDurationInput(completionRunTimeInput.value);
-      const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
+      const time = normalizeFlexibleRunDurationInput(completionRunTimeInput.value);
+      const pace = calculateRunPace(distance, parseFlexibleRunDurationToSeconds(completionRunTimeInput.value));
       if (!isNumber(distance) || !time || !isNumber(pace)) {
-        completionStatusMessageEl.textContent = "Run completion needs distance and time.";
+        completionStatusMessageEl.textContent = "Run completion needs distance and time in hh:mm:ss or mm:ss.";
         return;
       }
+      completionRunTimeInput.value = time;
+      completionRunPaceInput.value = formatRunPace(pace);
       actual = { distance, time, pace };
     }
     if (session.type === "sprint") {

@@ -448,13 +448,14 @@
         <p class="hint">Status is detected automatically from planned vs actual.</p>
 
         <div id="completion-run-fields" class="completion-type-fields">
+          <p class="hint">Actual time accepts hh:mm:ss or mm:ss.</p>
           <div class="grid">
             <label>
               Actual distance (km)
               <input type="number" id="completion-run-distance" min="0" step="0.01" />
             </label>
             <label>
-              Actual time (hh:mm:ss)
+              Actual time (hh:mm:ss or mm:ss)
               <input type="text" id="completion-run-time" inputmode="numeric" />
             </label>
             <label>
@@ -499,6 +500,40 @@
 
     <dialog id="calendar-session-dialog" class="calendar-session-dialog">
       <div id="calendar-session-detail" class="calendar-session-detail"></div>
+    </dialog>
+
+    <dialog id="planned-run-edit-dialog">
+      <form id="planned-run-edit-form">
+        <h3>Edit Planned Run</h3>
+        <input type="hidden" id="planned-run-edit-id" />
+        <div class="grid">
+          <label>
+            Date
+            <input type="date" id="planned-run-edit-date" required />
+          </label>
+          <label>
+            Title
+            <input type="text" id="planned-run-edit-title" required />
+          </label>
+          <label>
+            Planned distance (km)
+            <input type="number" id="planned-run-edit-distance" min="0" step="0.01" required />
+          </label>
+          <label>
+            Target pace (mm:ss)
+            <input type="text" id="planned-run-edit-pace" inputmode="numeric" placeholder="e.g. 05:30" />
+          </label>
+        </div>
+        <label>
+          Notes
+          <textarea id="planned-run-edit-notes" rows="3"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button type="submit">Save planned run</button>
+          <button type="button" id="cancel-planned-run-edit" class="ghost-button">Cancel</button>
+        </div>
+        <p id="planned-run-edit-status" class="hint"></p>
+      </form>
     </dialog>
 
     <dialog id="edit-workout-dialog">
