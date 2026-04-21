@@ -536,6 +536,29 @@
       </form>
     </dialog>
 
+    <dialog id="strength-session-move-dialog">
+      <form id="strength-session-move-form">
+        <h3>Move Strength Training</h3>
+        <input type="hidden" id="strength-session-move-id" />
+        <p id="strength-session-move-title" class="hint"></p>
+        <div class="grid">
+          <label>
+            Current date
+            <input type="date" id="strength-session-current-date" readonly />
+          </label>
+          <label>
+            New date
+            <input type="date" id="strength-session-new-date" required />
+          </label>
+        </div>
+        <div class="dialog-actions">
+          <button type="submit">Move training</button>
+          <button type="button" id="cancel-strength-session-move" class="ghost-button">Cancel</button>
+        </div>
+        <p id="strength-session-move-status" class="hint"></p>
+      </form>
+    </dialog>
+
     <dialog id="edit-workout-dialog">
       <h3>Edit Workout</h3>
       <form id="edit-workout-form">

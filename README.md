@@ -18,6 +18,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength sessions use `Log & Complete` with hybrid planned-vs-actual set logging
 - Strength completion status is detected automatically from planned vs actual data
 - Program weeks are anchored to the chosen phase start date, not calendar Monday
+- Planned generated strength sessions can be manually moved before completion without editing the phase template
 - Calendar uses compact session cards with a popup training view so the week grid stays stable
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows

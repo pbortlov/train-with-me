@@ -92,6 +92,14 @@ const plannedRunEditPaceInput = document.getElementById("planned-run-edit-pace")
 const plannedRunEditNotesInput = document.getElementById("planned-run-edit-notes");
 const plannedRunEditStatusEl = document.getElementById("planned-run-edit-status");
 const cancelPlannedRunEditButton = document.getElementById("cancel-planned-run-edit");
+const strengthSessionMoveDialog = document.getElementById("strength-session-move-dialog");
+const strengthSessionMoveForm = document.getElementById("strength-session-move-form");
+const strengthSessionMoveIdInput = document.getElementById("strength-session-move-id");
+const strengthSessionMoveTitleEl = document.getElementById("strength-session-move-title");
+const strengthSessionCurrentDateInput = document.getElementById("strength-session-current-date");
+const strengthSessionNewDateInput = document.getElementById("strength-session-new-date");
+const strengthSessionMoveStatusEl = document.getElementById("strength-session-move-status");
+const cancelStrengthSessionMoveButton = document.getElementById("cancel-strength-session-move");
 const prevWeekButton = document.getElementById("prev-week");
 const nextWeekButton = document.getElementById("next-week");
 const currentWeekButton = document.getElementById("current-week");
@@ -1907,6 +1915,13 @@ function bindV2Events() {
       closePlannedRunEditDialog();
     }
   });
+  addSafeEventListener(strengthSessionMoveForm, "submit", saveStrengthSessionMove);
+  addSafeEventListener(cancelStrengthSessionMoveButton, "click", closeStrengthSessionMoveDialog);
+  addSafeEventListener(strengthSessionMoveDialog, "click", (event) => {
+    if (event.target === strengthSessionMoveDialog) {
+      closeStrengthSessionMoveDialog();
+    }
+  });
 }
 
 function savePlannerCollections() {
@@ -2111,6 +2126,7 @@ function renderCalendarSessionDetail() {
       </div>
       <div class="session-actions">
         <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
+        ${isMovableGeneratedStrengthSession(session) ? `<button type="button" class="ghost-button" data-role="move-strength-session" data-id="${session.id}">Move</button>` : ""}
         ${
           session.status === "planned"
             ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
@@ -2542,6 +2558,11 @@ function handleCalendarAction(event) {
       fillPlannedSessionForm(session);
     }
   }
+  if (role === "move-strength-session") {
+    closeCalendarSessionDialog();
+    openStrengthSessionMoveDialog(session);
+    return;
+  }
   if (role === "delete-planned-session") {
     closeCalendarSessionDialog();
     plannedSessions = plannedSessions.filter((item) => item.id !== sessionId);
@@ -2671,6 +2692,60 @@ function savePlannedRunEdit(event) {
   };
   savePlannerCollections();
   closePlannedRunEditDialog();
+  render();
+}
+
+function isMovableGeneratedStrengthSession(session) {
+  return session?.type === "strength" && session.source === "phase-generated" && session.status === "planned";
+}
+
+function openStrengthSessionMoveDialog(session) {
+  if (!strengthSessionMoveDialog || !strengthSessionMoveForm || !isMovableGeneratedStrengthSession(session)) {
+    return;
+  }
+  strengthSessionMoveForm.reset();
+  strengthSessionMoveIdInput.value = session.id;
+  strengthSessionMoveTitleEl.textContent = `${session.title} • ${formatHumanDate(session.date)}`;
+  strengthSessionCurrentDateInput.value = session.date;
+  strengthSessionNewDateInput.value = session.date;
+  strengthSessionMoveStatusEl.textContent = "";
+
+  if (typeof strengthSessionMoveDialog.showModal === "function") {
+    strengthSessionMoveDialog.showModal();
+  } else {
+    strengthSessionMoveDialog.setAttribute("open", "true");
+  }
+}
+
+function closeStrengthSessionMoveDialog() {
+  if (!strengthSessionMoveDialog) {
+    return;
+  }
+  if (typeof strengthSessionMoveDialog.close === "function" && strengthSessionMoveDialog.open) {
+    strengthSessionMoveDialog.close();
+  } else {
+    strengthSessionMoveDialog.removeAttribute("open");
+  }
+}
+
+function saveStrengthSessionMove(event) {
+  event.preventDefault();
+  const session = plannedSessions.find((item) => item.id === strengthSessionMoveIdInput.value);
+  if (!isMovableGeneratedStrengthSession(session)) {
+    strengthSessionMoveStatusEl.textContent = "Only planned generated strength sessions can be moved.";
+    return;
+  }
+  const newDate = normalizeDateInput(strengthSessionNewDateInput.value);
+  if (!newDate) {
+    strengthSessionMoveStatusEl.textContent = "Choose a valid new date.";
+    return;
+  }
+  ensurePhaseOccurrenceMetadata(session);
+  session.generatedDate = session.generatedDate || session.date;
+  session.date = newDate;
+  session.dateMovedManually = session.date !== session.generatedDate;
+  savePlannerCollections();
+  closeStrengthSessionMoveDialog();
   render();
 }
 
@@ -2805,12 +2880,44 @@ function regeneratePhaseInstanceFromTemplate(instance, template) {
   const reviewedSessions = plannedSessions.filter(
     (session) => session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status !== "planned",
   );
+  const movedPlannedSessions = plannedSessions.filter(
+    (session) =>
+      session.phaseInstanceId === instance.id &&
+      session.source === "phase-generated" &&
+      session.status === "planned" &&
+      session.dateMovedManually,
+  );
+  const movedByOccurrence = new Map(
+    movedPlannedSessions
+      .map((session) => ensurePhaseOccurrenceMetadata(session))
+      .filter((session) => session.phaseSlotId && isNumber(session.phaseWeekIndex))
+      .map((session) => [`${session.phaseSlotId}:${session.phaseWeekIndex}`, session]),
+  );
+  const reviewedOccurrences = new Set(
+    reviewedSessions
+      .map((session) => ensurePhaseOccurrenceMetadata(session))
+      .filter((session) => session.phaseSlotId && isNumber(session.phaseWeekIndex))
+      .map((session) => `${session.phaseSlotId}:${session.phaseWeekIndex}`),
+  );
   const reviewedDates = new Set(reviewedSessions.map((session) => session.date));
   plannedSessions = plannedSessions.filter(
     (session) => !(session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status === "planned"),
   );
 
-  const regeneratedSessions = buildPhaseSessions(template, instance.startDate, instance.id, reviewedDates);
+  const regeneratedSessions = buildPhaseSessions(template, instance.startDate, instance.id, reviewedDates, reviewedOccurrences).map((session) => {
+    const movedSession = movedByOccurrence.get(`${session.phaseSlotId}:${session.phaseWeekIndex}`);
+    if (!movedSession) {
+      return session;
+    }
+    return normalizePlannedSession({
+      ...session,
+      id: movedSession.id,
+      date: movedSession.date,
+      generatedDate: session.generatedDate || session.date,
+      dateMovedManually: true,
+      createdAt: movedSession.createdAt,
+    });
+  });
   plannedSessions.push(...regeneratedSessions);
 
   return normalizePhaseInstance({
@@ -2822,17 +2929,19 @@ function regeneratePhaseInstanceFromTemplate(instance, template) {
   });
 }
 
-function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set()) {
+function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set(), reviewedOccurrences = new Set()) {
   const generatedSessions = [];
   const normalizedStartDate = new Date(startDate);
   normalizedStartDate.setHours(0, 0, 0, 0);
   const startWeekday = getProgramWeekday(normalizedStartDate);
   for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
     const anchoredWeekStart = addDays(normalizedStartDate, weekIndex * 7);
-    template.weekdaySlots.forEach((slot) => {
+    template.weekdaySlots.forEach((slot, slotIndex) => {
       const slotOffset = ((slot.weekday - startWeekday) + 7) % 7;
       const sessionDate = formatDateInput(addDays(anchoredWeekStart, slotOffset));
-      if (reviewedDates.has(sessionDate)) {
+      const phaseSlotId = slot.id || `${slot.weekday}-${slotIndex}`;
+      const occurrenceKey = `${phaseSlotId}:${weekIndex}`;
+      if (reviewedDates.has(sessionDate) || reviewedOccurrences.has(occurrenceKey)) {
         return;
       }
       generatedSessions.push(
@@ -2844,6 +2953,10 @@ function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new
           source: "phase-generated",
           phaseTemplateId: template.id,
           phaseInstanceId: instanceId,
+          phaseSlotId,
+          phaseWeekIndex: weekIndex,
+          generatedDate: sessionDate,
+          dateMovedManually: false,
           status: "planned",
           notes: slot.notes,
           details: { blocks: slot.blocks },
@@ -2852,6 +2965,39 @@ function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new
     });
   }
   return generatedSessions;
+}
+
+function ensurePhaseOccurrenceMetadata(session) {
+  if (!session || session.type !== "strength" || session.source !== "phase-generated") {
+    return session;
+  }
+  if (session.phaseSlotId && isNumber(session.phaseWeekIndex) && session.generatedDate) {
+    return session;
+  }
+  const instance = phaseInstances.find((item) => item.id === session.phaseInstanceId);
+  const template = phaseTemplates.find((item) => item.id === session.phaseTemplateId || item.id === instance?.templateId);
+  if (!instance || !template) {
+    return session;
+  }
+  const normalizedStartDate = new Date(instance.startDate);
+  normalizedStartDate.setHours(0, 0, 0, 0);
+  const startWeekday = getProgramWeekday(normalizedStartDate);
+  const matchDate = normalizeDateInput(session.generatedDate) || normalizeDateInput(session.date);
+  for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
+    const anchoredWeekStart = addDays(normalizedStartDate, weekIndex * 7);
+    for (let slotIndex = 0; slotIndex < template.weekdaySlots.length; slotIndex += 1) {
+      const slot = template.weekdaySlots[slotIndex];
+      const slotOffset = ((slot.weekday - startWeekday) + 7) % 7;
+      const generatedDate = formatDateInput(addDays(anchoredWeekStart, slotOffset));
+      if (generatedDate === matchDate && slot.title === session.title) {
+        session.phaseSlotId = slot.id || `${slot.weekday}-${slotIndex}`;
+        session.phaseWeekIndex = weekIndex;
+        session.generatedDate = generatedDate;
+        return session;
+      }
+    }
+  }
+  return session;
 }
 
 function getProgramWeekday(value) {
@@ -4260,6 +4406,10 @@ function normalizePlannedSession(session) {
     source: session.source === "phase-generated" ? "phase-generated" : "manual",
     phaseTemplateId: typeof session.phaseTemplateId === "string" ? session.phaseTemplateId : "",
     phaseInstanceId: typeof session.phaseInstanceId === "string" ? session.phaseInstanceId : "",
+    phaseSlotId: typeof session.phaseSlotId === "string" ? session.phaseSlotId : "",
+    phaseWeekIndex: isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : null,
+    generatedDate: normalizeDateInput(session.generatedDate) || "",
+    dateMovedManually: Boolean(session.dateMovedManually),
     status: ["planned", "completed", "modified", "missed"].includes(session.status) ? session.status : "planned",
     notes: typeof session.notes === "string" ? session.notes : "",
     linkedWorkoutId: typeof session.linkedWorkoutId === "string" ? session.linkedWorkoutId : "",

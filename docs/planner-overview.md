@@ -22,6 +22,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - sprint plans use structured blocks with reps, distance, optional target time per rep, and optional rest
   - planned run editing opens in a popup instead of reusing the in-page creation form
   - generated strength sessions
+  - generated strength sessions can be moved manually while still planned, without changing the phase template
   - compact session cards with a popup training view so the day cell size stays stable
   - week cards show title first, time second, inline status at the lower right, and a contained `View training` button
   - `Log & Complete` flow for day-of-training execution without rewriting the plan
@@ -33,6 +34,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - schedule a template onto real dates
   - anchor each program week to the chosen start date instead of calendar Monday
   - refresh planned generated sessions for already scheduled instances when a template is updated
+  - preserve manually moved generated strength-session dates during template refresh
   - support slot notes, including `Warm Up: 10 mins` or `Warm Up: 10-15 mins` for calendar time calculation, block timing like `15 mins`, `15-20 mins`, `30s`, `90-120s`, set prescriptions like `3` or `3-4`, and optional exercise weight targets inside imported strength plans
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
