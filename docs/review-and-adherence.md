@@ -36,6 +36,19 @@ The stats page also tracks strength exercise progress by:
 - latest actual vs previous actual
 - rule-based status markers for matched plan, exceeded plan, improved, mixed, or below previous
 
+## Program Strength Progress
+Program progress is strength-only for now.
+
+The program duration comes from the scheduled strength phase instance, not from a fixed week count. A four-week phase shows Week 1 to Week 4, while a six-week phase shows Week 1 to Week 6.
+
+Program Strength Progress compares:
+- weekly strength adherence inside the selected phase instance
+- completed, modified, missed, and still-planned generated strength sessions
+- exercise progression by program week
+- top weight, max reps, completed sets, and logged set summaries
+
+Run and sprint sessions are not attached to strength phases yet. They remain progress-over-time metrics on the Stats page.
+
 ## Adherence
 Weekly adherence is defined as:
 

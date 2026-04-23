@@ -25,6 +25,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Sprint logging includes a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
 - Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
+- Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
+- Run and sprint progress stay separate from strength phases and are shown as progress over time
 - Planned session statuses:
   - planned
   - completed
@@ -35,7 +37,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Stats page with:
   - goal progress
   - adherence summaries
-  - strength / run pace / sprint charts
+  - program-duration strength progress
+  - strength / run pace / sprint charts over time
 - Actual workout logging with edit and delete support
 - Exercise library with saved exercise names
 - Backup export/import as JSON

@@ -659,6 +659,54 @@ button {
   display: none;
 }
 
+.program-progress-table-wrap {
+  overflow-x: auto;
+}
+
+.program-progress-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  margin-top: 0.8rem;
+}
+
+.program-progress-table th,
+.program-progress-table td {
+  border: 1px solid var(--border);
+  padding: 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.program-progress-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.program-progress-table td {
+  background: #0a1326;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.program-progress-table .is-improved {
+  border-left: 3px solid #6dff5c;
+}
+
+.program-progress-table .is-stable {
+  border-left: 3px solid #7dd3fc;
+}
+
+.program-progress-table .is-lower {
+  border-left: 3px solid #ff9caf;
+}
+
+.program-progress-table .is-empty {
+  color: var(--muted);
+}
+
 #install-app {
   display: none;
 }

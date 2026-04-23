@@ -49,6 +49,8 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - goals
   - charts
   - per-exercise strength progress board
+  - program-duration strength progress for scheduled phase instances
+  - run and sprint progress over time, separate from strength phases
   - backup
 
 ## Status Model

@@ -360,7 +360,24 @@
         </article>
 
         <article class="card">
-          <h3>Progress</h3>
+          <h3>Program Strength Progress</h3>
+          <p class="hint">Compares generated strength sessions across the selected program duration. Run and sprint stay separate as progress over time.</p>
+          <label>
+            Strength program
+            <select id="program-progress-select"></select>
+          </label>
+          <div id="program-progress-summary" class="summary"></div>
+          <p id="program-progress-status" class="hint"></p>
+          <div class="chart-card" id="program-adherence-chart-card">
+            <h4>Program Weekly Adherence</h4>
+            <canvas id="program-adherence-chart" height="180"></canvas>
+          </div>
+          <div id="program-exercise-progress" class="program-progress-table-wrap"></div>
+        </article>
+
+        <article class="card">
+          <h3>Progress Over Time</h3>
+          <p class="hint">Run and sprint are tracked over time, not inside strength programs yet.</p>
           <div class="grid" id="progress-filters">
             <label>
               Filter activity
@@ -406,11 +423,11 @@
               <canvas id="strength-chart" height="180"></canvas>
             </article>
             <article class="chart-card">
-              <h4>Run (Pace)</h4>
+              <h4>Run Pace Over Time</h4>
               <canvas id="run-chart" height="180"></canvas>
             </article>
             <article class="chart-card">
-              <h4>Sprint (Best Time)</h4>
+              <h4>Sprint Best Time Over Time</h4>
               <canvas id="sprint-chart" height="180"></canvas>
             </article>
           </div>

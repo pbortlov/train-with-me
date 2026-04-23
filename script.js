@@ -137,6 +137,12 @@ const adherenceSummaryEl = document.getElementById("adherence-summary");
 const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
 const strengthProgressStatusEl = document.getElementById("strength-progress-status");
 const strengthProgressBoardEl = document.getElementById("strength-progress-board");
+const programProgressSelect = document.getElementById("program-progress-select");
+const programProgressSummaryEl = document.getElementById("program-progress-summary");
+const programProgressStatusEl = document.getElementById("program-progress-status");
+const programAdherenceChartCanvas = document.getElementById("program-adherence-chart");
+const programAdherenceChartCard = document.getElementById("program-adherence-chart-card");
+const programExerciseProgressEl = document.getElementById("program-exercise-progress");
 const completionDialog = document.getElementById("completion-dialog");
 const completionForm = document.getElementById("completion-form");
 const completionSessionIdInput = document.getElementById("completion-session-id");
@@ -206,6 +212,8 @@ let chartGrouping = "week";
 let strengthChart = null;
 let runChart = null;
 let sprintChart = null;
+let programAdherenceChart = null;
+let selectedProgramProgressInstanceId = "";
 let editingPhaseTemplateId = "";
 let completionStrengthDraft = [];
 let completionSprintDraft = [];
@@ -292,6 +300,10 @@ clearFiltersButton.addEventListener("click", clearFilters);
 chartGroupingInput.addEventListener("change", () => {
   chartGrouping = chartGroupingInput.value || "week";
   renderCharts();
+});
+programProgressSelect?.addEventListener("change", () => {
+  selectedProgramProgressInstanceId = programProgressSelect.value || "";
+  renderProgramProgress();
 });
 exportDataButton.addEventListener("click", exportBackupData);
 importDataFileInput.addEventListener("change", importBackupData);
@@ -484,6 +496,7 @@ function render() {
   renderReview();
   renderAdherenceStats();
   renderStrengthProgressBoard();
+  renderProgramProgress();
   syncViewState();
 }
 
@@ -4125,6 +4138,263 @@ function renderStrengthProgressBoard() {
       `,
     )
     .join("");
+}
+
+function renderProgramProgress() {
+  if (!programProgressSelect || !programProgressSummaryEl || !programProgressStatusEl || !programExerciseProgressEl) {
+    return;
+  }
+
+  if (!phaseInstances.length) {
+    selectedProgramProgressInstanceId = "";
+    programProgressSelect.innerHTML = "<option value=\"\">No scheduled strength programs</option>";
+    programProgressSummaryEl.innerHTML = "";
+    programProgressStatusEl.textContent = "Schedule a strength phase to see program-duration progress.";
+    programExerciseProgressEl.innerHTML = "";
+    programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, [], "");
+    toggleChartCardVisibility(programAdherenceChartCard, false);
+    return;
+  }
+
+  if (!phaseInstances.some((instance) => instance.id === selectedProgramProgressInstanceId)) {
+    selectedProgramProgressInstanceId = phaseInstances[0].id;
+  }
+
+  programProgressSelect.innerHTML = phaseInstances
+    .map((instance) => {
+      const endDate = formatDateInput(addDays(instance.startDate, (instance.durationWeeks * 7) - 1));
+      return `<option value="${escapeHtml(instance.id)}"${instance.id === selectedProgramProgressInstanceId ? " selected" : ""}>${escapeHtml(instance.templateName || "Strength program")} • ${formatHumanDate(instance.startDate)}-${formatHumanDate(endDate)}</option>`;
+    })
+    .join("");
+
+  const model = buildProgramProgressModel(selectedProgramProgressInstanceId);
+  if (!model) {
+    programProgressSummaryEl.innerHTML = "";
+    programProgressStatusEl.textContent = "Select a scheduled strength program.";
+    programExerciseProgressEl.innerHTML = "";
+    programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, [], "");
+    toggleChartCardVisibility(programAdherenceChartCard, false);
+    return;
+  }
+
+  programProgressSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Program length</span>
+      <span class="value">${model.durationWeeks} weeks</span>
+    </article>
+    <article class="badge">
+      <span class="label">Adherence</span>
+      <span class="value">${model.completed}/${model.total || 0}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Missed</span>
+      <span class="value">${model.missed}</span>
+    </article>
+  `;
+  programProgressStatusEl.textContent = `${model.name} runs from ${formatHumanDate(model.startDate)} to ${formatHumanDate(model.endDate)}. Run and sprint are intentionally excluded from this program view.`;
+
+  programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, model.weekRows, "Sessions");
+  toggleChartCardVisibility(programAdherenceChartCard, model.weekRows.length > 0 && model.total > 0);
+  programExerciseProgressEl.innerHTML = renderProgramExerciseProgressTable(model);
+}
+
+function buildProgramProgressModel(instanceId) {
+  const instance = phaseInstances.find((item) => item.id === instanceId);
+  if (!instance) {
+    return null;
+  }
+
+  const durationWeeks = Math.max(1, toNumberOrNull(instance.durationWeeks) || 1);
+  const startDate = normalizeDateInput(instance.startDate);
+  const endDate = formatDateInput(addDays(startDate, (durationWeeks * 7) - 1));
+  const sessions = plannedSessions
+    .filter((session) => session.type === "strength" && session.phaseInstanceId === instance.id)
+    .map((session) => ensurePhaseOccurrenceMetadata(session))
+    .filter(Boolean);
+  const weekRows = Array.from({ length: durationWeeks }, (_, index) => {
+    const weekSessions = sessions.filter((session) => session.phaseWeekIndex === index);
+    const completed = weekSessions.filter((session) => session.status === "completed").length;
+    const modified = weekSessions.filter((session) => session.status === "modified").length;
+    const missed = weekSessions.filter((session) => session.status === "missed").length;
+    const planned = weekSessions.filter((session) => session.status === "planned").length;
+    return {
+      label: `Week ${index + 1}`,
+      weekIndex: index,
+      completed,
+      modified,
+      missed,
+      planned,
+      total: weekSessions.length,
+    };
+  });
+  const total = weekRows.reduce((sum, row) => sum + row.total, 0);
+  const completed = weekRows.reduce((sum, row) => sum + row.completed + row.modified, 0);
+  const missed = weekRows.reduce((sum, row) => sum + row.missed, 0);
+
+  return {
+    id: instance.id,
+    name: instance.templateName || "Strength program",
+    durationWeeks,
+    startDate,
+    endDate,
+    sessions,
+    weekRows,
+    total,
+    completed,
+    missed,
+    exerciseRows: buildProgramExerciseRows(sessions, durationWeeks),
+  };
+}
+
+function buildProgramExerciseRows(sessions, durationWeeks) {
+  const entriesByName = new Map();
+  sessions
+    .filter((session) => ["completed", "modified"].includes(session.status) && session.actual?.blocks?.length)
+    .sort((a, b) => (a.phaseWeekIndex - b.phaseWeekIndex) || a.date.localeCompare(b.date))
+    .forEach((session) => {
+      const plannedBlocks = session.details?.blocks || [];
+      const actualBlocks = session.actual?.blocks || [];
+      actualBlocks.forEach((actualBlock, blockIndex) => {
+        const plannedBlock = plannedBlocks[blockIndex] || { exercises: [] };
+        (actualBlock.exercises || []).forEach((actualExercise, exerciseIndex) => {
+          if (!actualExercise.completed) {
+            return;
+          }
+          const plannedExercise = plannedBlock.exercises?.[exerciseIndex] || {};
+          const key = normalizeExerciseKey(actualExercise.name || plannedExercise.name || "");
+          if (!key) {
+            return;
+          }
+          const snapshot = buildActualExerciseSnapshot(actualExercise);
+          const weekIndex = Number(session.phaseWeekIndex);
+          const existing = entriesByName.get(key) || {
+            name: actualExercise.name || plannedExercise.name || "Exercise",
+            code: actualExercise.code || plannedExercise.code || "",
+            weeks: Array.from({ length: durationWeeks }, () => []),
+          };
+          if (weekIndex >= 0 && weekIndex < durationWeeks) {
+            existing.weeks[weekIndex].push(snapshot);
+          }
+          entriesByName.set(key, existing);
+        });
+      });
+    });
+
+  return [...entriesByName.values()]
+    .map((row) => {
+      let previous = null;
+      return {
+        ...row,
+        weeks: row.weeks.map((snapshots) => {
+          const combined = combineActualExerciseSnapshots(snapshots);
+          const status = combined ? evaluateImprovementStatus(previous, combined).label : "";
+          if (combined) {
+            previous = combined;
+          }
+          return { snapshot: combined, status };
+        }),
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function combineActualExerciseSnapshots(snapshots) {
+  if (!snapshots.length) {
+    return null;
+  }
+  const maxWeightValues = snapshots.map((snapshot) => snapshot.maxWeight).filter(isNumber);
+  return {
+    totalSets: snapshots.reduce((sum, snapshot) => sum + snapshot.totalSets, 0),
+    maxWeight: maxWeightValues.length ? Math.max(...maxWeightValues) : null,
+    maxReps: Math.max(...snapshots.map((snapshot) => snapshot.maxReps || 0)),
+    summary: snapshots.map((snapshot) => snapshot.summary).filter(Boolean).join(" | "),
+  };
+}
+
+function renderProgramExerciseProgressTable(model) {
+  if (!model.exerciseRows.length) {
+    return "<p class=\"planner-empty\">Complete generated strength sessions in this program to see exercise-by-week progress.</p>";
+  }
+
+  const weekHeadings = Array.from({ length: model.durationWeeks }, (_, index) => `<th>Week ${index + 1}</th>`).join("");
+  const rows = model.exerciseRows
+    .map((row) => `
+      <tr>
+        <th>${escapeHtml(row.name)}${row.code ? `<div class="phase-meta">${escapeHtml(row.code)}</div>` : ""}</th>
+        ${row.weeks.map((week) => renderProgramExerciseWeekCell(week)).join("")}
+      </tr>
+    `)
+    .join("");
+
+  return `
+    <table class="program-progress-table">
+      <thead>
+        <tr>
+          <th>Exercise</th>
+          ${weekHeadings}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderProgramExerciseWeekCell(week) {
+  if (!week.snapshot) {
+    return "<td class=\"is-empty\">Not logged</td>";
+  }
+  const statusClass = programProgressStatusClass(week.status);
+  return `
+    <td class="${statusClass}">
+      <strong>${escapeHtml(week.status)}</strong><br />
+      ${escapeHtml(formatActualProgressSnapshot(week.snapshot))}
+    </td>
+  `;
+}
+
+function programProgressStatusClass(status) {
+  if (status === "Improved") {
+    return "is-improved";
+  }
+  if (status === "Below previous") {
+    return "is-lower";
+  }
+  return "is-stable";
+}
+
+function createOrUpdateStackedBarChart(existingChart, canvas, weekRows, unit) {
+  if (!canvas || typeof Chart === "undefined") {
+    return existingChart;
+  }
+
+  if (existingChart) {
+    existingChart.destroy();
+    existingChart = null;
+  }
+
+  if (!weekRows.length) {
+    return null;
+  }
+
+  return new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: weekRows.map((row) => row.label),
+      datasets: [
+        { label: "Completed", data: weekRows.map((row) => row.completed), backgroundColor: "#6DFF5C" },
+        { label: "Modified", data: weekRows.map((row) => row.modified), backgroundColor: "#FFD37A" },
+        { label: "Missed", data: weekRows.map((row) => row.missed), backgroundColor: "#FF9CAF" },
+        { label: "Planned", data: weekRows.map((row) => row.planned), backgroundColor: "#7DD3FC" },
+      ],
+    },
+    options: {
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: unit } },
+      },
+    },
+  });
 }
 
 function buildStrengthProgressRows() {
