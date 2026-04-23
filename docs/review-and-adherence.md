@@ -30,6 +30,20 @@ Review compares:
 - completed or skipped exercises
 - per-exercise notes
 
+Strength completion status uses minimum planned targets:
+- planned reps like `10`, `8-10`, `2x10`, and `2x8-10` use the minimum rep target
+- planned sets like `3` and `3-4` use the minimum set target
+- logged reps below the minimum target mark the session as modified
+- logged sets below the minimum target mark the session as modified
+- extra reps, extra sets, or heavier weight still count as completed
+- empty planned weight means the first logged kg, bodyweight, or band load becomes progress data, not a modification
+- planned weight requires actual kg load to meet or exceed the planned target
+- skipped exercises or changed structure still mark the session as modified
+
+Saved completed/modified strength sessions are recalculated on app load and after backup import so Review and adherence use the current status rules.
+
+Program adherence charts display completed and modified sessions together as `Done` because both count toward adherence. Review still shows modified sessions separately so plan changes remain visible.
+
 ## Strength Progress
 The stats page also tracks strength exercise progress by:
 - latest planned vs latest actual

@@ -227,6 +227,7 @@ let editDraftStrengthExercises = [];
 hydrateGoalInputs();
 syncExerciseLibraryFromWorkouts();
 renderExerciseLibrary();
+refreshDetectedSessionStatuses();
 updateVisibleFields();
 renderSprintSets();
 renderPlannedSprintBlocks();
@@ -1376,6 +1377,7 @@ function importBackupData(event) {
         coachMode: Boolean(parsed.uiSettings?.coachMode),
         currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
+      refreshDetectedSessionStatuses({ persist: false });
 
       save(STORAGE_KEY_WORKOUTS, workouts);
       save(STORAGE_KEY_GOALS, goals);
@@ -3738,6 +3740,25 @@ function detectCompletedSessionStatus(session, actual) {
   return detectStrengthCompletionStatus(session, actual);
 }
 
+function refreshDetectedSessionStatuses(options = {}) {
+  const { persist = true } = options;
+  let changed = false;
+  plannedSessions.forEach((session) => {
+    if (session.type !== "strength" || !["completed", "modified"].includes(session.status) || !session.actual) {
+      return;
+    }
+    const refreshedStatus = detectStrengthCompletionStatus(session, session.actual);
+    if (session.status !== refreshedStatus) {
+      session.status = refreshedStatus;
+      changed = true;
+    }
+  });
+  if (changed && persist) {
+    savePlannerCollections();
+  }
+  return changed;
+}
+
 function detectStrengthCompletionStatus(session, actual) {
   const plannedBlocks = session.details?.blocks || [];
   const actualBlocks = actual?.blocks || [];
@@ -3752,8 +3773,8 @@ function detectStrengthCompletionStatus(session, actual) {
       return "modified";
     }
 
-    const plannedSetBaseline = getDefaultActualSets(plannedBlock.sets);
-    if (isNumber(plannedSetBaseline) && actualBlock.actualSets !== plannedSetBaseline) {
+    const plannedSetMinimum = getDefaultActualSets(plannedBlock.sets);
+    if (isNumber(plannedSetMinimum) && actualBlock.actualSets < plannedSetMinimum) {
       return "modified";
     }
 
@@ -3776,31 +3797,22 @@ function detectStrengthCompletionStatus(session, actual) {
       }
 
       const actualSets = actualExercise.actualSets || [];
-      const plannedExerciseSetCount = plannedSetBaseline || actualSets.length;
-      if (actualSets.length !== plannedExerciseSetCount) {
+      const plannedExerciseSetMinimum = plannedSetMinimum || 0;
+      if (isNumber(plannedExerciseSetMinimum) && actualSets.length < plannedExerciseSetMinimum) {
         return "modified";
       }
 
-      const plannedRepBaseline = extractWorkoutRepCount(plannedExercise.reps);
-      const plannedWeightBaseline = isNumber(plannedExercise.weight) ? Number(plannedExercise.weight) : null;
+      const plannedRepMinimum = extractWorkoutRepCount(plannedExercise.reps);
+      const plannedWeightMinimum = isNumber(plannedExercise.weight) ? Number(plannedExercise.weight) : null;
       for (let setIndex = 0; setIndex < actualSets.length; setIndex += 1) {
         const actualSet = actualSets[setIndex];
         if (!actualSet || !isNumber(actualSet.reps)) {
           return "modified";
         }
-        if (plannedRepBaseline && actualSet.reps !== plannedRepBaseline) {
+        if (plannedRepMinimum && actualSet.reps < plannedRepMinimum) {
           return "modified";
         }
-        if ((actualSet.loadType || "kg") !== "kg") {
-          return "modified";
-        }
-        if (isNumber(plannedWeightBaseline) && actualSet.weight !== plannedWeightBaseline) {
-          return "modified";
-        }
-        if (!isNumber(plannedWeightBaseline) && isNumber(actualSet.weight)) {
-          return "modified";
-        }
-        if ((actualSet.bandColor || "") !== "") {
+        if (!doesActualLoadMeetPlan(actualSet, plannedWeightMinimum)) {
           return "modified";
         }
       }
@@ -3808,6 +3820,14 @@ function detectStrengthCompletionStatus(session, actual) {
   }
 
   return "completed";
+}
+
+function doesActualLoadMeetPlan(actualSet, plannedWeightMinimum) {
+  const loadType = actualSet?.loadType || "kg";
+  if (!isNumber(plannedWeightMinimum)) {
+    return ["kg", "bodyweight", "band"].includes(loadType);
+  }
+  return loadType === "kg" && isNumber(actualSet.weight) && Number(actualSet.weight) >= plannedWeightMinimum;
 }
 
 function saveCompletedSession(event) {
@@ -4381,8 +4401,7 @@ function createOrUpdateStackedBarChart(existingChart, canvas, weekRows, unit) {
     data: {
       labels: weekRows.map((row) => row.label),
       datasets: [
-        { label: "Completed", data: weekRows.map((row) => row.completed), backgroundColor: "#6DFF5C" },
-        { label: "Modified", data: weekRows.map((row) => row.modified), backgroundColor: "#FFD37A" },
+        { label: "Done", data: weekRows.map((row) => row.completed + row.modified), backgroundColor: "#6DFF5C" },
         { label: "Missed", data: weekRows.map((row) => row.missed), backgroundColor: "#FF9CAF" },
         { label: "Planned", data: weekRows.map((row) => row.planned), backgroundColor: "#7DD3FC" },
       ],
@@ -4501,24 +4520,28 @@ function formatActualProgressSnapshot(snapshot) {
 }
 
 function evaluatePlanStatus(planned, actual) {
-  if (actual.totalSets === planned.setsBase && actual.maxReps === planned.repsBase && actual.maxWeight === planned.weight) {
+  const setsMeetPlan = !planned.setsBase || actual.totalSets >= planned.setsBase;
+  const repsMeetPlan = !planned.repsBase || actual.maxReps >= planned.repsBase;
+  const weightMeetPlan = !isNumber(planned.weight) || (isNumber(actual.maxWeight) && actual.maxWeight >= planned.weight);
+  const weightExceededPlan = isNumber(planned.weight) && isNumber(actual.maxWeight) && actual.maxWeight > planned.weight;
+
+  if (
+    setsMeetPlan &&
+    repsMeetPlan &&
+    weightMeetPlan &&
+    actual.totalSets === planned.setsBase &&
+    actual.maxReps === planned.repsBase &&
+    (!isNumber(planned.weight) || actual.maxWeight === planned.weight)
+  ) {
     return { label: "Matched plan", explanation: "Actual sets, reps, and top weight matched the plan." };
   }
-  if (
-    actual.totalSets >= planned.setsBase &&
-    actual.maxReps >= planned.repsBase &&
-    ((isNumber(actual.maxWeight) && isNumber(planned.weight) && actual.maxWeight > planned.weight) || (!isNumber(planned.weight) && !isNumber(actual.maxWeight)))
-  ) {
+  if (setsMeetPlan && repsMeetPlan && weightMeetPlan && (actual.totalSets > planned.setsBase || actual.maxReps > planned.repsBase || weightExceededPlan)) {
     return { label: "Exceeded plan", explanation: "Actual execution met or exceeded the planned prescription." };
   }
-  if (
-    actual.totalSets < planned.setsBase ||
-    (planned.repsBase && actual.maxReps < planned.repsBase) ||
-    (isNumber(planned.weight) && (!isNumber(actual.maxWeight) || actual.maxWeight < planned.weight))
-  ) {
+  if (!setsMeetPlan || !repsMeetPlan || !weightMeetPlan) {
     return { label: "Below plan", explanation: "Actual execution landed below the planned prescription." };
   }
-  return { label: "Modified from plan", explanation: "Actual execution differed from the planned prescription." };
+  return { label: "Matched plan", explanation: "Actual execution met the minimum planned prescription." };
 }
 
 function evaluateImprovementStatus(previous, current) {
