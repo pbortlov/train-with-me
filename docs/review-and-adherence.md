@@ -61,6 +61,11 @@ Program Strength Progress compares:
 - exercise progression by program week
 - top weight, max reps, completed sets, and logged set summaries
 
+Exercise progress rows can be sorted by:
+- `Program order`: the first planned session/block/exercise position
+- `Highest improvement`: strongest latest improvement compared with the previous logged week
+- `Needs attention`: below-previous, missing-latest, or frequently unlogged exercises first
+
 Run and sprint sessions are not attached to strength phases yet. They remain progress-over-time metrics on the Stats page.
 
 ## Adherence

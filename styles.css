@@ -659,6 +659,13 @@ button {
   display: none;
 }
 
+.program-progress-controls {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.8fr);
+  margin-bottom: 0.35rem;
+}
+
 .program-progress-table-wrap {
   overflow-x: auto;
 }
@@ -889,6 +896,10 @@ dialog {
   }
 
   .completion-sprint-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .program-progress-controls {
     grid-template-columns: 1fr;
   }
 

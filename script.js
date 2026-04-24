@@ -138,6 +138,7 @@ const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
 const strengthProgressStatusEl = document.getElementById("strength-progress-status");
 const strengthProgressBoardEl = document.getElementById("strength-progress-board");
 const programProgressSelect = document.getElementById("program-progress-select");
+const programExerciseSortInput = document.getElementById("program-exercise-sort");
 const programProgressSummaryEl = document.getElementById("program-progress-summary");
 const programProgressStatusEl = document.getElementById("program-progress-status");
 const programAdherenceChartCanvas = document.getElementById("program-adherence-chart");
@@ -214,6 +215,7 @@ let runChart = null;
 let sprintChart = null;
 let programAdherenceChart = null;
 let selectedProgramProgressInstanceId = "";
+let programExerciseSortMode = "program-order";
 let editingPhaseTemplateId = "";
 let completionStrengthDraft = [];
 let completionSprintDraft = [];
@@ -304,6 +306,10 @@ chartGroupingInput.addEventListener("change", () => {
 });
 programProgressSelect?.addEventListener("change", () => {
   selectedProgramProgressInstanceId = programProgressSelect.value || "";
+  renderProgramProgress();
+});
+programExerciseSortInput?.addEventListener("change", () => {
+  programExerciseSortMode = programExerciseSortInput.value || "program-order";
   renderProgramProgress();
 });
 exportDataButton.addEventListener("click", exportBackupData);
@@ -4164,6 +4170,9 @@ function renderProgramProgress() {
   if (!programProgressSelect || !programProgressSummaryEl || !programProgressStatusEl || !programExerciseProgressEl) {
     return;
   }
+  if (programExerciseSortInput) {
+    programExerciseSortInput.value = programExerciseSortMode;
+  }
 
   if (!phaseInstances.length) {
     selectedProgramProgressInstanceId = "";
@@ -4290,8 +4299,30 @@ function buildProgramExerciseRows(sessions, durationWeeks) {
           const existing = entriesByName.get(key) || {
             name: actualExercise.name || plannedExercise.name || "Exercise",
             code: actualExercise.code || plannedExercise.code || "",
+            firstSessionDate: session.date || "",
+            firstSessionTitle: session.title || "",
+            firstWeekIndex: isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : durationWeeks,
+            firstBlockIndex: blockIndex,
+            firstExerciseIndex: exerciseIndex,
             weeks: Array.from({ length: durationWeeks }, () => []),
           };
+          const currentOrder = buildProgramOrderTuple(session, blockIndex, exerciseIndex);
+          const existingOrder = buildProgramOrderTuple(
+            {
+              date: existing.firstSessionDate,
+              title: existing.firstSessionTitle,
+              phaseWeekIndex: existing.firstWeekIndex,
+            },
+            existing.firstBlockIndex,
+            existing.firstExerciseIndex,
+          );
+          if (compareProgramOrderTuples(currentOrder, existingOrder) < 0) {
+            existing.firstSessionDate = session.date || "";
+            existing.firstSessionTitle = session.title || "";
+            existing.firstWeekIndex = isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : durationWeeks;
+            existing.firstBlockIndex = blockIndex;
+            existing.firstExerciseIndex = exerciseIndex;
+          }
           if (weekIndex >= 0 && weekIndex < durationWeeks) {
             existing.weeks[weekIndex].push(snapshot);
           }
@@ -4300,22 +4331,126 @@ function buildProgramExerciseRows(sessions, durationWeeks) {
       });
     });
 
-  return [...entriesByName.values()]
+  const rows = [...entriesByName.values()]
     .map((row) => {
       let previous = null;
+      const weeks = row.weeks.map((snapshots) => {
+        const combined = combineActualExerciseSnapshots(snapshots);
+        const status = combined ? evaluateImprovementStatus(previous, combined).label : "";
+        if (combined) {
+          previous = combined;
+        }
+        return { snapshot: combined, status };
+      });
       return {
         ...row,
-        weeks: row.weeks.map((snapshots) => {
-          const combined = combineActualExerciseSnapshots(snapshots);
-          const status = combined ? evaluateImprovementStatus(previous, combined).label : "";
-          if (combined) {
-            previous = combined;
-          }
-          return { snapshot: combined, status };
-        }),
+        weeks,
+        sortMeta: buildProgramExerciseSortMeta(row, weeks, durationWeeks),
       };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+  return sortProgramExerciseRows(rows, programExerciseSortMode);
+}
+
+function buildProgramOrderTuple(session, blockIndex, exerciseIndex) {
+  return [
+    isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : Number.MAX_SAFE_INTEGER,
+    session.date || "",
+    session.title || "",
+    blockIndex,
+    exerciseIndex,
+  ];
+}
+
+function compareProgramOrderTuples(a, b) {
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index] < b[index]) {
+      return -1;
+    }
+    if (a[index] > b[index]) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+function buildProgramExerciseSortMeta(row, weeks, durationWeeks) {
+  const loggedWeeks = weeks
+    .map((week, index) => ({ ...week, index }))
+    .filter((week) => week.snapshot);
+  const latest = loggedWeeks[loggedWeeks.length - 1] || null;
+  const previous = loggedWeeks.length > 1 ? loggedWeeks[loggedWeeks.length - 2] : null;
+  const latestSnapshot = latest?.snapshot || null;
+  const previousSnapshot = previous?.snapshot || null;
+  const weightDelta =
+    latestSnapshot && previousSnapshot && isNumber(latestSnapshot.maxWeight) && isNumber(previousSnapshot.maxWeight)
+      ? latestSnapshot.maxWeight - previousSnapshot.maxWeight
+      : 0;
+  const repsDelta = latestSnapshot && previousSnapshot ? (latestSnapshot.maxReps || 0) - (previousSnapshot.maxReps || 0) : 0;
+  const setsDelta = latestSnapshot && previousSnapshot ? (latestSnapshot.totalSets || 0) - (previousSnapshot.totalSets || 0) : 0;
+  const latestStatus = latest?.status || "";
+  const missingWeekCount = weeks.filter((week) => !week.snapshot).length;
+  const latestProgramWeekMissing = durationWeeks > 0 && !weeks[durationWeeks - 1]?.snapshot;
+
+  return {
+    orderTuple: [row.firstWeekIndex, row.firstSessionDate, row.firstSessionTitle, row.firstBlockIndex, row.firstExerciseIndex, row.name],
+    latestStatus,
+    missingWeekCount,
+    latestProgramWeekMissing,
+    improvementScore: (weightDelta * 1000) + (repsDelta * 10) + setsDelta,
+    attentionScore:
+      (latestStatus === "Below previous" ? 10000 : 0) +
+      (latestProgramWeekMissing ? 5000 : 0) +
+      (missingWeekCount * 100) +
+      (latestStatus === "Matched" || latestStatus === "Partial / mixed" ? 25 : 0) +
+      (!latestStatus || latestStatus === "First logged week" ? 10 : 0),
+  };
+}
+
+function sortProgramExerciseRows(rows, mode) {
+  const sorted = rows.slice();
+  if (mode === "highest-improvement") {
+    return sorted.sort((a, b) => {
+      const statusDifference = improvementStatusRank(b.sortMeta.latestStatus) - improvementStatusRank(a.sortMeta.latestStatus);
+      if (statusDifference !== 0) {
+        return statusDifference;
+      }
+      const scoreDifference = b.sortMeta.improvementScore - a.sortMeta.improvementScore;
+      if (scoreDifference !== 0) {
+        return scoreDifference;
+      }
+      return compareProgramOrderTuples(a.sortMeta.orderTuple, b.sortMeta.orderTuple);
+    });
+  }
+  if (mode === "needs-attention") {
+    return sorted.sort((a, b) => {
+      const attentionDifference = b.sortMeta.attentionScore - a.sortMeta.attentionScore;
+      if (attentionDifference !== 0) {
+        return attentionDifference;
+      }
+      return compareProgramOrderTuples(a.sortMeta.orderTuple, b.sortMeta.orderTuple);
+    });
+  }
+  return sorted.sort((a, b) => compareProgramOrderTuples(a.sortMeta.orderTuple, b.sortMeta.orderTuple));
+}
+
+function improvementStatusRank(status) {
+  if (status === "Improved") {
+    return 4;
+  }
+  if (status === "Partial / mixed") {
+    return 3;
+  }
+  if (status === "Matched") {
+    return 2;
+  }
+  if (status === "First logged week") {
+    return 1;
+  }
+  if (status === "Below previous") {
+    return -1;
+  }
+  return 0;
 }
 
 function combineActualExerciseSnapshots(snapshots) {

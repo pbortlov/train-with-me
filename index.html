@@ -362,10 +362,21 @@
         <article class="card">
           <h3>Program Strength Progress</h3>
           <p class="hint">Compares generated strength sessions across the selected program duration. Run and sprint stay separate as progress over time.</p>
-          <label>
-            Strength program
-            <select id="program-progress-select"></select>
-          </label>
+          <div class="program-progress-controls">
+            <label>
+              Strength program
+              <select id="program-progress-select"></select>
+            </label>
+            <label>
+              Exercise sort
+              <select id="program-exercise-sort">
+                <option value="program-order">Program order</option>
+                <option value="highest-improvement">Highest improvement</option>
+                <option value="needs-attention">Needs attention</option>
+              </select>
+            </label>
+          </div>
+          <p class="hint">Choose how exercise rows are ordered.</p>
           <div id="program-progress-summary" class="summary"></div>
           <p id="program-progress-status" class="hint"></p>
           <div class="chart-card" id="program-adherence-chart-card">

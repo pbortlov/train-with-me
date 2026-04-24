@@ -27,6 +27,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
 - Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
+- Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
 - Run and sprint progress stay separate from strength phases and are shown as progress over time
 - Planned session statuses:
   - planned
