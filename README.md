@@ -50,7 +50,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 
 ## Main Pages
 - `Calendar`: weekly plan, compact session cards, popup training detail, and `Log & Complete` execution logging
-- `Phases`: import, edit, inspect, and schedule reusable strength phase templates
+- `Programs`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review plus actual workout logging
 - `Stats`: goals, adherence summaries, program strength progress, and progress-over-time charts
 - `Data`: backup and exercise library management
@@ -87,7 +87,7 @@ V2 keeps decision and planning history in the repo:
 
 ## Run Locally
 1. Open `index.html` in your browser.
-2. Use the top navigation to move between Calendar, Phases, Review, and Stats.
+2. Use the top navigation to move between Calendar, Programs, Review, Stats, and Data.
 3. If UI changes do not appear, hard refresh (`Ctrl+Shift+R`) and clear site storage/service worker cache.
 
 ## Publish With GitHub Pages

@@ -662,8 +662,24 @@ button {
 .program-progress-controls {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.8fr);
-  margin-bottom: 0.35rem;
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 0.75rem;
+}
+
+.program-exercise-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.program-exercise-toolbar h4 {
+  margin: 0;
+}
+
+.program-exercise-toolbar label {
+  min-width: min(100%, 220px);
 }
 
 .program-progress-table-wrap {
@@ -901,6 +917,11 @@ dialog {
 
   .program-progress-controls {
     grid-template-columns: 1fr;
+  }
+
+  .program-exercise-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .completion-sprint-grid-header {

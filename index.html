@@ -26,7 +26,7 @@
         </div>
         <nav class="view-nav" aria-label="Main navigation">
           <button type="button" class="ghost-button nav-button" data-view-target="calendar">Calendar</button>
-          <button type="button" class="ghost-button nav-button" data-view-target="phases">Phases</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="phases">Programs</button>
           <button type="button" class="ghost-button nav-button" data-view-target="review">Review</button>
           <button type="button" class="ghost-button nav-button" data-view-target="stats">Stats</button>
           <button type="button" class="ghost-button nav-button" data-view-target="data">Data</button>
@@ -349,6 +349,15 @@
               Strength program
               <select id="program-progress-select"></select>
             </label>
+          </div>
+          <div id="program-progress-summary" class="summary"></div>
+          <p id="program-progress-status" class="hint"></p>
+          <div class="chart-card" id="program-adherence-chart-card">
+            <h4>Program Weekly Adherence</h4>
+            <canvas id="program-adherence-chart" height="180"></canvas>
+          </div>
+          <div class="program-exercise-toolbar">
+            <h4>Exercise Progress</h4>
             <label>
               Exercise sort
               <select id="program-exercise-sort">
@@ -357,13 +366,6 @@
                 <option value="needs-attention">Needs attention</option>
               </select>
             </label>
-          </div>
-          <p class="hint">Choose how exercise rows are ordered.</p>
-          <div id="program-progress-summary" class="summary"></div>
-          <p id="program-progress-status" class="hint"></p>
-          <div class="chart-card" id="program-adherence-chart-card">
-            <h4>Program Weekly Adherence</h4>
-            <canvas id="program-adherence-chart" height="180"></canvas>
           </div>
           <div id="program-exercise-progress" class="program-progress-table-wrap"></div>
         </article>
