@@ -29,6 +29,7 @@
           <button type="button" class="ghost-button nav-button" data-view-target="phases">Phases</button>
           <button type="button" class="ghost-button nav-button" data-view-target="review">Review</button>
           <button type="button" class="ghost-button nav-button" data-view-target="stats">Stats</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="data">Data</button>
         </nav>
       </header>
 
@@ -341,25 +342,6 @@
         </article>
 
         <article class="card">
-          <h3>Backup</h3>
-          <p class="hint">Export your data to a JSON file, or import a backup file.</p>
-          <div class="grid">
-            <button type="button" id="export-data">Export Data (JSON)</button>
-            <label>
-              Import JSON file
-              <input type="file" id="import-data-file" accept=".json,application/json" />
-            </label>
-          </div>
-          <p id="backup-status" class="hint"></p>
-        </article>
-
-        <article class="card">
-          <h3>Strength Progress Board</h3>
-          <p id="strength-progress-status" class="hint"></p>
-          <div id="strength-progress-board" class="strength-progress-board"></div>
-        </article>
-
-        <article class="card">
           <h3>Program Strength Progress</h3>
           <p class="hint">Compares generated strength sessions across the selected program duration. Run and sprint stay separate as progress over time.</p>
           <div class="program-progress-controls">
@@ -443,10 +425,30 @@
             </article>
           </div>
         </article>
+      </section>
+
+      <section class="view-panel" data-view="data">
+        <article class="card">
+          <h2>Data</h2>
+          <p class="hint">Manage backups and saved exercise names here.</p>
+        </article>
+
+        <article class="card">
+          <h3>Backup</h3>
+          <p class="hint">Export your data to a JSON file, or import a backup file.</p>
+          <div class="grid">
+            <button type="button" id="export-data">Export Data (JSON)</button>
+            <label>
+              Import JSON file
+              <input type="file" id="import-data-file" accept=".json,application/json" />
+            </label>
+          </div>
+          <p id="backup-status" class="hint"></p>
+        </article>
 
         <article class="card">
           <h3>Exercise Library</h3>
-          <p class="hint">Saved exercise names for quick reuse.</p>
+          <p class="hint">Saved exercise names for quick reuse in workout logging and editing.</p>
           <ul id="exercise-library-list" class="detail-list"></ul>
         </article>
       </section>

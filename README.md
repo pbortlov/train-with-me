@@ -25,7 +25,6 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
 - Sprint logging includes a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
-- Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
 - Run and sprint progress stay separate from strength phases and are shown as progress over time
@@ -41,6 +40,9 @@ The app is designed to stay approachable for non-technical users by default, whi
   - adherence summaries
   - program-duration strength progress
   - strength / run pace / sprint charts over time
+- Data page with:
+  - backup export/import
+  - exercise library management
 - Actual workout logging with edit and delete support
 - Exercise library with saved exercise names
 - Backup export/import as JSON
@@ -50,7 +52,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - `Calendar`: weekly plan, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Phases`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review plus actual workout logging
-- `Stats`: goals, adherence summaries, charts, backup, and exercise library
+- `Stats`: goals, adherence summaries, program strength progress, and progress-over-time charts
+- `Data`: backup and exercise library management
 
 ## Strength Phase Import
 V2 import focuses on `strength phases` only.

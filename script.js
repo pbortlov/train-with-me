@@ -135,8 +135,6 @@ const reviewSummaryEl = document.getElementById("review-summary");
 const reviewSessionListEl = document.getElementById("review-session-list");
 const adherenceSummaryEl = document.getElementById("adherence-summary");
 const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
-const strengthProgressStatusEl = document.getElementById("strength-progress-status");
-const strengthProgressBoardEl = document.getElementById("strength-progress-board");
 const programProgressSelect = document.getElementById("program-progress-select");
 const programExerciseSortInput = document.getElementById("program-exercise-sort");
 const programProgressSummaryEl = document.getElementById("program-progress-summary");
@@ -502,7 +500,6 @@ function render() {
   renderPhaseInstances();
   renderReview();
   renderAdherenceStats();
-  renderStrengthProgressBoard();
   renderProgramProgress();
   syncViewState();
 }
@@ -1953,7 +1950,7 @@ function savePlannerCollections() {
 }
 
 function setCurrentView(view) {
-  uiSettings.currentView = ["calendar", "phases", "review", "stats"].includes(view) ? view : "calendar";
+  uiSettings.currentView = ["calendar", "phases", "review", "stats", "data"].includes(view) ? view : "calendar";
   savePlannerCollections();
   syncViewState();
 }
@@ -4119,53 +4116,6 @@ function renderAdherenceStats() {
     .join("");
 }
 
-function renderStrengthProgressBoard() {
-  if (!strengthProgressBoardEl || !strengthProgressStatusEl) {
-    return;
-  }
-  const rows = buildStrengthProgressRows();
-  if (!rows.length) {
-    strengthProgressStatusEl.textContent = "No completed planned strength sessions yet.";
-    strengthProgressBoardEl.innerHTML = "";
-    return;
-  }
-
-  strengthProgressStatusEl.textContent = "Latest planned vs actual and previous-week actual progression by exercise.";
-  strengthProgressBoardEl.innerHTML = rows
-    .map(
-      (row) => `
-        <article class="exercise-progress-card">
-          <header>
-            <div>
-              <h4>${escapeHtml(row.name)}</h4>
-              <div class="phase-meta">${formatHumanDate(row.date)}${row.code ? ` • ${escapeHtml(row.code)}` : ""}</div>
-            </div>
-            <div class="exercise-progress-badges">
-              <span class="session-status ${progressBadgeClass(row.planStatus)}">${escapeHtml(row.planStatus)}</span>
-              <span class="session-status ${progressBadgeClass(row.improvementStatus)}">${escapeHtml(row.improvementStatus)}</span>
-            </div>
-          </header>
-          <div class="exercise-progress-grid">
-            <div>
-              <h5>Planned</h5>
-              <div class="strength-exercise-detail">${escapeHtml(row.plannedSummary)}</div>
-            </div>
-            <div>
-              <h5>Actual</h5>
-              <div class="strength-exercise-detail">${escapeHtml(row.actualSummary)}</div>
-            </div>
-            <div>
-              <h5>Previous Actual</h5>
-              <div class="strength-exercise-detail">${escapeHtml(row.previousSummary)}</div>
-            </div>
-          </div>
-          <div class="phase-meta">${escapeHtml(row.explanation)}</div>
-        </article>
-      `,
-    )
-    .join("");
-}
-
 function renderProgramProgress() {
   if (!programProgressSelect || !programProgressSummaryEl || !programProgressStatusEl || !programExerciseProgressEl) {
     return;
@@ -4551,64 +4501,6 @@ function createOrUpdateStackedBarChart(existingChart, canvas, weekRows, unit) {
   });
 }
 
-function buildStrengthProgressRows() {
-  const entriesByName = new Map();
-  plannedSessions
-    .filter((session) => session.type === "strength" && ["completed", "modified"].includes(session.status) && session.actual?.blocks?.length)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .forEach((session) => {
-      const plannedBlocks = session.details?.blocks || [];
-      const actualBlocks = session.actual?.blocks || [];
-      actualBlocks.forEach((actualBlock, blockIndex) => {
-        const plannedBlock = plannedBlocks[blockIndex] || { exercises: [], sets: "" };
-        (actualBlock.exercises || []).forEach((actualExercise, exerciseIndex) => {
-          if (!actualExercise.completed) {
-            return;
-          }
-          const plannedExercise = plannedBlock.exercises?.[exerciseIndex] || {};
-          const key = normalizeExerciseKey(actualExercise.name || plannedExercise.name || "");
-          if (!key) {
-            return;
-          }
-          const entry = {
-            date: session.date,
-            code: actualExercise.code || plannedExercise.code || "",
-            name: actualExercise.name || plannedExercise.name || "Exercise",
-            plannedExercise,
-            plannedBlock,
-            actualExercise,
-          };
-          const list = entriesByName.get(key) || [];
-          list.push(entry);
-          entriesByName.set(key, list);
-        });
-      });
-    });
-
-  return [...entriesByName.values()]
-    .map((entries) => {
-      const current = entries[entries.length - 1];
-      const previous = entries.length > 1 ? entries[entries.length - 2] : null;
-      const plannedSnapshot = buildPlannedExerciseSnapshot(current.plannedExercise, current.plannedBlock);
-      const actualSnapshot = buildActualExerciseSnapshot(current.actualExercise);
-      const previousSnapshot = previous ? buildActualExerciseSnapshot(previous.actualExercise) : null;
-      const planStatus = evaluatePlanStatus(plannedSnapshot, actualSnapshot);
-      const improvement = evaluateImprovementStatus(previousSnapshot, actualSnapshot);
-      return {
-        date: current.date,
-        code: current.code,
-        name: current.name,
-        plannedSummary: formatPlannedProgressSnapshot(plannedSnapshot),
-        actualSummary: formatActualProgressSnapshot(actualSnapshot),
-        previousSummary: previousSnapshot ? formatActualProgressSnapshot(previousSnapshot) : "No previous logged week",
-        planStatus: planStatus.label,
-        improvementStatus: improvement.label,
-        explanation: `${planStatus.explanation} ${improvement.explanation}`.trim(),
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
 function normalizeExerciseKey(value) {
   return String(value || "")
     .trim()
@@ -4708,19 +4600,6 @@ function evaluateImprovementStatus(previous, current) {
     return { label: "Partial / mixed", explanation: "One metric improved, but another dropped enough to make it mixed." };
   }
   return { label: "Below previous", explanation: "This week landed below the previous completed week." };
-}
-
-function progressBadgeClass(label) {
-  if (label === "Improved" || label === "Exceeded plan" || label === "Matched plan") {
-    return "status-completed";
-  }
-  if (label === "Partial / mixed" || label === "Modified from plan") {
-    return "status-modified";
-  }
-  if (label === "Below previous" || label === "Below plan") {
-    return "status-missed";
-  }
-  return "status-planned";
 }
 
 function weekdayName(weekday) {

@@ -44,12 +44,6 @@ Saved completed/modified strength sessions are recalculated on app load and afte
 
 Program adherence charts display completed and modified sessions together as `Done` because both count toward adherence. Review still shows modified sessions separately so plan changes remain visible.
 
-## Strength Progress
-The stats page also tracks strength exercise progress by:
-- latest planned vs latest actual
-- latest actual vs previous actual
-- rule-based status markers for matched plan, exceeded plan, improved, mixed, or below previous
-
 ## Program Strength Progress
 Program progress is strength-only for now.
 
