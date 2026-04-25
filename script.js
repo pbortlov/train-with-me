@@ -212,6 +212,7 @@ let strengthChart = null;
 let runChart = null;
 let sprintChart = null;
 let programAdherenceChart = null;
+let programCompletionChart = null;
 let selectedProgramProgressInstanceId = "";
 let programExerciseSortMode = "program-order";
 let editingPhaseTemplateId = "";
@@ -4130,6 +4131,7 @@ function renderProgramProgress() {
     programProgressSummaryEl.innerHTML = "";
     programProgressStatusEl.textContent = "Schedule a strength phase to see program-duration progress.";
     programExerciseProgressEl.innerHTML = "";
+    programCompletionChart = createOrUpdateProgramCompletionChart(programCompletionChart, null, null);
     programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, [], "");
     toggleChartCardVisibility(programAdherenceChartCard, false);
     return;
@@ -4151,6 +4153,7 @@ function renderProgramProgress() {
     programProgressSummaryEl.innerHTML = "";
     programProgressStatusEl.textContent = "Select a scheduled strength program.";
     programExerciseProgressEl.innerHTML = "";
+    programCompletionChart = createOrUpdateProgramCompletionChart(programCompletionChart, null, null);
     programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, [], "");
     toggleChartCardVisibility(programAdherenceChartCard, false);
     return;
@@ -4165,13 +4168,20 @@ function renderProgramProgress() {
       <span class="label">Adherence</span>
       <span class="value">${model.completed}/${model.total || 0}</span>
     </article>
-    <article class="badge">
-      <span class="label">Missed</span>
-      <span class="value">${model.missed}</span>
+    <article class="badge badge-chart">
+      <span class="label">Program completion</span>
+      <div class="program-completion-chart-wrap">
+        <canvas id="program-completion-chart" width="140" height="140" aria-label="Program completion chart"></canvas>
+      </div>
     </article>
   `;
   programProgressStatusEl.textContent = `${model.name} runs from ${formatHumanDate(model.startDate)} to ${formatHumanDate(model.endDate)}. Run and sprint are intentionally excluded from this program view.`;
 
+  programCompletionChart = createOrUpdateProgramCompletionChart(
+    programCompletionChart,
+    document.getElementById("program-completion-chart"),
+    model,
+  );
   programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, model.weekRows, "Sessions");
   toggleChartCardVisibility(programAdherenceChartCard, model.weekRows.length > 0 && model.total > 0);
   programExerciseProgressEl.innerHTML = renderProgramExerciseProgressTable(model);
@@ -4209,6 +4219,8 @@ function buildProgramProgressModel(instanceId) {
   const total = weekRows.reduce((sum, row) => sum + row.total, 0);
   const completed = weekRows.reduce((sum, row) => sum + row.completed + row.modified, 0);
   const missed = weekRows.reduce((sum, row) => sum + row.missed, 0);
+  const remaining = Math.max(0, total - completed);
+  const completionPercent = total ? Math.round((completed / total) * 100) : 0;
 
   return {
     id: instance.id,
@@ -4221,6 +4233,8 @@ function buildProgramProgressModel(instanceId) {
     total,
     completed,
     missed,
+    remaining,
+    completionPercent,
     exerciseRows: buildProgramExerciseRows(sessions, durationWeeks),
   };
 }
@@ -4498,6 +4512,73 @@ function createOrUpdateStackedBarChart(existingChart, canvas, weekRows, unit) {
         y: { stacked: true, beginAtZero: true, title: { display: true, text: unit } },
       },
     },
+  });
+}
+
+function createOrUpdateProgramCompletionChart(existingChart, canvas, model) {
+  if (existingChart) {
+    existingChart.destroy();
+    existingChart = null;
+  }
+
+  if (!canvas || typeof Chart === "undefined" || !model || !model.total) {
+    return null;
+  }
+
+  const centerTextPlugin = {
+    id: "programCompletionCenterText",
+    afterDraw(chart) {
+      const meta = chart.getDatasetMeta(0);
+      const point = meta?.data?.[0];
+      if (!point) {
+        return;
+      }
+      const { ctx } = chart;
+      const x = point.x;
+      const y = point.y;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#F8FAFC";
+      ctx.font = "700 1.2rem system-ui";
+      ctx.fillText(`${model.completionPercent}%`, x, y - 6);
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "500 0.7rem system-ui";
+      ctx.fillText("complete", x, y + 14);
+      ctx.restore();
+    },
+  };
+
+  return new Chart(canvas, {
+    type: "doughnut",
+    data: {
+      labels: ["Done", "Remaining"],
+      datasets: [
+        {
+          data: [model.completed, model.remaining],
+          backgroundColor: ["#6DFF5C", "#64748B"],
+          borderWidth: 0,
+          hoverOffset: 2,
+        },
+      ],
+    },
+    options: {
+      animation: false,
+      cutout: "68%",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(context) {
+              return `${context.label}: ${context.raw}/${model.total}`;
+            },
+          },
+        },
+      },
+    },
+    plugins: [centerTextPlugin],
   });
 }
 

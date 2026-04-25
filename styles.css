@@ -958,6 +958,12 @@ dialog {
   background: #0a1326;
 }
 
+.badge-chart {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 .badge .label {
   display: block;
   color: var(--muted);
@@ -967,6 +973,19 @@ dialog {
 .badge .value {
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.program-completion-chart-wrap {
+  position: relative;
+  min-height: 140px;
+  height: 140px;
+  margin-top: 0.35rem;
+}
+
+.program-completion-chart-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .goal-item {

@@ -48,6 +48,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - adherence summaries
   - goals
   - charts
+  - program completion doughnut for the selected strength phase instance
   - program-duration strength progress for scheduled phase instances
   - run and sprint progress over time, separate from strength phases
 - `Data`

@@ -50,6 +50,7 @@ Program progress is strength-only for now.
 The program duration comes from the scheduled strength phase instance, not from a fixed week count. A four-week phase shows Week 1 to Week 4, while a six-week phase shows Week 1 to Week 6.
 
 Program Strength Progress compares:
+- overall program completion as a doughnut chart with `completed + modified` as green and `planned + missed` as grey
 - weekly strength adherence inside the selected phase instance
 - completed, modified, missed, and still-planned generated strength sessions
 - exercise progression by program week
