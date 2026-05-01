@@ -17,12 +17,18 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Editable strength phase templates that refresh already planned generated sessions
 - Strength sessions use `Log & Complete` with hybrid planned-vs-actual set logging
 - Strength completion status is detected automatically from planned vs actual data
+- Strength status treats empty planned weight as a baseline load and uses minimum rep/set ranges for completion
 - Program weeks are anchored to the chosen phase start date, not calendar Monday
+- Planned generated strength sessions can be manually moved before completion without editing the phase template
 - Calendar uses compact session cards with a popup training view so the week grid stays stable
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
 - Sprint logging includes a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
-- Stats includes a strength progress board with planned-vs-actual and week-over-week exercise comparison
+- Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
+- Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
+- Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
+- Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
+- Run and sprint progress stay separate from strength phases and are shown as progress over time
 - Planned session statuses:
   - planned
   - completed
@@ -33,7 +39,11 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Stats page with:
   - goal progress
   - adherence summaries
-  - strength / run pace / sprint charts
+  - program-duration strength progress
+  - strength / run pace / sprint charts over time
+- Data page with:
+  - backup export/import
+  - exercise library management
 - Actual workout logging with edit and delete support
 - Exercise library with saved exercise names
 - Backup export/import as JSON
@@ -41,9 +51,10 @@ The app is designed to stay approachable for non-technical users by default, whi
 
 ## Main Pages
 - `Calendar`: weekly plan, compact session cards, popup training detail, and `Log & Complete` execution logging
-- `Phases`: import, edit, inspect, and schedule reusable strength phase templates
+- `Programs`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review plus actual workout logging
-- `Stats`: goals, adherence summaries, charts, backup, and exercise library
+- `Stats`: goals, adherence summaries, program strength progress, and progress-over-time charts
+- `Data`: backup and exercise library management
 
 ## Strength Phase Import
 V2 import focuses on `strength phases` only.
@@ -77,7 +88,7 @@ V2 keeps decision and planning history in the repo:
 
 ## Run Locally
 1. Open `index.html` in your browser.
-2. Use the top navigation to move between Calendar, Phases, Review, and Stats.
+2. Use the top navigation to move between Calendar, Programs, Review, Stats, and Data.
 3. If UI changes do not appear, hard refresh (`Ctrl+Shift+R`) and clear site storage/service worker cache.
 
 ## Publish With GitHub Pages

@@ -82,6 +82,24 @@ const calendarWeekLabelEl = document.getElementById("calendar-week-label");
 const calendarGridEl = document.getElementById("calendar-grid");
 const calendarSessionDialog = document.getElementById("calendar-session-dialog");
 const calendarSessionDetailEl = document.getElementById("calendar-session-detail");
+const plannedRunEditDialog = document.getElementById("planned-run-edit-dialog");
+const plannedRunEditForm = document.getElementById("planned-run-edit-form");
+const plannedRunEditIdInput = document.getElementById("planned-run-edit-id");
+const plannedRunEditDateInput = document.getElementById("planned-run-edit-date");
+const plannedRunEditTitleInput = document.getElementById("planned-run-edit-title");
+const plannedRunEditDistanceInput = document.getElementById("planned-run-edit-distance");
+const plannedRunEditPaceInput = document.getElementById("planned-run-edit-pace");
+const plannedRunEditNotesInput = document.getElementById("planned-run-edit-notes");
+const plannedRunEditStatusEl = document.getElementById("planned-run-edit-status");
+const cancelPlannedRunEditButton = document.getElementById("cancel-planned-run-edit");
+const strengthSessionMoveDialog = document.getElementById("strength-session-move-dialog");
+const strengthSessionMoveForm = document.getElementById("strength-session-move-form");
+const strengthSessionMoveIdInput = document.getElementById("strength-session-move-id");
+const strengthSessionMoveTitleEl = document.getElementById("strength-session-move-title");
+const strengthSessionCurrentDateInput = document.getElementById("strength-session-current-date");
+const strengthSessionNewDateInput = document.getElementById("strength-session-new-date");
+const strengthSessionMoveStatusEl = document.getElementById("strength-session-move-status");
+const cancelStrengthSessionMoveButton = document.getElementById("cancel-strength-session-move");
 const prevWeekButton = document.getElementById("prev-week");
 const nextWeekButton = document.getElementById("next-week");
 const currentWeekButton = document.getElementById("current-week");
@@ -117,8 +135,13 @@ const reviewSummaryEl = document.getElementById("review-summary");
 const reviewSessionListEl = document.getElementById("review-session-list");
 const adherenceSummaryEl = document.getElementById("adherence-summary");
 const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
-const strengthProgressStatusEl = document.getElementById("strength-progress-status");
-const strengthProgressBoardEl = document.getElementById("strength-progress-board");
+const programProgressSelect = document.getElementById("program-progress-select");
+const programExerciseSortInput = document.getElementById("program-exercise-sort");
+const programProgressSummaryEl = document.getElementById("program-progress-summary");
+const programProgressStatusEl = document.getElementById("program-progress-status");
+const programAdherenceChartCanvas = document.getElementById("program-adherence-chart");
+const programAdherenceChartCard = document.getElementById("program-adherence-chart-card");
+const programExerciseProgressEl = document.getElementById("program-exercise-progress");
 const completionDialog = document.getElementById("completion-dialog");
 const completionForm = document.getElementById("completion-form");
 const completionSessionIdInput = document.getElementById("completion-session-id");
@@ -188,6 +211,10 @@ let chartGrouping = "week";
 let strengthChart = null;
 let runChart = null;
 let sprintChart = null;
+let programAdherenceChart = null;
+let programCompletionChart = null;
+let selectedProgramProgressInstanceId = "";
+let programExerciseSortMode = "program-order";
 let editingPhaseTemplateId = "";
 let completionStrengthDraft = [];
 let completionSprintDraft = [];
@@ -201,6 +228,7 @@ let editDraftStrengthExercises = [];
 hydrateGoalInputs();
 syncExerciseLibraryFromWorkouts();
 renderExerciseLibrary();
+refreshDetectedSessionStatuses();
 updateVisibleFields();
 renderSprintSets();
 renderPlannedSprintBlocks();
@@ -274,6 +302,14 @@ clearFiltersButton.addEventListener("click", clearFilters);
 chartGroupingInput.addEventListener("change", () => {
   chartGrouping = chartGroupingInput.value || "week";
   renderCharts();
+});
+programProgressSelect?.addEventListener("change", () => {
+  selectedProgramProgressInstanceId = programProgressSelect.value || "";
+  renderProgramProgress();
+});
+programExerciseSortInput?.addEventListener("change", () => {
+  programExerciseSortMode = programExerciseSortInput.value || "program-order";
+  renderProgramProgress();
 });
 exportDataButton.addEventListener("click", exportBackupData);
 importDataFileInput.addEventListener("change", importBackupData);
@@ -465,7 +501,7 @@ function render() {
   renderPhaseInstances();
   renderReview();
   renderAdherenceStats();
-  renderStrengthProgressBoard();
+  renderProgramProgress();
   syncViewState();
 }
 
@@ -777,6 +813,30 @@ function parseRunDurationToSeconds(value) {
   return (hours * 3600) + (minutes * 60) + seconds;
 }
 
+function parseFlexibleRunDurationToSeconds(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parts = trimmed.split(":");
+  if ((parts.length !== 2 && parts.length !== 3) || parts.some((part) => !/^\d+$/.test(part))) {
+    return null;
+  }
+
+  const numbers = parts.map(Number);
+  const [hours, minutes, seconds] = parts.length === 3 ? numbers : [0, numbers[0], numbers[1]];
+  if (seconds > 59 || (parts.length === 3 && minutes > 59)) {
+    return null;
+  }
+
+  return (hours * 3600) + (minutes * 60) + seconds;
+}
+
 function formatSecondsAsRunDuration(totalSeconds) {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
     return null;
@@ -791,6 +851,11 @@ function formatSecondsAsRunDuration(totalSeconds) {
 
 function normalizeRunDurationInput(value) {
   const totalSeconds = parseRunDurationToSeconds(value);
+  return totalSeconds == null ? "" : formatSecondsAsRunDuration(totalSeconds);
+}
+
+function normalizeFlexibleRunDurationInput(value) {
+  const totalSeconds = parseFlexibleRunDurationToSeconds(value);
   return totalSeconds == null ? "" : formatSecondsAsRunDuration(totalSeconds);
 }
 
@@ -1316,6 +1381,7 @@ function importBackupData(event) {
         coachMode: Boolean(parsed.uiSettings?.coachMode),
         currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
+      refreshDetectedSessionStatuses({ persist: false });
 
       save(STORAGE_KEY_WORKOUTS, workouts);
       save(STORAGE_KEY_GOALS, goals);
@@ -1853,7 +1919,7 @@ function bindV2Events() {
   addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
   addSafeEventListener(phaseInstanceListEl, "click", handlePhaseInstanceAction);
   addSafeEventListener(completionRunTimeInput, "input", syncCompletionRunPace);
-  addSafeEventListener(completionRunTimeInput, "change", syncCompletionRunPace);
+  addSafeEventListener(completionRunTimeInput, "change", normalizeCompletionRunTimeField);
   addSafeEventListener(completionRunDistanceInput, "input", syncCompletionRunPace);
   addSafeEventListener(completionSprintBlocksEl, "input", handleCompletionSprintInput);
   addSafeEventListener(completionStrengthBlocksEl, "click", handleCompletionStrengthAction);
@@ -1861,6 +1927,20 @@ function bindV2Events() {
   addSafeEventListener(completionStrengthBlocksEl, "change", handleCompletionStrengthInput);
   addSafeEventListener(completionForm, "submit", saveCompletedSession);
   addSafeEventListener(cancelCompletionButton, "click", closeCompletionDialog);
+  addSafeEventListener(plannedRunEditForm, "submit", savePlannedRunEdit);
+  addSafeEventListener(cancelPlannedRunEditButton, "click", closePlannedRunEditDialog);
+  addSafeEventListener(plannedRunEditDialog, "click", (event) => {
+    if (event.target === plannedRunEditDialog) {
+      closePlannedRunEditDialog();
+    }
+  });
+  addSafeEventListener(strengthSessionMoveForm, "submit", saveStrengthSessionMove);
+  addSafeEventListener(cancelStrengthSessionMoveButton, "click", closeStrengthSessionMoveDialog);
+  addSafeEventListener(strengthSessionMoveDialog, "click", (event) => {
+    if (event.target === strengthSessionMoveDialog) {
+      closeStrengthSessionMoveDialog();
+    }
+  });
 }
 
 function savePlannerCollections() {
@@ -1871,7 +1951,7 @@ function savePlannerCollections() {
 }
 
 function setCurrentView(view) {
-  uiSettings.currentView = ["calendar", "phases", "review", "stats"].includes(view) ? view : "calendar";
+  uiSettings.currentView = ["calendar", "phases", "review", "stats", "data"].includes(view) ? view : "calendar";
   savePlannerCollections();
   syncViewState();
 }
@@ -2065,6 +2145,7 @@ function renderCalendarSessionDetail() {
       </div>
       <div class="session-actions">
         <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
+        ${isMovableGeneratedStrengthSession(session) ? `<button type="button" class="ghost-button" data-role="move-strength-session" data-id="${session.id}">Move</button>` : ""}
         ${
           session.status === "planned"
             ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
@@ -2490,7 +2571,16 @@ function handleCalendarAction(event) {
 
   if (role === "edit-planned-session") {
     closeCalendarSessionDialog();
-    fillPlannedSessionForm(session);
+    if (session.type === "run") {
+      openPlannedRunEditDialog(session);
+    } else {
+      fillPlannedSessionForm(session);
+    }
+  }
+  if (role === "move-strength-session") {
+    closeCalendarSessionDialog();
+    openStrengthSessionMoveDialog(session);
+    return;
   }
   if (role === "delete-planned-session") {
     closeCalendarSessionDialog();
@@ -2557,6 +2647,125 @@ function closeCalendarSessionDialog() {
     selectedCalendarSessionId = "";
     renderCalendar();
   }
+}
+
+function openPlannedRunEditDialog(session) {
+  if (!plannedRunEditDialog || !plannedRunEditForm) {
+    fillPlannedSessionForm(session);
+    return;
+  }
+  plannedRunEditForm.reset();
+  plannedRunEditIdInput.value = session.id;
+  plannedRunEditDateInput.value = session.date;
+  plannedRunEditTitleInput.value = session.title;
+  plannedRunEditDistanceInput.value = session.details?.distance ?? "";
+  plannedRunEditPaceInput.value = isNumber(session.details?.paceGoal) ? formatGoalPace(session.details.paceGoal) : "";
+  plannedRunEditNotesInput.value = session.notes || "";
+  plannedRunEditStatusEl.textContent = "";
+
+  if (typeof plannedRunEditDialog.showModal === "function") {
+    plannedRunEditDialog.showModal();
+  } else {
+    plannedRunEditDialog.setAttribute("open", "true");
+  }
+}
+
+function closePlannedRunEditDialog() {
+  if (!plannedRunEditDialog) {
+    return;
+  }
+  if (typeof plannedRunEditDialog.close === "function" && plannedRunEditDialog.open) {
+    plannedRunEditDialog.close();
+  } else {
+    plannedRunEditDialog.removeAttribute("open");
+  }
+}
+
+function savePlannedRunEdit(event) {
+  event.preventDefault();
+  const session = plannedSessions.find((item) => item.id === plannedRunEditIdInput.value);
+  if (!session || session.type !== "run") {
+    plannedRunEditStatusEl.textContent = "Planned run was not found.";
+    return;
+  }
+
+  const date = normalizeDateInput(plannedRunEditDateInput.value);
+  const title = plannedRunEditTitleInput.value.trim();
+  const distance = toNumberOrNull(plannedRunEditDistanceInput.value);
+  const paceGoal = parseGoalPaceInput(plannedRunEditPaceInput.value);
+  if (!date || !title || !isNumber(distance)) {
+    plannedRunEditStatusEl.textContent = "Planned run needs date, title, and distance.";
+    return;
+  }
+  if (plannedRunEditPaceInput.value.trim() && !isNumber(paceGoal)) {
+    plannedRunEditStatusEl.textContent = "Target pace must use mm:ss.";
+    return;
+  }
+
+  session.date = date;
+  session.title = title;
+  session.notes = plannedRunEditNotesInput.value.trim();
+  session.details = {
+    distance,
+    paceGoal: isNumber(paceGoal) ? paceGoal : null,
+  };
+  savePlannerCollections();
+  closePlannedRunEditDialog();
+  render();
+}
+
+function isMovableGeneratedStrengthSession(session) {
+  return session?.type === "strength" && session.source === "phase-generated" && session.status === "planned";
+}
+
+function openStrengthSessionMoveDialog(session) {
+  if (!strengthSessionMoveDialog || !strengthSessionMoveForm || !isMovableGeneratedStrengthSession(session)) {
+    return;
+  }
+  strengthSessionMoveForm.reset();
+  strengthSessionMoveIdInput.value = session.id;
+  strengthSessionMoveTitleEl.textContent = `${session.title} • ${formatHumanDate(session.date)}`;
+  strengthSessionCurrentDateInput.value = session.date;
+  strengthSessionNewDateInput.value = session.date;
+  strengthSessionMoveStatusEl.textContent = "";
+
+  if (typeof strengthSessionMoveDialog.showModal === "function") {
+    strengthSessionMoveDialog.showModal();
+  } else {
+    strengthSessionMoveDialog.setAttribute("open", "true");
+  }
+}
+
+function closeStrengthSessionMoveDialog() {
+  if (!strengthSessionMoveDialog) {
+    return;
+  }
+  if (typeof strengthSessionMoveDialog.close === "function" && strengthSessionMoveDialog.open) {
+    strengthSessionMoveDialog.close();
+  } else {
+    strengthSessionMoveDialog.removeAttribute("open");
+  }
+}
+
+function saveStrengthSessionMove(event) {
+  event.preventDefault();
+  const session = plannedSessions.find((item) => item.id === strengthSessionMoveIdInput.value);
+  if (!isMovableGeneratedStrengthSession(session)) {
+    strengthSessionMoveStatusEl.textContent = "Only planned generated strength sessions can be moved.";
+    return;
+  }
+  const newDate = normalizeDateInput(strengthSessionNewDateInput.value);
+  if (!newDate) {
+    strengthSessionMoveStatusEl.textContent = "Choose a valid new date.";
+    return;
+  }
+  ensurePhaseOccurrenceMetadata(session);
+  session.generatedDate = session.generatedDate || session.date;
+  session.date = newDate;
+  session.dateMovedManually = session.date !== session.generatedDate;
+  savePlannerCollections();
+  closeStrengthSessionMoveDialog();
+  render();
 }
 
 function fillPlannedSessionForm(session) {
@@ -2690,12 +2899,44 @@ function regeneratePhaseInstanceFromTemplate(instance, template) {
   const reviewedSessions = plannedSessions.filter(
     (session) => session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status !== "planned",
   );
+  const movedPlannedSessions = plannedSessions.filter(
+    (session) =>
+      session.phaseInstanceId === instance.id &&
+      session.source === "phase-generated" &&
+      session.status === "planned" &&
+      session.dateMovedManually,
+  );
+  const movedByOccurrence = new Map(
+    movedPlannedSessions
+      .map((session) => ensurePhaseOccurrenceMetadata(session))
+      .filter((session) => session.phaseSlotId && isNumber(session.phaseWeekIndex))
+      .map((session) => [`${session.phaseSlotId}:${session.phaseWeekIndex}`, session]),
+  );
+  const reviewedOccurrences = new Set(
+    reviewedSessions
+      .map((session) => ensurePhaseOccurrenceMetadata(session))
+      .filter((session) => session.phaseSlotId && isNumber(session.phaseWeekIndex))
+      .map((session) => `${session.phaseSlotId}:${session.phaseWeekIndex}`),
+  );
   const reviewedDates = new Set(reviewedSessions.map((session) => session.date));
   plannedSessions = plannedSessions.filter(
     (session) => !(session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status === "planned"),
   );
 
-  const regeneratedSessions = buildPhaseSessions(template, instance.startDate, instance.id, reviewedDates);
+  const regeneratedSessions = buildPhaseSessions(template, instance.startDate, instance.id, reviewedDates, reviewedOccurrences).map((session) => {
+    const movedSession = movedByOccurrence.get(`${session.phaseSlotId}:${session.phaseWeekIndex}`);
+    if (!movedSession) {
+      return session;
+    }
+    return normalizePlannedSession({
+      ...session,
+      id: movedSession.id,
+      date: movedSession.date,
+      generatedDate: session.generatedDate || session.date,
+      dateMovedManually: true,
+      createdAt: movedSession.createdAt,
+    });
+  });
   plannedSessions.push(...regeneratedSessions);
 
   return normalizePhaseInstance({
@@ -2707,17 +2948,19 @@ function regeneratePhaseInstanceFromTemplate(instance, template) {
   });
 }
 
-function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set()) {
+function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set(), reviewedOccurrences = new Set()) {
   const generatedSessions = [];
   const normalizedStartDate = new Date(startDate);
   normalizedStartDate.setHours(0, 0, 0, 0);
   const startWeekday = getProgramWeekday(normalizedStartDate);
   for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
     const anchoredWeekStart = addDays(normalizedStartDate, weekIndex * 7);
-    template.weekdaySlots.forEach((slot) => {
+    template.weekdaySlots.forEach((slot, slotIndex) => {
       const slotOffset = ((slot.weekday - startWeekday) + 7) % 7;
       const sessionDate = formatDateInput(addDays(anchoredWeekStart, slotOffset));
-      if (reviewedDates.has(sessionDate)) {
+      const phaseSlotId = slot.id || `${slot.weekday}-${slotIndex}`;
+      const occurrenceKey = `${phaseSlotId}:${weekIndex}`;
+      if (reviewedDates.has(sessionDate) || reviewedOccurrences.has(occurrenceKey)) {
         return;
       }
       generatedSessions.push(
@@ -2729,6 +2972,10 @@ function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new
           source: "phase-generated",
           phaseTemplateId: template.id,
           phaseInstanceId: instanceId,
+          phaseSlotId,
+          phaseWeekIndex: weekIndex,
+          generatedDate: sessionDate,
+          dateMovedManually: false,
           status: "planned",
           notes: slot.notes,
           details: { blocks: slot.blocks },
@@ -2737,6 +2984,39 @@ function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new
     });
   }
   return generatedSessions;
+}
+
+function ensurePhaseOccurrenceMetadata(session) {
+  if (!session || session.type !== "strength" || session.source !== "phase-generated") {
+    return session;
+  }
+  if (session.phaseSlotId && isNumber(session.phaseWeekIndex) && session.generatedDate) {
+    return session;
+  }
+  const instance = phaseInstances.find((item) => item.id === session.phaseInstanceId);
+  const template = phaseTemplates.find((item) => item.id === session.phaseTemplateId || item.id === instance?.templateId);
+  if (!instance || !template) {
+    return session;
+  }
+  const normalizedStartDate = new Date(instance.startDate);
+  normalizedStartDate.setHours(0, 0, 0, 0);
+  const startWeekday = getProgramWeekday(normalizedStartDate);
+  const matchDate = normalizeDateInput(session.generatedDate) || normalizeDateInput(session.date);
+  for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
+    const anchoredWeekStart = addDays(normalizedStartDate, weekIndex * 7);
+    for (let slotIndex = 0; slotIndex < template.weekdaySlots.length; slotIndex += 1) {
+      const slot = template.weekdaySlots[slotIndex];
+      const slotOffset = ((slot.weekday - startWeekday) + 7) % 7;
+      const generatedDate = formatDateInput(addDays(anchoredWeekStart, slotOffset));
+      if (generatedDate === matchDate && slot.title === session.title) {
+        session.phaseSlotId = slot.id || `${slot.weekday}-${slotIndex}`;
+        session.phaseWeekIndex = weekIndex;
+        session.generatedDate = generatedDate;
+        return session;
+      }
+    }
+  }
+  return session;
 }
 
 function getProgramWeekday(value) {
@@ -3333,10 +3613,15 @@ function renderCompletionStrengthBlocks() {
 
 function syncCompletionRunPace() {
   const distance = toNumberOrNull(completionRunDistanceInput.value);
-  const time = normalizeRunDurationInput(completionRunTimeInput.value);
-  completionRunTimeInput.value = time;
-  const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
+  const totalSeconds = parseFlexibleRunDurationToSeconds(completionRunTimeInput.value);
+  const pace = calculateRunPace(distance, totalSeconds);
   completionRunPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
+}
+
+function normalizeCompletionRunTimeField() {
+  const normalized = normalizeFlexibleRunDurationInput(completionRunTimeInput.value);
+  completionRunTimeInput.value = normalized || completionRunTimeInput.value;
+  syncCompletionRunPace();
 }
 
 function handleCompletionStrengthAction(event) {
@@ -3459,6 +3744,25 @@ function detectCompletedSessionStatus(session, actual) {
   return detectStrengthCompletionStatus(session, actual);
 }
 
+function refreshDetectedSessionStatuses(options = {}) {
+  const { persist = true } = options;
+  let changed = false;
+  plannedSessions.forEach((session) => {
+    if (session.type !== "strength" || !["completed", "modified"].includes(session.status) || !session.actual) {
+      return;
+    }
+    const refreshedStatus = detectStrengthCompletionStatus(session, session.actual);
+    if (session.status !== refreshedStatus) {
+      session.status = refreshedStatus;
+      changed = true;
+    }
+  });
+  if (changed && persist) {
+    savePlannerCollections();
+  }
+  return changed;
+}
+
 function detectStrengthCompletionStatus(session, actual) {
   const plannedBlocks = session.details?.blocks || [];
   const actualBlocks = actual?.blocks || [];
@@ -3473,8 +3777,8 @@ function detectStrengthCompletionStatus(session, actual) {
       return "modified";
     }
 
-    const plannedSetBaseline = getDefaultActualSets(plannedBlock.sets);
-    if (isNumber(plannedSetBaseline) && actualBlock.actualSets !== plannedSetBaseline) {
+    const plannedSetMinimum = getDefaultActualSets(plannedBlock.sets);
+    if (isNumber(plannedSetMinimum) && actualBlock.actualSets < plannedSetMinimum) {
       return "modified";
     }
 
@@ -3497,31 +3801,22 @@ function detectStrengthCompletionStatus(session, actual) {
       }
 
       const actualSets = actualExercise.actualSets || [];
-      const plannedExerciseSetCount = plannedSetBaseline || actualSets.length;
-      if (actualSets.length !== plannedExerciseSetCount) {
+      const plannedExerciseSetMinimum = plannedSetMinimum || 0;
+      if (isNumber(plannedExerciseSetMinimum) && actualSets.length < plannedExerciseSetMinimum) {
         return "modified";
       }
 
-      const plannedRepBaseline = extractWorkoutRepCount(plannedExercise.reps);
-      const plannedWeightBaseline = isNumber(plannedExercise.weight) ? Number(plannedExercise.weight) : null;
+      const plannedRepMinimum = extractWorkoutRepCount(plannedExercise.reps);
+      const plannedWeightMinimum = isNumber(plannedExercise.weight) ? Number(plannedExercise.weight) : null;
       for (let setIndex = 0; setIndex < actualSets.length; setIndex += 1) {
         const actualSet = actualSets[setIndex];
         if (!actualSet || !isNumber(actualSet.reps)) {
           return "modified";
         }
-        if (plannedRepBaseline && actualSet.reps !== plannedRepBaseline) {
+        if (plannedRepMinimum && actualSet.reps < plannedRepMinimum) {
           return "modified";
         }
-        if ((actualSet.loadType || "kg") !== "kg") {
-          return "modified";
-        }
-        if (isNumber(plannedWeightBaseline) && actualSet.weight !== plannedWeightBaseline) {
-          return "modified";
-        }
-        if (!isNumber(plannedWeightBaseline) && isNumber(actualSet.weight)) {
-          return "modified";
-        }
-        if ((actualSet.bandColor || "") !== "") {
+        if (!doesActualLoadMeetPlan(actualSet, plannedWeightMinimum)) {
           return "modified";
         }
       }
@@ -3529,6 +3824,14 @@ function detectStrengthCompletionStatus(session, actual) {
   }
 
   return "completed";
+}
+
+function doesActualLoadMeetPlan(actualSet, plannedWeightMinimum) {
+  const loadType = actualSet?.loadType || "kg";
+  if (!isNumber(plannedWeightMinimum)) {
+    return ["kg", "bodyweight", "band"].includes(loadType);
+  }
+  return loadType === "kg" && isNumber(actualSet.weight) && Number(actualSet.weight) >= plannedWeightMinimum;
 }
 
 function saveCompletedSession(event) {
@@ -3542,12 +3845,14 @@ function saveCompletedSession(event) {
   try {
     if (session.type === "run") {
       const distance = toNumberOrNull(completionRunDistanceInput.value);
-      const time = normalizeRunDurationInput(completionRunTimeInput.value);
-      const pace = calculateRunPace(distance, parseRunDurationToSeconds(time));
+      const time = normalizeFlexibleRunDurationInput(completionRunTimeInput.value);
+      const pace = calculateRunPace(distance, parseFlexibleRunDurationToSeconds(completionRunTimeInput.value));
       if (!isNumber(distance) || !time || !isNumber(pace)) {
-        completionStatusMessageEl.textContent = "Run completion needs distance and time.";
+        completionStatusMessageEl.textContent = "Run completion needs distance and time in hh:mm:ss or mm:ss.";
         return;
       }
+      completionRunTimeInput.value = time;
+      completionRunPaceInput.value = formatRunPace(pace);
       actual = { distance, time, pace };
     }
     if (session.type === "sprint") {
@@ -3812,63 +4117,138 @@ function renderAdherenceStats() {
     .join("");
 }
 
-function renderStrengthProgressBoard() {
-  if (!strengthProgressBoardEl || !strengthProgressStatusEl) {
+function renderProgramProgress() {
+  if (!programProgressSelect || !programProgressSummaryEl || !programProgressStatusEl || !programExerciseProgressEl) {
     return;
   }
-  const rows = buildStrengthProgressRows();
-  if (!rows.length) {
-    strengthProgressStatusEl.textContent = "No completed planned strength sessions yet.";
-    strengthProgressBoardEl.innerHTML = "";
+  if (programExerciseSortInput) {
+    programExerciseSortInput.value = programExerciseSortMode;
+  }
+
+  if (!phaseInstances.length) {
+    selectedProgramProgressInstanceId = "";
+    programProgressSelect.innerHTML = "<option value=\"\">No scheduled strength programs</option>";
+    programProgressSummaryEl.innerHTML = "";
+    programProgressStatusEl.textContent = "Schedule a strength phase to see program-duration progress.";
+    programExerciseProgressEl.innerHTML = "";
+    programCompletionChart = createOrUpdateProgramCompletionChart(programCompletionChart, null, null);
+    programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, [], "");
+    toggleChartCardVisibility(programAdherenceChartCard, false);
     return;
   }
 
-  strengthProgressStatusEl.textContent = "Latest planned vs actual and previous-week actual progression by exercise.";
-  strengthProgressBoardEl.innerHTML = rows
-    .map(
-      (row) => `
-        <article class="exercise-progress-card">
-          <header>
-            <div>
-              <h4>${escapeHtml(row.name)}</h4>
-              <div class="phase-meta">${formatHumanDate(row.date)}${row.code ? ` • ${escapeHtml(row.code)}` : ""}</div>
-            </div>
-            <div class="exercise-progress-badges">
-              <span class="session-status ${progressBadgeClass(row.planStatus)}">${escapeHtml(row.planStatus)}</span>
-              <span class="session-status ${progressBadgeClass(row.improvementStatus)}">${escapeHtml(row.improvementStatus)}</span>
-            </div>
-          </header>
-          <div class="exercise-progress-grid">
-            <div>
-              <h5>Planned</h5>
-              <div class="strength-exercise-detail">${escapeHtml(row.plannedSummary)}</div>
-            </div>
-            <div>
-              <h5>Actual</h5>
-              <div class="strength-exercise-detail">${escapeHtml(row.actualSummary)}</div>
-            </div>
-            <div>
-              <h5>Previous Actual</h5>
-              <div class="strength-exercise-detail">${escapeHtml(row.previousSummary)}</div>
-            </div>
-          </div>
-          <div class="phase-meta">${escapeHtml(row.explanation)}</div>
-        </article>
-      `,
-    )
+  if (!phaseInstances.some((instance) => instance.id === selectedProgramProgressInstanceId)) {
+    selectedProgramProgressInstanceId = phaseInstances[0].id;
+  }
+
+  programProgressSelect.innerHTML = phaseInstances
+    .map((instance) => {
+      const endDate = formatDateInput(addDays(instance.startDate, (instance.durationWeeks * 7) - 1));
+      return `<option value="${escapeHtml(instance.id)}"${instance.id === selectedProgramProgressInstanceId ? " selected" : ""}>${escapeHtml(instance.templateName || "Strength program")} • ${formatHumanDate(instance.startDate)}-${formatHumanDate(endDate)}</option>`;
+    })
     .join("");
+
+  const model = buildProgramProgressModel(selectedProgramProgressInstanceId);
+  if (!model) {
+    programProgressSummaryEl.innerHTML = "";
+    programProgressStatusEl.textContent = "Select a scheduled strength program.";
+    programExerciseProgressEl.innerHTML = "";
+    programCompletionChart = createOrUpdateProgramCompletionChart(programCompletionChart, null, null);
+    programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, [], "");
+    toggleChartCardVisibility(programAdherenceChartCard, false);
+    return;
+  }
+
+  programProgressSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Program length</span>
+      <span class="value">${model.durationWeeks} weeks</span>
+    </article>
+    <article class="badge">
+      <span class="label">Adherence</span>
+      <span class="value">${model.completed}/${model.total || 0}</span>
+    </article>
+    <article class="badge badge-chart">
+      <span class="label">Program completion</span>
+      <div class="program-completion-chart-wrap">
+        <canvas id="program-completion-chart" width="140" height="140" aria-label="Program completion chart"></canvas>
+      </div>
+    </article>
+  `;
+  programProgressStatusEl.textContent = `${model.name} runs from ${formatHumanDate(model.startDate)} to ${formatHumanDate(model.endDate)}. Run and sprint are intentionally excluded from this program view.`;
+
+  programCompletionChart = createOrUpdateProgramCompletionChart(
+    programCompletionChart,
+    document.getElementById("program-completion-chart"),
+    model,
+  );
+  programAdherenceChart = createOrUpdateStackedBarChart(programAdherenceChart, programAdherenceChartCanvas, model.weekRows, "Sessions");
+  toggleChartCardVisibility(programAdherenceChartCard, model.weekRows.length > 0 && model.total > 0);
+  programExerciseProgressEl.innerHTML = renderProgramExerciseProgressTable(model);
 }
 
-function buildStrengthProgressRows() {
+function buildProgramProgressModel(instanceId) {
+  const instance = phaseInstances.find((item) => item.id === instanceId);
+  if (!instance) {
+    return null;
+  }
+
+  const durationWeeks = Math.max(1, toNumberOrNull(instance.durationWeeks) || 1);
+  const startDate = normalizeDateInput(instance.startDate);
+  const endDate = formatDateInput(addDays(startDate, (durationWeeks * 7) - 1));
+  const sessions = plannedSessions
+    .filter((session) => session.type === "strength" && session.phaseInstanceId === instance.id)
+    .map((session) => ensurePhaseOccurrenceMetadata(session))
+    .filter(Boolean);
+  const weekRows = Array.from({ length: durationWeeks }, (_, index) => {
+    const weekSessions = sessions.filter((session) => session.phaseWeekIndex === index);
+    const completed = weekSessions.filter((session) => session.status === "completed").length;
+    const modified = weekSessions.filter((session) => session.status === "modified").length;
+    const missed = weekSessions.filter((session) => session.status === "missed").length;
+    const planned = weekSessions.filter((session) => session.status === "planned").length;
+    return {
+      label: `Week ${index + 1}`,
+      weekIndex: index,
+      completed,
+      modified,
+      missed,
+      planned,
+      total: weekSessions.length,
+    };
+  });
+  const total = weekRows.reduce((sum, row) => sum + row.total, 0);
+  const completed = weekRows.reduce((sum, row) => sum + row.completed + row.modified, 0);
+  const missed = weekRows.reduce((sum, row) => sum + row.missed, 0);
+  const remaining = Math.max(0, total - completed);
+  const completionPercent = total ? Math.round((completed / total) * 100) : 0;
+
+  return {
+    id: instance.id,
+    name: instance.templateName || "Strength program",
+    durationWeeks,
+    startDate,
+    endDate,
+    sessions,
+    weekRows,
+    total,
+    completed,
+    missed,
+    remaining,
+    completionPercent,
+    exerciseRows: buildProgramExerciseRows(sessions, durationWeeks),
+  };
+}
+
+function buildProgramExerciseRows(sessions, durationWeeks) {
   const entriesByName = new Map();
-  plannedSessions
-    .filter((session) => session.type === "strength" && ["completed", "modified"].includes(session.status) && session.actual?.blocks?.length)
-    .sort((a, b) => a.date.localeCompare(b.date))
+  sessions
+    .filter((session) => ["completed", "modified"].includes(session.status) && session.actual?.blocks?.length)
+    .sort((a, b) => (a.phaseWeekIndex - b.phaseWeekIndex) || a.date.localeCompare(b.date))
     .forEach((session) => {
       const plannedBlocks = session.details?.blocks || [];
       const actualBlocks = session.actual?.blocks || [];
       actualBlocks.forEach((actualBlock, blockIndex) => {
-        const plannedBlock = plannedBlocks[blockIndex] || { exercises: [], sets: "" };
+        const plannedBlock = plannedBlocks[blockIndex] || { exercises: [] };
         (actualBlock.exercises || []).forEach((actualExercise, exerciseIndex) => {
           if (!actualExercise.completed) {
             return;
@@ -3878,43 +4258,328 @@ function buildStrengthProgressRows() {
           if (!key) {
             return;
           }
-          const entry = {
-            date: session.date,
-            code: actualExercise.code || plannedExercise.code || "",
+          const snapshot = buildActualExerciseSnapshot(actualExercise);
+          const weekIndex = Number(session.phaseWeekIndex);
+          const existing = entriesByName.get(key) || {
             name: actualExercise.name || plannedExercise.name || "Exercise",
-            plannedExercise,
-            plannedBlock,
-            actualExercise,
+            code: actualExercise.code || plannedExercise.code || "",
+            firstSessionDate: session.date || "",
+            firstSessionTitle: session.title || "",
+            firstWeekIndex: isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : durationWeeks,
+            firstBlockIndex: blockIndex,
+            firstExerciseIndex: exerciseIndex,
+            weeks: Array.from({ length: durationWeeks }, () => []),
           };
-          const list = entriesByName.get(key) || [];
-          list.push(entry);
-          entriesByName.set(key, list);
+          const currentOrder = buildProgramOrderTuple(session, blockIndex, exerciseIndex);
+          const existingOrder = buildProgramOrderTuple(
+            {
+              date: existing.firstSessionDate,
+              title: existing.firstSessionTitle,
+              phaseWeekIndex: existing.firstWeekIndex,
+            },
+            existing.firstBlockIndex,
+            existing.firstExerciseIndex,
+          );
+          if (compareProgramOrderTuples(currentOrder, existingOrder) < 0) {
+            existing.firstSessionDate = session.date || "";
+            existing.firstSessionTitle = session.title || "";
+            existing.firstWeekIndex = isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : durationWeeks;
+            existing.firstBlockIndex = blockIndex;
+            existing.firstExerciseIndex = exerciseIndex;
+          }
+          if (weekIndex >= 0 && weekIndex < durationWeeks) {
+            existing.weeks[weekIndex].push(snapshot);
+          }
+          entriesByName.set(key, existing);
         });
       });
     });
 
-  return [...entriesByName.values()]
-    .map((entries) => {
-      const current = entries[entries.length - 1];
-      const previous = entries.length > 1 ? entries[entries.length - 2] : null;
-      const plannedSnapshot = buildPlannedExerciseSnapshot(current.plannedExercise, current.plannedBlock);
-      const actualSnapshot = buildActualExerciseSnapshot(current.actualExercise);
-      const previousSnapshot = previous ? buildActualExerciseSnapshot(previous.actualExercise) : null;
-      const planStatus = evaluatePlanStatus(plannedSnapshot, actualSnapshot);
-      const improvement = evaluateImprovementStatus(previousSnapshot, actualSnapshot);
+  const rows = [...entriesByName.values()]
+    .map((row) => {
+      let previous = null;
+      const weeks = row.weeks.map((snapshots) => {
+        const combined = combineActualExerciseSnapshots(snapshots);
+        const status = combined ? evaluateImprovementStatus(previous, combined).label : "";
+        if (combined) {
+          previous = combined;
+        }
+        return { snapshot: combined, status };
+      });
       return {
-        date: current.date,
-        code: current.code,
-        name: current.name,
-        plannedSummary: formatPlannedProgressSnapshot(plannedSnapshot),
-        actualSummary: formatActualProgressSnapshot(actualSnapshot),
-        previousSummary: previousSnapshot ? formatActualProgressSnapshot(previousSnapshot) : "No previous logged week",
-        planStatus: planStatus.label,
-        improvementStatus: improvement.label,
-        explanation: `${planStatus.explanation} ${improvement.explanation}`.trim(),
+        ...row,
+        weeks,
+        sortMeta: buildProgramExerciseSortMeta(row, weeks, durationWeeks),
       };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+  return sortProgramExerciseRows(rows, programExerciseSortMode);
+}
+
+function buildProgramOrderTuple(session, blockIndex, exerciseIndex) {
+  return [
+    isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : Number.MAX_SAFE_INTEGER,
+    session.date || "",
+    session.title || "",
+    blockIndex,
+    exerciseIndex,
+  ];
+}
+
+function compareProgramOrderTuples(a, b) {
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index] < b[index]) {
+      return -1;
+    }
+    if (a[index] > b[index]) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+function buildProgramExerciseSortMeta(row, weeks, durationWeeks) {
+  const loggedWeeks = weeks
+    .map((week, index) => ({ ...week, index }))
+    .filter((week) => week.snapshot);
+  const latest = loggedWeeks[loggedWeeks.length - 1] || null;
+  const previous = loggedWeeks.length > 1 ? loggedWeeks[loggedWeeks.length - 2] : null;
+  const latestSnapshot = latest?.snapshot || null;
+  const previousSnapshot = previous?.snapshot || null;
+  const weightDelta =
+    latestSnapshot && previousSnapshot && isNumber(latestSnapshot.maxWeight) && isNumber(previousSnapshot.maxWeight)
+      ? latestSnapshot.maxWeight - previousSnapshot.maxWeight
+      : 0;
+  const repsDelta = latestSnapshot && previousSnapshot ? (latestSnapshot.maxReps || 0) - (previousSnapshot.maxReps || 0) : 0;
+  const setsDelta = latestSnapshot && previousSnapshot ? (latestSnapshot.totalSets || 0) - (previousSnapshot.totalSets || 0) : 0;
+  const latestStatus = latest?.status || "";
+  const missingWeekCount = weeks.filter((week) => !week.snapshot).length;
+  const latestProgramWeekMissing = durationWeeks > 0 && !weeks[durationWeeks - 1]?.snapshot;
+
+  return {
+    orderTuple: [row.firstWeekIndex, row.firstSessionDate, row.firstSessionTitle, row.firstBlockIndex, row.firstExerciseIndex, row.name],
+    latestStatus,
+    missingWeekCount,
+    latestProgramWeekMissing,
+    improvementScore: (weightDelta * 1000) + (repsDelta * 10) + setsDelta,
+    attentionScore:
+      (latestStatus === "Below previous" ? 10000 : 0) +
+      (latestProgramWeekMissing ? 5000 : 0) +
+      (missingWeekCount * 100) +
+      (latestStatus === "Matched" || latestStatus === "Partial / mixed" ? 25 : 0) +
+      (!latestStatus || latestStatus === "First logged week" ? 10 : 0),
+  };
+}
+
+function sortProgramExerciseRows(rows, mode) {
+  const sorted = rows.slice();
+  if (mode === "highest-improvement") {
+    return sorted.sort((a, b) => {
+      const statusDifference = improvementStatusRank(b.sortMeta.latestStatus) - improvementStatusRank(a.sortMeta.latestStatus);
+      if (statusDifference !== 0) {
+        return statusDifference;
+      }
+      const scoreDifference = b.sortMeta.improvementScore - a.sortMeta.improvementScore;
+      if (scoreDifference !== 0) {
+        return scoreDifference;
+      }
+      return compareProgramOrderTuples(a.sortMeta.orderTuple, b.sortMeta.orderTuple);
+    });
+  }
+  if (mode === "needs-attention") {
+    return sorted.sort((a, b) => {
+      const attentionDifference = b.sortMeta.attentionScore - a.sortMeta.attentionScore;
+      if (attentionDifference !== 0) {
+        return attentionDifference;
+      }
+      return compareProgramOrderTuples(a.sortMeta.orderTuple, b.sortMeta.orderTuple);
+    });
+  }
+  return sorted.sort((a, b) => compareProgramOrderTuples(a.sortMeta.orderTuple, b.sortMeta.orderTuple));
+}
+
+function improvementStatusRank(status) {
+  if (status === "Improved") {
+    return 4;
+  }
+  if (status === "Partial / mixed") {
+    return 3;
+  }
+  if (status === "Matched") {
+    return 2;
+  }
+  if (status === "First logged week") {
+    return 1;
+  }
+  if (status === "Below previous") {
+    return -1;
+  }
+  return 0;
+}
+
+function combineActualExerciseSnapshots(snapshots) {
+  if (!snapshots.length) {
+    return null;
+  }
+  const maxWeightValues = snapshots.map((snapshot) => snapshot.maxWeight).filter(isNumber);
+  return {
+    totalSets: snapshots.reduce((sum, snapshot) => sum + snapshot.totalSets, 0),
+    maxWeight: maxWeightValues.length ? Math.max(...maxWeightValues) : null,
+    maxReps: Math.max(...snapshots.map((snapshot) => snapshot.maxReps || 0)),
+    summary: snapshots.map((snapshot) => snapshot.summary).filter(Boolean).join(" | "),
+  };
+}
+
+function renderProgramExerciseProgressTable(model) {
+  if (!model.exerciseRows.length) {
+    return "<p class=\"planner-empty\">Complete generated strength sessions in this program to see exercise-by-week progress.</p>";
+  }
+
+  const weekHeadings = Array.from({ length: model.durationWeeks }, (_, index) => `<th>Week ${index + 1}</th>`).join("");
+  const rows = model.exerciseRows
+    .map((row) => `
+      <tr>
+        <th>${escapeHtml(row.name)}${row.code ? `<div class="phase-meta">${escapeHtml(row.code)}</div>` : ""}</th>
+        ${row.weeks.map((week) => renderProgramExerciseWeekCell(week)).join("")}
+      </tr>
+    `)
+    .join("");
+
+  return `
+    <table class="program-progress-table">
+      <thead>
+        <tr>
+          <th>Exercise</th>
+          ${weekHeadings}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderProgramExerciseWeekCell(week) {
+  if (!week.snapshot) {
+    return "<td class=\"is-empty\">Not logged</td>";
+  }
+  const statusClass = programProgressStatusClass(week.status);
+  return `
+    <td class="${statusClass}">
+      <strong>${escapeHtml(week.status)}</strong><br />
+      ${escapeHtml(formatActualProgressSnapshot(week.snapshot))}
+    </td>
+  `;
+}
+
+function programProgressStatusClass(status) {
+  if (status === "Improved") {
+    return "is-improved";
+  }
+  if (status === "Below previous") {
+    return "is-lower";
+  }
+  return "is-stable";
+}
+
+function createOrUpdateStackedBarChart(existingChart, canvas, weekRows, unit) {
+  if (!canvas || typeof Chart === "undefined") {
+    return existingChart;
+  }
+
+  if (existingChart) {
+    existingChart.destroy();
+    existingChart = null;
+  }
+
+  if (!weekRows.length) {
+    return null;
+  }
+
+  return new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: weekRows.map((row) => row.label),
+      datasets: [
+        { label: "Done", data: weekRows.map((row) => row.completed + row.modified), backgroundColor: "#6DFF5C" },
+        { label: "Missed", data: weekRows.map((row) => row.missed), backgroundColor: "#FF9CAF" },
+        { label: "Planned", data: weekRows.map((row) => row.planned), backgroundColor: "#7DD3FC" },
+      ],
+    },
+    options: {
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: unit } },
+      },
+    },
+  });
+}
+
+function createOrUpdateProgramCompletionChart(existingChart, canvas, model) {
+  if (existingChart) {
+    existingChart.destroy();
+    existingChart = null;
+  }
+
+  if (!canvas || typeof Chart === "undefined" || !model || !model.total) {
+    return null;
+  }
+
+  const centerTextPlugin = {
+    id: "programCompletionCenterText",
+    afterDraw(chart) {
+      const meta = chart.getDatasetMeta(0);
+      const point = meta?.data?.[0];
+      if (!point) {
+        return;
+      }
+      const { ctx } = chart;
+      const x = point.x;
+      const y = point.y;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#F8FAFC";
+      ctx.font = "700 1.2rem system-ui";
+      ctx.fillText(`${model.completionPercent}%`, x, y - 6);
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "500 0.7rem system-ui";
+      ctx.fillText("complete", x, y + 14);
+      ctx.restore();
+    },
+  };
+
+  return new Chart(canvas, {
+    type: "doughnut",
+    data: {
+      labels: ["Done", "Remaining"],
+      datasets: [
+        {
+          data: [model.completed, model.remaining],
+          backgroundColor: ["#6DFF5C", "#64748B"],
+          borderWidth: 0,
+          hoverOffset: 2,
+        },
+      ],
+    },
+    options: {
+      animation: false,
+      cutout: "68%",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(context) {
+              return `${context.label}: ${context.raw}/${model.total}`;
+            },
+          },
+        },
+      },
+    },
+    plugins: [centerTextPlugin],
+  });
 }
 
 function normalizeExerciseKey(value) {
@@ -3963,24 +4628,28 @@ function formatActualProgressSnapshot(snapshot) {
 }
 
 function evaluatePlanStatus(planned, actual) {
-  if (actual.totalSets === planned.setsBase && actual.maxReps === planned.repsBase && actual.maxWeight === planned.weight) {
+  const setsMeetPlan = !planned.setsBase || actual.totalSets >= planned.setsBase;
+  const repsMeetPlan = !planned.repsBase || actual.maxReps >= planned.repsBase;
+  const weightMeetPlan = !isNumber(planned.weight) || (isNumber(actual.maxWeight) && actual.maxWeight >= planned.weight);
+  const weightExceededPlan = isNumber(planned.weight) && isNumber(actual.maxWeight) && actual.maxWeight > planned.weight;
+
+  if (
+    setsMeetPlan &&
+    repsMeetPlan &&
+    weightMeetPlan &&
+    actual.totalSets === planned.setsBase &&
+    actual.maxReps === planned.repsBase &&
+    (!isNumber(planned.weight) || actual.maxWeight === planned.weight)
+  ) {
     return { label: "Matched plan", explanation: "Actual sets, reps, and top weight matched the plan." };
   }
-  if (
-    actual.totalSets >= planned.setsBase &&
-    actual.maxReps >= planned.repsBase &&
-    ((isNumber(actual.maxWeight) && isNumber(planned.weight) && actual.maxWeight > planned.weight) || (!isNumber(planned.weight) && !isNumber(actual.maxWeight)))
-  ) {
+  if (setsMeetPlan && repsMeetPlan && weightMeetPlan && (actual.totalSets > planned.setsBase || actual.maxReps > planned.repsBase || weightExceededPlan)) {
     return { label: "Exceeded plan", explanation: "Actual execution met or exceeded the planned prescription." };
   }
-  if (
-    actual.totalSets < planned.setsBase ||
-    (planned.repsBase && actual.maxReps < planned.repsBase) ||
-    (isNumber(planned.weight) && (!isNumber(actual.maxWeight) || actual.maxWeight < planned.weight))
-  ) {
+  if (!setsMeetPlan || !repsMeetPlan || !weightMeetPlan) {
     return { label: "Below plan", explanation: "Actual execution landed below the planned prescription." };
   }
-  return { label: "Modified from plan", explanation: "Actual execution differed from the planned prescription." };
+  return { label: "Matched plan", explanation: "Actual execution met the minimum planned prescription." };
 }
 
 function evaluateImprovementStatus(previous, current) {
@@ -4012,19 +4681,6 @@ function evaluateImprovementStatus(previous, current) {
     return { label: "Partial / mixed", explanation: "One metric improved, but another dropped enough to make it mixed." };
   }
   return { label: "Below previous", explanation: "This week landed below the previous completed week." };
-}
-
-function progressBadgeClass(label) {
-  if (label === "Improved" || label === "Exceeded plan" || label === "Matched plan") {
-    return "status-completed";
-  }
-  if (label === "Partial / mixed" || label === "Modified from plan") {
-    return "status-modified";
-  }
-  if (label === "Below previous" || label === "Below plan") {
-    return "status-missed";
-  }
-  return "status-planned";
 }
 
 function weekdayName(weekday) {
@@ -4138,6 +4794,10 @@ function normalizePlannedSession(session) {
     source: session.source === "phase-generated" ? "phase-generated" : "manual",
     phaseTemplateId: typeof session.phaseTemplateId === "string" ? session.phaseTemplateId : "",
     phaseInstanceId: typeof session.phaseInstanceId === "string" ? session.phaseInstanceId : "",
+    phaseSlotId: typeof session.phaseSlotId === "string" ? session.phaseSlotId : "",
+    phaseWeekIndex: isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : null,
+    generatedDate: normalizeDateInput(session.generatedDate) || "",
+    dateMovedManually: Boolean(session.dateMovedManually),
     status: ["planned", "completed", "modified", "missed"].includes(session.status) ? session.status : "planned",
     notes: typeof session.notes === "string" ? session.notes : "",
     linkedWorkoutId: typeof session.linkedWorkoutId === "string" ? session.linkedWorkoutId : "",

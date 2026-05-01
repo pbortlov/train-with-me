@@ -12,6 +12,8 @@ Review compares:
 - actual pace
 - modification note if changed
 
+Run actual pace is calculated automatically from logged distance and logged time.
+
 ### Sprint
 Review compares:
 - planned sprint blocks
@@ -28,11 +30,38 @@ Review compares:
 - completed or skipped exercises
 - per-exercise notes
 
-## Strength Progress
-The stats page also tracks strength exercise progress by:
-- latest planned vs latest actual
-- latest actual vs previous actual
-- rule-based status markers for matched plan, exceeded plan, improved, mixed, or below previous
+Strength completion status uses minimum planned targets:
+- planned reps like `10`, `8-10`, `2x10`, and `2x8-10` use the minimum rep target
+- planned sets like `3` and `3-4` use the minimum set target
+- logged reps below the minimum target mark the session as modified
+- logged sets below the minimum target mark the session as modified
+- extra reps, extra sets, or heavier weight still count as completed
+- empty planned weight means the first logged kg, bodyweight, or band load becomes progress data, not a modification
+- planned weight requires actual kg load to meet or exceed the planned target
+- skipped exercises or changed structure still mark the session as modified
+
+Saved completed/modified strength sessions are recalculated on app load and after backup import so Review and adherence use the current status rules.
+
+Program adherence charts display completed and modified sessions together as `Done` because both count toward adherence. Review still shows modified sessions separately so plan changes remain visible.
+
+## Program Strength Progress
+Program progress is strength-only for now.
+
+The program duration comes from the scheduled strength phase instance, not from a fixed week count. A four-week phase shows Week 1 to Week 4, while a six-week phase shows Week 1 to Week 6.
+
+Program Strength Progress compares:
+- overall program completion as a doughnut chart with `completed + modified` as green and `planned + missed` as grey
+- weekly strength adherence inside the selected phase instance
+- completed, modified, missed, and still-planned generated strength sessions
+- exercise progression by program week
+- top weight, max reps, completed sets, and logged set summaries
+
+Exercise progress rows can be sorted by:
+- `Program order`: the first planned session/block/exercise position
+- `Highest improvement`: strongest latest improvement compared with the previous logged week
+- `Needs attention`: below-previous, missing-latest, or frequently unlogged exercises first
+
+Run and sprint sessions are not attached to strength phases yet. They remain progress-over-time metrics on the Stats page.
 
 ## Adherence
 Weekly adherence is defined as:

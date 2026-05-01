@@ -659,6 +659,77 @@ button {
   display: none;
 }
 
+.program-progress-controls {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 0.75rem;
+}
+
+.program-exercise-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.program-exercise-toolbar h4 {
+  margin: 0;
+}
+
+.program-exercise-toolbar label {
+  min-width: min(100%, 220px);
+}
+
+.program-progress-table-wrap {
+  overflow-x: auto;
+}
+
+.program-progress-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  margin-top: 0.8rem;
+}
+
+.program-progress-table th,
+.program-progress-table td {
+  border: 1px solid var(--border);
+  padding: 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.program-progress-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.program-progress-table td {
+  background: #0a1326;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.program-progress-table .is-improved {
+  border-left: 3px solid #6dff5c;
+}
+
+.program-progress-table .is-stable {
+  border-left: 3px solid #7dd3fc;
+}
+
+.program-progress-table .is-lower {
+  border-left: 3px solid #ff9caf;
+}
+
+.program-progress-table .is-empty {
+  color: var(--muted);
+}
+
 #install-app {
   display: none;
 }
@@ -844,6 +915,15 @@ dialog {
     grid-template-columns: 1fr;
   }
 
+  .program-progress-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .program-exercise-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .completion-sprint-grid-header {
     display: none;
   }
@@ -878,6 +958,12 @@ dialog {
   background: #0a1326;
 }
 
+.badge-chart {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 .badge .label {
   display: block;
   color: var(--muted);
@@ -887,6 +973,19 @@ dialog {
 .badge .value {
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.program-completion-chart-wrap {
+  position: relative;
+  min-height: 140px;
+  height: 140px;
+  margin-top: 0.35rem;
+}
+
+.program-completion-chart-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .goal-item {
