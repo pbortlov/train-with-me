@@ -22,6 +22,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Planned generated strength sessions can be manually moved before completion without editing the phase template
 - Calendar uses compact session cards with a popup training view so the week grid stays stable
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
+- Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
 - Sprint logging includes a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
@@ -44,17 +45,18 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Data page with:
   - backup export/import
   - exercise library management
+  - workout history management
 - Actual workout logging with edit and delete support
 - Exercise library with saved exercise names
 - Backup export/import as JSON
 - PWA install support
 
 ## Main Pages
-- `Calendar`: weekly plan, compact session cards, popup training detail, and `Log & Complete` execution logging
+- `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Programs`: import, edit, inspect, and schedule reusable strength phase templates
-- `Review`: planned vs actual review plus actual workout logging
+- `Review`: planned vs actual review for completed, modified, and missed planned sessions
 - `Stats`: goals, adherence summaries, program strength progress, and progress-over-time charts
-- `Data`: backup and exercise library management
+- `Data`: backup, exercise library, and workout history management
 
 ## Strength Phase Import
 V2 import focuses on `strength phases` only.
@@ -84,6 +86,7 @@ V2 keeps decision and planning history in the repo:
 - [docs/review-and-adherence.md](docs/review-and-adherence.md)
 - [docs/strength-phase-import.md](docs/strength-phase-import.md)
 - [docs/decisions/0001-v2-calendar-first-planner.md](docs/decisions/0001-v2-calendar-first-planner.md)
+- [docs/decisions/0002-calendar-only-workout-logging.md](docs/decisions/0002-calendar-only-workout-logging.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 
 ## Run Locally

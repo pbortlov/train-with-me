@@ -190,6 +190,42 @@ button {
   display: block;
 }
 
+.add-training-card {
+  gap: 1rem;
+}
+
+.add-training-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #081121;
+}
+
+.mode-toggle .ghost-button {
+  margin: 0;
+}
+
+.mode-toggle .ghost-button.is-active {
+  background: var(--accent);
+  color: #061021;
+  border-color: var(--accent);
+}
+
+.add-training-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .calendar-day {
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -264,6 +300,21 @@ button {
 .planned-session-card.is-selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px #00e5ff44 inset;
+}
+
+.actual-workout-card {
+  border-color: #6dff5c55;
+  background: #071522;
+}
+
+.actual-workout-label {
+  color: #8dffb4;
+}
+
+.calendar-workout-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
 }
 
 .planned-session-title {
