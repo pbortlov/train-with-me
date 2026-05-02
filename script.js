@@ -77,6 +77,8 @@ const exerciseLibraryListEl = document.getElementById("exercise-library-list");
 const coachModeToggle = document.getElementById("coach-mode-toggle");
 const viewNavButtons = document.querySelectorAll("[data-view-target]");
 const viewPanels = document.querySelectorAll(".view-panel");
+const addTrainingModeButtons = document.querySelectorAll("[data-add-training-mode]");
+const addTrainingPanels = document.querySelectorAll("[data-add-training-panel]");
 const plannerSummaryEl = document.getElementById("planner-summary");
 const calendarWeekLabelEl = document.getElementById("calendar-week-label");
 const calendarGridEl = document.getElementById("calendar-grid");
@@ -234,6 +236,7 @@ renderSprintSets();
 renderPlannedSprintBlocks();
 renderCurrentStrengthSets();
 renderStrengthExercises();
+setAddTrainingMode("log");
 render();
 
 workoutForm.addEventListener("submit", (event) => {
@@ -327,6 +330,11 @@ addSafeEventListener(editStrengthExercisesList, "change", handleInlineStrengthEd
 addSafeEventListener(editStrengthExercisesList, "click", handleInlineStrengthDelete);
 addSafeEventListener(exerciseLibraryListEl, "click", handleExerciseLibraryClick);
 document.addEventListener("click", handleBandColorPickerClick);
+addTrainingModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setAddTrainingMode(button.dataset.addTrainingMode || "log");
+  });
+});
 addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
   const loadType = editStrengthLoadTypeInput.value;
   editStrengthWeightInput.disabled = loadType !== "kg";
@@ -550,7 +558,7 @@ function renderHistory() {
   if (!filteredWorkouts.length) {
     const message = workouts.length
       ? "No workouts match your current filters."
-      : "No workouts yet. Add your first one above.";
+      : "No workouts yet. Add your first one from Calendar.";
     historyBody.innerHTML = `<tr><td colspan="5">${message}</td></tr>`;
     return;
   }
@@ -1431,6 +1439,17 @@ function addSafeEventListener(element, eventName, handler) {
   element.addEventListener(eventName, handler);
 }
 
+function setAddTrainingMode(mode) {
+  const selectedMode = mode === "plan" ? "plan" : "log";
+  addTrainingModeButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.addTrainingMode === selectedMode);
+    button.setAttribute("aria-pressed", button.dataset.addTrainingMode === selectedMode ? "true" : "false");
+  });
+  addTrainingPanels.forEach((panel) => {
+    panel.classList.toggle("is-hidden", panel.dataset.addTrainingPanel !== selectedMode);
+  });
+}
+
 function toggleEditDialogFields(activity) {
   editRunFields.style.display = activity === "run" ? "grid" : "none";
   editSprintFields.style.display = activity === "sprint" ? "grid" : "none";
@@ -2018,6 +2037,14 @@ function getPlannedSessionsForWeek(weekStart) {
     .sort((a, b) => (a.date === b.date ? (a.title || "").localeCompare(b.title || "") : a.date.localeCompare(b.date)));
 }
 
+function getStandaloneWorkoutsForWeek(weekStart) {
+  const days = getWeekDates(weekStart).map((date) => formatDateInput(date));
+  const linkedWorkoutIds = new Set(plannedSessions.map((session) => session.linkedWorkoutId).filter(Boolean));
+  return workouts
+    .filter((workout) => days.includes(workout.date) && !linkedWorkoutIds.has(workout.id))
+    .sort(compareWorkoutsByRecentDate);
+}
+
 function computeWeeklyAdherence(weekStart) {
   const sessions = getPlannedSessionsForWeek(weekStart);
   const completed = sessions.filter((session) => ["completed", "modified"].includes(session.status)).length;
@@ -2059,6 +2086,7 @@ function renderCalendar() {
   }
   const weekDates = getWeekDates(uiSettings.currentWeekStart);
   const weekSessions = getPlannedSessionsForWeek(uiSettings.currentWeekStart);
+  const weekWorkouts = getStandaloneWorkoutsForWeek(uiSettings.currentWeekStart);
   const availableSessionIds = new Set(weekSessions.map((session) => session.id));
   if (!selectedCalendarSessionId || !availableSessionIds.has(selectedCalendarSessionId)) {
     selectedCalendarSessionId = weekSessions[0]?.id || "";
@@ -2069,17 +2097,19 @@ function renderCalendar() {
     .map((date) => {
       const dayKey = formatDateInput(date);
       const daySessions = weekSessions.filter((session) => session.date === dayKey);
+      const dayWorkouts = weekWorkouts.filter((workout) => workout.date === dayKey);
       const isToday = dayKey === formatDateInput(new Date());
-      const sessionsMarkup = daySessions.length
-        ? daySessions.map((session) => renderPlannedSessionCard(session)).join("")
-        : `<p class="planner-empty">No planned sessions.</p>`;
+      const sessionsMarkup = [
+        ...daySessions.map((session) => renderPlannedSessionCard(session)),
+        ...dayWorkouts.map((workout) => renderWorkoutCalendarCard(workout)),
+      ].join("");
       return `
         <article class="calendar-day${isToday ? " is-today" : ""}">
           <div class="calendar-day-header">
             <h4>${date.toLocaleDateString(undefined, { weekday: "short" })}</h4>
             <span class="calendar-day-date">${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
           </div>
-          ${sessionsMarkup}
+          ${sessionsMarkup || `<p class="planner-empty">No training logged or planned.</p>`}
         </article>
       `;
     })
@@ -2100,6 +2130,53 @@ function renderPlannedSessionCard(session) {
       <button type="button" class="ghost-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">View training</button>
     </article>
   `;
+}
+
+function renderWorkoutCalendarCard(workout) {
+  return `
+    <article class="planned-session-card actual-workout-card">
+      <div class="planned-session-title">${escapeHtml(formatWorkoutCalendarTitle(workout))}</div>
+      <div class="planned-session-time">${escapeHtml(formatWorkoutCalendarMeta(workout))}</div>
+      <div class="planned-session-footer">
+        <span class="planned-session-status-inline actual-workout-label">logged</span>
+      </div>
+      <div class="calendar-workout-actions">
+        <button type="button" class="ghost-button planned-session-button" data-role="edit-workout" data-id="${workout.id}">Edit log</button>
+        <button type="button" class="ghost-button danger-button planned-session-button" data-role="delete-workout" data-id="${workout.id}">Delete</button>
+      </div>
+    </article>
+  `;
+}
+
+function formatWorkoutCalendarTitle(workout) {
+  return `${capitalize(workout.activity || "workout")} workout`;
+}
+
+function formatWorkoutCalendarMeta(workout) {
+  if (workout.activity === "strength") {
+    const exercises = normalizeStrengthExercises(workout.strengthExercises);
+    if (!exercises.length) {
+      return "Strength";
+    }
+    const exerciseNames = exercises.slice(0, 2).map((exercise) => exercise.name).join(", ");
+    const extraCount = exercises.length > 2 ? ` +${exercises.length - 2}` : "";
+    return `${exerciseNames}${extraCount}`;
+  }
+  if (workout.activity === "run") {
+    const parts = [
+      isNumber(workout.distance) ? `${formatNumber(workout.distance)} km` : "",
+      formatRunDuration(workout.time) || "",
+      isNumber(workout.pace) ? `${formatRunPace(workout.pace)} min/km` : "",
+    ].filter(Boolean);
+    return parts.join(" • ") || "Run";
+  }
+  const sprintSets = normalizeSprintSets(workout.sprintSets);
+  if (sprintSets.length) {
+    const best = sprintBestTime(workout);
+    const distance = sprintSets[0]?.distance;
+    return [isNumber(distance) ? `${formatNumber(distance)}m` : "", isNumber(best) ? `${formatNumber(best)}s best` : ""].filter(Boolean).join(" • ");
+  }
+  return "Sprint";
 }
 
 function renderCalendarSessionDetail() {
@@ -2555,6 +2632,14 @@ function handleCalendarAction(event) {
     return;
   }
   const sessionId = target.dataset.id;
+  if (role === "edit-workout" && sessionId) {
+    openEditWorkoutDialog(sessionId);
+    return;
+  }
+  if (role === "delete-workout" && sessionId) {
+    openDeleteConfirm(sessionId);
+    return;
+  }
   if (!role || !sessionId) {
     return;
   }
@@ -2769,6 +2854,7 @@ function saveStrengthSessionMove(event) {
 }
 
 function fillPlannedSessionForm(session) {
+  setAddTrainingMode("plan");
   plannedSessionIdInput.value = session.id;
   plannedSessionDateInput.value = session.date;
   plannedSessionTypeInput.value = session.type;

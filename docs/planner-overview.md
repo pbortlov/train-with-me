@@ -18,16 +18,19 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 - `Calendar`
   - default landing page
   - week-first layout
-  - manual run/sprint planning
+  - one `Add Training` surface with `Log actual` and `Plan session` modes
+  - manual run/sprint planning through `Plan session`
   - sprint plans use structured blocks with reps, distance, optional target time per rep, and optional rest
   - planned run editing opens in a popup instead of reusing the in-page creation form
   - generated strength sessions
   - generated strength sessions can be moved manually while still planned, without changing the phase template
   - compact session cards with a popup training view so the day cell size stays stable
   - week cards show title first, time second, inline status at the lower right, and a contained `View training` button
+  - standalone actual workout logging for strength, run, and sprint through `Log actual`
+  - standalone actual workouts appear on the calendar but do not create planned sessions or affect program adherence
   - `Log & Complete` flow for day-of-training execution without rewriting the plan
   - `completed` vs `modified` is auto-detected from planned vs actual workout data
-- `Phases`
+- `Programs`
   - import one strength phase
   - store and edit reusable templates
   - inspect the workout structure inside each saved template
@@ -42,8 +45,6 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - run actual pace is calculated from logged distance and time
   - sprint review includes planned sprint blocks, actual sprint rows, and session feeling
   - strength review includes actual per-set execution with load type, reps, and load details
-  - actual workout logging
-  - recent workouts
 - `Stats`
   - adherence summaries
   - goals
@@ -54,6 +55,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 - `Data`
   - backup export/import
   - exercise library management
+  - workout history management
 
 ## Status Model
 Each planned session can be:

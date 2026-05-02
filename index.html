@@ -53,136 +53,21 @@
           </div>
         </article>
 
-        <article class="card">
-          <h3>Manual Plan</h3>
-          <p class="hint">Use this for run and sprint sessions. Strength plans should usually come from a phase template.</p>
-          <form id="planned-session-form">
-            <input type="hidden" id="planned-session-id" />
-            <div class="grid">
-              <label>
-                Date
-                <input type="date" id="planned-session-date" required />
-              </label>
-              <label>
-                Session type
-                <select id="planned-session-type" required>
-                  <option value="run">Run</option>
-                  <option value="sprint">Sprint</option>
-                </select>
-              </label>
-              <label>
-                Title
-                <input type="text" id="planned-session-title" placeholder="e.g. Easy run or Speed work" required />
-              </label>
-              <label class="coach-only">
-                Notes
-                <input type="text" id="planned-session-notes" placeholder="Optional planning note" />
-              </label>
+        <article class="card add-training-card">
+          <div class="add-training-header">
+            <div>
+              <h3>Add Training</h3>
+              <p class="hint">Log an actual workout or plan a future run/sprint session from one place.</p>
             </div>
-
-            <div id="planned-run-fields" class="grid planned-type-fields" data-planned-type="run">
-              <label>
-                Planned distance (km)
-                <input type="number" id="planned-run-distance" min="0" step="0.01" placeholder="e.g. 8" />
-              </label>
-              <label>
-                Target pace (mm:ss)
-                <input type="text" id="planned-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
-              </label>
+            <div class="mode-toggle" aria-label="Add training mode">
+              <button type="button" class="ghost-button is-active" data-add-training-mode="log">Log actual</button>
+              <button type="button" class="ghost-button" data-add-training-mode="plan">Plan session</button>
             </div>
+          </div>
 
-            <div id="planned-sprint-fields" class="planned-type-fields" data-planned-type="sprint">
-              <p class="hint">Add sprint blocks with reps, meters, optional target time per rep, and optional rest.</p>
-              <div class="grid">
-                <label>
-                  Reps
-                  <input type="number" id="planned-sprint-reps" min="1" step="1" placeholder="e.g. 6" />
-                </label>
-                <label>
-                  Meters
-                  <input type="number" id="planned-sprint-distance" min="1" step="1" placeholder="e.g. 100" />
-                </label>
-                <label>
-                  Target time per rep (sec, optional)
-                  <input type="number" id="planned-sprint-target-time" min="0" step="0.01" placeholder="Leave empty to use best previous time" />
-                </label>
-                <label>
-                  Rest (sec, optional)
-                  <input type="number" id="planned-sprint-rest" min="0" step="1" placeholder="e.g. 90" />
-                </label>
-              </div>
-              <div class="dialog-actions">
-                <button type="button" id="add-planned-sprint-block">Add sprint block</button>
-              </div>
-              <ol id="planned-sprint-blocks-list" class="detail-list"></ol>
-            </div>
-
-            <div class="dialog-actions">
-              <button type="submit" id="save-planned-session">Save planned session</button>
-              <button type="button" id="cancel-planned-session" class="ghost-button">Cancel edit</button>
-            </div>
-            <p id="planned-session-status" class="hint"></p>
-          </form>
-        </article>
-      </section>
-
-      <section class="view-panel" data-view="phases">
-        <article class="card">
-          <h2>Phases</h2>
-          <p class="hint">
-            Import one strength phase per file or paste. Saved templates can also be loaded back here for editing, and
-            scheduled planned sessions will refresh from the updated template. Program weeks start from the chosen start date.
-          </p>
-          <form id="phase-import-form">
-            <input type="hidden" id="phase-edit-id" />
-            <div class="grid">
-              <label>
-                Phase name override
-                <input type="text" id="phase-name-override" placeholder="Optional; import can define the name" />
-              </label>
-              <label>
-                Import CSV file
-                <input type="file" id="phase-import-file" accept=".csv,text/csv,.txt,text/plain" />
-              </label>
-            </div>
-            <label>
-              Phase import content
-              <textarea
-                id="phase-import-text"
-                rows="10"
-                placeholder="PHASE,Phase 1,5&#10;SLOT,Tuesday,Strength A,Main lower-body day&#10;BLOCK,A,15-20 mins,90-120s,3-4&#10;EXERCISE,A1,Back squat,2x8-10,Heavy,100"
-              ></textarea>
-            </label>
-            <div class="dialog-actions">
-              <button type="submit" id="save-phase-button">Import strength phase</button>
-              <button type="button" id="cancel-phase-edit" class="ghost-button is-hidden">Cancel edit</button>
-            </div>
-            <p id="phase-import-status" class="hint"></p>
-          </form>
-        </article>
-
-        <article class="card">
-          <h3>Saved phase templates</h3>
-          <div id="phase-template-list" class="phase-list"></div>
-        </article>
-
-        <article class="card">
-          <h3>Scheduled phase instances</h3>
-          <div id="phase-instance-list" class="phase-list"></div>
-        </article>
-      </section>
-
-      <section class="view-panel" data-view="review">
-        <article class="card">
-          <h2>Review</h2>
-          <p class="hint">Compare what was planned with what was actually done. Modified sessions stay visible here.</p>
-          <div id="review-summary" class="summary"></div>
-          <div id="review-session-list" class="review-list"></div>
-        </article>
-
-        <article class="card">
-          <h3>Log Actual Workout</h3>
-          <form id="workout-form">
+          <section class="add-training-panel" data-add-training-panel="log">
+            <p class="hint">Use this for actual-only strength, run, or sprint workouts. Planned sessions should use Log &amp; Complete from their training view.</p>
+            <form id="workout-form">
             <div class="grid">
               <label>
                 Date
@@ -283,25 +168,134 @@
 
             <button type="submit">Save Workout</button>
             <p id="workout-form-status" class="hint"></p>
+            </form>
+          </section>
+
+          <section class="add-training-panel is-hidden" data-add-training-panel="plan">
+            <p class="hint">Plan a future run or sprint session. Strength plans should usually come from a program template.</p>
+            <form id="planned-session-form">
+            <input type="hidden" id="planned-session-id" />
+            <div class="grid">
+              <label>
+                Date
+                <input type="date" id="planned-session-date" required />
+              </label>
+              <label>
+                Session type
+                <select id="planned-session-type" required>
+                  <option value="run">Run</option>
+                  <option value="sprint">Sprint</option>
+                </select>
+              </label>
+              <label>
+                Title
+                <input type="text" id="planned-session-title" placeholder="e.g. Easy run or Speed work" required />
+              </label>
+              <label class="coach-only">
+                Notes
+                <input type="text" id="planned-session-notes" placeholder="Optional planning note" />
+              </label>
+            </div>
+
+            <div id="planned-run-fields" class="grid planned-type-fields" data-planned-type="run">
+              <label>
+                Planned distance (km)
+                <input type="number" id="planned-run-distance" min="0" step="0.01" placeholder="e.g. 8" />
+              </label>
+              <label>
+                Target pace (mm:ss)
+                <input type="text" id="planned-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
+              </label>
+            </div>
+
+            <div id="planned-sprint-fields" class="planned-type-fields" data-planned-type="sprint">
+              <p class="hint">Add sprint blocks with reps, meters, optional target time per rep, and optional rest.</p>
+              <div class="grid">
+                <label>
+                  Reps
+                  <input type="number" id="planned-sprint-reps" min="1" step="1" placeholder="e.g. 6" />
+                </label>
+                <label>
+                  Meters
+                  <input type="number" id="planned-sprint-distance" min="1" step="1" placeholder="e.g. 100" />
+                </label>
+                <label>
+                  Target time per rep (sec, optional)
+                  <input type="number" id="planned-sprint-target-time" min="0" step="0.01" placeholder="Leave empty to use best previous time" />
+                </label>
+                <label>
+                  Rest (sec, optional)
+                  <input type="number" id="planned-sprint-rest" min="0" step="1" placeholder="e.g. 90" />
+                </label>
+              </div>
+              <div class="dialog-actions">
+                <button type="button" id="add-planned-sprint-block">Add sprint block</button>
+              </div>
+              <ol id="planned-sprint-blocks-list" class="detail-list"></ol>
+            </div>
+
+            <div class="dialog-actions">
+              <button type="submit" id="save-planned-session">Save planned session</button>
+              <button type="button" id="cancel-planned-session" class="ghost-button">Cancel edit</button>
+            </div>
+            <p id="planned-session-status" class="hint"></p>
+            </form>
+          </section>
+        </article>
+      </section>
+
+      <section class="view-panel" data-view="phases">
+        <article class="card">
+          <h2>Phases</h2>
+          <p class="hint">
+            Import one strength phase per file or paste. Saved templates can also be loaded back here for editing, and
+            scheduled planned sessions will refresh from the updated template. Program weeks start from the chosen start date.
+          </p>
+          <form id="phase-import-form">
+            <input type="hidden" id="phase-edit-id" />
+            <div class="grid">
+              <label>
+                Phase name override
+                <input type="text" id="phase-name-override" placeholder="Optional; import can define the name" />
+              </label>
+              <label>
+                Import CSV file
+                <input type="file" id="phase-import-file" accept=".csv,text/csv,.txt,text/plain" />
+              </label>
+            </div>
+            <label>
+              Phase import content
+              <textarea
+                id="phase-import-text"
+                rows="10"
+                placeholder="PHASE,Phase 1,5&#10;SLOT,Tuesday,Strength A,Main lower-body day&#10;BLOCK,A,15-20 mins,90-120s,3-4&#10;EXERCISE,A1,Back squat,2x8-10,Heavy,100"
+              ></textarea>
+            </label>
+            <div class="dialog-actions">
+              <button type="submit" id="save-phase-button">Import strength phase</button>
+              <button type="button" id="cancel-phase-edit" class="ghost-button is-hidden">Cancel edit</button>
+            </div>
+            <p id="phase-import-status" class="hint"></p>
           </form>
         </article>
 
         <article class="card">
-          <h3>Recent Workouts</h3>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Main Metric</th>
-                  <th>Notes</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="history-body"></tbody>
-            </table>
-          </div>
+          <h3>Saved phase templates</h3>
+          <div id="phase-template-list" class="phase-list"></div>
+        </article>
+
+        <article class="card">
+          <h3>Scheduled phase instances</h3>
+          <div id="phase-instance-list" class="phase-list"></div>
+        </article>
+      </section>
+
+      <section class="view-panel" data-view="review">
+        <article class="card">
+          <h2>Review</h2>
+          <p class="hint">Compare what was planned with what was actually done. Modified sessions stay visible here.</p>
+          <div id="review-summary" class="summary"></div>
+          <div id="review-session-list" class="review-list"></div>
         </article>
       </section>
 
@@ -432,7 +426,7 @@
       <section class="view-panel" data-view="data">
         <article class="card">
           <h2>Data</h2>
-          <p class="hint">Manage backups and saved exercise names here.</p>
+          <p class="hint">Manage backups, saved exercise names, and workout history here.</p>
         </article>
 
         <article class="card">
@@ -452,6 +446,24 @@
           <h3>Exercise Library</h3>
           <p class="hint">Saved exercise names for quick reuse in workout logging and editing.</p>
           <ul id="exercise-library-list" class="detail-list"></ul>
+        </article>
+
+        <article class="card">
+          <h3>Workout History</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Main Metric</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
         </article>
       </section>
     </main>
