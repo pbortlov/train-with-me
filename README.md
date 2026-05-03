@@ -21,6 +21,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Program weeks are anchored to the chosen phase start date, not calendar Monday
 - Planned generated strength sessions can be manually moved before completion without editing the phase template
 - Calendar uses compact session cards with a popup training view so the week grid stays stable
+- Calendar shows the program week at the day level and tints generated program sessions with matching palette colors
+- Today stays highlighted with a rounded accent outline and date pill even when the day belongs to a colored program week
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
 - Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions
 - Completed planned sessions can be edited after `Log & Complete` to correct weights, reps, sets, times, or notes

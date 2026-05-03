@@ -2061,6 +2061,60 @@ function getStandaloneWorkoutsForWeek(weekStart) {
     .sort(compareWorkoutsByRecentDate);
 }
 
+function buildCalendarProgramWeekMap(weekDates) {
+  const dayKeys = weekDates.map((date) => formatDateInput(date));
+  const dayKeySet = new Set(dayKeys);
+  const programWeekMap = new Map(dayKeys.map((dayKey) => [dayKey, []]));
+
+  phaseInstances.forEach((instance) => {
+    const durationWeeks = toNumberOrNull(instance.durationWeeks) || 0;
+    for (let weekIndex = 0; weekIndex < durationWeeks; weekIndex += 1) {
+      const weekStart = addDays(instance.startDate, weekIndex * 7);
+      for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
+        const dayKey = formatDateInput(addDays(weekStart, dayOffset));
+        if (!dayKeySet.has(dayKey)) {
+          continue;
+        }
+        programWeekMap.get(dayKey).push({
+          phaseInstanceId: instance.id,
+          weekIndex,
+          label: `Week ${weekIndex + 1}`,
+          colorClass: programWeekColorClass(weekIndex),
+        });
+      }
+    }
+  });
+
+  return programWeekMap;
+}
+
+function programWeekColorClass(weekIndex) {
+  return `program-week-color-${(Number(weekIndex) % 5) + 1}`;
+}
+
+function programWeekMarkerForDay(markers) {
+  if (!markers?.length) {
+    return null;
+  }
+  const [primaryMarker] = markers;
+  return {
+    ...primaryMarker,
+    label: `${primaryMarker.label}${markers.length > 1 ? ` +${markers.length - 1}` : ""}`,
+  };
+}
+
+function programWeekMarkerForSession(session) {
+  if (session.source !== "phase-generated" || !isNumber(session.phaseWeekIndex)) {
+    return null;
+  }
+  return {
+    phaseInstanceId: session.phaseInstanceId || "",
+    weekIndex: Number(session.phaseWeekIndex),
+    label: `Week ${Number(session.phaseWeekIndex) + 1}`,
+    colorClass: programWeekColorClass(session.phaseWeekIndex),
+  };
+}
+
 function computeWeeklyAdherence(weekStart) {
   const sessions = getPlannedSessionsForWeek(weekStart);
   const completed = sessions.filter((session) => ["completed", "modified"].includes(session.status)).length;
@@ -2103,6 +2157,7 @@ function renderCalendar() {
   const weekDates = getWeekDates(uiSettings.currentWeekStart);
   const weekSessions = getPlannedSessionsForWeek(uiSettings.currentWeekStart);
   const weekWorkouts = getStandaloneWorkoutsForWeek(uiSettings.currentWeekStart);
+  const programWeekMap = buildCalendarProgramWeekMap(weekDates);
   const availableSessionIds = new Set(weekSessions.map((session) => session.id));
   if (!selectedCalendarSessionId || !availableSessionIds.has(selectedCalendarSessionId)) {
     selectedCalendarSessionId = weekSessions[0]?.id || "";
@@ -2114,15 +2169,19 @@ function renderCalendar() {
       const dayKey = formatDateInput(date);
       const daySessions = weekSessions.filter((session) => session.date === dayKey);
       const dayWorkouts = weekWorkouts.filter((workout) => workout.date === dayKey);
+      const dayProgramWeekMarker = programWeekMarkerForDay(programWeekMap.get(dayKey));
       const isToday = dayKey === formatDateInput(new Date());
       const sessionsMarkup = [
         ...daySessions.map((session) => renderPlannedSessionCard(session)),
         ...dayWorkouts.map((workout) => renderWorkoutCalendarCard(workout)),
       ].join("");
       return `
-        <article class="calendar-day${isToday ? " is-today" : ""}">
+        <article class="calendar-day${isToday ? " is-today" : ""}${dayProgramWeekMarker ? ` has-program-week ${dayProgramWeekMarker.colorClass}` : ""}">
           <div class="calendar-day-header">
-            <h4>${date.toLocaleDateString(undefined, { weekday: "short" })}</h4>
+            <div>
+              <h4>${date.toLocaleDateString(undefined, { weekday: "short" })}</h4>
+              ${dayProgramWeekMarker ? `<span class="program-week-badge ${dayProgramWeekMarker.colorClass}">${escapeHtml(dayProgramWeekMarker.label)}</span>` : ""}
+            </div>
             <span class="calendar-day-date">${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
           </div>
           ${sessionsMarkup || `<p class="planner-empty">No training logged or planned.</p>`}
@@ -2136,8 +2195,9 @@ function renderPlannedSessionCard(session) {
   const primaryMeta = session.type === "strength"
     ? formatStrengthSessionTotalDuration(session)
     : `${capitalize(session.type)} • ${formatPlannedSessionSummary(session)}`;
+  const programWeekMarker = programWeekMarkerForSession(session);
   return `
-    <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}">
+    <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}${programWeekMarker ? ` program-session-card ${programWeekMarker.colorClass}` : ""}">
       <div class="planned-session-title">${escapeHtml(session.title)}</div>
       <div class="planned-session-time">${escapeHtml(primaryMeta)}</div>
       <div class="planned-session-footer">

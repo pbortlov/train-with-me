@@ -20,3 +20,4 @@ It will stay simple by default and expose advanced planning through geek / coach
 - new entities are required for planned sessions and strength phases
 - documentation must expand beyond README into `docs/`
 - review and adherence become separate product surfaces
+- calendar program-week tinting must not hide the current day; today keeps a rounded accent outline and date emphasis above contextual week colors

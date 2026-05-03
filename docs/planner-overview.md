@@ -24,6 +24,8 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - planned run editing opens in a popup instead of reusing the in-page creation form
   - generated strength sessions
   - generated strength sessions can be moved manually while still planned, without changing the phase template
+  - program week tints use the program start-date anchor, show the week number at the day level, and use matching generated-session card colors
+  - today's calendar day keeps a rounded accent outline and date pill above program-week tinting
   - compact session cards with a popup training view so the day cell size stays stable
   - week cards show title first, time second, inline status at the lower right, and a contained `View training` button
   - standalone actual workout logging for strength, run, and sprint through `Log actual`
