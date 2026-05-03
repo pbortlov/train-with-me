@@ -238,6 +238,31 @@ button {
   overflow: hidden;
 }
 
+.calendar-day.has-program-week.program-week-color-1 {
+  background: linear-gradient(180deg, #00e5ff18, #0a1326 58%);
+  border-color: #00e5ff55;
+}
+
+.calendar-day.has-program-week.program-week-color-2 {
+  background: linear-gradient(180deg, #6dff5c18, #0a1326 58%);
+  border-color: #6dff5c55;
+}
+
+.calendar-day.has-program-week.program-week-color-3 {
+  background: linear-gradient(180deg, #ffd37a1c, #0a1326 58%);
+  border-color: #ffd37a55;
+}
+
+.calendar-day.has-program-week.program-week-color-4 {
+  background: linear-gradient(180deg, #7dd3fc1a, #0a1326 58%);
+  border-color: #7dd3fc55;
+}
+
+.calendar-day.has-program-week.program-week-color-5 {
+  background: linear-gradient(180deg, #ff9caf1a, #0a1326 58%);
+  border-color: #ff9caf55;
+}
+
 .calendar-day.is-today {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px #00e5ff44 inset;
@@ -248,13 +273,58 @@ button {
   justify-content: space-between;
   gap: 0.4rem;
   align-items: baseline;
+  min-width: 0;
 }
 
 .calendar-day-header h4 {
   margin: 0;
 }
 
+.program-week-badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.program-week-badge.program-week-color-1,
+.program-session-card.program-week-color-1 {
+  border-color: #00e5ff66;
+  background: #00e5ff12;
+}
+
+.program-week-badge.program-week-color-2,
+.program-session-card.program-week-color-2 {
+  border-color: #6dff5c66;
+  background: #6dff5c12;
+}
+
+.program-week-badge.program-week-color-3,
+.program-session-card.program-week-color-3 {
+  border-color: #ffd37a66;
+  background: #ffd37a12;
+}
+
+.program-week-badge.program-week-color-4,
+.program-session-card.program-week-color-4 {
+  border-color: #7dd3fc66;
+  background: #7dd3fc12;
+}
+
+.program-week-badge.program-week-color-5,
+.program-session-card.program-week-color-5 {
+  border-color: #ff9caf66;
+  background: #ff9caf12;
+}
+
 .calendar-day-date {
+  flex: 0 0 auto;
   color: var(--muted);
   font-size: 0.82rem;
 }
@@ -280,6 +350,7 @@ button {
   width: 100%;
   min-width: 0;
   align-content: start;
+  overflow: hidden;
 }
 
 .planned-session-card header,
@@ -349,11 +420,14 @@ button {
 
 .planned-session-status-inline {
   min-width: 0;
+  max-width: 100%;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .planned-session-status-inline.status-planned {
