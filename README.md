@@ -23,6 +23,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Calendar uses compact session cards with a popup training view so the week grid stays stable
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
 - Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions
+- Completed planned sessions can be edited after `Log & Complete` to correct weights, reps, sets, times, or notes
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
 - Sprint logging includes a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time

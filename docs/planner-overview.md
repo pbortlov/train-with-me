@@ -29,6 +29,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - standalone actual workout logging for strength, run, and sprint through `Log actual`
   - standalone actual workouts appear on the calendar but do not create planned sessions or affect program adherence
   - `Log & Complete` flow for day-of-training execution without rewriting the plan
+  - completed planned sessions can reopen the completion log for corrections
   - `completed` vs `modified` is auto-detected from planned vs actual workout data
 - `Programs`
   - import one strength phase

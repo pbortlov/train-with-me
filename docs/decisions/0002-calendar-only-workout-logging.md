@@ -15,6 +15,7 @@ Calendar is the single operational surface for adding training.
 - `Plan session` creates manual run/sprint `plannedSession` records.
 - Strength planning remains program-based in Programs.
 - `Log & Complete` remains the completion flow for planned sessions and is the only way planned training updates adherence and program progress.
+- Completed planned-session logs are edited from the planned session and synchronized to their linked `workout` record.
 - Review is read-only and only compares planned vs actual outcomes for completed, modified, and missed planned sessions.
 - Workout history management lives outside Review.
 
@@ -23,3 +24,4 @@ Calendar is the single operational surface for adding training.
 - Program adherence remains based only on planned sessions.
 - Calendar avoids duplicate top-level forms for planning vs logging.
 - Calendar must avoid showing linked completion workouts as duplicate standalone workout cards.
+- Linked workout records are derived from planned-session actual data and must not drift from it.

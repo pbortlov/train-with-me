@@ -42,6 +42,8 @@ Strength completion status uses minimum planned targets:
 
 Saved completed/modified strength sessions are recalculated on app load and after backup import so Review and adherence use the current status rules.
 
+Completed or modified planned sessions can be edited from the Calendar training view. Editing updates the planned session actual data, recalculates completed vs modified status, and syncs the linked workout record so Review, Stats, and Program Strength Progress use the corrected values.
+
 Program adherence charts display completed and modified sessions together as `Done` because both count toward adherence. Review still shows modified sessions separately so plan changes remain visible.
 
 ## Program Strength Progress
