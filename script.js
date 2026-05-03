@@ -161,6 +161,7 @@ const completionStrengthBlocksEl = document.getElementById("completion-strength-
 const completionNoteInput = document.getElementById("completion-note");
 const completionStatusMessageEl = document.getElementById("completion-status-message");
 const cancelCompletionButton = document.getElementById("cancel-completion");
+const completionSubmitButton = completionForm?.querySelector('button[type="submit"]');
 const BAND_COLOR_OPTIONS = ["yellow", "red", "black", "purple", "green", "blue"];
 const BAND_COLOR_LABELS = {
   yellow: "extra light",
@@ -983,6 +984,16 @@ function deleteWorkout(workoutId) {
   render();
 }
 
+function removeLinkedWorkoutsForSessions(sessions) {
+  const linkedWorkoutIds = new Set((sessions || []).map((session) => session.linkedWorkoutId).filter(Boolean));
+  if (!linkedWorkoutIds.size) {
+    return false;
+  }
+  const originalCount = workouts.length;
+  workouts = workouts.filter((workout) => !linkedWorkoutIds.has(workout.id));
+  return workouts.length !== originalCount;
+}
+
 function openDeleteConfirm(workoutId) {
   pendingDeleteWorkoutId = workoutId;
   if (typeof deleteConfirmDialog.showModal === "function") {
@@ -1012,6 +1023,11 @@ function openEditWorkoutDialog(workoutId) {
 
   const workout = workouts.find((item) => item.id === workoutId);
   if (!workout) {
+    return;
+  }
+  const linkedSession = plannedSessions.find((session) => session.linkedWorkoutId === workoutId);
+  if (linkedSession) {
+    openCompletionDialog(linkedSession);
     return;
   }
 
@@ -2227,7 +2243,8 @@ function renderCalendarSessionDetail() {
           session.status === "planned"
             ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
                <button type="button" class="ghost-button danger-button" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
-            : `<button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`
+            : `${session.actual ? `<button type="button" data-role="edit-completed-session" data-id="${session.id}">Edit log</button>` : ""}
+               <button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`
         }
         <button type="button" class="ghost-button danger-button" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
       </div>
@@ -2669,9 +2686,16 @@ function handleCalendarAction(event) {
   }
   if (role === "delete-planned-session") {
     closeCalendarSessionDialog();
+    const removedSession = plannedSessions.find((item) => item.id === sessionId);
+    const removedLinkedWorkouts = removeLinkedWorkoutsForSessions(removedSession ? [removedSession] : []);
     plannedSessions = plannedSessions.filter((item) => item.id !== sessionId);
     if (selectedCalendarSessionId === sessionId) {
       selectedCalendarSessionId = "";
+    }
+    if (removedLinkedWorkouts) {
+      syncExerciseLibraryFromWorkouts();
+      renderExerciseLibrary();
+      save(STORAGE_KEY_WORKOUTS, workouts);
     }
     savePlannerCollections();
     render();
@@ -2684,6 +2708,10 @@ function handleCalendarAction(event) {
     render();
   }
   if (role === "reset-planned-session") {
+    if (session.linkedWorkoutId) {
+      workouts = workouts.filter((workout) => workout.id !== session.linkedWorkoutId);
+      save(STORAGE_KEY_WORKOUTS, workouts);
+    }
     session.status = "planned";
     session.actual = null;
     session.linkedWorkoutId = "";
@@ -2692,6 +2720,13 @@ function handleCalendarAction(event) {
     render();
   }
   if (role === "complete-planned-session") {
+    closeCalendarSessionDialog();
+    openCompletionDialog(session);
+  }
+  if (role === "edit-completed-session") {
+    if (!session.actual) {
+      return;
+    }
     closeCalendarSessionDialog();
     openCompletionDialog(session);
   }
@@ -3418,8 +3453,15 @@ function handlePhaseInstanceAction(event) {
   if (!instance) {
     return;
   }
+  const removedSessions = plannedSessions.filter((session) => instance.generatedSessionIds.includes(session.id));
+  const removedLinkedWorkouts = removeLinkedWorkoutsForSessions(removedSessions);
   plannedSessions = plannedSessions.filter((session) => !instance.generatedSessionIds.includes(session.id));
   phaseInstances = phaseInstances.filter((item) => item.id !== instance.id);
+  if (removedLinkedWorkouts) {
+    syncExerciseLibraryFromWorkouts();
+    renderExerciseLibrary();
+    save(STORAGE_KEY_WORKOUTS, workouts);
+  }
   savePlannerCollections();
   render();
 }
@@ -3428,6 +3470,7 @@ function openCompletionDialog(session) {
   if (!completionDialog || !completionForm) {
     return;
   }
+  const isEditingCompletion = Boolean(session.actual);
   completionForm.reset();
   completionStrengthDraft = [];
   completionSprintDraft = [];
@@ -3435,25 +3478,31 @@ function openCompletionDialog(session) {
   completionDateInput.value = session.date;
   completionSessionTitleEl.textContent = `${session.title} • ${capitalize(session.type)}`;
   completionStatusMessageEl.textContent = "";
+  completionNoteInput.value = session.modificationNote || "";
+  if (completionSubmitButton) {
+    completionSubmitButton.textContent = isEditingCompletion ? "Save log changes" : "Log & Complete";
+  }
 
   completionRunFields.style.display = session.type === "run" ? "block" : "none";
   completionSprintFields.style.display = session.type === "sprint" ? "block" : "none";
   completionStrengthFields.style.display = session.type === "strength" ? "block" : "none";
 
   if (session.type === "run") {
-    completionRunDistanceInput.value = session.details?.distance ?? "";
-    completionRunTimeInput.value = "";
-    completionRunPaceInput.value = "";
+    completionRunDistanceInput.value = session.actual?.distance ?? session.details?.distance ?? "";
+    completionRunTimeInput.value = session.actual?.time || "";
+    completionRunPaceInput.value = isNumber(session.actual?.pace) ? formatRunPace(session.actual.pace) : "";
   }
   if (session.type === "sprint") {
     completionSprintDraft = buildCompletionSprintDraft(session);
+    applyActualSprintToCompletionDraft(session.actual);
     if (completionSprintFeelingInput) {
-      completionSprintFeelingInput.value = "";
+      completionSprintFeelingInput.value = session.actual?.feeling || "";
     }
     renderCompletionSprintBlocks();
   }
   if (session.type === "strength") {
     completionStrengthDraft = buildCompletionStrengthDraft(session);
+    applyActualStrengthToCompletionDraft(session.actual);
     renderCompletionStrengthBlocks();
   }
 
@@ -3470,6 +3519,9 @@ function closeCompletionDialog() {
   }
   completionStrengthDraft = [];
   completionSprintDraft = [];
+  if (completionSubmitButton) {
+    completionSubmitButton.textContent = "Log & Complete";
+  }
   if (typeof completionDialog.close === "function") {
     completionDialog.close();
   } else {
@@ -3492,6 +3544,19 @@ function buildCompletionSprintDraft(session) {
       actualTime: null,
     })),
   }));
+}
+
+function applyActualSprintToCompletionDraft(actual) {
+  const actualSets = actual?.sprintSets || [];
+  if (!actualSets.length) {
+    return;
+  }
+  const rows = completionSprintDraft.flatMap((block) => block.rows || []);
+  rows.forEach((row, index) => {
+    if (actualSets[index]) {
+      row.actualTime = toNumberOrNull(actualSets[index].time);
+    }
+  });
 }
 
 function renderCompletionSprintBlocks() {
@@ -3614,6 +3679,37 @@ function buildCompletionStrengthDraft(session) {
         })),
       })),
     };
+  });
+}
+
+function applyActualStrengthToCompletionDraft(actual) {
+  const actualBlocks = actual?.blocks || [];
+  if (!actualBlocks.length) {
+    return;
+  }
+  completionStrengthDraft.forEach((block, blockIndex) => {
+    const actualBlock = actualBlocks[blockIndex];
+    if (!actualBlock) {
+      return;
+    }
+    block.actualSets = toNumberOrNull(actualBlock.actualSets);
+    block.note = actualBlock.note || "";
+    block.exercises.forEach((exercise, exerciseIndex) => {
+      const actualExercise = actualBlock.exercises?.[exerciseIndex];
+      if (!actualExercise) {
+        return;
+      }
+      exercise.completed = Boolean(actualExercise.completed);
+      exercise.actualNote = actualExercise.actualNote || "";
+      exercise.actualSets = (actualExercise.actualSets || []).map((set, setIndex) => ({
+        id: crypto.randomUUID(),
+        order: setIndex + 1,
+        reps: toNumberOrNull(set.reps),
+        loadType: set.loadType === "band" || set.loadType === "bodyweight" ? set.loadType : "kg",
+        weight: set.loadType === "kg" ? toNumberOrNull(set.weight) : null,
+        bandColor: set.loadType === "band" ? set.bandColor || "" : "",
+      }));
+    });
   });
 }
 
@@ -3966,8 +4062,7 @@ function saveCompletedSession(event) {
 
     const status = detectCompletedSessionStatus(session, actual);
 
-    const workout = createWorkoutFromPlannedSession(session, actual, modificationNote);
-    workouts.unshift(normalizeImportedWorkout(workout));
+    const workout = upsertLinkedWorkoutFromPlannedSession(session, actual, modificationNote);
     syncExerciseLibraryFromWorkouts();
     renderExerciseLibrary();
     save(STORAGE_KEY_WORKOUTS, workouts);
@@ -3981,6 +4076,25 @@ function saveCompletedSession(event) {
   } catch {
     completionStatusMessageEl.textContent = "Could not save completion. Check the values and try again.";
   }
+}
+
+function upsertLinkedWorkoutFromPlannedSession(session, actual, modificationNote) {
+  const existingIndex = session.linkedWorkoutId
+    ? workouts.findIndex((workout) => workout.id === session.linkedWorkoutId)
+    : -1;
+  const existingWorkout = existingIndex >= 0 ? workouts[existingIndex] : null;
+  const workout = normalizeImportedWorkout({
+    ...createWorkoutFromPlannedSession(session, actual, modificationNote),
+    id: existingWorkout?.id || session.linkedWorkoutId || crypto.randomUUID(),
+    createdAt: existingWorkout?.createdAt || Date.now(),
+  });
+
+  if (existingIndex >= 0) {
+    workouts[existingIndex] = workout;
+  } else {
+    workouts.unshift(workout);
+  }
+  return workout;
 }
 
 function collectCompletedStrengthBlocks(session) {
