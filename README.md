@@ -33,6 +33,11 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
 - Run and sprint progress stay separate from strength phases and are shown as progress over time
+- Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
+- Run and sprint goals are shown on their charts, with achieved goals marked by a celebration marker
+- Run goals use distance plus target time, such as `5 km under 22:00`
+- Sprint goals are distance-specific, such as `100 m under 14.2 sec`
+- Achieved run and sprint goals keep set and achieved dates so time-to-achieve stays visible
 - Planned session statuses:
   - planned
   - completed
@@ -42,6 +47,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Weekly adherence summaries such as `5/6`
 - Stats page with:
   - goal progress
+  - goal history for achieved run and sprint targets
   - adherence summaries
   - program-duration strength progress
   - strength / run pace / sprint charts over time

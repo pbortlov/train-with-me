@@ -309,30 +309,48 @@
         <article class="card">
           <h3>Goals</h3>
           <form id="goals-form" class="grid">
-            <label>
-              Strength goal (kg)
-              <input type="number" id="goal-strength" min="0" step="0.1" placeholder="e.g. 100" />
-            </label>
+            <div class="goal-activity-toggle" aria-label="Goal activity">
+              <button type="button" class="ghost-button is-active" data-goal-activity="run">Run</button>
+              <button type="button" class="ghost-button" data-goal-activity="sprint">Sprint</button>
+              <button type="button" class="ghost-button" data-goal-activity="strength">Strength</button>
+            </div>
 
-            <label>
-              Run goal distance (km)
-              <input type="number" id="goal-run" min="0" step="0.01" placeholder="e.g. 10" />
-            </label>
+            <div class="goal-activity-panel" data-goal-activity-panel="run">
+              <label>
+                Run target distance (km)
+                <input type="number" id="goal-run-combined-distance" min="0" step="0.01" placeholder="e.g. 5" />
+              </label>
 
-            <label>
-              Run goal pace (min/km)
-              <input type="text" id="goal-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
-            </label>
+              <label>
+                Run target time (hh:mm:ss or mm:ss)
+                <input type="text" id="goal-run-combined-time" inputmode="numeric" placeholder="e.g. 22:00" />
+              </label>
+            </div>
 
-            <label>
-              Sprint goal best time (sec)
-              <input type="number" id="goal-sprint" min="0" step="0.01" placeholder="e.g. 14.2" />
-            </label>
+            <div class="goal-activity-panel" data-goal-activity-panel="sprint">
+              <label>
+                Sprint goal distance (m)
+                <input type="number" id="goal-sprint-distance" min="1" step="1" placeholder="e.g. 100" />
+              </label>
 
-            <button type="submit">Save Goals</button>
+              <label>
+                Sprint goal best time (sec)
+                <input type="number" id="goal-sprint" min="0" step="0.01" placeholder="e.g. 14.2" />
+              </label>
+            </div>
+
+            <div class="goal-activity-panel" data-goal-activity-panel="strength">
+              <label>
+                Strength goal (kg)
+                <input type="number" id="goal-strength" min="0" step="0.1" placeholder="e.g. 100" />
+              </label>
+            </div>
+
+            <button type="submit">Save Goal</button>
           </form>
 
           <div id="goal-progress" class="goal-progress"></div>
+          <div id="goal-history" class="goal-progress"></div>
         </article>
 
         <article class="card">
@@ -475,6 +493,15 @@
       <div class="dialog-actions">
         <button type="button" id="confirm-delete-workout" class="danger-button">Delete</button>
         <button type="button" id="cancel-delete-workout">Cancel</button>
+      </div>
+    </dialog>
+
+    <dialog id="goal-celebration-dialog">
+      <h3 id="goal-celebration-title">Goal achieved</h3>
+      <p id="goal-celebration-message" class="hint"></p>
+      <div class="dialog-actions">
+        <button type="button" id="goal-celebration-new-goal">Set new goal</button>
+        <button type="button" id="goal-celebration-close" class="ghost-button">Close</button>
       </div>
     </dialog>
 
