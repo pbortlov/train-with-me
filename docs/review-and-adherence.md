@@ -65,6 +65,20 @@ Exercise progress rows can be sorted by:
 
 Run and sprint sessions are not attached to strength phases yet. They remain progress-over-time metrics on the Stats page.
 
+## Run And Sprint Goals
+Run and sprint goals are stored with the date they were set. When a goal is achieved, the achieved date and linked workout are saved in goal history so the app can show how long the goal took.
+
+Run goals can be:
+- distance-only, such as `10 km`
+- pace-only, such as below `5:00/km`
+- combined distance plus time, such as `5 km under 22:00`
+
+Combined run goals require both conditions: the logged run must meet or exceed the target distance and finish at or below the target time. A faster pace over a shorter run does not count.
+
+Sprint goals are distance-specific. For example, a `100 m under 14.2 sec` goal can only be achieved by a logged 100 m sprint set at or below 14.2 seconds.
+
+Run and sprint charts show active and achieved goal targets when the chart metric matches the goal. Achieved goals are marked with a celebration marker on the qualifying chart point. Strength goals are not drawn on the general strength chart because strength progress will use a separate program-specific metric.
+
 ## Adherence
 Weekly adherence is defined as:
 

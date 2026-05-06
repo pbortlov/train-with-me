@@ -11,6 +11,13 @@ const goalsForm = document.getElementById("goals-form");
 const historyBody = document.getElementById("history-body");
 const summaryEl = document.getElementById("summary");
 const goalProgressEl = document.getElementById("goal-progress");
+const goalHistoryEl = document.getElementById("goal-history");
+const goalRunTypeInput = document.getElementById("goal-run-type");
+const goalRunFields = document.querySelectorAll("[data-run-goal-field]");
+const goalCelebrationDialog = document.getElementById("goal-celebration-dialog");
+const goalCelebrationMessageEl = document.getElementById("goal-celebration-message");
+const goalCelebrationNewGoalButton = document.getElementById("goal-celebration-new-goal");
+const goalCelebrationCloseButton = document.getElementById("goal-celebration-close");
 const workoutSubmitButton = workoutForm.querySelector('button[type="submit"]');
 const activityInput = document.getElementById("activity");
 const activityFieldGroups = document.querySelectorAll(".activity-fields");
@@ -178,18 +185,36 @@ const SPRINT_FEELING_OPTIONS = [
   { value: "sluggish", label: "Sluggish 🐢" },
   { value: "pain", label: "Pain ⚠️" },
 ];
+const GOAL_VERSION = 2;
+const goalEmojiPlugin = {
+  id: "goalEmojiMarkers",
+  afterDatasetsDraw(chart) {
+    const markers = chart.options.plugins?.goalEmojiMarkers?.markers || [];
+    if (!markers.length) {
+      return;
+    }
+    const { ctx } = chart;
+    ctx.save();
+    ctx.font = "20px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    markers.forEach((marker) => {
+      const x = chart.scales.x.getPixelForValue(marker.x);
+      const y = chart.scales.y.getPixelForValue(marker.y);
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        ctx.fillText(marker.label || "🎉", x, y - 8);
+      }
+    });
+    ctx.restore();
+  },
+};
 
 const dateInput = document.getElementById("date");
 
 dateInput.valueAsDate = new Date();
 
 let workouts = load(STORAGE_KEY_WORKOUTS, []).map((workout) => normalizeImportedWorkout(workout));
-let goals = load(STORAGE_KEY_GOALS, {
-  strength: null,
-  run: null,
-  runPace: null,
-  sprint: null,
-});
+let goals = normalizeGoals(load(STORAGE_KEY_GOALS, defaultGoals()));
 let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
 let plannedSessions = load(STORAGE_KEY_PLANNED_SESSIONS, []).map((session) => normalizePlannedSession(session));
 let phaseTemplates = load(STORAGE_KEY_PHASE_TEMPLATES, []).map((template) => normalizePhaseTemplate(template));
@@ -229,9 +254,11 @@ let editDraftCurrentStrengthSets = [];
 let editDraftStrengthExercises = [];
 
 hydrateGoalInputs();
+toggleRunGoalInputs();
 syncExerciseLibraryFromWorkouts();
 renderExerciseLibrary();
 refreshDetectedSessionStatuses();
+evaluateGoals({ persist: true, celebrate: false });
 updateVisibleFields();
 renderSprintSets();
 renderPlannedSprintBlocks();
@@ -289,6 +316,7 @@ workoutForm.addEventListener("submit", (event) => {
     workouts.unshift(workout);
   }
   save(STORAGE_KEY_WORKOUTS, workouts);
+  evaluateGoals({ persist: true, celebrate: true });
   resetWorkoutForm();
   setWorkoutFormStatus("Workout saved.");
   render();
@@ -307,6 +335,15 @@ chartGroupingInput.addEventListener("change", () => {
   chartGrouping = chartGroupingInput.value || "week";
   renderCharts();
 });
+addSafeEventListener(goalRunTypeInput, "change", toggleRunGoalInputs);
+addSafeEventListener(goalCelebrationNewGoalButton, "click", () => {
+  closeGoalCelebrationDialog();
+  uiSettings.currentView = "stats";
+  save(STORAGE_KEY_UI_SETTINGS, uiSettings);
+  syncViewState();
+  goalsForm?.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+addSafeEventListener(goalCelebrationCloseButton, "click", closeGoalCelebrationDialog);
 programProgressSelect?.addEventListener("change", () => {
   selectedProgramProgressInstanceId = programProgressSelect.value || "";
   renderProgramProgress();
@@ -467,14 +504,12 @@ addStrengthExerciseButton.addEventListener("click", () => {
 
 goalsForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  goals = {
-    strength: toNumberOrNull(valueOf("goal-strength")),
-    run: toNumberOrNull(valueOf("goal-run")),
-    runPace: parseGoalPaceInput(valueOf("goal-run-pace")),
-    sprint: toNumberOrNull(valueOf("goal-sprint")),
-  };
+  goals = buildGoalsFromForm(goals);
+  evaluateGoals({ persist: false, celebrate: true });
   save(STORAGE_KEY_GOALS, goals);
+  hydrateGoalInputs();
   renderGoals();
+  renderCharts();
 });
 
 historyBody.addEventListener("click", (event) => {
@@ -584,34 +619,176 @@ function renderHistory() {
     .join("");
 }
 
+function defaultGoals() {
+  return {
+    version: GOAL_VERSION,
+    strength: null,
+    active: {
+      run: null,
+      sprint: null,
+    },
+    history: [],
+  };
+}
+
+function normalizeGoals(rawGoals) {
+  const today = formatDateInput(new Date());
+  if (!rawGoals || typeof rawGoals !== "object") {
+    return defaultGoals();
+  }
+
+  if (rawGoals.version === GOAL_VERSION && rawGoals.active && Array.isArray(rawGoals.history)) {
+    return {
+      version: GOAL_VERSION,
+      strength: toNumberOrNull(rawGoals.strength),
+      active: {
+        run: normalizeGoal(rawGoals.active.run),
+        sprint: normalizeGoal(rawGoals.active.sprint),
+      },
+      history: rawGoals.history.map((goal) => normalizeGoal(goal)).filter(Boolean),
+    };
+  }
+
+  const migrated = defaultGoals();
+  migrated.strength = toNumberOrNull(rawGoals.strength);
+  const runDistance = toNumberOrNull(rawGoals.run);
+  const runPace = parseGoalPaceInput(rawGoals.runPace) ?? toNumberOrNull(rawGoals.runPace);
+  const sprintTime = toNumberOrNull(rawGoals.sprint);
+  if (isNumber(runDistance)) {
+    migrated.active.run = createGoal("run", "distance", { distance: runDistance }, today);
+  } else if (isNumber(runPace)) {
+    migrated.active.run = createGoal("run", "pace", { pace: runPace }, today);
+  }
+  if (isNumber(sprintTime)) {
+    migrated.active.sprint = createGoal("sprint", "time", { distance: null, time: sprintTime }, today);
+  }
+  return migrated;
+}
+
+function normalizeGoal(goal) {
+  if (!goal || typeof goal !== "object") {
+    return null;
+  }
+  const activity = goal.activity === "sprint" ? "sprint" : goal.activity === "run" ? "run" : "";
+  if (!activity) {
+    return null;
+  }
+  const type = typeof goal.type === "string" ? goal.type : activity === "sprint" ? "time" : "distance";
+  return {
+    id: typeof goal.id === "string" ? goal.id : crypto.randomUUID(),
+    activity,
+    type,
+    setAt: normalizeDateInput(goal.setAt) || formatDateInput(new Date()),
+    target: normalizeGoalTarget(activity, type, goal.target || goal),
+    achievedAt: normalizeDateInput(goal.achievedAt) || "",
+    achievedWorkoutId: typeof goal.achievedWorkoutId === "string" ? goal.achievedWorkoutId : "",
+    celebratedAt: typeof goal.celebratedAt === "string" ? goal.celebratedAt : "",
+  };
+}
+
+function normalizeGoalTarget(activity, type, target) {
+  if (activity === "run" && type === "distance") {
+    return { distance: toNumberOrNull(target.distance) };
+  }
+  if (activity === "run" && type === "pace") {
+    return { pace: parseGoalPaceInput(target.pace) ?? toNumberOrNull(target.pace) };
+  }
+  if (activity === "run" && type === "combined") {
+    return {
+      distance: toNumberOrNull(target.distance),
+      time: normalizeFlexibleRunDurationInput(target.time) || "",
+    };
+  }
+  if (activity === "sprint") {
+    return {
+      distance: toNumberOrNull(target.distance),
+      time: toNumberOrNull(target.time),
+    };
+  }
+  return {};
+}
+
+function createGoal(activity, type, target, setAt = formatDateInput(new Date())) {
+  return normalizeGoal({
+    id: crypto.randomUUID(),
+    activity,
+    type,
+    target,
+    setAt,
+  });
+}
+
+function buildGoalsFromForm(existingGoals) {
+  const nextGoals = normalizeGoals(existingGoals);
+  nextGoals.strength = toNumberOrNull(valueOf("goal-strength"));
+  const today = formatDateInput(new Date());
+  const runType = goalRunTypeInput?.value || "distance";
+  let runGoal = null;
+  if (runType === "distance") {
+    const distance = toNumberOrNull(valueOf("goal-run"));
+    if (isNumber(distance)) {
+      runGoal = createGoal("run", "distance", { distance }, today);
+    }
+  } else if (runType === "pace") {
+    const pace = parseGoalPaceInput(valueOf("goal-run-pace"));
+    if (isNumber(pace)) {
+      runGoal = createGoal("run", "pace", { pace }, today);
+    }
+  } else {
+    const distance = toNumberOrNull(valueOf("goal-run-combined-distance"));
+    const time = normalizeFlexibleRunDurationInput(valueOf("goal-run-combined-time"));
+    if (isNumber(distance) && time) {
+      runGoal = createGoal("run", "combined", { distance, time }, today);
+    }
+  }
+
+  const sprintDistance = toNumberOrNull(valueOf("goal-sprint-distance"));
+  const sprintTime = toNumberOrNull(valueOf("goal-sprint"));
+  nextGoals.active.run = preserveUnchangedGoal(nextGoals.active.run, runGoal);
+  nextGoals.active.sprint =
+    isNumber(sprintDistance) && isNumber(sprintTime)
+      ? preserveUnchangedGoal(nextGoals.active.sprint, createGoal("sprint", "time", { distance: sprintDistance, time: sprintTime }, today))
+      : null;
+  return nextGoals;
+}
+
+function preserveUnchangedGoal(existingGoal, nextGoal) {
+  if (!nextGoal) {
+    return null;
+  }
+  if (existingGoal && goalSignature(existingGoal) === goalSignature(nextGoal)) {
+    return existingGoal;
+  }
+  return nextGoal;
+}
+
+function goalSignature(goal) {
+  return JSON.stringify({
+    activity: goal?.activity || "",
+    type: goal?.type || "",
+    target: goal?.target || {},
+  });
+}
+
 function renderGoals() {
+  goals = normalizeGoals(goals);
   const currentStrength = workouts
     .filter((w) => w.activity === "strength")
     .map((w) => strengthBestWeight(w))
     .filter((weightValue) => isNumber(weightValue))
     .reduce((max, weightValue) => Math.max(max, weightValue), 0);
 
-  const currentRun = workouts
-    .filter((w) => w.activity === "run" && isNumber(w.distance))
-    .reduce((max, w) => Math.max(max, w.distance), 0);
-
-  const currentRunPace = workouts
-    .filter((w) => w.activity === "run" && isNumber(w.pace))
-    .map((w) => w.pace)
-    .reduce((min, paceValue) => Math.min(min, paceValue), Infinity);
-
-  const currentSprint = workouts
-    .filter((w) => w.activity === "sprint")
-    .map((w) => sprintBestTime(w))
-    .filter((timeValue) => isNumber(timeValue))
-    .reduce((min, timeValue) => Math.min(min, timeValue), Infinity);
-
   goalProgressEl.innerHTML = `
     ${goalRow("Strength", currentStrength, goals.strength, "kg", true)}
-    ${goalRow("Run distance", currentRun, goals.run, "km", true)}
-    ${goalRow("Run best pace", Number.isFinite(currentRunPace) ? currentRunPace : null, goals.runPace, "min/km", false)}
-    ${goalRow("Sprint best time", Number.isFinite(currentSprint) ? currentSprint : null, goals.sprint, "sec", false)}
+    ${activeGoalRow(goals.active.run, "Run")}
+    ${activeGoalRow(goals.active.sprint, "Sprint")}
   `;
+  if (goalHistoryEl) {
+    const achievedGoals = goals.history.filter((goal) => goal.achievedAt);
+    goalHistoryEl.innerHTML = achievedGoals.length
+      ? `<h4>Achieved goals</h4>${achievedGoals.map((goal) => `<div class="goal-item"><strong>${formatGoalLabel(goal)}:</strong> achieved ${formatHumanDate(goal.achievedAt)} in ${daysBetween(goal.setAt, goal.achievedAt)} day(s)</div>`).join("")}`
+      : "<div class=\"goal-item\"><strong>Achieved goals:</strong> No achieved run or sprint goals yet.</div>";
+  }
 }
 
 function goalRow(label, current, goal, unit, higherIsBetter) {
@@ -632,10 +809,233 @@ function goalRow(label, current, goal, unit, higherIsBetter) {
 }
 
 function hydrateGoalInputs() {
+  goals = normalizeGoals(goals);
   document.getElementById("goal-strength").value = goals.strength ?? "";
-  document.getElementById("goal-run").value = goals.run ?? "";
-  document.getElementById("goal-run-pace").value = isNumber(goals.runPace) ? formatGoalPace(goals.runPace) : "";
-  document.getElementById("goal-sprint").value = goals.sprint ?? "";
+  const runGoal = goals.active.run;
+  if (goalRunTypeInput) {
+    goalRunTypeInput.value = runGoal?.type || "distance";
+  }
+  document.getElementById("goal-run").value = runGoal?.type === "distance" ? goals.active.run.target.distance ?? "" : "";
+  document.getElementById("goal-run-pace").value = runGoal?.type === "pace" && isNumber(runGoal.target.pace) ? formatGoalPace(runGoal.target.pace) : "";
+  document.getElementById("goal-run-combined-distance").value = runGoal?.type === "combined" ? runGoal.target.distance ?? "" : "";
+  document.getElementById("goal-run-combined-time").value = runGoal?.type === "combined" ? runGoal.target.time || "" : "";
+  document.getElementById("goal-sprint-distance").value = goals.active.sprint?.target?.distance ?? "";
+  document.getElementById("goal-sprint").value = goals.active.sprint?.target?.time ?? "";
+  toggleRunGoalInputs();
+}
+
+function toggleRunGoalInputs() {
+  const type = goalRunTypeInput?.value || "distance";
+  goalRunFields.forEach((field) => {
+    field.classList.toggle("is-hidden", field.dataset.runGoalField !== type);
+  });
+}
+
+function activeGoalRow(goal, emptyLabel) {
+  if (!goal) {
+    return `<div class="goal-item"><strong>${emptyLabel} goal:</strong> No active goal set yet.</div>`;
+  }
+  const achievement = findGoalAchievement(goal);
+  const progress = goalProgressPercent(goal);
+  return `
+    <div class="goal-item">
+      <strong>${formatGoalLabel(goal)}:</strong> set ${formatHumanDate(goal.setAt)}${achievement ? ` • achieved in ${daysBetween(goal.setAt, achievement.date)} day(s)` : ""}
+      <div class="progress-bar"><span style="width:${progress.toFixed(0)}%"></span></div>
+    </div>
+  `;
+}
+
+function formatGoalLabel(goal) {
+  if (!goal) {
+    return "Goal";
+  }
+  if (goal.activity === "run" && goal.type === "distance") {
+    return `Run ${formatNumber(goal.target.distance)} km`;
+  }
+  if (goal.activity === "run" && goal.type === "pace") {
+    return `Run below ${formatGoalPace(goal.target.pace)}/km`;
+  }
+  if (goal.activity === "run" && goal.type === "combined") {
+    return `Run ${formatNumber(goal.target.distance)} km under ${formatRunDuration(goal.target.time)}`;
+  }
+  if (goal.activity === "sprint") {
+    return isNumber(goal.target.distance)
+      ? `Sprint ${formatNumber(goal.target.distance)} m under ${formatNumber(goal.target.time)} sec`
+      : `Sprint under ${formatNumber(goal.target.time)} sec`;
+  }
+  return "Goal";
+}
+
+function daysBetween(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return 0;
+  }
+  return Math.max(0, Math.round((end - start) / 86400000));
+}
+
+function goalProgressPercent(goal) {
+  if (!goal) {
+    return 0;
+  }
+  const achievement = findGoalAchievement(goal);
+  if (achievement) {
+    return 100;
+  }
+  if (goal.activity === "run" && goal.type === "distance") {
+    const bestDistance = workouts
+      .filter((workout) => workout.activity === "run" && workout.date >= goal.setAt && isNumber(workout.distance))
+      .reduce((max, workout) => Math.max(max, workout.distance), 0);
+    return goal.target.distance ? Math.min(100, (bestDistance / goal.target.distance) * 100) : 0;
+  }
+  if (goal.activity === "run" && goal.type === "pace") {
+    const bestPace = workouts
+      .filter((workout) => workout.activity === "run" && workout.date >= goal.setAt && isNumber(workout.pace))
+      .reduce((min, workout) => Math.min(min, workout.pace), Infinity);
+    return Number.isFinite(bestPace) && goal.target.pace ? Math.min(100, (goal.target.pace / bestPace) * 100) : 0;
+  }
+  if (goal.activity === "run" && goal.type === "combined") {
+    const targetSeconds = parseRunDurationToSeconds(goal.target.time);
+    const bestTime = workouts
+      .filter((workout) => workout.activity === "run" && workout.date >= goal.setAt && workout.distance >= goal.target.distance)
+      .map((workout) => parseRunDurationToSeconds(workout.time))
+      .filter((seconds) => Number.isFinite(seconds))
+      .reduce((min, seconds) => Math.min(min, seconds), Infinity);
+    return Number.isFinite(bestTime) && targetSeconds ? Math.min(100, (targetSeconds / bestTime) * 100) : 0;
+  }
+  if (goal.activity === "sprint") {
+    const bestTime = getSprintGoalMatchingSets(goal)
+      .reduce((min, entry) => Math.min(min, entry.set.time), Infinity);
+    return Number.isFinite(bestTime) && goal.target.time ? Math.min(100, (goal.target.time / bestTime) * 100) : 0;
+  }
+  return 0;
+}
+
+function evaluateGoals(options = {}) {
+  const { persist = true, celebrate = true } = options;
+  goals = normalizeGoals(goals);
+  const achieved = [];
+  ["run", "sprint"].forEach((activity) => {
+    const goal = goals.active[activity];
+    if (!goal) {
+      return;
+    }
+    const achievement = findGoalAchievement(goal);
+    if (!achievement) {
+      return;
+    }
+    const completedGoal = {
+      ...goal,
+      achievedAt: achievement.date,
+      achievedWorkoutId: achievement.workoutId,
+    };
+    goals.history.unshift(completedGoal);
+    goals.active[activity] = null;
+    achieved.push({ goal: completedGoal, achievement });
+  });
+  if (achieved.length && persist) {
+    save(STORAGE_KEY_GOALS, goals);
+  }
+  if (celebrate && achieved.length) {
+    showGoalCelebration(achieved[0]);
+  }
+  return achieved;
+}
+
+function findGoalAchievement(goal) {
+  if (!goal) {
+    return null;
+  }
+  const sortedWorkouts = workouts
+    .filter((workout) => workout.date && workout.date >= goal.setAt)
+    .slice()
+    .sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.createdAt || 0) - (b.createdAt || 0));
+  if (goal.activity === "run") {
+    return sortedWorkouts
+      .filter((workout) => workout.activity === "run")
+      .map((workout) => runGoalAchievement(goal, workout))
+      .find(Boolean) || null;
+  }
+  if (goal.activity === "sprint") {
+    return getSprintGoalMatchingSets(goal)
+      .filter((entry) => entry.workout.date >= goal.setAt && entry.set.time <= goal.target.time)
+      .sort((a, b) => (a.workout.date || "").localeCompare(b.workout.date || "") || a.set.time - b.set.time)
+      .map((entry) => ({
+        date: entry.workout.date,
+        workoutId: entry.workout.id,
+        value: entry.set.time,
+        label: `${formatNumber(entry.set.distance)}m in ${formatNumber(entry.set.time)}s`,
+      }))[0] || null;
+  }
+  return null;
+}
+
+function runGoalAchievement(goal, workout) {
+  if (goal.type === "distance" && isNumber(workout.distance) && workout.distance >= goal.target.distance) {
+    return { date: workout.date, workoutId: workout.id, value: workout.distance, label: `${formatNumber(workout.distance)} km` };
+  }
+  if (goal.type === "pace" && isNumber(workout.pace) && workout.pace <= goal.target.pace) {
+    return { date: workout.date, workoutId: workout.id, value: workout.pace, label: `${formatRunPace(workout.pace)}/km` };
+  }
+  const targetSeconds = parseRunDurationToSeconds(goal.target.time);
+  const actualSeconds = parseRunDurationToSeconds(workout.time);
+  if (
+    goal.type === "combined" &&
+    isNumber(workout.distance) &&
+    workout.distance >= goal.target.distance &&
+    Number.isFinite(actualSeconds) &&
+    actualSeconds <= targetSeconds
+  ) {
+    return {
+      date: workout.date,
+      workoutId: workout.id,
+      value: workout.pace,
+      label: `${formatNumber(workout.distance)} km in ${formatRunDuration(workout.time)}`,
+    };
+  }
+  return null;
+}
+
+function getSprintGoalMatchingSets(goal) {
+  return workouts
+    .filter((workout) => workout.activity === "sprint" && workout.date)
+    .flatMap((workout) =>
+      normalizeSprintSets(workout.sprintSets)
+        .filter((set) => set.distance === goal.target.distance)
+        .map((set) => ({ workout, set })),
+    );
+}
+
+function showGoalCelebration(entry) {
+  if (!entry?.goal) {
+    return;
+  }
+  const now = new Date().toISOString();
+  const historyGoal = goals.history.find((goal) => goal.id === entry.goal.id);
+  if (historyGoal) {
+    historyGoal.celebratedAt = now;
+    save(STORAGE_KEY_GOALS, goals);
+  }
+  if (goalCelebrationMessageEl) {
+    goalCelebrationMessageEl.textContent = `🎉 ${formatGoalLabel(entry.goal)} achieved on ${formatHumanDate(entry.goal.achievedAt)} in ${daysBetween(entry.goal.setAt, entry.goal.achievedAt)} day(s). Result: ${entry.achievement.label}.`;
+  }
+  if (goalCelebrationDialog && typeof goalCelebrationDialog.showModal === "function") {
+    goalCelebrationDialog.showModal();
+  } else {
+    alert(goalCelebrationMessageEl?.textContent || "Goal achieved.");
+  }
+}
+
+function closeGoalCelebrationDialog() {
+  if (!goalCelebrationDialog) {
+    return;
+  }
+  if (typeof goalCelebrationDialog.close === "function") {
+    goalCelebrationDialog.close();
+  } else {
+    goalCelebrationDialog.removeAttribute("open");
+  }
 }
 
 function formatGoalValue(value, unit) {
@@ -1111,6 +1511,7 @@ function saveEditedWorkout() {
       editWorkoutStatusEl.textContent = "Workout updated.";
       render();
       closeEditWorkoutDialog();
+      evaluateGoals({ persist: true, celebrate: true });
     }
   } catch {
     editWorkoutStatusEl.textContent = "Invalid edit format. Please check your lines and try again.";
@@ -1229,8 +1630,22 @@ function renderCharts() {
   const groupedSprintData = groupChartPoints(sprintData, chartGrouping);
 
   strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, groupedStrengthData, "kg", "#00E5FF");
-  runChart = createOrUpdateChart(runChart, runChartCanvas, groupedRunData, "min/km", "#6DFF5C");
-  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, groupedSprintData, "sec", "#FF7A00");
+  runChart = createOrUpdateChart(
+    runChart,
+    runChartCanvas,
+    groupedRunData,
+    "min/km",
+    "#6DFF5C",
+    buildGoalChartOverlay("run", groupedRunData),
+  );
+  sprintChart = createOrUpdateChart(
+    sprintChart,
+    sprintChartCanvas,
+    groupedSprintData,
+    "sec",
+    "#FF7A00",
+    buildGoalChartOverlay("sprint", groupedSprintData),
+  );
 
   toggleChartCardVisibility(strengthChartCard, groupedStrengthData.length > 0);
   toggleChartCardVisibility(runChartCard, groupedRunData.length > 0);
@@ -1253,7 +1668,7 @@ function renderCharts() {
     : "No chartable data is available for the current filters.";
 }
 
-function createOrUpdateChart(existingChart, canvas, points, unit, color) {
+function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay = {}) {
   if (!canvas) {
     return existingChart;
   }
@@ -1272,6 +1687,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
     data: {
       datasets: [
         {
+          label: "Progress",
           data: points,
           borderColor: color,
           backgroundColor: `${color}33`,
@@ -1279,17 +1695,113 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
           fill: false,
           pointRadius: 3,
         },
+        ...(overlay.datasets || []),
       ],
     },
     options: {
       parsing: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: Boolean(overlay.datasets?.length) },
+        tooltip: {
+          callbacks: {
+            label(context) {
+              const raw = context.raw || {};
+              if (raw.tooltip) {
+                return raw.tooltip;
+              }
+              return `${context.dataset.label || "Progress"}: ${formatGoalValue(raw.y, unit)} ${unit}`;
+            },
+          },
+        },
+        goalEmojiMarkers: { markers: overlay.markers || [] },
+      },
       scales: {
         x: { type: "category", title: { display: true, text: "Date" } },
         y: { title: { display: true, text: unit }, beginAtZero: unit !== "min/km" },
       },
     },
+    plugins: [goalEmojiPlugin],
   });
+}
+
+function buildGoalChartOverlay(activity, points) {
+  if (!points.length) {
+    return { datasets: [], markers: [] };
+  }
+  const relevantGoals = [
+    goals.active?.[activity],
+    ...goals.history.filter((goal) => goal.activity === activity),
+  ].filter(Boolean);
+  const datasets = [];
+  const markers = [];
+  relevantGoals.forEach((goal) => {
+    const targetValue = chartGoalTargetValue(goal);
+    if (isNumber(targetValue)) {
+      const targetPoints = points.map((point) => {
+        const inRange = isGoalVisibleOnChartLabel(goal, point.x);
+        return {
+          x: point.x,
+          y: inRange ? targetValue : null,
+          tooltip: formatGoalLabel(goal),
+        };
+      });
+      if (targetPoints.some((point) => isNumber(point.y))) {
+        datasets.push({
+          label: goal.achievedAt ? "Achieved goal" : "Active goal",
+          data: targetPoints,
+          borderColor: goal.achievedAt ? "#FFD166" : "#FF4FD8",
+          backgroundColor: "transparent",
+          borderDash: [6, 4],
+          pointRadius: 0,
+          tension: 0,
+          spanGaps: false,
+        });
+      }
+    }
+    if (goal.achievedAt) {
+      const achievementPoint = chartAchievementPoint(goal, points, targetValue);
+      if (achievementPoint) {
+        markers.push(achievementPoint);
+      }
+    }
+  });
+  return { datasets, markers };
+}
+
+function chartGoalTargetValue(goal) {
+  if (goal.activity === "run" && goal.type === "distance") {
+    return null;
+  }
+  if (goal.activity === "run" && goal.type === "pace") {
+    return goal.target.pace;
+  }
+  if (goal.activity === "run" && goal.type === "combined") {
+    return calculateRunPace(goal.target.distance, parseRunDurationToSeconds(goal.target.time));
+  }
+  if (goal.activity === "sprint") {
+    return goal.target.time;
+  }
+  return null;
+}
+
+function isGoalVisibleOnChartLabel(goal, label) {
+  const setLabel = groupingLabel(goal.setAt, chartGrouping);
+  const achievedLabel = goal.achievedAt ? groupingLabel(goal.achievedAt, chartGrouping) : "";
+  return label >= setLabel && (!achievedLabel || label <= achievedLabel);
+}
+
+function chartAchievementPoint(goal, points, fallbackY) {
+  const achievement = findGoalAchievement(goal);
+  if (!achievement) {
+    return null;
+  }
+  const x = groupingLabel(achievement.date, chartGrouping);
+  const point = points.find((item) => item.x === x);
+  return {
+    x,
+    y: point?.y ?? fallbackY,
+    label: "🎉",
+  };
 }
 
 function toggleChartCardVisibility(card, isVisible) {
@@ -1385,12 +1897,7 @@ function importBackupData(event) {
       syncExerciseLibraryFromWorkouts();
       renderExerciseLibrary();
 
-      goals = {
-        strength: toNumberOrNull(parsed.goals.strength),
-        run: toNumberOrNull(parsed.goals.run),
-        runPace: parseGoalPaceInput(parsed.goals.runPace) ?? toNumberOrNull(parsed.goals.runPace),
-        sprint: toNumberOrNull(parsed.goals.sprint),
-      };
+      goals = normalizeGoals(parsed.goals);
       plannedSessions = Array.isArray(parsed.plannedSessions)
         ? parsed.plannedSessions.map((session) => normalizePlannedSession(session))
         : [];
@@ -1406,6 +1913,7 @@ function importBackupData(event) {
         currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
       refreshDetectedSessionStatuses({ persist: false });
+      evaluateGoals({ persist: false, celebrate: true });
 
       save(STORAGE_KEY_WORKOUTS, workouts);
       save(STORAGE_KEY_GOALS, goals);
@@ -4132,6 +4640,7 @@ function saveCompletedSession(event) {
     session.modificationNote = modificationNote;
     savePlannerCollections();
     closeCompletionDialog();
+    evaluateGoals({ persist: true, celebrate: true });
     render();
   } catch {
     completionStatusMessageEl.textContent = "Could not save completion. Check the values and try again.";

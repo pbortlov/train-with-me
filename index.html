@@ -315,13 +315,37 @@
             </label>
 
             <label>
+              Run goal type
+              <select id="goal-run-type">
+                <option value="distance">Distance</option>
+                <option value="pace">Pace</option>
+                <option value="combined">Distance + time</option>
+              </select>
+            </label>
+
+            <label class="goal-run-field" data-run-goal-field="distance">
               Run goal distance (km)
               <input type="number" id="goal-run" min="0" step="0.01" placeholder="e.g. 10" />
             </label>
 
-            <label>
+            <label class="goal-run-field" data-run-goal-field="pace">
               Run goal pace (min/km)
               <input type="text" id="goal-run-pace" inputmode="numeric" placeholder="e.g. 05:30" />
+            </label>
+
+            <label class="goal-run-field" data-run-goal-field="combined">
+              Run target distance (km)
+              <input type="number" id="goal-run-combined-distance" min="0" step="0.01" placeholder="e.g. 5" />
+            </label>
+
+            <label class="goal-run-field" data-run-goal-field="combined">
+              Run target time (hh:mm:ss or mm:ss)
+              <input type="text" id="goal-run-combined-time" inputmode="numeric" placeholder="e.g. 22:00" />
+            </label>
+
+            <label>
+              Sprint goal distance (m)
+              <input type="number" id="goal-sprint-distance" min="1" step="1" placeholder="e.g. 100" />
             </label>
 
             <label>
@@ -333,6 +357,7 @@
           </form>
 
           <div id="goal-progress" class="goal-progress"></div>
+          <div id="goal-history" class="goal-progress"></div>
         </article>
 
         <article class="card">
@@ -475,6 +500,15 @@
       <div class="dialog-actions">
         <button type="button" id="confirm-delete-workout" class="danger-button">Delete</button>
         <button type="button" id="cancel-delete-workout">Cancel</button>
+      </div>
+    </dialog>
+
+    <dialog id="goal-celebration-dialog">
+      <h3 id="goal-celebration-title">Goal achieved</h3>
+      <p id="goal-celebration-message" class="hint"></p>
+      <div class="dialog-actions">
+        <button type="button" id="goal-celebration-new-goal">Set new goal</button>
+        <button type="button" id="goal-celebration-close" class="ghost-button">Close</button>
       </div>
     </dialog>
 
