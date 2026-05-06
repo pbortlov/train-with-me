@@ -51,7 +51,8 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 - `Stats`
   - adherence summaries
   - goals
-  - run goals can target distance, pace, or a combined distance-plus-time result
+  - goal setup uses compact Run, Sprint, and Strength buttons and only shows fields for the selected activity
+  - run goals target a distance plus total time
   - sprint goals are tied to a target distance and time
   - run and sprint goal targets appear on charts, and achieved goals show celebration markers plus set/achieved dates
   - charts

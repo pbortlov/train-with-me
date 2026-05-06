@@ -12,8 +12,8 @@ const historyBody = document.getElementById("history-body");
 const summaryEl = document.getElementById("summary");
 const goalProgressEl = document.getElementById("goal-progress");
 const goalHistoryEl = document.getElementById("goal-history");
-const goalRunTypeInput = document.getElementById("goal-run-type");
-const goalRunFields = document.querySelectorAll("[data-run-goal-field]");
+const goalActivityButtons = document.querySelectorAll("[data-goal-activity]");
+const goalActivityPanels = document.querySelectorAll("[data-goal-activity-panel]");
 const goalCelebrationDialog = document.getElementById("goal-celebration-dialog");
 const goalCelebrationMessageEl = document.getElementById("goal-celebration-message");
 const goalCelebrationNewGoalButton = document.getElementById("goal-celebration-new-goal");
@@ -254,7 +254,7 @@ let editDraftCurrentStrengthSets = [];
 let editDraftStrengthExercises = [];
 
 hydrateGoalInputs();
-toggleRunGoalInputs();
+syncGoalFormVisibility();
 syncExerciseLibraryFromWorkouts();
 renderExerciseLibrary();
 refreshDetectedSessionStatuses();
@@ -335,7 +335,11 @@ chartGroupingInput.addEventListener("change", () => {
   chartGrouping = chartGroupingInput.value || "week";
   renderCharts();
 });
-addSafeEventListener(goalRunTypeInput, "change", toggleRunGoalInputs);
+goalActivityButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setGoalActivity(button.dataset.goalActivity || "run");
+  });
+});
 addSafeEventListener(goalCelebrationNewGoalButton, "click", () => {
   closeGoalCelebrationDialog();
   uiSettings.currentView = "stats";
@@ -720,35 +724,31 @@ function createGoal(activity, type, target, setAt = formatDateInput(new Date()))
 
 function buildGoalsFromForm(existingGoals) {
   const nextGoals = normalizeGoals(existingGoals);
-  nextGoals.strength = toNumberOrNull(valueOf("goal-strength"));
+  const selectedActivity = currentGoalActivity();
   const today = formatDateInput(new Date());
-  const runType = goalRunTypeInput?.value || "distance";
-  let runGoal = null;
-  if (runType === "distance") {
-    const distance = toNumberOrNull(valueOf("goal-run"));
-    if (isNumber(distance)) {
-      runGoal = createGoal("run", "distance", { distance }, today);
-    }
-  } else if (runType === "pace") {
-    const pace = parseGoalPaceInput(valueOf("goal-run-pace"));
-    if (isNumber(pace)) {
-      runGoal = createGoal("run", "pace", { pace }, today);
-    }
-  } else {
-    const distance = toNumberOrNull(valueOf("goal-run-combined-distance"));
-    const time = normalizeFlexibleRunDurationInput(valueOf("goal-run-combined-time"));
-    if (isNumber(distance) && time) {
-      runGoal = createGoal("run", "combined", { distance, time }, today);
-    }
+  if (selectedActivity === "strength") {
+    nextGoals.strength = toNumberOrNull(valueOf("goal-strength"));
+    return nextGoals;
   }
 
-  const sprintDistance = toNumberOrNull(valueOf("goal-sprint-distance"));
-  const sprintTime = toNumberOrNull(valueOf("goal-sprint"));
+  if (selectedActivity === "sprint") {
+    const sprintDistance = toNumberOrNull(valueOf("goal-sprint-distance"));
+    const sprintTime = toNumberOrNull(valueOf("goal-sprint"));
+    nextGoals.active.sprint =
+      isNumber(sprintDistance) && isNumber(sprintTime)
+        ? preserveUnchangedGoal(nextGoals.active.sprint, createGoal("sprint", "time", { distance: sprintDistance, time: sprintTime }, today))
+        : null;
+    return nextGoals;
+  }
+
+  const distance = toNumberOrNull(valueOf("goal-run-combined-distance"));
+  const time = normalizeFlexibleRunDurationInput(valueOf("goal-run-combined-time"));
+  let runGoal = null;
+  if (isNumber(distance) && time) {
+    runGoal = createGoal("run", "combined", { distance, time }, today);
+  }
+
   nextGoals.active.run = preserveUnchangedGoal(nextGoals.active.run, runGoal);
-  nextGoals.active.sprint =
-    isNumber(sprintDistance) && isNumber(sprintTime)
-      ? preserveUnchangedGoal(nextGoals.active.sprint, createGoal("sprint", "time", { distance: sprintDistance, time: sprintTime }, today))
-      : null;
   return nextGoals;
 }
 
@@ -811,23 +811,47 @@ function goalRow(label, current, goal, unit, higherIsBetter) {
 function hydrateGoalInputs() {
   goals = normalizeGoals(goals);
   document.getElementById("goal-strength").value = goals.strength ?? "";
+  setGoalActivity(preferredGoalActivity());
   const runGoal = goals.active.run;
-  if (goalRunTypeInput) {
-    goalRunTypeInput.value = runGoal?.type || "distance";
-  }
-  document.getElementById("goal-run").value = runGoal?.type === "distance" ? goals.active.run.target.distance ?? "" : "";
-  document.getElementById("goal-run-pace").value = runGoal?.type === "pace" && isNumber(runGoal.target.pace) ? formatGoalPace(runGoal.target.pace) : "";
   document.getElementById("goal-run-combined-distance").value = runGoal?.type === "combined" ? runGoal.target.distance ?? "" : "";
   document.getElementById("goal-run-combined-time").value = runGoal?.type === "combined" ? runGoal.target.time || "" : "";
   document.getElementById("goal-sprint-distance").value = goals.active.sprint?.target?.distance ?? "";
   document.getElementById("goal-sprint").value = goals.active.sprint?.target?.time ?? "";
-  toggleRunGoalInputs();
 }
 
-function toggleRunGoalInputs() {
-  const type = goalRunTypeInput?.value || "distance";
-  goalRunFields.forEach((field) => {
-    field.classList.toggle("is-hidden", field.dataset.runGoalField !== type);
+function preferredGoalActivity() {
+  const currentActivity = currentGoalActivity();
+  if (currentActivity) {
+    return currentActivity;
+  }
+  if (goals.active?.run) {
+    return "run";
+  }
+  if (goals.active?.sprint) {
+    return "sprint";
+  }
+  if (isNumber(goals.strength)) {
+    return "strength";
+  }
+  return "run";
+}
+
+function currentGoalActivity() {
+  return [...goalActivityButtons].find((button) => button.classList.contains("is-active"))?.dataset.goalActivity || "";
+}
+
+function setGoalActivity(activity) {
+  const normalizedActivity = ["run", "sprint", "strength"].includes(activity) ? activity : "run";
+  goalActivityButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.goalActivity === normalizedActivity);
+  });
+  syncGoalFormVisibility();
+}
+
+function syncGoalFormVisibility() {
+  const activity = currentGoalActivity() || "run";
+  goalActivityPanels.forEach((panel) => {
+    panel.classList.toggle("is-hidden", panel.dataset.goalActivityPanel !== activity);
   });
 }
 
