@@ -130,6 +130,23 @@ textarea {
   color: var(--text);
 }
 
+input.field-invalid,
+select.field-invalid,
+textarea.field-invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px #ff4d6d33;
+}
+
+.field-error-message {
+  color: var(--danger);
+  font-size: 0.82rem;
+  min-height: 1em;
+}
+
+.field-error-message:empty {
+  display: none;
+}
+
 button {
   border: 1px solid #00e5ff66;
   border-radius: 10px;

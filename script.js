@@ -39,6 +39,9 @@ const clearFiltersButton = document.getElementById("clear-filters");
 const filterStrengthLoadInput = document.getElementById("filter-strength-load");
 const chartGroupingInput = document.getElementById("chart-grouping");
 const chartsStatusEl = document.getElementById("charts-status");
+const runDistanceInput = document.getElementById("distance");
+const runTimeInput = document.getElementById("time");
+const runPaceInput = document.getElementById("pace");
 const strengthChartCanvas = document.getElementById("strength-chart");
 const runDistanceChartCanvas = document.getElementById("run-distance-chart");
 const runChartCanvas = document.getElementById("run-chart");
@@ -215,7 +218,11 @@ const dateInput = document.getElementById("date");
 
 dateInput.valueAsDate = new Date();
 
-let workouts = load(STORAGE_KEY_WORKOUTS, []).map((workout) => normalizeImportedWorkout(workout));
+const storedWorkouts = load(STORAGE_KEY_WORKOUTS, []);
+let workouts = storedWorkouts.map((workout) => normalizeImportedWorkout(workout));
+if (JSON.stringify(workouts) !== JSON.stringify(storedWorkouts)) {
+  save(STORAGE_KEY_WORKOUTS, workouts);
+}
 let goals = normalizeGoals(load(STORAGE_KEY_GOALS, defaultGoals()));
 let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
 let plannedSessions = load(STORAGE_KEY_PLANNED_SESSIONS, []).map((session) => normalizePlannedSession(session));
@@ -273,11 +280,14 @@ render();
 workoutForm.addEventListener("submit", (event) => {
   event.preventDefault();
   setWorkoutFormStatus("");
+  clearFieldError(runDistanceInput);
+  clearFieldError(runTimeInput);
 
   const selectedActivity = valueOf("activity");
   const runDistance = toNumberOrNull(valueOf("distance"));
-  const runTime = normalizeRunDurationInput(valueOf("time"));
-  const runPace = calculateRunPace(runDistance, parseRunDurationToSeconds(runTime));
+  const runTimeResult = parseRunDuration(valueOf("time"));
+  const runTime = runTimeResult.seconds == null ? "" : formatSecondsAsRunDuration(runTimeResult.seconds);
+  const runPace = calculateRunPace(runDistance, runTimeResult.seconds);
 
   const workout = {
     id: editingWorkoutId ?? crypto.randomUUID(),
@@ -297,8 +307,14 @@ workoutForm.addEventListener("submit", (event) => {
     return;
   }
 
-  if (workout.activity === "run" && (!isNumber(workout.distance) || !workout.time || !isNumber(workout.pace))) {
-    setWorkoutFormStatus("Please enter run distance in km and time in hh:mm:ss.");
+  if (workout.activity === "run" && (!isNumber(workout.distance) || workout.distance <= 0 || !workout.time || !isNumber(workout.pace))) {
+    if (!isNumber(workout.distance) || workout.distance <= 0) {
+      setFieldError(runDistanceInput, "Enter distance greater than 0 km.");
+    }
+    if (!workout.time) {
+      setFieldError(runTimeInput, runTimeResult.error || "Enter time as mm:ss or hh:mm:ss.");
+    }
+    setWorkoutFormStatus("Please fix the highlighted run fields.");
     return;
   }
 
@@ -326,9 +342,14 @@ workoutForm.addEventListener("submit", (event) => {
 });
 
 activityInput.addEventListener("change", updateVisibleFields);
-addSafeEventListener(document.getElementById("distance"), "input", syncRunPaceFromInputs);
-addSafeEventListener(document.getElementById("time"), "input", syncRunPaceFromInputs);
-addSafeEventListener(document.getElementById("time"), "change", normalizeRunTimeField);
+addSafeEventListener(runDistanceInput, "input", () => {
+  if (toNumberOrNull(runDistanceInput.value) > 0) {
+    clearFieldError(runDistanceInput);
+  }
+  syncRunPaceFromInputs();
+});
+addSafeEventListener(runTimeInput, "input", syncRunPaceFromInputs);
+addSafeEventListener(runTimeInput, "change", normalizeRunTimeField);
 filterActivityInput.addEventListener("change", onFilterChange);
 filterFromDateInput.addEventListener("change", onFilterChange);
 filterToDateInput.addEventListener("change", onFilterChange);
@@ -365,7 +386,12 @@ confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
 cancelDeleteWorkoutButton.addEventListener("click", cancelDeleteWorkout);
 addSafeEventListener(saveEditWorkoutButton, "click", saveEditedWorkout);
 addSafeEventListener(cancelEditWorkoutButton, "click", closeEditWorkoutDialog);
-addSafeEventListener(editDistanceInput, "input", syncEditRunPaceFromInputs);
+addSafeEventListener(editDistanceInput, "input", () => {
+  if (toNumberOrNull(editDistanceInput.value) > 0) {
+    clearFieldError(editDistanceInput);
+  }
+  syncEditRunPaceFromInputs();
+});
 addSafeEventListener(editTimeInput, "input", syncEditRunPaceFromInputs);
 addSafeEventListener(editTimeInput, "change", normalizeEditRunTimeField);
 addSafeEventListener(editAddStrengthSetButton, "click", addEditStrengthSet);
@@ -1256,51 +1282,42 @@ function isNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function parseRunDurationToSeconds(value) {
+function parseRunDuration(value) {
   if (typeof value !== "string") {
-    return null;
+    return { seconds: null, error: "Enter time as mm:ss or hh:mm:ss." };
   }
 
   const trimmed = value.trim();
   if (!trimmed) {
-    return null;
-  }
-
-  const parts = trimmed.split(":");
-  if (parts.length !== 3 || parts.some((part) => !/^\d+$/.test(part))) {
-    return null;
-  }
-
-  const [hours, minutes, seconds] = parts.map(Number);
-  if (minutes > 59 || seconds > 59) {
-    return null;
-  }
-
-  return (hours * 3600) + (minutes * 60) + seconds;
-}
-
-function parseFlexibleRunDurationToSeconds(value) {
-  if (typeof value !== "string") {
-    return null;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
+    return { seconds: null, error: "" };
   }
 
   const parts = trimmed.split(":");
   if ((parts.length !== 2 && parts.length !== 3) || parts.some((part) => !/^\d+$/.test(part))) {
-    return null;
+    return { seconds: null, error: "Enter time as mm:ss or hh:mm:ss." };
   }
 
   const numbers = parts.map(Number);
   const [hours, minutes, seconds] = parts.length === 3 ? numbers : [0, numbers[0], numbers[1]];
-  if (seconds > 59 || (parts.length === 3 && minutes > 59)) {
-    return null;
+  if (seconds > 59) {
+    return { seconds: null, error: "Seconds must be 00-59." };
+  }
+  if (parts.length === 2 && minutes > 59) {
+    return { seconds: null, error: "Use hh:mm:ss for runs 1 hour or longer, for example 01:05:30." };
+  }
+  if (parts.length === 3 && minutes > 59) {
+    return { seconds: null, error: "Minutes must be 00-59 in hh:mm:ss." };
   }
 
-  return (hours * 3600) + (minutes * 60) + seconds;
+  return { seconds: (hours * 3600) + (minutes * 60) + seconds, error: "" };
+}
+
+function parseRunDurationToSeconds(value) {
+  return parseRunDuration(value).seconds;
+}
+
+function parseFlexibleRunDurationToSeconds(value) {
+  return parseRunDurationToSeconds(value);
 }
 
 function formatSecondsAsRunDuration(totalSeconds) {
@@ -1321,8 +1338,28 @@ function normalizeRunDurationInput(value) {
 }
 
 function normalizeFlexibleRunDurationInput(value) {
-  const totalSeconds = parseFlexibleRunDurationToSeconds(value);
-  return totalSeconds == null ? "" : formatSecondsAsRunDuration(totalSeconds);
+  return normalizeRunDurationInput(value);
+}
+
+function normalizeStoredRunDurationInput(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const normalized = normalizeRunDurationInput(value);
+  if (normalized) {
+    return normalized;
+  }
+
+  const trimmed = value.trim();
+  const parts = trimmed.split(":");
+  if (parts.length === 2 && parts.every((part) => /^\d+$/.test(part))) {
+    const [minutes, seconds] = parts.map(Number);
+    if (minutes > 59 && seconds <= 59) {
+      return formatSecondsAsRunDuration((minutes * 60) + seconds) || "";
+    }
+  }
+
+  return "";
 }
 
 function legacyRunMinutesToDuration(value) {
@@ -1354,28 +1391,71 @@ function calculateRunPace(distanceKm, totalSeconds) {
 }
 
 function formatRunPace(value) {
-  return formatNumber(value);
+  return formatGoalPace(value);
+}
+
+function fieldErrorElement(input) {
+  if (!input) {
+    return null;
+  }
+  const errorId = `${input.id || "field"}-error`;
+  let errorEl = document.getElementById(errorId);
+  if (!errorEl) {
+    errorEl = document.createElement("span");
+    errorEl.id = errorId;
+    errorEl.className = "field-error-message";
+    input.insertAdjacentElement("afterend", errorEl);
+  }
+  return errorEl;
+}
+
+function setFieldError(input, message) {
+  if (!input) {
+    return;
+  }
+  const errorEl = fieldErrorElement(input);
+  input.classList.add("field-invalid");
+  input.setAttribute("aria-invalid", "true");
+  if (errorEl) {
+    errorEl.textContent = message;
+    input.setAttribute("aria-describedby", errorEl.id);
+  }
+}
+
+function clearFieldError(input) {
+  if (!input) {
+    return;
+  }
+  const errorEl = input.id ? document.getElementById(`${input.id}-error`) : null;
+  input.classList.remove("field-invalid");
+  input.removeAttribute("aria-invalid");
+  input.removeAttribute("aria-describedby");
+  if (errorEl) {
+    errorEl.textContent = "";
+  }
 }
 
 function syncRunPaceFromInputs() {
-  const distanceInput = document.getElementById("distance");
-  const timeInput = document.getElementById("time");
-  const paceInput = document.getElementById("pace");
-  if (!distanceInput || !timeInput || !paceInput) {
+  if (!runDistanceInput || !runTimeInput || !runPaceInput) {
     return;
   }
 
-  const pace = calculateRunPace(toNumberOrNull(distanceInput.value), parseRunDurationToSeconds(timeInput.value));
-  paceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
+  clearFieldError(runTimeInput);
+  const parsed = parseRunDuration(runTimeInput.value);
+  if (runTimeInput.value.trim() && parsed.error) {
+    setFieldError(runTimeInput, parsed.error);
+  }
+  const pace = calculateRunPace(toNumberOrNull(runDistanceInput.value), parsed.seconds);
+  runPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
 }
 
 function normalizeRunTimeField() {
-  const timeInput = document.getElementById("time");
-  if (!timeInput) {
+  if (!runTimeInput) {
     return;
   }
 
-  timeInput.value = normalizeRunDurationInput(timeInput.value);
+  const normalized = normalizeRunDurationInput(runTimeInput.value);
+  runTimeInput.value = normalized || runTimeInput.value;
   syncRunPaceFromInputs();
 }
 
@@ -1384,7 +1464,12 @@ function syncEditRunPaceFromInputs() {
     return;
   }
 
-  const pace = calculateRunPace(toNumberOrNull(editDistanceInput.value), parseRunDurationToSeconds(editTimeInput.value));
+  clearFieldError(editTimeInput);
+  const parsed = parseRunDuration(editTimeInput.value);
+  if (editTimeInput.value.trim() && parsed.error) {
+    setFieldError(editTimeInput, parsed.error);
+  }
+  const pace = calculateRunPace(toNumberOrNull(editDistanceInput.value), parsed.seconds);
   editPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
 }
 
@@ -1393,7 +1478,8 @@ function normalizeEditRunTimeField() {
     return;
   }
 
-  editTimeInput.value = normalizeRunDurationInput(editTimeInput.value);
+  const normalized = normalizeRunDurationInput(editTimeInput.value);
+  editTimeInput.value = normalized || editTimeInput.value;
   syncEditRunPaceFromInputs();
 }
 
@@ -1512,6 +1598,8 @@ function openEditWorkoutDialog(workoutId) {
   renderEditStrengthSets();
   renderEditStrengthExercises();
   toggleEditDialogFields(workout.activity);
+  clearFieldError(editDistanceInput);
+  clearFieldError(editTimeInput);
   syncEditRunPaceFromInputs();
   editWorkoutStatusEl.textContent = "";
   if (typeof editWorkoutDialog.showModal === "function") {
@@ -1543,6 +1631,22 @@ function saveEditedWorkout() {
     if (!existingWorkout) {
       return;
     }
+    clearFieldError(editDistanceInput);
+    clearFieldError(editTimeInput);
+    if (existingWorkout.activity === "run") {
+      const distance = toNumberOrNull(editDistanceInput.value);
+      const timeResult = parseRunDuration(editTimeInput.value);
+      if (!isNumber(distance) || distance <= 0 || timeResult.seconds == null) {
+        if (!isNumber(distance) || distance <= 0) {
+          setFieldError(editDistanceInput, "Enter distance greater than 0 km.");
+        }
+        if (timeResult.seconds == null) {
+          setFieldError(editTimeInput, timeResult.error || "Enter time as mm:ss or hh:mm:ss.");
+        }
+        editWorkoutStatusEl.textContent = "Please fix the highlighted run fields.";
+        return;
+      }
+    }
 
     const normalized = normalizeImportedWorkout({
       ...existingWorkout,
@@ -1554,8 +1658,8 @@ function saveEditedWorkout() {
       sprintSets: parseSprintSetsFromEditor(editSprintSetsInput.value),
       strengthExercises: editDraftStrengthExercises,
     });
-    if (normalized.activity === "run" && (!isNumber(normalized.distance) || !normalized.time || !isNumber(normalized.pace))) {
-      editWorkoutStatusEl.textContent = "Run entries require distance in km and time in hh:mm:ss.";
+    if (normalized.activity === "run" && (!isNumber(normalized.distance) || normalized.distance <= 0 || !normalized.time || !isNumber(normalized.pace))) {
+      editWorkoutStatusEl.textContent = "Please fix the highlighted run fields.";
       return;
     }
     normalized.id = editingPopupWorkoutId;
@@ -1603,6 +1707,8 @@ function resetWorkoutForm() {
   renderStrengthExercises();
   renderSprintSets();
   updateVisibleFields();
+  clearFieldError(runDistanceInput);
+  clearFieldError(runTimeInput);
   syncRunPaceFromInputs();
   workoutSubmitButton.textContent = "Save Workout";
 }
@@ -2448,7 +2554,7 @@ function normalizeImportedWorkout(workout) {
   const normalizedTime =
     activity === "run"
       ? typeof workout.time === "string"
-        ? normalizeRunDurationInput(workout.time)
+        ? normalizeStoredRunDurationInput(workout.time)
         : legacyRunMinutesToDuration(toNumberOrNull(workout.time))
       : toNumberOrNull(workout.time);
   const normalizedPace =
@@ -2629,7 +2735,12 @@ function bindV2Events() {
   addSafeEventListener(phaseInstanceListEl, "click", handlePhaseInstanceAction);
   addSafeEventListener(completionRunTimeInput, "input", syncCompletionRunPace);
   addSafeEventListener(completionRunTimeInput, "change", normalizeCompletionRunTimeField);
-  addSafeEventListener(completionRunDistanceInput, "input", syncCompletionRunPace);
+  addSafeEventListener(completionRunDistanceInput, "input", () => {
+    if (toNumberOrNull(completionRunDistanceInput.value) > 0) {
+      clearFieldError(completionRunDistanceInput);
+    }
+    syncCompletionRunPace();
+  });
   addSafeEventListener(completionSprintBlocksEl, "input", handleCompletionSprintInput);
   addSafeEventListener(completionStrengthBlocksEl, "click", handleCompletionStrengthAction);
   addSafeEventListener(completionStrengthBlocksEl, "input", handleCompletionStrengthInput);
@@ -2989,10 +3100,15 @@ function renderCalendarSessionDetail() {
 function renderSessionStructure(session, mode) {
   if (session.type === "run") {
     const heading = mode === "planned" ? "Planned" : "Actual";
+    const actualParts = [
+      isNumber(session.actual?.distance) ? `${formatNumber(session.actual.distance)} km` : "",
+      session.actual?.time || "",
+      isNumber(session.actual?.pace) ? `${formatRunPace(session.actual.pace)} min/km` : "",
+    ].filter(Boolean);
     const value =
       mode === "planned"
         ? formatPlannedSessionSummary(session)
-        : `${formatNumber(session.actual?.distance || 0)} km • ${session.actual?.time || ""} • ${formatRunPace(session.actual?.pace || 0)} min/km`;
+        : actualParts.join(" • ");
     return `<section class="session-structure"><h4>${heading}</h4><pre>${escapeHtml(value)}</pre></section>`;
   }
   if (session.type === "sprint") {
@@ -4213,6 +4329,8 @@ function openCompletionDialog(session) {
   completionSessionTitleEl.textContent = `${session.title} • ${capitalize(session.type)}`;
   completionStatusMessageEl.textContent = "";
   completionNoteInput.value = session.modificationNote || "";
+  clearFieldError(completionRunDistanceInput);
+  clearFieldError(completionRunTimeInput);
   if (completionSubmitButton) {
     completionSubmitButton.textContent = isEditingCompletion ? "Save log changes" : "Log & Complete";
   }
@@ -4529,13 +4647,17 @@ function renderCompletionStrengthBlocks() {
 
 function syncCompletionRunPace() {
   const distance = toNumberOrNull(completionRunDistanceInput.value);
-  const totalSeconds = parseFlexibleRunDurationToSeconds(completionRunTimeInput.value);
-  const pace = calculateRunPace(distance, totalSeconds);
+  clearFieldError(completionRunTimeInput);
+  const parsed = parseRunDuration(completionRunTimeInput.value);
+  if (completionRunTimeInput.value.trim() && parsed.error) {
+    setFieldError(completionRunTimeInput, parsed.error);
+  }
+  const pace = calculateRunPace(distance, parsed.seconds);
   completionRunPaceInput.value = isNumber(pace) ? formatRunPace(pace) : "";
 }
 
 function normalizeCompletionRunTimeField() {
-  const normalized = normalizeFlexibleRunDurationInput(completionRunTimeInput.value);
+  const normalized = normalizeRunDurationInput(completionRunTimeInput.value);
   completionRunTimeInput.value = normalized || completionRunTimeInput.value;
   syncCompletionRunPace();
 }
@@ -4760,11 +4882,20 @@ function saveCompletedSession(event) {
   let actual = null;
   try {
     if (session.type === "run") {
+      clearFieldError(completionRunDistanceInput);
+      clearFieldError(completionRunTimeInput);
       const distance = toNumberOrNull(completionRunDistanceInput.value);
-      const time = normalizeFlexibleRunDurationInput(completionRunTimeInput.value);
-      const pace = calculateRunPace(distance, parseFlexibleRunDurationToSeconds(completionRunTimeInput.value));
-      if (!isNumber(distance) || !time || !isNumber(pace)) {
-        completionStatusMessageEl.textContent = "Run completion needs distance and time in hh:mm:ss or mm:ss.";
+      const timeResult = parseRunDuration(completionRunTimeInput.value);
+      const time = timeResult.seconds == null ? "" : formatSecondsAsRunDuration(timeResult.seconds);
+      const pace = calculateRunPace(distance, timeResult.seconds);
+      if (!isNumber(distance) || distance <= 0 || !time || !isNumber(pace)) {
+        if (!isNumber(distance) || distance <= 0) {
+          setFieldError(completionRunDistanceInput, "Enter distance greater than 0 km.");
+        }
+        if (!time) {
+          setFieldError(completionRunTimeInput, timeResult.error || "Enter time as mm:ss or hh:mm:ss.");
+        }
+        completionStatusMessageEl.textContent = "Please fix the highlighted run fields.";
         return;
       }
       completionRunTimeInput.value = time;
@@ -5001,7 +5132,12 @@ function renderActualDiff(session) {
     return "<pre>Missed session.</pre>";
   }
   if (session.type === "run") {
-    return `<pre>${escapeHtml(`${formatNumber(session.actual?.distance || 0)} km • ${session.actual?.time || ""} • ${formatRunPace(session.actual?.pace || 0)} min/km`)}</pre>`;
+    const actualParts = [
+      isNumber(session.actual?.distance) ? `${formatNumber(session.actual.distance)} km` : "",
+      session.actual?.time || "",
+      isNumber(session.actual?.pace) ? `${formatRunPace(session.actual.pace)} min/km` : "",
+    ].filter(Boolean);
+    return `<pre>${escapeHtml(actualParts.join(" • "))}</pre>`;
   }
   if (session.type === "sprint") {
     return `
