@@ -40,10 +40,12 @@ const filterStrengthLoadInput = document.getElementById("filter-strength-load");
 const chartGroupingInput = document.getElementById("chart-grouping");
 const chartsStatusEl = document.getElementById("charts-status");
 const strengthChartCanvas = document.getElementById("strength-chart");
+const runDistanceChartCanvas = document.getElementById("run-distance-chart");
 const runChartCanvas = document.getElementById("run-chart");
 const sprintChartCanvas = document.getElementById("sprint-chart");
 const chartsGridEl = document.querySelector(".charts-grid");
 const strengthChartCard = strengthChartCanvas ? strengthChartCanvas.closest(".chart-card") : null;
+const runDistanceChartCard = runDistanceChartCanvas ? runDistanceChartCanvas.closest(".chart-card") : null;
 const runChartCard = runChartCanvas ? runChartCanvas.closest(".chart-card") : null;
 const sprintChartCard = sprintChartCanvas ? sprintChartCanvas.closest(".chart-card") : null;
 const exportDataButton = document.getElementById("export-data");
@@ -237,6 +239,7 @@ let progressFilters = {
 };
 let chartGrouping = "week";
 let strengthChart = null;
+let runDistanceChart = null;
 let runChart = null;
 let sprintChart = null;
 let programAdherenceChart = null;
@@ -565,6 +568,24 @@ function renderSummary() {
   const bestRunDistance = filteredWorkouts
     .filter((w) => w.activity === "run" && isNumber(w.distance))
     .reduce((max, w) => Math.max(max, w.distance), 0);
+  const runWorkouts = filteredWorkouts.filter((w) => w.activity === "run" && isNumber(w.distance));
+  const totalRunDistance = runWorkouts.reduce((sum, w) => sum + w.distance, 0);
+  const bestRunPace = runWorkouts
+    .map((w) => w.pace)
+    .filter((pace) => isNumber(pace))
+    .reduce((min, pace) => Math.min(min, pace), Infinity);
+  const runTotals = runWorkouts.reduce(
+    (totals, w) => {
+      const seconds = parseRunDurationToSeconds(w.time);
+      if (Number.isFinite(seconds) && seconds > 0 && isNumber(w.distance) && w.distance > 0) {
+        totals.seconds += seconds;
+        totals.distance += w.distance;
+      }
+      return totals;
+    },
+    { seconds: 0, distance: 0 },
+  );
+  const averageRunPace = runTotals.distance > 0 ? runTotals.seconds / 60 / runTotals.distance : null;
 
   const bestSprintTime = filteredWorkouts
     .filter((w) => w.activity === "sprint")
@@ -582,8 +603,20 @@ function renderSummary() {
       <span class="value">${bestStrength ? `${bestStrength} kg` : "-"}</span>
     </article>
     <article class="badge">
-      <span class="label">Best run distance</span>
-      <span class="value">${bestRunDistance ? `${bestRunDistance} km` : "-"}</span>
+      <span class="label">Total run distance</span>
+      <span class="value">${totalRunDistance ? `${formatNumber(totalRunDistance)} km` : "-"}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Longest run</span>
+      <span class="value">${bestRunDistance ? `${formatNumber(bestRunDistance)} km` : "-"}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Best run pace</span>
+      <span class="value">${Number.isFinite(bestRunPace) ? `${formatRunPace(bestRunPace)} min/km` : "-"}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Average run pace</span>
+      <span class="value">${isNumber(averageRunPace) ? `${formatRunPace(averageRunPace)} min/km` : "-"}</span>
     </article>
     <article class="badge">
       <span class="label">Best sprint time</span>
@@ -1640,27 +1673,42 @@ function renderCharts() {
     .filter((workout) => workout.activity === "strength")
     .map((workout) => ({ x: workout.date, y: strengthBestWeight(workout) }))
     .filter((point) => point.x && isNumber(point.y));
-  const runData = filteredWorkouts
-    .filter((workout) => workout.activity === "run" && isNumber(workout.pace))
-    .map((workout) => ({ x: workout.date, y: workout.pace }))
-    .filter((point) => point.x && isNumber(point.y));
+  const runChartEntries = buildIndividualRunChartEntries(filteredWorkouts);
+  const runDistanceData = runChartEntries
+    .filter((entry) => isNumber(entry.distance))
+    .map((entry) => ({
+      x: entry.label,
+      y: entry.distance,
+      date: entry.date,
+      workoutId: entry.workoutId,
+      tooltip: entry.tooltip,
+    }));
+  const runPaceData = runChartEntries
+    .filter((entry) => isNumber(entry.pace))
+    .map((entry) => ({
+      x: entry.label,
+      y: entry.pace,
+      date: entry.date,
+      workoutId: entry.workoutId,
+      tooltip: entry.tooltip,
+    }));
   const sprintData = filteredWorkouts
     .filter((workout) => workout.activity === "sprint")
     .map((workout) => ({ x: workout.date, y: sprintBestTime(workout) }))
     .filter((point) => point.x && isNumber(point.y));
 
   const groupedStrengthData = groupChartPoints(strengthData, chartGrouping);
-  const groupedRunData = groupChartPoints(runData, chartGrouping);
   const groupedSprintData = groupChartPoints(sprintData, chartGrouping);
 
   strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, groupedStrengthData, "kg", "#00E5FF");
+  runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runDistanceData, "km", "#4DA3FF", {}, "bar");
   runChart = createOrUpdateChart(
     runChart,
     runChartCanvas,
-    groupedRunData,
+    runPaceData,
     "min/km",
     "#6DFF5C",
-    buildGoalChartOverlay("run", groupedRunData),
+    buildIndividualRunGoalChartOverlay(runPaceData),
   );
   sprintChart = createOrUpdateChart(
     sprintChart,
@@ -1672,10 +1720,11 @@ function renderCharts() {
   );
 
   toggleChartCardVisibility(strengthChartCard, groupedStrengthData.length > 0);
-  toggleChartCardVisibility(runChartCard, groupedRunData.length > 0);
+  toggleChartCardVisibility(runDistanceChartCard, runDistanceData.length > 0);
+  toggleChartCardVisibility(runChartCard, runPaceData.length > 0);
   toggleChartCardVisibility(sprintChartCard, groupedSprintData.length > 0);
 
-  const hasVisibleCharts = groupedStrengthData.length > 0 || groupedRunData.length > 0 || groupedSprintData.length > 0;
+  const hasVisibleCharts = groupedStrengthData.length > 0 || runDistanceData.length > 0 || runPaceData.length > 0 || groupedSprintData.length > 0;
   if (chartsGridEl) {
     chartsGridEl.classList.toggle("is-hidden", !hasVisibleCharts);
   }
@@ -1692,7 +1741,7 @@ function renderCharts() {
     : "No chartable data is available for the current filters.";
 }
 
-function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay = {}) {
+function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay = {}, chartType = "line") {
   if (!canvas) {
     return existingChart;
   }
@@ -1707,7 +1756,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay
   }
 
   return new Chart(canvas, {
-    type: "line",
+    type: chartType,
     data: {
       datasets: [
         {
@@ -1718,6 +1767,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay
           tension: 0.25,
           fill: false,
           pointRadius: 3,
+          borderWidth: chartType === "bar" ? 1 : 2,
         },
         ...(overlay.datasets || []),
       ],
@@ -1746,6 +1796,75 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay
     },
     plugins: [goalEmojiPlugin],
   });
+}
+
+function buildIndividualRunChartEntries(filteredWorkouts) {
+  const dateCounts = new Map();
+  return filteredWorkouts
+    .filter((workout) => workout.activity === "run" && workout.date && (isNumber(workout.distance) || isNumber(workout.pace)))
+    .map((workout) => {
+      const count = (dateCounts.get(workout.date) || 0) + 1;
+      dateCounts.set(workout.date, count);
+      const label = count > 1 ? `${workout.date} #${count}` : workout.date;
+      const parts = [
+        workout.date,
+        isNumber(workout.distance) ? `${formatNumber(workout.distance)} km` : null,
+        formatRunDuration(workout.time),
+        isNumber(workout.pace) ? `${formatRunPace(workout.pace)} min/km` : null,
+      ].filter(Boolean);
+      return {
+        label,
+        date: workout.date,
+        workoutId: workout.id,
+        distance: workout.distance,
+        pace: workout.pace,
+        tooltip: parts.join(" • "),
+      };
+    });
+}
+
+function buildIndividualRunGoalChartOverlay(points) {
+  if (!points.length) {
+    return { datasets: [], markers: [] };
+  }
+  const relevantGoals = [
+    goals.active?.run,
+    ...goals.history.filter((goal) => goal.activity === "run"),
+  ].filter(Boolean);
+  const datasets = [];
+  const markers = [];
+  relevantGoals.forEach((goal) => {
+    const targetValue = chartGoalTargetValue(goal);
+    if (isNumber(targetValue)) {
+      const targetPoints = points.map((point) => {
+        const inRange = isGoalVisibleOnDate(goal, point.date);
+        return {
+          x: point.x,
+          y: inRange ? targetValue : null,
+          tooltip: formatGoalLabel(goal),
+        };
+      });
+      if (targetPoints.some((point) => isNumber(point.y))) {
+        datasets.push({
+          label: goal.achievedAt ? "Achieved goal" : "Active goal",
+          data: targetPoints,
+          borderColor: goal.achievedAt ? "#FFD166" : "#FF4FD8",
+          backgroundColor: "transparent",
+          borderDash: [6, 4],
+          pointRadius: 0,
+          tension: 0,
+          spanGaps: false,
+        });
+      }
+    }
+    if (goal.achievedAt) {
+      const achievementPoint = individualRunChartAchievementPoint(goal, points, targetValue);
+      if (achievementPoint) {
+        markers.push(achievementPoint);
+      }
+    }
+  });
+  return { datasets, markers };
 }
 
 function buildGoalChartOverlay(activity, points) {
@@ -1814,6 +1933,13 @@ function isGoalVisibleOnChartLabel(goal, label) {
   return label >= setLabel && (!achievedLabel || label <= achievedLabel);
 }
 
+function isGoalVisibleOnDate(goal, dateText) {
+  if (!dateText || !goal.setAt) {
+    return false;
+  }
+  return dateText >= goal.setAt && (!goal.achievedAt || dateText <= goal.achievedAt);
+}
+
 function chartAchievementPoint(goal, points, fallbackY) {
   const achievement = findGoalAchievement(goal);
   if (!achievement) {
@@ -1823,6 +1949,22 @@ function chartAchievementPoint(goal, points, fallbackY) {
   const point = points.find((item) => item.x === x);
   return {
     x,
+    y: point?.y ?? fallbackY,
+    label: "🎉",
+  };
+}
+
+function individualRunChartAchievementPoint(goal, points, fallbackY) {
+  const achievement = findGoalAchievement(goal);
+  if (!achievement) {
+    return null;
+  }
+  const point = points.find((item) => item.workoutId === achievement.workoutId) || points.find((item) => item.date === achievement.date);
+  if (!point && !isNumber(fallbackY)) {
+    return null;
+  }
+  return {
+    x: point?.x || achievement.date,
     y: point?.y ?? fallbackY,
     label: "🎉",
   };
