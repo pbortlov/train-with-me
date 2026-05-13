@@ -54,11 +54,11 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - goal setup uses compact Run, Sprint, and Strength buttons and only shows fields for the selected activity
   - run goals target a distance plus total time
   - sprint goals are tied to a target distance and time
-  - run and sprint goal targets appear on charts, and achieved goals show celebration markers plus set/achieved dates
-  - charts
+  - achieved goals show set/achieved dates in goal history
+  - activity charts
   - program completion doughnut for the selected strength phase instance
   - program-duration strength progress for scheduled phase instances
-  - run and sprint progress over time, separate from strength phases
+  - per-entry strength, run, and sprint charts separate from strength phases
 - `Data`
   - backup export/import
   - exercise library management

@@ -44,12 +44,10 @@ const runTimeInput = document.getElementById("time");
 const runPaceInput = document.getElementById("pace");
 const strengthChartCanvas = document.getElementById("strength-chart");
 const runDistanceChartCanvas = document.getElementById("run-distance-chart");
-const runChartCanvas = document.getElementById("run-chart");
 const sprintChartCanvas = document.getElementById("sprint-chart");
 const chartsGridEl = document.querySelector(".charts-grid");
 const strengthChartCard = strengthChartCanvas ? strengthChartCanvas.closest(".chart-card") : null;
 const runDistanceChartCard = runDistanceChartCanvas ? runDistanceChartCanvas.closest(".chart-card") : null;
-const runChartCard = runChartCanvas ? runChartCanvas.closest(".chart-card") : null;
 const sprintChartCard = sprintChartCanvas ? sprintChartCanvas.closest(".chart-card") : null;
 const exportDataButton = document.getElementById("export-data");
 const importDataFileInput = document.getElementById("import-data-file");
@@ -191,28 +189,6 @@ const SPRINT_FEELING_OPTIONS = [
   { value: "pain", label: "Pain ⚠️" },
 ];
 const GOAL_VERSION = 2;
-const goalEmojiPlugin = {
-  id: "goalEmojiMarkers",
-  afterDatasetsDraw(chart) {
-    const markers = chart.options.plugins?.goalEmojiMarkers?.markers || [];
-    if (!markers.length) {
-      return;
-    }
-    const { ctx } = chart;
-    ctx.save();
-    ctx.font = "20px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
-    markers.forEach((marker) => {
-      const x = chart.scales.x.getPixelForValue(marker.x);
-      const y = chart.scales.y.getPixelForValue(marker.y);
-      if (Number.isFinite(x) && Number.isFinite(y)) {
-        ctx.fillText(marker.label || "🎉", x, y - 8);
-      }
-    });
-    ctx.restore();
-  },
-};
 
 const dateInput = document.getElementById("date");
 
@@ -247,7 +223,6 @@ let progressFilters = {
 let progressPeriod = "past-week";
 let strengthChart = null;
 let runDistanceChart = null;
-let runChart = null;
 let sprintChart = null;
 let programAdherenceChart = null;
 let programCompletionChart = null;
@@ -1822,47 +1797,22 @@ function renderCharts() {
       workoutId: entry.workoutId,
       tooltip: entry.tooltip,
     }));
-  const runPaceData = runChartEntries
-    .filter((entry) => isNumber(entry.pace))
-    .map((entry) => ({
-      x: entry.label,
-      y: entry.pace,
-      date: entry.date,
-      workoutId: entry.workoutId,
-      tooltip: entry.tooltip,
-    }));
   const sprintData = buildIndividualMetricChartEntries(
     filteredWorkouts,
     "sprint",
-    sprintBestTime,
-    (workout, value) => [workout.date, `${formatNumber(value)} sec`].filter(Boolean).join(" • "),
+    sprintBestSpeed,
+    (workout, value) => [workout.date, `${formatNumber(value)} m/s`, formatSprintSpeedSource(workout)].filter(Boolean).join(" • "),
   );
 
   strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, strengthData, "kg", "#00E5FF");
-  runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runDistanceData, "km", "#4DA3FF", {}, "bar");
-  runChart = createOrUpdateChart(
-    runChart,
-    runChartCanvas,
-    runPaceData,
-    "min/km",
-    "#6DFF5C",
-    buildIndividualGoalChartOverlay("run", runPaceData),
-  );
-  sprintChart = createOrUpdateChart(
-    sprintChart,
-    sprintChartCanvas,
-    sprintData,
-    "sec",
-    "#FF7A00",
-    buildIndividualGoalChartOverlay("sprint", sprintData),
-  );
+  runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runDistanceData, "km", "#4DA3FF");
+  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "m/s", "#FF7A00");
 
   toggleChartCardVisibility(strengthChartCard, strengthData.length > 0);
   toggleChartCardVisibility(runDistanceChartCard, runDistanceData.length > 0);
-  toggleChartCardVisibility(runChartCard, runPaceData.length > 0);
   toggleChartCardVisibility(sprintChartCard, sprintData.length > 0);
 
-  const hasVisibleCharts = strengthData.length > 0 || runDistanceData.length > 0 || runPaceData.length > 0 || sprintData.length > 0;
+  const hasVisibleCharts = strengthData.length > 0 || runDistanceData.length > 0 || sprintData.length > 0;
   if (chartsGridEl) {
     chartsGridEl.classList.toggle("is-hidden", !hasVisibleCharts);
   }
@@ -1879,7 +1829,7 @@ function renderCharts() {
     : "No chartable data is available for the current filters.";
 }
 
-function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay = {}, chartType = "line") {
+function createOrUpdateChart(existingChart, canvas, points, unit, color) {
   if (!canvas) {
     return existingChart;
   }
@@ -1894,7 +1844,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay
   }
 
   return new Chart(canvas, {
-    type: chartType,
+    type: "bar",
     data: {
       datasets: [
         {
@@ -1902,18 +1852,14 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay
           data: points,
           borderColor: color,
           backgroundColor: `${color}33`,
-          tension: 0.25,
-          fill: false,
-          pointRadius: 3,
-          borderWidth: chartType === "bar" ? 1 : 2,
+          borderWidth: 1,
         },
-        ...(overlay.datasets || []),
       ],
     },
     options: {
       parsing: false,
       plugins: {
-        legend: { display: Boolean(overlay.datasets?.length) },
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label(context) {
@@ -1925,14 +1871,20 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay
             },
           },
         },
-        goalEmojiMarkers: { markers: overlay.markers || [] },
       },
       scales: {
-        x: { type: "category", title: { display: true, text: "Date" } },
-        y: { title: { display: true, text: unit }, beginAtZero: unit !== "min/km" },
+        x: {
+          type: "category",
+          title: { display: true, text: "Date" },
+          ticks: {
+            autoSkip: false,
+            maxRotation: 60,
+            minRotation: 45,
+          },
+        },
+        y: { title: { display: true, text: unit }, beginAtZero: true },
       },
     },
-    plugins: [goalEmojiPlugin],
   });
 }
 
@@ -1981,89 +1933,6 @@ function buildIndividualRunChartEntries(filteredWorkouts) {
         tooltip: parts.join(" • "),
       };
     });
-}
-
-function buildIndividualGoalChartOverlay(activity, points) {
-  if (!points.length) {
-    return { datasets: [], markers: [] };
-  }
-  const relevantGoals = [
-    goals.active?.[activity],
-    ...goals.history.filter((goal) => goal.activity === activity),
-  ].filter(Boolean);
-  const datasets = [];
-  const markers = [];
-  relevantGoals.forEach((goal) => {
-    const targetValue = chartGoalTargetValue(goal);
-    if (isNumber(targetValue)) {
-      const targetPoints = points.map((point) => {
-        const inRange = isGoalVisibleOnDate(goal, point.date);
-        return {
-          x: point.x,
-          y: inRange ? targetValue : null,
-          tooltip: formatGoalLabel(goal),
-        };
-      });
-      if (targetPoints.some((point) => isNumber(point.y))) {
-        datasets.push({
-          label: goal.achievedAt ? "Achieved goal" : "Active goal",
-          data: targetPoints,
-          borderColor: goal.achievedAt ? "#FFD166" : "#FF4FD8",
-          backgroundColor: "transparent",
-          borderDash: [6, 4],
-          pointRadius: 0,
-          tension: 0,
-          spanGaps: false,
-        });
-      }
-    }
-    if (goal.achievedAt) {
-      const achievementPoint = individualChartAchievementPoint(goal, points, targetValue);
-      if (achievementPoint) {
-        markers.push(achievementPoint);
-      }
-    }
-  });
-  return { datasets, markers };
-}
-
-function chartGoalTargetValue(goal) {
-  if (goal.activity === "run" && goal.type === "distance") {
-    return null;
-  }
-  if (goal.activity === "run" && goal.type === "pace") {
-    return goal.target.pace;
-  }
-  if (goal.activity === "run" && goal.type === "combined") {
-    return calculateRunPace(goal.target.distance, parseRunDurationToSeconds(goal.target.time));
-  }
-  if (goal.activity === "sprint") {
-    return goal.target.time;
-  }
-  return null;
-}
-
-function isGoalVisibleOnDate(goal, dateText) {
-  if (!dateText || !goal.setAt) {
-    return false;
-  }
-  return dateText >= goal.setAt && (!goal.achievedAt || dateText <= goal.achievedAt);
-}
-
-function individualChartAchievementPoint(goal, points, fallbackY) {
-  const achievement = findGoalAchievement(goal);
-  if (!achievement) {
-    return null;
-  }
-  const point = points.find((item) => item.workoutId === achievement.workoutId) || points.find((item) => item.date === achievement.date);
-  if (!point && !isNumber(fallbackY)) {
-    return null;
-  }
-  return {
-    x: point?.x || achievement.date,
-    y: point?.y ?? fallbackY,
-    label: "🎉",
-  };
 }
 
 function toggleChartCardVisibility(card, isVisible) {
@@ -2470,6 +2339,30 @@ function sprintBestTime(workout) {
   }
 
   return isNumber(workout.time) ? workout.time : null;
+}
+
+function sprintBestSpeedSet(workout) {
+  return normalizeSprintSets(workout.sprintSets)
+    .filter((set) => isNumber(set.distance) && set.distance > 0 && isNumber(set.time) && set.time > 0)
+    .reduce((best, set) => {
+      const speed = set.distance / set.time;
+      if (!best || speed > best.speed) {
+        return { ...set, speed };
+      }
+      return best;
+    }, null);
+}
+
+function sprintBestSpeed(workout) {
+  return sprintBestSpeedSet(workout)?.speed ?? null;
+}
+
+function formatSprintSpeedSource(workout) {
+  const bestSet = sprintBestSpeedSet(workout);
+  if (!bestSet) {
+    return "";
+  }
+  return `${formatNumber(bestSet.distance)}m in ${formatNumber(bestSet.time)}s`;
 }
 
 function normalizeStrengthExercises(exercises) {

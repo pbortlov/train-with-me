@@ -32,9 +32,9 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
-- Run and sprint progress stay separate from strength phases and are shown as progress over time
+- Stats activity charts show one column per logged entry: strength best weight in kg, run distance in km, and sprint speed in m/s
 - Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
-- Run and sprint goals are shown on their charts, with achieved goals marked by a celebration marker
+- Run and sprint goals are tracked separately from the activity charts
 - Run goals use distance plus target time, such as `5 km under 22:00`
 - Sprint goals are distance-specific, such as `100 m under 14.2 sec`
 - Achieved run and sprint goals keep set and achieved dates so time-to-achieve stays visible
@@ -50,7 +50,7 @@ The app is designed to stay approachable for non-technical users by default, whi
   - goal history for achieved run and sprint targets
   - adherence summaries
   - program-duration strength progress
-  - strength / run pace / sprint charts over time
+  - per-entry activity charts for strength, run, and sprint
 - Data page with:
   - backup export/import
   - exercise library management
@@ -64,7 +64,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Programs`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions
-- `Stats`: goals, adherence summaries, program strength progress, and progress-over-time charts
+- `Stats`: goals, adherence summaries, program strength progress, and per-entry activity charts
 - `Data`: backup, exercise library, and workout history management
 
 ## Strength Phase Import
