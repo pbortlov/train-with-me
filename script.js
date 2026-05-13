@@ -37,7 +37,7 @@ const filterFromDateInput = document.getElementById("filter-from-date");
 const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
 const filterStrengthLoadInput = document.getElementById("filter-strength-load");
-const chartGroupingInput = document.getElementById("chart-grouping");
+const progressPeriodInput = document.getElementById("chart-grouping");
 const chartsStatusEl = document.getElementById("charts-status");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
@@ -244,7 +244,7 @@ let progressFilters = {
   toDate: "",
   strengthLoad: "all",
 };
-let chartGrouping = "week";
+let progressPeriod = "past-week";
 let strengthChart = null;
 let runDistanceChart = null;
 let runChart = null;
@@ -355,9 +355,9 @@ filterFromDateInput.addEventListener("change", onFilterChange);
 filterToDateInput.addEventListener("change", onFilterChange);
 filterStrengthLoadInput.addEventListener("change", onFilterChange);
 clearFiltersButton.addEventListener("click", clearFilters);
-chartGroupingInput.addEventListener("change", () => {
-  chartGrouping = chartGroupingInput.value || "week";
-  renderCharts();
+progressPeriodInput.addEventListener("change", () => {
+  progressPeriod = progressPeriodInput.value || "past-week";
+  render();
 });
 goalActivityButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -1740,15 +1740,20 @@ function clearFilters() {
   filterFromDateInput.value = "";
   filterToDateInput.value = "";
   filterStrengthLoadInput.value = "all";
+  progressPeriodInput.value = "past-week";
+  progressPeriod = "past-week";
   onFilterChange();
 }
 
 function getFilteredWorkouts() {
+  const periodBounds = progressFilters.fromDate || progressFilters.toDate ? null : progressPeriodBounds(progressPeriod);
   return workouts.filter((workout) => {
     const activityMatch = progressFilters.activity === "all" || workout.activity === progressFilters.activity;
     const dateValue = workout.date || "";
-    const fromMatch = !progressFilters.fromDate || (dateValue && dateValue >= progressFilters.fromDate);
-    const toMatch = !progressFilters.toDate || (dateValue && dateValue <= progressFilters.toDate);
+    const fromDate = progressFilters.fromDate || periodBounds?.from || "";
+    const toDate = progressFilters.toDate || periodBounds?.to || "";
+    const fromMatch = !fromDate || (dateValue && dateValue >= fromDate);
+    const toMatch = !toDate || (dateValue && dateValue <= toDate);
     const loadMatch =
       progressFilters.strengthLoad === "all" ||
       workout.activity !== "strength" ||
@@ -1757,6 +1762,32 @@ function getFilteredWorkouts() {
       );
     return activityMatch && fromMatch && toMatch && loadMatch;
   });
+}
+
+function progressPeriodBounds(period) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let start = new Date(today);
+  if (period === "past-quarter") {
+    start = addMonthsClamped(today, -3);
+  } else if (period === "past-month") {
+    start = addMonthsClamped(today, -1);
+  } else {
+    start.setDate(start.getDate() - 6);
+  }
+  return {
+    from: formatDateInput(start),
+    to: formatDateInput(today),
+  };
+}
+
+function addMonthsClamped(dateInputValue, months) {
+  const date = new Date(dateInputValue);
+  const targetYear = date.getFullYear();
+  const targetMonth = date.getMonth() + months;
+  const targetDay = date.getDate();
+  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  return new Date(targetYear, targetMonth, Math.min(targetDay, lastDayOfTargetMonth));
 }
 
 function compareWorkoutsByRecentDate(a, b) {
@@ -1775,10 +1806,12 @@ function renderCharts() {
   }
 
   const filteredWorkouts = getFilteredWorkouts().slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  const strengthData = filteredWorkouts
-    .filter((workout) => workout.activity === "strength")
-    .map((workout) => ({ x: workout.date, y: strengthBestWeight(workout) }))
-    .filter((point) => point.x && isNumber(point.y));
+  const strengthData = buildIndividualMetricChartEntries(
+    filteredWorkouts,
+    "strength",
+    strengthBestWeight,
+    (workout, value) => [workout.date, `${formatNumber(value)} kg`].filter(Boolean).join(" • "),
+  );
   const runChartEntries = buildIndividualRunChartEntries(filteredWorkouts);
   const runDistanceData = runChartEntries
     .filter((entry) => isNumber(entry.distance))
@@ -1798,15 +1831,14 @@ function renderCharts() {
       workoutId: entry.workoutId,
       tooltip: entry.tooltip,
     }));
-  const sprintData = filteredWorkouts
-    .filter((workout) => workout.activity === "sprint")
-    .map((workout) => ({ x: workout.date, y: sprintBestTime(workout) }))
-    .filter((point) => point.x && isNumber(point.y));
+  const sprintData = buildIndividualMetricChartEntries(
+    filteredWorkouts,
+    "sprint",
+    sprintBestTime,
+    (workout, value) => [workout.date, `${formatNumber(value)} sec`].filter(Boolean).join(" • "),
+  );
 
-  const groupedStrengthData = groupChartPoints(strengthData, chartGrouping);
-  const groupedSprintData = groupChartPoints(sprintData, chartGrouping);
-
-  strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, groupedStrengthData, "kg", "#00E5FF");
+  strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, strengthData, "kg", "#00E5FF");
   runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runDistanceData, "km", "#4DA3FF", {}, "bar");
   runChart = createOrUpdateChart(
     runChart,
@@ -1814,23 +1846,23 @@ function renderCharts() {
     runPaceData,
     "min/km",
     "#6DFF5C",
-    buildIndividualRunGoalChartOverlay(runPaceData),
+    buildIndividualGoalChartOverlay("run", runPaceData),
   );
   sprintChart = createOrUpdateChart(
     sprintChart,
     sprintChartCanvas,
-    groupedSprintData,
+    sprintData,
     "sec",
     "#FF7A00",
-    buildGoalChartOverlay("sprint", groupedSprintData),
+    buildIndividualGoalChartOverlay("sprint", sprintData),
   );
 
-  toggleChartCardVisibility(strengthChartCard, groupedStrengthData.length > 0);
+  toggleChartCardVisibility(strengthChartCard, strengthData.length > 0);
   toggleChartCardVisibility(runDistanceChartCard, runDistanceData.length > 0);
   toggleChartCardVisibility(runChartCard, runPaceData.length > 0);
-  toggleChartCardVisibility(sprintChartCard, groupedSprintData.length > 0);
+  toggleChartCardVisibility(sprintChartCard, sprintData.length > 0);
 
-  const hasVisibleCharts = groupedStrengthData.length > 0 || runDistanceData.length > 0 || runPaceData.length > 0 || groupedSprintData.length > 0;
+  const hasVisibleCharts = strengthData.length > 0 || runDistanceData.length > 0 || runPaceData.length > 0 || sprintData.length > 0;
   if (chartsGridEl) {
     chartsGridEl.classList.toggle("is-hidden", !hasVisibleCharts);
   }
@@ -1904,6 +1936,28 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, overlay
   });
 }
 
+function buildIndividualMetricChartEntries(filteredWorkouts, activity, metricFn, tooltipFn) {
+  const dateCounts = new Map();
+  return filteredWorkouts
+    .filter((workout) => workout.activity === activity && workout.date)
+    .map((workout) => ({
+      workout,
+      value: metricFn(workout),
+    }))
+    .filter((entry) => isNumber(entry.value))
+    .map(({ workout, value }) => {
+      const count = (dateCounts.get(workout.date) || 0) + 1;
+      dateCounts.set(workout.date, count);
+      return {
+        x: count > 1 ? `${workout.date} #${count}` : workout.date,
+        y: value,
+        date: workout.date,
+        workoutId: workout.id,
+        tooltip: tooltipFn(workout, value),
+      };
+    });
+}
+
 function buildIndividualRunChartEntries(filteredWorkouts) {
   const dateCounts = new Map();
   return filteredWorkouts
@@ -1929,13 +1983,13 @@ function buildIndividualRunChartEntries(filteredWorkouts) {
     });
 }
 
-function buildIndividualRunGoalChartOverlay(points) {
+function buildIndividualGoalChartOverlay(activity, points) {
   if (!points.length) {
     return { datasets: [], markers: [] };
   }
   const relevantGoals = [
-    goals.active?.run,
-    ...goals.history.filter((goal) => goal.activity === "run"),
+    goals.active?.[activity],
+    ...goals.history.filter((goal) => goal.activity === activity),
   ].filter(Boolean);
   const datasets = [];
   const markers = [];
@@ -1964,51 +2018,7 @@ function buildIndividualRunGoalChartOverlay(points) {
       }
     }
     if (goal.achievedAt) {
-      const achievementPoint = individualRunChartAchievementPoint(goal, points, targetValue);
-      if (achievementPoint) {
-        markers.push(achievementPoint);
-      }
-    }
-  });
-  return { datasets, markers };
-}
-
-function buildGoalChartOverlay(activity, points) {
-  if (!points.length) {
-    return { datasets: [], markers: [] };
-  }
-  const relevantGoals = [
-    goals.active?.[activity],
-    ...goals.history.filter((goal) => goal.activity === activity),
-  ].filter(Boolean);
-  const datasets = [];
-  const markers = [];
-  relevantGoals.forEach((goal) => {
-    const targetValue = chartGoalTargetValue(goal);
-    if (isNumber(targetValue)) {
-      const targetPoints = points.map((point) => {
-        const inRange = isGoalVisibleOnChartLabel(goal, point.x);
-        return {
-          x: point.x,
-          y: inRange ? targetValue : null,
-          tooltip: formatGoalLabel(goal),
-        };
-      });
-      if (targetPoints.some((point) => isNumber(point.y))) {
-        datasets.push({
-          label: goal.achievedAt ? "Achieved goal" : "Active goal",
-          data: targetPoints,
-          borderColor: goal.achievedAt ? "#FFD166" : "#FF4FD8",
-          backgroundColor: "transparent",
-          borderDash: [6, 4],
-          pointRadius: 0,
-          tension: 0,
-          spanGaps: false,
-        });
-      }
-    }
-    if (goal.achievedAt) {
-      const achievementPoint = chartAchievementPoint(goal, points, targetValue);
+      const achievementPoint = individualChartAchievementPoint(goal, points, targetValue);
       if (achievementPoint) {
         markers.push(achievementPoint);
       }
@@ -2033,12 +2043,6 @@ function chartGoalTargetValue(goal) {
   return null;
 }
 
-function isGoalVisibleOnChartLabel(goal, label) {
-  const setLabel = groupingLabel(goal.setAt, chartGrouping);
-  const achievedLabel = goal.achievedAt ? groupingLabel(goal.achievedAt, chartGrouping) : "";
-  return label >= setLabel && (!achievedLabel || label <= achievedLabel);
-}
-
 function isGoalVisibleOnDate(goal, dateText) {
   if (!dateText || !goal.setAt) {
     return false;
@@ -2046,21 +2050,7 @@ function isGoalVisibleOnDate(goal, dateText) {
   return dateText >= goal.setAt && (!goal.achievedAt || dateText <= goal.achievedAt);
 }
 
-function chartAchievementPoint(goal, points, fallbackY) {
-  const achievement = findGoalAchievement(goal);
-  if (!achievement) {
-    return null;
-  }
-  const x = groupingLabel(achievement.date, chartGrouping);
-  const point = points.find((item) => item.x === x);
-  return {
-    x,
-    y: point?.y ?? fallbackY,
-    label: "🎉",
-  };
-}
-
-function individualRunChartAchievementPoint(goal, points, fallbackY) {
+function individualChartAchievementPoint(goal, points, fallbackY) {
   const achievement = findGoalAchievement(goal);
   if (!achievement) {
     return null;
@@ -2082,50 +2072,6 @@ function toggleChartCardVisibility(card, isVisible) {
   }
 
   card.classList.toggle("is-hidden", !isVisible);
-}
-
-function groupChartPoints(points, mode) {
-  const grouped = new Map();
-  points.forEach((point) => {
-    const label = groupingLabel(point.x, mode);
-    if (!label) {
-      return;
-    }
-    const values = grouped.get(label) || [];
-    values.push(point.y);
-    grouped.set(label, values);
-  });
-
-  return [...grouped.entries()].map(([label, values]) => ({
-    x: label,
-    y: Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(2)),
-  }));
-}
-
-function groupingLabel(dateText, mode) {
-  const date = new Date(dateText);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  if (mode === "quarter") {
-    const quarter = Math.floor(date.getUTCMonth() / 3) + 1;
-    return `${date.getUTCFullYear()}-Q${quarter}`;
-  }
-
-  if (mode === "month") {
-    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-  }
-
-  if (mode === "week") {
-    const firstDayOfYear = Date.UTC(date.getUTCFullYear(), 0, 1);
-    const dayOfYear = Math.floor((date.getTime() - firstDayOfYear) / 86400000) + 1;
-    const week = Math.ceil(dayOfYear / 7);
-    return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
-  }
-
-  const fallbackWeek = Math.ceil((Math.floor((date.getTime() - Date.UTC(date.getUTCFullYear(), 0, 1)) / 86400000) + 1) / 7);
-  return `${date.getUTCFullYear()}-W${String(fallbackWeek).padStart(2, "0")}`;
 }
 
 function exportBackupData() {
