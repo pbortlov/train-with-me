@@ -1843,6 +1843,9 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
     return null;
   }
 
+  sizeActivityChartCanvas(canvas, points.length);
+  const yAxisMax = activityChartYAxisMax(points, unit);
+
   return new Chart(canvas, {
     type: "bar",
     data: {
@@ -1853,11 +1856,21 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
           borderColor: color,
           backgroundColor: `${color}33`,
           borderWidth: 1,
+          barPercentage: 0.62,
+          categoryPercentage: 0.66,
+          maxBarThickness: 24,
         },
       ],
     },
     options: {
       parsing: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          bottom: 8,
+        },
+      },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -1875,17 +1888,56 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
       scales: {
         x: {
           type: "category",
-          title: { display: true, text: "Date" },
+          title: { display: false },
+          afterFit(scale) {
+            scale.height = 40;
+          },
           ticks: {
             autoSkip: false,
             maxRotation: 60,
             minRotation: 45,
+            font: { size: 9 },
           },
         },
-        y: { title: { display: true, text: unit }, beginAtZero: true },
+        y: { title: { display: true, text: unit }, beginAtZero: true, max: yAxisMax },
       },
     },
   });
+}
+
+function sizeActivityChartCanvas(canvas, entryCount) {
+  const viewport = canvas.parentElement;
+  const viewportWidth = viewport?.clientWidth || canvas.closest(".chart-card")?.clientWidth || 320;
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+  const entryWidth = isMobile ? 56 : 72;
+  const chartWidth = Math.max(viewportWidth, entryCount * entryWidth);
+  canvas.width = chartWidth;
+  canvas.height = 220;
+  canvas.style.width = `${chartWidth}px`;
+  canvas.style.height = "220px";
+}
+
+function activityChartYAxisMax(points, unit) {
+  const maxValue = points
+    .map((point) => point.y)
+    .filter((value) => isNumber(value) && value > 0)
+    .reduce((max, value) => Math.max(max, value), 0);
+  if (!maxValue) {
+    return undefined;
+  }
+
+  const paddedMax = maxValue * 1.5;
+  if (unit === "kg") {
+    const step = paddedMax <= 50 ? 5 : 10;
+    return Math.ceil(paddedMax / step) * step;
+  }
+  if (unit === "km") {
+    return Math.ceil(paddedMax);
+  }
+  if (unit === "m/s") {
+    return Math.ceil(paddedMax / 0.5) * 0.5;
+  }
+  return Math.ceil(paddedMax);
 }
 
 function buildIndividualMetricChartEntries(filteredWorkouts, activity, metricFn, tooltipFn) {

@@ -834,6 +834,35 @@ button {
   background: #0a1326;
 }
 
+.activity-chart-card {
+  display: flex;
+  flex-direction: column;
+  height: 280px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.activity-chart-card h4 {
+  flex: 0 0 auto;
+}
+
+.chart-viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 220px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chart-viewport canvas {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 220px;
+  max-height: 220px;
+}
+
 .chart-card.is-hidden,
 .charts-grid.is-hidden {
   display: none;
