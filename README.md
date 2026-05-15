@@ -32,8 +32,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
-- Stats activity metrics show highest strength weight by exercise, run pace in min/km, and sprint speed in m/s
-- The activity chart period selector filters charts only; Summary and Workout History use the explicit activity, date, and strength load filters
+- Stats activity metrics show highest strength weight by exercise, run pace in min/km, and sprint rep times in seconds
+- Activity metrics use the explicit activity, date, and strength load filters
 - Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
 - Run and sprint goals are tracked separately from the activity charts
 - Run goals use distance plus target time, such as `5 km under 22:00`
@@ -150,7 +150,6 @@ V2 keeps decision and planning history in the repo:
 - Confirm each exercise appears once in the Strength Highest Weights table.
 - Confirm the table shows the highest kg for each exercise and the date it happened.
 - Confirm band-only or bodyweight-only exercises do not produce kg rows.
-- Confirm changing Period does not change the Strength Highest Weights table.
 - Confirm changing explicit From date or To date filters changes the table.
 - Confirm Run Pace and Sprint charts still render as before.
 - Confirm horizontal scrolling still works when there are many entries.
@@ -161,6 +160,32 @@ V2 keeps decision and planning history in the repo:
 - Confirm a long Strength Highest Weights table is readable and scrolls inside its card.
 - Confirm Run Pace and Sprint chart cards keep their capped chart height.
 - Confirm mobile layout stacks cleanly without clipped table text.
+
+### Commit: Show sprint rep times and remove period filter
+
+- Confirm the Activity Charts filters no longer show Period.
+- Confirm a sprint workout with `10m 1.56s` and `20m 2.21s` shows two Sprint columns.
+- Confirm Sprint Y axis is `sec`.
+- Confirm Sprint X-axis labels use `YYYY-MM-DD #1`, `YYYY-MM-DD #2`, and so on.
+- Confirm Sprint tooltips show date, try number, meters, and seconds.
+- Confirm chart entries spread across the X axis when they fit and scroll horizontally when the viewport is too narrow.
+- Confirm close sprint times such as `1.56s`, `1.60s`, and `1.68s` show visible height differences.
+- Confirm explicit From date and To date filters affect Sprint, Run Pace, and Strength.
+- Confirm Run Pace and Strength behavior is unchanged.
+
+### Commit: Color sprint chart entries by date
+
+- Confirm same-day sprint reps share one color.
+- Confirm sprint reps from different dates use different colors.
+- Confirm sprint reps remain separate columns.
+- Confirm Run Pace and Strength colors and behavior are unchanged.
+
+### Commit: Fit same-day sprint entries together
+
+- Confirm same-day sprint reps appear close together and almost touching.
+- Confirm sprint reps from different dates have a visible separator between date groups.
+- Confirm date separators do not consume a full column-width gap.
+- Confirm Run Pace and Strength layout and behavior are unchanged.
 
 ## Publish With GitHub Pages
 1. Push this repo to GitHub.

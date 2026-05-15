@@ -1,4 +1,4 @@
-const CACHE_NAME = "train-with-me-v28";
+const CACHE_NAME = "train-with-me-v33";
 const APP_SHELL = ["./", "./index.html", "./styles.css", "./script.js", "./manifest.json"];
 const IS_LOCALHOST = self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1";
 

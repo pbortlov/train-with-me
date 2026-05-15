@@ -5,6 +5,7 @@ const STORAGE_KEY_PLANNED_SESSIONS = "twm_planned_sessions_v2";
 const STORAGE_KEY_PHASE_TEMPLATES = "twm_phase_templates_v2";
 const STORAGE_KEY_PHASE_INSTANCES = "twm_phase_instances_v2";
 const STORAGE_KEY_UI_SETTINGS = "twm_ui_settings_v2";
+const ACTIVITY_CHART_DATE_COLORS = ["#4DA3FF", "#FF7A00", "#6DFF5C", "#E879F9", "#FACC15", "#38BDF8", "#FB7185", "#A3E635"];
 
 const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
@@ -37,7 +38,6 @@ const filterFromDateInput = document.getElementById("filter-from-date");
 const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
 const filterStrengthLoadInput = document.getElementById("filter-strength-load");
-const progressPeriodInput = document.getElementById("chart-grouping");
 const chartsStatusEl = document.getElementById("charts-status");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
@@ -220,7 +220,6 @@ let progressFilters = {
   toDate: "",
   strengthLoad: "all",
 };
-let progressPeriod = "past-week";
 let runDistanceChart = null;
 let sprintChart = null;
 let programAdherenceChart = null;
@@ -329,10 +328,6 @@ filterFromDateInput.addEventListener("change", onFilterChange);
 filterToDateInput.addEventListener("change", onFilterChange);
 filterStrengthLoadInput.addEventListener("change", onFilterChange);
 clearFiltersButton.addEventListener("click", clearFilters);
-progressPeriodInput.addEventListener("change", () => {
-  progressPeriod = progressPeriodInput.value || "past-week";
-  render();
-});
 goalActivityButtons.forEach((button) => {
   button.addEventListener("click", () => {
     setGoalActivity(button.dataset.goalActivity || "run");
@@ -1714,13 +1709,11 @@ function clearFilters() {
   filterFromDateInput.value = "";
   filterToDateInput.value = "";
   filterStrengthLoadInput.value = "all";
-  progressPeriodInput.value = "past-week";
-  progressPeriod = "past-week";
   onFilterChange();
 }
 
-function getFilteredWorkouts(options = {}) {
-  const dateBounds = workoutDateFilterBounds(options.periodBounds || null);
+function getFilteredWorkouts() {
+  const dateBounds = workoutDateFilterBounds();
   return workouts.filter((workout) => {
     const activityMatch = progressFilters.activity === "all" || workout.activity === progressFilters.activity;
     const dateValue = workout.date || "";
@@ -1736,41 +1729,11 @@ function getFilteredWorkouts(options = {}) {
   });
 }
 
-function workoutDateFilterBounds(periodBounds = null) {
-  const explicitFrom = progressFilters.fromDate || "";
-  const explicitTo = progressFilters.toDate || "";
-  const periodFrom = periodBounds?.from || "";
-  const periodTo = periodBounds?.to || "";
+function workoutDateFilterBounds() {
   return {
-    from: [explicitFrom, periodFrom].filter(Boolean).sort().pop() || "",
-    to: [explicitTo, periodTo].filter(Boolean).sort()[0] || "",
+    from: progressFilters.fromDate || "",
+    to: progressFilters.toDate || "",
   };
-}
-
-function progressPeriodBounds(period) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  let start = new Date(today);
-  if (period === "past-quarter") {
-    start = addMonthsClamped(today, -3);
-  } else if (period === "past-month") {
-    start = addMonthsClamped(today, -1);
-  } else {
-    start.setDate(start.getDate() - 6);
-  }
-  return {
-    from: formatDateInput(start),
-    to: formatDateInput(today),
-  };
-}
-
-function addMonthsClamped(dateInputValue, months) {
-  const date = new Date(dateInputValue);
-  const targetYear = date.getFullYear();
-  const targetMonth = date.getMonth() + months;
-  const targetDay = date.getDate();
-  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-  return new Date(targetYear, targetMonth, Math.min(targetDay, lastDayOfTargetMonth));
 }
 
 function compareWorkoutsByRecentDate(a, b) {
@@ -1788,14 +1751,11 @@ function renderCharts() {
     return;
   }
 
-  const filteredWorkouts = getFilteredWorkouts({ periodBounds: progressPeriodBounds(progressPeriod) })
+  const filteredWorkouts = getFilteredWorkouts()
     .slice()
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  const runFilteredWorkouts = getFilteredWorkouts()
-    .slice()
-    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  const strengthRows = buildStrengthHighestWeightRows(runFilteredWorkouts);
-  const runChartEntries = buildIndividualRunChartEntries(runFilteredWorkouts);
+  const strengthRows = buildStrengthHighestWeightRows(filteredWorkouts);
+  const runChartEntries = buildIndividualRunChartEntries(filteredWorkouts);
   const runPaceData = runChartEntries
     .filter((entry) => isNumber(entry.pace))
     .map((entry) => ({
@@ -1806,16 +1766,15 @@ function renderCharts() {
       workoutId: entry.workoutId,
       tooltip: entry.tooltip,
     }));
-  const sprintData = buildIndividualMetricChartEntries(
-    filteredWorkouts,
-    "sprint",
-    sprintBestSpeed,
-    (workout, value) => [workout.date, `${formatNumber(value)} m/s`, formatSprintSpeedSource(workout)].filter(Boolean).join(" • "),
-  );
+  const sprintData = buildSprintRepChartEntries(filteredWorkouts);
 
   renderStrengthHighestWeights(strengthRows);
   runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runPaceData, "min/km", "#4DA3FF");
-  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "m/s", "#FF7A00");
+  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "sec", "#FF7A00", {
+    colorByDate: true,
+    compactBars: true,
+    daySeparators: true,
+  });
 
   toggleChartCardVisibility(strengthChartCard, strengthRows.length > 0);
   toggleChartCardVisibility(runDistanceChartCard, runPaceData.length > 0);
@@ -1886,7 +1845,7 @@ function buildStrengthHighestWeightRows(filteredWorkouts) {
   return [...rowsByExercise.values()].sort((a, b) => a.exercise.localeCompare(b.exercise));
 }
 
-function createOrUpdateChart(existingChart, canvas, points, unit, color) {
+function createOrUpdateChart(existingChart, canvas, points, unit, color, options = {}) {
   if (!canvas) {
     return existingChart;
   }
@@ -1900,9 +1859,11 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
     return null;
   }
 
-  sizeActivityChartCanvas(canvas, points.length);
-  const yAxisMax = activityChartYAxisMax(points, unit);
+  sizeActivityChartCanvas(canvas, points);
+  const yAxisBounds = activityChartYAxisBounds(points, unit);
   const xAxisLabelHeight = activityChartXAxisLabelHeight(points);
+  const colors = options.colorByDate ? activityChartDateColors(points, color) : null;
+  const plugins = options.daySeparators ? [activityChartDaySeparatorPlugin(points)] : [];
 
   return new Chart(canvas, {
     type: "bar",
@@ -1911,15 +1872,16 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
         {
           label: "Progress",
           data: points,
-          borderColor: color,
-          backgroundColor: `${color}33`,
+          borderColor: colors?.borderColor || color,
+          backgroundColor: colors?.backgroundColor || `${color}33`,
           borderWidth: 1,
-          barPercentage: 0.62,
-          categoryPercentage: 0.66,
-          maxBarThickness: 24,
+          barPercentage: options.compactBars ? 0.95 : 0.62,
+          categoryPercentage: options.compactBars ? 0.95 : 0.66,
+          maxBarThickness: options.compactBars ? 28 : 24,
         },
       ],
     },
+    plugins,
     options: {
       parsing: { xAxisKey: "x", yAxisKey: "y" },
       responsive: false,
@@ -1958,14 +1920,62 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
             callback(value) {
               const label = this.getLabelForValue(value);
               const matchingPoint = points.find((point) => point.x === label);
-              return matchingPoint?.xLabel || label;
+              return matchingPoint ? matchingPoint.xLabel : label;
             },
           },
         },
-        y: { title: { display: true, text: unit }, beginAtZero: true, max: yAxisMax },
+        y: { title: { display: true, text: unit }, ...yAxisBounds },
       },
     },
   });
+}
+
+function activityChartDateColors(points, fallbackColor) {
+  const colorsByDate = new Map();
+  points.forEach((point) => {
+    const date = point.date || "";
+    if (!colorsByDate.has(date)) {
+      colorsByDate.set(date, ACTIVITY_CHART_DATE_COLORS[colorsByDate.size % ACTIVITY_CHART_DATE_COLORS.length] || fallbackColor);
+    }
+  });
+
+  return {
+    borderColor: points.map((point) => colorsByDate.get(point.date || "") || fallbackColor),
+    backgroundColor: points.map((point) => `${colorsByDate.get(point.date || "") || fallbackColor}55`),
+  };
+}
+
+function activityChartDaySeparatorPlugin(points) {
+  return {
+    id: "activityChartDaySeparators",
+    afterDatasetsDraw(chart) {
+      const xScale = chart.scales.x;
+      const { chartArea, ctx } = chart;
+      if (!xScale || !chartArea) {
+        return;
+      }
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.55)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      points.forEach((point, index) => {
+        const previousPoint = points[index - 1];
+        if (!previousPoint || previousPoint.date === point.date) {
+          return;
+        }
+
+        const previousX = xScale.getPixelForValue(previousPoint.x);
+        const currentX = xScale.getPixelForValue(point.x);
+        const separatorX = (previousX + currentX) / 2;
+        ctx.beginPath();
+        ctx.moveTo(separatorX, chartArea.top);
+        ctx.lineTo(separatorX, chartArea.bottom);
+        ctx.stroke();
+      });
+      ctx.restore();
+    },
+  };
 }
 
 function activityChartXAxisLabelHeight(points) {
@@ -1976,42 +1986,75 @@ function activityChartXAxisLabelHeight(points) {
     .reduce((longest, length) => Math.max(longest, length), 0);
   const labelWidth = longestLabelLength * tickFontSize * 0.62;
   const rotatedHeight = Math.sin((tickRotationDegrees * Math.PI) / 180) * labelWidth;
-  return Math.min(76, Math.max(48, Math.ceil(rotatedHeight + tickFontSize + 12)));
+  return Math.min(96, Math.max(48, Math.ceil(rotatedHeight + tickFontSize + 12)));
 }
 
-function sizeActivityChartCanvas(canvas, entryCount) {
+function sizeActivityChartCanvas(canvas, points) {
   const viewport = canvas.parentElement;
   const viewportWidth = viewport?.clientWidth || canvas.closest(".chart-card")?.clientWidth || 320;
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
-  const entryWidth = isMobile ? 56 : 72;
-  const chartWidth = Math.max(viewportWidth, entryCount * entryWidth);
+  const entryWidth = activityChartEntryWidth(points);
+  const chartWidth = Math.max(viewportWidth, points.length * entryWidth);
   canvas.width = chartWidth;
   canvas.height = 220;
   canvas.style.width = `${chartWidth}px`;
   canvas.style.height = "220px";
 }
 
-function activityChartYAxisMax(points, unit) {
+function activityChartEntryWidth(points) {
+  const tickFontSize = 9;
+  const tickRotationDegrees = 60;
+  const longestLabelLength = points
+    .map((point) => String(point.xLabel || point.x || "").length)
+    .reduce((longest, length) => Math.max(longest, length), 0);
+  const labelWidth = longestLabelLength * tickFontSize * 0.62;
+  const horizontalFootprint = Math.cos((tickRotationDegrees * Math.PI) / 180) * labelWidth;
+  return Math.min(110, Math.max(56, Math.ceil(horizontalFootprint + 30)));
+}
+
+function activityChartYAxisBounds(points, unit) {
+  if (unit === "sec") {
+    return activityChartSprintSecondBounds(points);
+  }
+
   const maxValue = points
     .map((point) => point.y)
     .filter((value) => isNumber(value) && value > 0)
     .reduce((max, value) => Math.max(max, value), 0);
   if (!maxValue) {
-    return undefined;
+    return { beginAtZero: true };
   }
 
   const paddedMax = maxValue * 1.5;
   if (unit === "kg") {
     const step = paddedMax <= 50 ? 5 : 10;
-    return Math.ceil(paddedMax / step) * step;
+    return { beginAtZero: true, max: Math.ceil(paddedMax / step) * step };
   }
   if (unit === "km") {
-    return Math.ceil(paddedMax);
+    return { beginAtZero: true, max: Math.ceil(paddedMax) };
   }
   if (unit === "m/s") {
-    return Math.ceil(paddedMax / 0.5) * 0.5;
+    return { beginAtZero: true, max: Math.ceil(paddedMax / 0.5) * 0.5 };
   }
-  return Math.ceil(paddedMax);
+  return { beginAtZero: true, max: Math.ceil(paddedMax) };
+}
+
+function activityChartSprintSecondBounds(points) {
+  const values = points.map((point) => point.y).filter((value) => isNumber(value) && value > 0);
+  if (!values.length) {
+    return { beginAtZero: false };
+  }
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const visibleRange = Math.max(maxValue - minValue, 0.2);
+  const padding = visibleRange * 0.15;
+  const min = Math.max(0, Math.floor((minValue - padding) / 0.05) * 0.05);
+  const max = Math.ceil((maxValue + padding) / 0.05) * 0.05;
+  return {
+    beginAtZero: false,
+    min,
+    max: max <= min ? min + 0.2 : max,
+  };
 }
 
 function buildIndividualMetricChartEntries(filteredWorkouts, activity, metricFn, tooltipFn) {
@@ -2078,6 +2121,28 @@ function buildIndividualRunChartEntries(filteredWorkouts) {
         tooltip: parts.join(" • "),
       };
     });
+}
+
+function buildSprintRepChartEntries(filteredWorkouts) {
+  return filteredWorkouts
+    .filter((workout) => workout.activity === "sprint" && workout.date)
+    .flatMap((workout, workoutIndex) =>
+      normalizeSprintSets(workout.sprintSets)
+        .filter((set) => isNumber(set.time) && set.time > 0 && isNumber(set.distance) && set.distance > 0)
+        .map((set) => {
+          const workoutKey = workout.id || `${workout.date}:${workoutIndex}`;
+          const tryLabel = `#${set.order}`;
+          const timeLabel = `${formatNumber(set.time)} sec`;
+          return {
+            x: `${workoutKey}:sprint-set:${set.order}`,
+            y: set.time,
+            date: workout.date,
+            xLabel: `${workout.date} ${tryLabel}`,
+            workoutId: workout.id,
+            tooltip: [workout.date, tryLabel, `${formatNumber(set.distance)} m`, timeLabel].filter(Boolean).join(" • "),
+          };
+        }),
+    );
 }
 
 function toggleChartCardVisibility(card, isVisible) {
