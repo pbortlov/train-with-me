@@ -130,6 +130,23 @@ textarea {
   color: var(--text);
 }
 
+input.field-invalid,
+select.field-invalid,
+textarea.field-invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px #ff4d6d33;
+}
+
+.field-error-message {
+  color: var(--danger);
+  font-size: 0.82rem;
+  min-height: 1em;
+}
+
+.field-error-message:empty {
+  display: none;
+}
+
 button {
   border: 1px solid #00e5ff66;
   border-radius: 10px;
@@ -815,6 +832,35 @@ button {
   border-radius: 10px;
   padding: 0.7rem;
   background: #0a1326;
+}
+
+.activity-chart-card {
+  display: flex;
+  flex-direction: column;
+  height: 280px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.activity-chart-card h4 {
+  flex: 0 0 auto;
+}
+
+.chart-viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 220px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chart-viewport canvas {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 220px;
+  max-height: 220px;
 }
 
 .chart-card.is-hidden,

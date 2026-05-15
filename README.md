@@ -32,9 +32,10 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
-- Run and sprint progress stay separate from strength phases and are shown as progress over time
+- Stats activity charts show one column per logged entry: strength best weight in kg, run pace in min/km, and sprint speed in m/s
+- The activity chart period selector filters charts only; Summary and Workout History use the explicit activity, date, and strength load filters
 - Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
-- Run and sprint goals are shown on their charts, with achieved goals marked by a celebration marker
+- Run and sprint goals are tracked separately from the activity charts
 - Run goals use distance plus target time, such as `5 km under 22:00`
 - Sprint goals are distance-specific, such as `100 m under 14.2 sec`
 - Achieved run and sprint goals keep set and achieved dates so time-to-achieve stays visible
@@ -50,7 +51,7 @@ The app is designed to stay approachable for non-technical users by default, whi
   - goal history for achieved run and sprint targets
   - adherence summaries
   - program-duration strength progress
-  - strength / run pace / sprint charts over time
+  - per-entry activity charts for strength, run, and sprint
 - Data page with:
   - backup export/import
   - exercise library management
@@ -64,7 +65,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Programs`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions
-- `Stats`: goals, adherence summaries, program strength progress, and progress-over-time charts
+- `Stats`: goals, adherence summaries, program strength progress, and per-entry activity charts
 - `Data`: backup, exercise library, and workout history management
 
 ## Strength Phase Import
@@ -102,6 +103,47 @@ V2 keeps decision and planning history in the repo:
 1. Open `index.html` in your browser.
 2. Use the top navigation to move between Calendar, Programs, Review, Stats, and Data.
 3. If UI changes do not appear, hard refresh (`Ctrl+Shift+R`) and clear site storage/service worker cache.
+
+## Manual Test Checklists
+
+### Commit: Show every run pace in activity chart
+
+- Add or use at least 3 runs inside the selected chart period.
+- Confirm a run with stored pace appears in the Run Pace chart.
+- Confirm a run with valid distance/time but missing stored pace appears in the Run Pace chart.
+- Confirm the Run Pace chart shows one column for each matching run.
+- Confirm each Run Pace tooltip shows that run's date, distance, duration, and pace.
+- Change the chart period and confirm it filters run entries without aggregating to the best pace.
+- Confirm Summary and Workout History do not change when only the chart period changes.
+
+### Commit: Temporarily ignore period for run pace chart
+
+- Confirm valid runs outside the selected chart period still appear in the Run Pace chart.
+- Confirm Strength and Sprint charts still follow the selected chart period.
+- Confirm a run with stored pace appears in the Run Pace chart.
+- Confirm a run with valid distance/time but missing stored pace appears in the Run Pace chart.
+- Confirm each valid run appears as its own Run Pace column.
+
+### Commit: Fix activity chart point parsing
+
+- Confirm 3 valid runs in the same week render as 3 separate Run Pace columns.
+- Confirm same-day runs render as separate columns with X-axis labels showing only `YYYY-MM-DD`.
+- Confirm a run with valid distance/time but missing stored pace appears.
+- Confirm horizontal scrolling still works when there are many Run Pace entries.
+- Confirm Strength and Sprint charts still render their existing metrics.
+
+### Commit: Show run pace dates on x axis
+
+- Confirm every Run Pace X-axis label is the run date in `YYYY-MM-DD`.
+- Confirm two runs on the same date render as two separate columns with the same visible date label.
+- Confirm Run Pace tooltips still show date, distance, duration, and pace.
+
+### Commit: Allocate chart x-axis label space
+
+- Confirm full `YYYY-MM-DD` X-axis labels are visible and not clipped.
+- Confirm same-day Run Pace columns show complete date labels under each column.
+- Confirm chart cards keep the same capped height.
+- Confirm horizontal scrolling still works when there are many entries.
 
 ## Publish With GitHub Pages
 1. Push this repo to GitHub.
