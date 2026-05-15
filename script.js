@@ -1805,9 +1805,10 @@ function renderCharts() {
   const runPaceData = runChartEntries
     .filter((entry) => isNumber(entry.pace))
     .map((entry) => ({
-      x: entry.label,
+      x: entry.chartKey,
       y: entry.pace,
       date: entry.date,
+      xLabel: entry.date,
       workoutId: entry.workoutId,
       tooltip: entry.tooltip,
     }));
@@ -1859,6 +1860,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
 
   sizeActivityChartCanvas(canvas, points.length);
   const yAxisMax = activityChartYAxisMax(points, unit);
+  const xAxisLabelHeight = activityChartXAxisLabelHeight(points);
 
   return new Chart(canvas, {
     type: "bar",
@@ -1904,19 +1906,35 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
           type: "category",
           title: { display: false },
           afterFit(scale) {
-            scale.height = 40;
+            scale.height = xAxisLabelHeight;
           },
           ticks: {
             autoSkip: false,
             maxRotation: 60,
             minRotation: 45,
             font: { size: 9 },
+            callback(value) {
+              const label = this.getLabelForValue(value);
+              const matchingPoint = points.find((point) => point.x === label);
+              return matchingPoint?.xLabel || label;
+            },
           },
         },
         y: { title: { display: true, text: unit }, beginAtZero: true, max: yAxisMax },
       },
     },
   });
+}
+
+function activityChartXAxisLabelHeight(points) {
+  const tickFontSize = 9;
+  const tickRotationDegrees = 60;
+  const longestLabelLength = points
+    .map((point) => String(point.xLabel || point.x || "").length)
+    .reduce((longest, length) => Math.max(longest, length), 0);
+  const labelWidth = longestLabelLength * tickFontSize * 0.62;
+  const rotatedHeight = Math.sin((tickRotationDegrees * Math.PI) / 180) * labelWidth;
+  return Math.min(76, Math.max(48, Math.ceil(rotatedHeight + tickFontSize + 12)));
 }
 
 function sizeActivityChartCanvas(canvas, entryCount) {
@@ -2002,7 +2020,7 @@ function buildIndividualRunChartEntries(filteredWorkouts) {
     .map(({ workout, distance, pace }) => {
       const count = (dateCounts.get(workout.date) || 0) + 1;
       dateCounts.set(workout.date, count);
-      const label = count > 1 ? `${workout.date} #${count}` : workout.date;
+      const chartKey = workout.id || `${workout.date}:${count}`;
       const parts = [
         workout.date,
         `${formatNumber(distance)} km`,
@@ -2010,7 +2028,7 @@ function buildIndividualRunChartEntries(filteredWorkouts) {
         `${formatRunPace(pace)} min/km`,
       ].filter(Boolean);
       return {
-        label,
+        chartKey,
         date: workout.date,
         workoutId: workout.id,
         distance,

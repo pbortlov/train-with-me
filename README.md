@@ -127,10 +127,23 @@ V2 keeps decision and planning history in the repo:
 ### Commit: Fix activity chart point parsing
 
 - Confirm 3 valid runs in the same week render as 3 separate Run Pace columns.
-- Confirm same-day runs render as separate columns with labels such as `YYYY-MM-DD #2`.
+- Confirm same-day runs render as separate columns with X-axis labels showing only `YYYY-MM-DD`.
 - Confirm a run with valid distance/time but missing stored pace appears.
 - Confirm horizontal scrolling still works when there are many Run Pace entries.
 - Confirm Strength and Sprint charts still render their existing metrics.
+
+### Commit: Show run pace dates on x axis
+
+- Confirm every Run Pace X-axis label is the run date in `YYYY-MM-DD`.
+- Confirm two runs on the same date render as two separate columns with the same visible date label.
+- Confirm Run Pace tooltips still show date, distance, duration, and pace.
+
+### Commit: Allocate chart x-axis label space
+
+- Confirm full `YYYY-MM-DD` X-axis labels are visible and not clipped.
+- Confirm same-day Run Pace columns show complete date labels under each column.
+- Confirm chart cards keep the same capped height.
+- Confirm horizontal scrolling still works when there are many entries.
 
 ## Publish With GitHub Pages
 1. Push this repo to GitHub.
