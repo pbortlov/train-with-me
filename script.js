@@ -5,6 +5,7 @@ const STORAGE_KEY_PLANNED_SESSIONS = "twm_planned_sessions_v2";
 const STORAGE_KEY_PHASE_TEMPLATES = "twm_phase_templates_v2";
 const STORAGE_KEY_PHASE_INSTANCES = "twm_phase_instances_v2";
 const STORAGE_KEY_UI_SETTINGS = "twm_ui_settings_v2";
+const ACTIVITY_CHART_DATE_COLORS = ["#4DA3FF", "#FF7A00", "#6DFF5C", "#E879F9", "#FACC15", "#38BDF8", "#FB7185", "#A3E635"];
 
 const workoutForm = document.getElementById("workout-form");
 const goalsForm = document.getElementById("goals-form");
@@ -1769,7 +1770,7 @@ function renderCharts() {
 
   renderStrengthHighestWeights(strengthRows);
   runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runPaceData, "min/km", "#4DA3FF");
-  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "sec", "#FF7A00");
+  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "sec", "#FF7A00", { colorByDate: true });
 
   toggleChartCardVisibility(strengthChartCard, strengthRows.length > 0);
   toggleChartCardVisibility(runDistanceChartCard, runPaceData.length > 0);
@@ -1840,7 +1841,7 @@ function buildStrengthHighestWeightRows(filteredWorkouts) {
   return [...rowsByExercise.values()].sort((a, b) => a.exercise.localeCompare(b.exercise));
 }
 
-function createOrUpdateChart(existingChart, canvas, points, unit, color) {
+function createOrUpdateChart(existingChart, canvas, points, unit, color, options = {}) {
   if (!canvas) {
     return existingChart;
   }
@@ -1857,6 +1858,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
   sizeActivityChartCanvas(canvas, points);
   const yAxisBounds = activityChartYAxisBounds(points, unit);
   const xAxisLabelHeight = activityChartXAxisLabelHeight(points);
+  const colors = options.colorByDate ? activityChartDateColors(points, color) : null;
 
   return new Chart(canvas, {
     type: "bar",
@@ -1865,8 +1867,8 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
         {
           label: "Progress",
           data: points,
-          borderColor: color,
-          backgroundColor: `${color}33`,
+          borderColor: colors?.borderColor || color,
+          backgroundColor: colors?.backgroundColor || `${color}33`,
           borderWidth: 1,
           barPercentage: 0.62,
           categoryPercentage: 0.66,
@@ -1920,6 +1922,21 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
       },
     },
   });
+}
+
+function activityChartDateColors(points, fallbackColor) {
+  const colorsByDate = new Map();
+  points.forEach((point) => {
+    const date = point.date || "";
+    if (!colorsByDate.has(date)) {
+      colorsByDate.set(date, ACTIVITY_CHART_DATE_COLORS[colorsByDate.size % ACTIVITY_CHART_DATE_COLORS.length] || fallbackColor);
+    }
+  });
+
+  return {
+    borderColor: points.map((point) => colorsByDate.get(point.date || "") || fallbackColor),
+    backgroundColor: points.map((point) => `${colorsByDate.get(point.date || "") || fallbackColor}55`),
+  };
 }
 
 function activityChartXAxisLabelHeight(points) {

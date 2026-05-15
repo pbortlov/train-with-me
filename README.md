@@ -173,6 +173,13 @@ V2 keeps decision and planning history in the repo:
 - Confirm explicit From date and To date filters affect Sprint, Run Pace, and Strength.
 - Confirm Run Pace and Strength behavior is unchanged.
 
+### Commit: Color sprint chart entries by date
+
+- Confirm same-day sprint reps share one color.
+- Confirm sprint reps from different dates use different colors.
+- Confirm sprint reps remain separate columns.
+- Confirm Run Pace and Strength colors and behavior are unchanged.
+
 ## Publish With GitHub Pages
 1. Push this repo to GitHub.
 2. In GitHub, go to **Settings** → **Pages**.
