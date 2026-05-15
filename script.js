@@ -1855,7 +1855,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
   }
 
   sizeActivityChartCanvas(canvas, points);
-  const yAxisMax = activityChartYAxisMax(points, unit);
+  const yAxisBounds = activityChartYAxisBounds(points, unit);
   const xAxisLabelHeight = activityChartXAxisLabelHeight(points);
 
   return new Chart(canvas, {
@@ -1916,7 +1916,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
             },
           },
         },
-        y: { title: { display: true, text: unit }, beginAtZero: true, max: yAxisMax },
+        y: { title: { display: true, text: unit }, ...yAxisBounds },
       },
     },
   });
@@ -1955,27 +1955,50 @@ function activityChartEntryWidth(points) {
   return Math.min(110, Math.max(56, Math.ceil(horizontalFootprint + 30)));
 }
 
-function activityChartYAxisMax(points, unit) {
+function activityChartYAxisBounds(points, unit) {
+  if (unit === "sec") {
+    return activityChartSprintSecondBounds(points);
+  }
+
   const maxValue = points
     .map((point) => point.y)
     .filter((value) => isNumber(value) && value > 0)
     .reduce((max, value) => Math.max(max, value), 0);
   if (!maxValue) {
-    return undefined;
+    return { beginAtZero: true };
   }
 
   const paddedMax = maxValue * 1.5;
   if (unit === "kg") {
     const step = paddedMax <= 50 ? 5 : 10;
-    return Math.ceil(paddedMax / step) * step;
+    return { beginAtZero: true, max: Math.ceil(paddedMax / step) * step };
   }
   if (unit === "km") {
-    return Math.ceil(paddedMax);
+    return { beginAtZero: true, max: Math.ceil(paddedMax) };
   }
   if (unit === "m/s") {
-    return Math.ceil(paddedMax / 0.5) * 0.5;
+    return { beginAtZero: true, max: Math.ceil(paddedMax / 0.5) * 0.5 };
   }
-  return Math.ceil(paddedMax);
+  return { beginAtZero: true, max: Math.ceil(paddedMax) };
+}
+
+function activityChartSprintSecondBounds(points) {
+  const values = points.map((point) => point.y).filter((value) => isNumber(value) && value > 0);
+  if (!values.length) {
+    return { beginAtZero: false };
+  }
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const visibleRange = Math.max(maxValue - minValue, 0.2);
+  const padding = visibleRange * 0.15;
+  const min = Math.max(0, Math.floor((minValue - padding) / 0.05) * 0.05);
+  const max = Math.ceil((maxValue + padding) / 0.05) * 0.05;
+  return {
+    beginAtZero: false,
+    min,
+    max: max <= min ? min + 0.2 : max,
+  };
 }
 
 function buildIndividualMetricChartEntries(filteredWorkouts, activity, metricFn, tooltipFn) {

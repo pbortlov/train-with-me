@@ -169,6 +169,7 @@ V2 keeps decision and planning history in the repo:
 - Confirm Sprint X-axis labels use `YYYY-MM-DD #1`, `YYYY-MM-DD #2`, and so on.
 - Confirm Sprint tooltips show date, try number, meters, and seconds.
 - Confirm chart entries spread across the X axis when they fit and scroll horizontally when the viewport is too narrow.
+- Confirm close sprint times such as `1.56s`, `1.60s`, and `1.68s` show visible height differences.
 - Confirm explicit From date and To date filters affect Sprint, Run Pace, and Strength.
 - Confirm Run Pace and Strength behavior is unchanged.
 
