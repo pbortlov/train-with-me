@@ -1770,7 +1770,11 @@ function renderCharts() {
 
   renderStrengthHighestWeights(strengthRows);
   runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runPaceData, "min/km", "#4DA3FF");
-  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "sec", "#FF7A00", { colorByDate: true });
+  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "sec", "#FF7A00", {
+    colorByDate: true,
+    compactBars: true,
+    daySeparators: true,
+  });
 
   toggleChartCardVisibility(strengthChartCard, strengthRows.length > 0);
   toggleChartCardVisibility(runDistanceChartCard, runPaceData.length > 0);
@@ -1859,6 +1863,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, options
   const yAxisBounds = activityChartYAxisBounds(points, unit);
   const xAxisLabelHeight = activityChartXAxisLabelHeight(points);
   const colors = options.colorByDate ? activityChartDateColors(points, color) : null;
+  const plugins = options.daySeparators ? [activityChartDaySeparatorPlugin(points)] : [];
 
   return new Chart(canvas, {
     type: "bar",
@@ -1870,12 +1875,13 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, options
           borderColor: colors?.borderColor || color,
           backgroundColor: colors?.backgroundColor || `${color}33`,
           borderWidth: 1,
-          barPercentage: 0.62,
-          categoryPercentage: 0.66,
-          maxBarThickness: 24,
+          barPercentage: options.compactBars ? 0.95 : 0.62,
+          categoryPercentage: options.compactBars ? 0.95 : 0.66,
+          maxBarThickness: options.compactBars ? 28 : 24,
         },
       ],
     },
+    plugins,
     options: {
       parsing: { xAxisKey: "x", yAxisKey: "y" },
       responsive: false,
@@ -1914,7 +1920,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color, options
             callback(value) {
               const label = this.getLabelForValue(value);
               const matchingPoint = points.find((point) => point.x === label);
-              return matchingPoint?.xLabel || label;
+              return matchingPoint ? matchingPoint.xLabel : label;
             },
           },
         },
@@ -1936,6 +1942,39 @@ function activityChartDateColors(points, fallbackColor) {
   return {
     borderColor: points.map((point) => colorsByDate.get(point.date || "") || fallbackColor),
     backgroundColor: points.map((point) => `${colorsByDate.get(point.date || "") || fallbackColor}55`),
+  };
+}
+
+function activityChartDaySeparatorPlugin(points) {
+  return {
+    id: "activityChartDaySeparators",
+    afterDatasetsDraw(chart) {
+      const xScale = chart.scales.x;
+      const { chartArea, ctx } = chart;
+      if (!xScale || !chartArea) {
+        return;
+      }
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.55)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      points.forEach((point, index) => {
+        const previousPoint = points[index - 1];
+        if (!previousPoint || previousPoint.date === point.date) {
+          return;
+        }
+
+        const previousX = xScale.getPixelForValue(previousPoint.x);
+        const currentX = xScale.getPixelForValue(point.x);
+        const separatorX = (previousX + currentX) / 2;
+        ctx.beginPath();
+        ctx.moveTo(separatorX, chartArea.top);
+        ctx.lineTo(separatorX, chartArea.bottom);
+        ctx.stroke();
+      });
+      ctx.restore();
+    },
   };
 }
 

@@ -180,6 +180,13 @@ V2 keeps decision and planning history in the repo:
 - Confirm sprint reps remain separate columns.
 - Confirm Run Pace and Strength colors and behavior are unchanged.
 
+### Commit: Fit same-day sprint entries together
+
+- Confirm same-day sprint reps appear close together and almost touching.
+- Confirm sprint reps from different dates have a visible separator between date groups.
+- Confirm date separators do not consume a full column-width gap.
+- Confirm Run Pace and Strength layout and behavior are unchanged.
+
 ## Publish With GitHub Pages
 1. Push this repo to GitHub.
 2. In GitHub, go to **Settings** → **Pages**.
