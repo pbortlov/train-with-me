@@ -846,6 +846,15 @@ button {
   flex: 0 0 auto;
 }
 
+.strength-stats-card {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.strength-stats-card h4 {
+  margin-bottom: 0.65rem;
+}
+
 .chart-viewport {
   flex: 1 1 auto;
   min-width: 0;
@@ -864,9 +873,8 @@ button {
 }
 
 .strength-table-viewport {
-  flex: 1 1 auto;
   min-width: 0;
-  height: 220px;
+  max-height: 24rem;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -896,6 +904,13 @@ button {
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.strength-highest-table thead {
+  position: sticky;
+  top: 0;
+  background: #0a1326;
+  z-index: 1;
 }
 
 .chart-card.is-hidden,

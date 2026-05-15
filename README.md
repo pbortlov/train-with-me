@@ -155,6 +155,13 @@ V2 keeps decision and planning history in the repo:
 - Confirm Run Pace and Sprint charts still render as before.
 - Confirm horizontal scrolling still works when there are many entries.
 
+### Commit: Improve strength highest weights table layout
+
+- Confirm Strength Highest Weights appears below the Run Pace and Sprint chart cards.
+- Confirm a long Strength Highest Weights table is readable and scrolls inside its card.
+- Confirm Run Pace and Sprint chart cards keep their capped chart height.
+- Confirm mobile layout stacks cleanly without clipped table text.
+
 ## Publish With GitHub Pages
 1. Push this repo to GitHub.
 2. In GitHub, go to **Settings** → **Pages**.
