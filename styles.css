@@ -846,6 +846,15 @@ button {
   flex: 0 0 auto;
 }
 
+.strength-stats-card {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.strength-stats-card h4 {
+  margin-bottom: 0.65rem;
+}
+
 .chart-viewport {
   flex: 1 1 auto;
   min-width: 0;
@@ -861,6 +870,47 @@ button {
   max-width: none;
   height: 220px;
   max-height: 220px;
+}
+
+.strength-table-viewport {
+  min-width: 0;
+  max-height: 24rem;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.strength-highest-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.strength-highest-table th,
+.strength-highest-table td {
+  padding: 0.45rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.strength-highest-table th:first-child,
+.strength-highest-table td:first-child {
+  min-width: 9rem;
+  white-space: normal;
+}
+
+.strength-highest-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.strength-highest-table thead {
+  position: sticky;
+  top: 0;
+  background: #0a1326;
+  z-index: 1;
 }
 
 .chart-card.is-hidden,
