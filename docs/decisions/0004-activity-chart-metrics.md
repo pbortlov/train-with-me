@@ -14,6 +14,8 @@ Stats uses three per-entry activity charts:
 
 All three charts use workout date on the X axis and render as column charts. Duplicate same-day entries remain separate with suffixed labels such as `2026-05-13 #2`.
 
+The chart period selector applies only to the activity charts. Summary and Workout History continue to use only explicit filters so the default chart period does not hide older workouts from shared views.
+
 Run pace and sprint time goals remain tracked in goal progress and history, but are not overlaid on these activity charts because their units do not match the chart metrics.
 
 ## Consequences

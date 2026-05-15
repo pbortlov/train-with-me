@@ -33,6 +33,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
 - Stats activity charts show one column per logged entry: strength best weight in kg, run distance in km, and sprint speed in m/s
+- The activity chart period selector filters charts only; Summary and Workout History use the explicit activity, date, and strength load filters
 - Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
 - Run and sprint goals are tracked separately from the activity charts
 - Run goals use distance plus target time, such as `5 km under 22:00`

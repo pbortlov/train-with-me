@@ -1720,15 +1720,13 @@ function clearFilters() {
   onFilterChange();
 }
 
-function getFilteredWorkouts() {
-  const periodBounds = progressFilters.fromDate || progressFilters.toDate ? null : progressPeriodBounds(progressPeriod);
+function getFilteredWorkouts(options = {}) {
+  const dateBounds = workoutDateFilterBounds(options.periodBounds || null);
   return workouts.filter((workout) => {
     const activityMatch = progressFilters.activity === "all" || workout.activity === progressFilters.activity;
     const dateValue = workout.date || "";
-    const fromDate = progressFilters.fromDate || periodBounds?.from || "";
-    const toDate = progressFilters.toDate || periodBounds?.to || "";
-    const fromMatch = !fromDate || (dateValue && dateValue >= fromDate);
-    const toMatch = !toDate || (dateValue && dateValue <= toDate);
+    const fromMatch = !dateBounds.from || (dateValue && dateValue >= dateBounds.from);
+    const toMatch = !dateBounds.to || (dateValue && dateValue <= dateBounds.to);
     const loadMatch =
       progressFilters.strengthLoad === "all" ||
       workout.activity !== "strength" ||
@@ -1737,6 +1735,17 @@ function getFilteredWorkouts() {
       );
     return activityMatch && fromMatch && toMatch && loadMatch;
   });
+}
+
+function workoutDateFilterBounds(periodBounds = null) {
+  const explicitFrom = progressFilters.fromDate || "";
+  const explicitTo = progressFilters.toDate || "";
+  const periodFrom = periodBounds?.from || "";
+  const periodTo = periodBounds?.to || "";
+  return {
+    from: [explicitFrom, periodFrom].filter(Boolean).sort().pop() || "",
+    to: [explicitTo, periodTo].filter(Boolean).sort()[0] || "",
+  };
 }
 
 function progressPeriodBounds(period) {
@@ -1780,7 +1789,9 @@ function renderCharts() {
     return;
   }
 
-  const filteredWorkouts = getFilteredWorkouts().slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  const filteredWorkouts = getFilteredWorkouts({ periodBounds: progressPeriodBounds(progressPeriod) })
+    .slice()
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const strengthData = buildIndividualMetricChartEntries(
     filteredWorkouts,
     "strength",
@@ -1864,7 +1875,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
     },
     options: {
       parsing: false,
-      responsive: true,
+      responsive: false,
       maintainAspectRatio: false,
       layout: {
         padding: {
