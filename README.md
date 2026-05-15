@@ -32,7 +32,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
-- Stats activity charts show one column per logged entry: strength best weight in kg, run distance in km, and sprint speed in m/s
+- Stats activity charts show one column per logged entry: strength best weight in kg, run pace in min/km, and sprint speed in m/s
 - The activity chart period selector filters charts only; Summary and Workout History use the explicit activity, date, and strength load filters
 - Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
 - Run and sprint goals are tracked separately from the activity charts
@@ -103,6 +103,34 @@ V2 keeps decision and planning history in the repo:
 1. Open `index.html` in your browser.
 2. Use the top navigation to move between Calendar, Programs, Review, Stats, and Data.
 3. If UI changes do not appear, hard refresh (`Ctrl+Shift+R`) and clear site storage/service worker cache.
+
+## Manual Test Checklists
+
+### Commit: Show every run pace in activity chart
+
+- Add or use at least 3 runs inside the selected chart period.
+- Confirm a run with stored pace appears in the Run Pace chart.
+- Confirm a run with valid distance/time but missing stored pace appears in the Run Pace chart.
+- Confirm the Run Pace chart shows one column for each matching run.
+- Confirm each Run Pace tooltip shows that run's date, distance, duration, and pace.
+- Change the chart period and confirm it filters run entries without aggregating to the best pace.
+- Confirm Summary and Workout History do not change when only the chart period changes.
+
+### Commit: Temporarily ignore period for run pace chart
+
+- Confirm valid runs outside the selected chart period still appear in the Run Pace chart.
+- Confirm Strength and Sprint charts still follow the selected chart period.
+- Confirm a run with stored pace appears in the Run Pace chart.
+- Confirm a run with valid distance/time but missing stored pace appears in the Run Pace chart.
+- Confirm each valid run appears as its own Run Pace column.
+
+### Commit: Fix activity chart point parsing
+
+- Confirm 3 valid runs in the same week render as 3 separate Run Pace columns.
+- Confirm same-day runs render as separate columns with labels such as `YYYY-MM-DD #2`.
+- Confirm a run with valid distance/time but missing stored pace appears.
+- Confirm horizontal scrolling still works when there are many Run Pace entries.
+- Confirm Strength and Sprint charts still render their existing metrics.
 
 ## Publish With GitHub Pages
 1. Push this repo to GitHub.

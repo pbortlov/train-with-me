@@ -1792,18 +1792,21 @@ function renderCharts() {
   const filteredWorkouts = getFilteredWorkouts({ periodBounds: progressPeriodBounds(progressPeriod) })
     .slice()
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  const runFilteredWorkouts = getFilteredWorkouts()
+    .slice()
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const strengthData = buildIndividualMetricChartEntries(
     filteredWorkouts,
     "strength",
     strengthBestWeight,
     (workout, value) => [workout.date, `${formatNumber(value)} kg`].filter(Boolean).join(" • "),
   );
-  const runChartEntries = buildIndividualRunChartEntries(filteredWorkouts);
-  const runDistanceData = runChartEntries
-    .filter((entry) => isNumber(entry.distance))
+  const runChartEntries = buildIndividualRunChartEntries(runFilteredWorkouts);
+  const runPaceData = runChartEntries
+    .filter((entry) => isNumber(entry.pace))
     .map((entry) => ({
       x: entry.label,
-      y: entry.distance,
+      y: entry.pace,
       date: entry.date,
       workoutId: entry.workoutId,
       tooltip: entry.tooltip,
@@ -1816,14 +1819,14 @@ function renderCharts() {
   );
 
   strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, strengthData, "kg", "#00E5FF");
-  runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runDistanceData, "km", "#4DA3FF");
+  runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runPaceData, "min/km", "#4DA3FF");
   sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "m/s", "#FF7A00");
 
   toggleChartCardVisibility(strengthChartCard, strengthData.length > 0);
-  toggleChartCardVisibility(runDistanceChartCard, runDistanceData.length > 0);
+  toggleChartCardVisibility(runDistanceChartCard, runPaceData.length > 0);
   toggleChartCardVisibility(sprintChartCard, sprintData.length > 0);
 
-  const hasVisibleCharts = strengthData.length > 0 || runDistanceData.length > 0 || sprintData.length > 0;
+  const hasVisibleCharts = strengthData.length > 0 || runPaceData.length > 0 || sprintData.length > 0;
   if (chartsGridEl) {
     chartsGridEl.classList.toggle("is-hidden", !hasVisibleCharts);
   }
@@ -1874,7 +1877,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
       ],
     },
     options: {
-      parsing: false,
+      parsing: { xAxisKey: "x", yAxisKey: "y" },
       responsive: false,
       maintainAspectRatio: false,
       layout: {
@@ -1976,23 +1979,42 @@ function buildIndividualMetricChartEntries(filteredWorkouts, activity, metricFn,
 function buildIndividualRunChartEntries(filteredWorkouts) {
   const dateCounts = new Map();
   return filteredWorkouts
-    .filter((workout) => workout.activity === "run" && workout.date && (isNumber(workout.distance) || isNumber(workout.pace)))
+    .filter((workout) => workout.activity === "run" && workout.date)
     .map((workout) => {
+      const distance = workout.distance;
+      const timeSeconds = parseRunDurationToSeconds(workout.time);
+      const pace = isNumber(workout.pace) ? workout.pace : calculateRunPace(distance, timeSeconds);
+      return {
+        workout,
+        distance,
+        timeSeconds,
+        pace,
+      };
+    })
+    .filter(
+      (entry) =>
+        isNumber(entry.distance) &&
+        entry.distance > 0 &&
+        Number.isFinite(entry.timeSeconds) &&
+        entry.timeSeconds > 0 &&
+        isNumber(entry.pace),
+    )
+    .map(({ workout, distance, pace }) => {
       const count = (dateCounts.get(workout.date) || 0) + 1;
       dateCounts.set(workout.date, count);
       const label = count > 1 ? `${workout.date} #${count}` : workout.date;
       const parts = [
         workout.date,
-        isNumber(workout.distance) ? `${formatNumber(workout.distance)} km` : null,
+        `${formatNumber(distance)} km`,
         formatRunDuration(workout.time),
-        isNumber(workout.pace) ? `${formatRunPace(workout.pace)} min/km` : null,
+        `${formatRunPace(pace)} min/km`,
       ].filter(Boolean);
       return {
         label,
         date: workout.date,
         workoutId: workout.id,
-        distance: workout.distance,
-        pace: workout.pace,
+        distance,
+        pace,
         tooltip: parts.join(" • "),
       };
     });
