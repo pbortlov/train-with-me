@@ -32,7 +32,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
-- Stats activity charts show one column per logged entry: strength best weight in kg, run pace in min/km, and sprint speed in m/s
+- Stats activity metrics show highest strength weight by exercise, run pace in min/km, and sprint speed in m/s
 - The activity chart period selector filters charts only; Summary and Workout History use the explicit activity, date, and strength load filters
 - Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
 - Run and sprint goals are tracked separately from the activity charts
@@ -143,6 +143,16 @@ V2 keeps decision and planning history in the repo:
 - Confirm full `YYYY-MM-DD` X-axis labels are visible and not clipped.
 - Confirm same-day Run Pace columns show complete date labels under each column.
 - Confirm chart cards keep the same capped height.
+
+### Commit: Show strength highest weights by exercise
+
+- Add or use strength workouts with at least two exercises and numeric kg sets.
+- Confirm each exercise appears once in the Strength Highest Weights table.
+- Confirm the table shows the highest kg for each exercise and the date it happened.
+- Confirm band-only or bodyweight-only exercises do not produce kg rows.
+- Confirm changing Period does not change the Strength Highest Weights table.
+- Confirm changing explicit From date or To date filters changes the table.
+- Confirm Run Pace and Sprint charts still render as before.
 - Confirm horizontal scrolling still works when there are many entries.
 
 ## Publish With GitHub Pages

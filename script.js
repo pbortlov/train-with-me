@@ -42,11 +42,11 @@ const chartsStatusEl = document.getElementById("charts-status");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
 const runPaceInput = document.getElementById("pace");
-const strengthChartCanvas = document.getElementById("strength-chart");
+const strengthHighestBody = document.getElementById("strength-highest-body");
 const runDistanceChartCanvas = document.getElementById("run-distance-chart");
 const sprintChartCanvas = document.getElementById("sprint-chart");
 const chartsGridEl = document.querySelector(".charts-grid");
-const strengthChartCard = strengthChartCanvas ? strengthChartCanvas.closest(".chart-card") : null;
+const strengthChartCard = strengthHighestBody ? strengthHighestBody.closest(".chart-card") : null;
 const runDistanceChartCard = runDistanceChartCanvas ? runDistanceChartCanvas.closest(".chart-card") : null;
 const sprintChartCard = sprintChartCanvas ? sprintChartCanvas.closest(".chart-card") : null;
 const exportDataButton = document.getElementById("export-data");
@@ -221,7 +221,6 @@ let progressFilters = {
   strengthLoad: "all",
 };
 let progressPeriod = "past-week";
-let strengthChart = null;
 let runDistanceChart = null;
 let sprintChart = null;
 let programAdherenceChart = null;
@@ -1795,12 +1794,7 @@ function renderCharts() {
   const runFilteredWorkouts = getFilteredWorkouts()
     .slice()
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  const strengthData = buildIndividualMetricChartEntries(
-    filteredWorkouts,
-    "strength",
-    strengthBestWeight,
-    (workout, value) => [workout.date, `${formatNumber(value)} kg`].filter(Boolean).join(" • "),
-  );
+  const strengthRows = buildStrengthHighestWeightRows(runFilteredWorkouts);
   const runChartEntries = buildIndividualRunChartEntries(runFilteredWorkouts);
   const runPaceData = runChartEntries
     .filter((entry) => isNumber(entry.pace))
@@ -1819,20 +1813,20 @@ function renderCharts() {
     (workout, value) => [workout.date, `${formatNumber(value)} m/s`, formatSprintSpeedSource(workout)].filter(Boolean).join(" • "),
   );
 
-  strengthChart = createOrUpdateChart(strengthChart, strengthChartCanvas, strengthData, "kg", "#00E5FF");
+  renderStrengthHighestWeights(strengthRows);
   runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runPaceData, "min/km", "#4DA3FF");
   sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "m/s", "#FF7A00");
 
-  toggleChartCardVisibility(strengthChartCard, strengthData.length > 0);
+  toggleChartCardVisibility(strengthChartCard, strengthRows.length > 0);
   toggleChartCardVisibility(runDistanceChartCard, runPaceData.length > 0);
   toggleChartCardVisibility(sprintChartCard, sprintData.length > 0);
 
-  const hasVisibleCharts = strengthData.length > 0 || runPaceData.length > 0 || sprintData.length > 0;
+  const hasVisibleCharts = strengthRows.length > 0 || runPaceData.length > 0 || sprintData.length > 0;
   if (chartsGridEl) {
     chartsGridEl.classList.toggle("is-hidden", !hasVisibleCharts);
   }
 
-  if (!filteredWorkouts.length) {
+  if (!workouts.length) {
     chartsStatusEl.textContent = workouts.length
       ? "No charts to show for the current filters."
       : "Charts will appear after you log your first workout.";
@@ -1842,6 +1836,54 @@ function renderCharts() {
   chartsStatusEl.textContent = hasVisibleCharts
     ? ""
     : "No chartable data is available for the current filters.";
+}
+
+function renderStrengthHighestWeights(rows) {
+  if (!strengthHighestBody) {
+    return;
+  }
+
+  strengthHighestBody.innerHTML = rows
+    .map(
+      (row) => `
+        <tr>
+          <td>${escapeHtml(row.exercise)}</td>
+          <td>${formatNumber(row.weight)} kg</td>
+          <td>${row.date || "-"}</td>
+        </tr>
+      `,
+    )
+    .join("");
+}
+
+function buildStrengthHighestWeightRows(filteredWorkouts) {
+  if (!["all", "kg"].includes(progressFilters.strengthLoad)) {
+    return [];
+  }
+
+  const rowsByExercise = new Map();
+  filteredWorkouts
+    .filter((workout) => workout.activity === "strength" && workout.date)
+    .forEach((workout) => {
+      normalizeStrengthExercises(workout.strengthExercises).forEach((exercise) => {
+        exercise.sets
+          .filter((set) => set.loadType === "kg" && isNumber(set.weight))
+          .forEach((set) => {
+            const current = rowsByExercise.get(exercise.name);
+            const isBetterWeight = !current || set.weight > current.weight;
+            const isLaterTie = current && set.weight === current.weight && workout.date > current.date;
+            if (isBetterWeight || isLaterTie) {
+              rowsByExercise.set(exercise.name, {
+                exercise: exercise.name,
+                weight: set.weight,
+                date: workout.date,
+              });
+            }
+          });
+      });
+    });
+
+  return [...rowsByExercise.values()].sort((a, b) => a.exercise.localeCompare(b.exercise));
 }
 
 function createOrUpdateChart(existingChart, canvas, points, unit, color) {

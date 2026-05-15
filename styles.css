@@ -863,6 +863,41 @@ button {
   max-height: 220px;
 }
 
+.strength-table-viewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 220px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.strength-highest-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.strength-highest-table th,
+.strength-highest-table td {
+  padding: 0.45rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.strength-highest-table th:first-child,
+.strength-highest-table td:first-child {
+  min-width: 9rem;
+  white-space: normal;
+}
+
+.strength-highest-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 .chart-card.is-hidden,
 .charts-grid.is-hidden {
   display: none;

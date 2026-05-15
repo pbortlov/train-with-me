@@ -425,9 +425,18 @@
           <p id="charts-status" class="hint"></p>
           <div class="charts-grid">
             <article class="chart-card activity-chart-card">
-              <h4>Strength (Best Weight)</h4>
-              <div class="chart-viewport">
-                <canvas id="strength-chart" height="220"></canvas>
+              <h4>Strength Highest Weights</h4>
+              <div class="strength-table-viewport">
+                <table class="strength-highest-table">
+                  <thead>
+                    <tr>
+                      <th>Exercise</th>
+                      <th>Highest kg</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="strength-highest-body"></tbody>
+                </table>
               </div>
             </article>
             <article class="chart-card activity-chart-card">
