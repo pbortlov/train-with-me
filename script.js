@@ -37,7 +37,6 @@ const filterFromDateInput = document.getElementById("filter-from-date");
 const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
 const filterStrengthLoadInput = document.getElementById("filter-strength-load");
-const progressPeriodInput = document.getElementById("chart-grouping");
 const chartsStatusEl = document.getElementById("charts-status");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
@@ -220,7 +219,6 @@ let progressFilters = {
   toDate: "",
   strengthLoad: "all",
 };
-let progressPeriod = "past-week";
 let runDistanceChart = null;
 let sprintChart = null;
 let programAdherenceChart = null;
@@ -329,10 +327,6 @@ filterFromDateInput.addEventListener("change", onFilterChange);
 filterToDateInput.addEventListener("change", onFilterChange);
 filterStrengthLoadInput.addEventListener("change", onFilterChange);
 clearFiltersButton.addEventListener("click", clearFilters);
-progressPeriodInput.addEventListener("change", () => {
-  progressPeriod = progressPeriodInput.value || "past-week";
-  render();
-});
 goalActivityButtons.forEach((button) => {
   button.addEventListener("click", () => {
     setGoalActivity(button.dataset.goalActivity || "run");
@@ -1714,13 +1708,11 @@ function clearFilters() {
   filterFromDateInput.value = "";
   filterToDateInput.value = "";
   filterStrengthLoadInput.value = "all";
-  progressPeriodInput.value = "past-week";
-  progressPeriod = "past-week";
   onFilterChange();
 }
 
-function getFilteredWorkouts(options = {}) {
-  const dateBounds = workoutDateFilterBounds(options.periodBounds || null);
+function getFilteredWorkouts() {
+  const dateBounds = workoutDateFilterBounds();
   return workouts.filter((workout) => {
     const activityMatch = progressFilters.activity === "all" || workout.activity === progressFilters.activity;
     const dateValue = workout.date || "";
@@ -1736,41 +1728,11 @@ function getFilteredWorkouts(options = {}) {
   });
 }
 
-function workoutDateFilterBounds(periodBounds = null) {
-  const explicitFrom = progressFilters.fromDate || "";
-  const explicitTo = progressFilters.toDate || "";
-  const periodFrom = periodBounds?.from || "";
-  const periodTo = periodBounds?.to || "";
+function workoutDateFilterBounds() {
   return {
-    from: [explicitFrom, periodFrom].filter(Boolean).sort().pop() || "",
-    to: [explicitTo, periodTo].filter(Boolean).sort()[0] || "",
+    from: progressFilters.fromDate || "",
+    to: progressFilters.toDate || "",
   };
-}
-
-function progressPeriodBounds(period) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  let start = new Date(today);
-  if (period === "past-quarter") {
-    start = addMonthsClamped(today, -3);
-  } else if (period === "past-month") {
-    start = addMonthsClamped(today, -1);
-  } else {
-    start.setDate(start.getDate() - 6);
-  }
-  return {
-    from: formatDateInput(start),
-    to: formatDateInput(today),
-  };
-}
-
-function addMonthsClamped(dateInputValue, months) {
-  const date = new Date(dateInputValue);
-  const targetYear = date.getFullYear();
-  const targetMonth = date.getMonth() + months;
-  const targetDay = date.getDate();
-  const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-  return new Date(targetYear, targetMonth, Math.min(targetDay, lastDayOfTargetMonth));
 }
 
 function compareWorkoutsByRecentDate(a, b) {
@@ -1788,14 +1750,11 @@ function renderCharts() {
     return;
   }
 
-  const filteredWorkouts = getFilteredWorkouts({ periodBounds: progressPeriodBounds(progressPeriod) })
+  const filteredWorkouts = getFilteredWorkouts()
     .slice()
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  const runFilteredWorkouts = getFilteredWorkouts()
-    .slice()
-    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  const strengthRows = buildStrengthHighestWeightRows(runFilteredWorkouts);
-  const runChartEntries = buildIndividualRunChartEntries(runFilteredWorkouts);
+  const strengthRows = buildStrengthHighestWeightRows(filteredWorkouts);
+  const runChartEntries = buildIndividualRunChartEntries(filteredWorkouts);
   const runPaceData = runChartEntries
     .filter((entry) => isNumber(entry.pace))
     .map((entry) => ({
@@ -1806,16 +1765,11 @@ function renderCharts() {
       workoutId: entry.workoutId,
       tooltip: entry.tooltip,
     }));
-  const sprintData = buildIndividualMetricChartEntries(
-    filteredWorkouts,
-    "sprint",
-    sprintBestSpeed,
-    (workout, value) => [workout.date, `${formatNumber(value)} m/s`, formatSprintSpeedSource(workout)].filter(Boolean).join(" • "),
-  );
+  const sprintData = buildSprintRepChartEntries(filteredWorkouts);
 
   renderStrengthHighestWeights(strengthRows);
   runDistanceChart = createOrUpdateChart(runDistanceChart, runDistanceChartCanvas, runPaceData, "min/km", "#4DA3FF");
-  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "m/s", "#FF7A00");
+  sprintChart = createOrUpdateChart(sprintChart, sprintChartCanvas, sprintData, "sec", "#FF7A00");
 
   toggleChartCardVisibility(strengthChartCard, strengthRows.length > 0);
   toggleChartCardVisibility(runDistanceChartCard, runPaceData.length > 0);
@@ -1900,7 +1854,7 @@ function createOrUpdateChart(existingChart, canvas, points, unit, color) {
     return null;
   }
 
-  sizeActivityChartCanvas(canvas, points.length);
+  sizeActivityChartCanvas(canvas, points);
   const yAxisMax = activityChartYAxisMax(points, unit);
   const xAxisLabelHeight = activityChartXAxisLabelHeight(points);
 
@@ -1976,19 +1930,29 @@ function activityChartXAxisLabelHeight(points) {
     .reduce((longest, length) => Math.max(longest, length), 0);
   const labelWidth = longestLabelLength * tickFontSize * 0.62;
   const rotatedHeight = Math.sin((tickRotationDegrees * Math.PI) / 180) * labelWidth;
-  return Math.min(76, Math.max(48, Math.ceil(rotatedHeight + tickFontSize + 12)));
+  return Math.min(96, Math.max(48, Math.ceil(rotatedHeight + tickFontSize + 12)));
 }
 
-function sizeActivityChartCanvas(canvas, entryCount) {
+function sizeActivityChartCanvas(canvas, points) {
   const viewport = canvas.parentElement;
   const viewportWidth = viewport?.clientWidth || canvas.closest(".chart-card")?.clientWidth || 320;
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
-  const entryWidth = isMobile ? 56 : 72;
-  const chartWidth = Math.max(viewportWidth, entryCount * entryWidth);
+  const entryWidth = activityChartEntryWidth(points);
+  const chartWidth = Math.max(viewportWidth, points.length * entryWidth);
   canvas.width = chartWidth;
   canvas.height = 220;
   canvas.style.width = `${chartWidth}px`;
   canvas.style.height = "220px";
+}
+
+function activityChartEntryWidth(points) {
+  const tickFontSize = 9;
+  const tickRotationDegrees = 60;
+  const longestLabelLength = points
+    .map((point) => String(point.xLabel || point.x || "").length)
+    .reduce((longest, length) => Math.max(longest, length), 0);
+  const labelWidth = longestLabelLength * tickFontSize * 0.62;
+  const horizontalFootprint = Math.cos((tickRotationDegrees * Math.PI) / 180) * labelWidth;
+  return Math.min(110, Math.max(56, Math.ceil(horizontalFootprint + 30)));
 }
 
 function activityChartYAxisMax(points, unit) {
@@ -2078,6 +2042,28 @@ function buildIndividualRunChartEntries(filteredWorkouts) {
         tooltip: parts.join(" • "),
       };
     });
+}
+
+function buildSprintRepChartEntries(filteredWorkouts) {
+  return filteredWorkouts
+    .filter((workout) => workout.activity === "sprint" && workout.date)
+    .flatMap((workout, workoutIndex) =>
+      normalizeSprintSets(workout.sprintSets)
+        .filter((set) => isNumber(set.time) && set.time > 0 && isNumber(set.distance) && set.distance > 0)
+        .map((set) => {
+          const workoutKey = workout.id || `${workout.date}:${workoutIndex}`;
+          const tryLabel = `#${set.order}`;
+          const timeLabel = `${formatNumber(set.time)} sec`;
+          return {
+            x: `${workoutKey}:sprint-set:${set.order}`,
+            y: set.time,
+            date: workout.date,
+            xLabel: `${workout.date} ${tryLabel}`,
+            workoutId: workout.id,
+            tooltip: [workout.date, tryLabel, `${formatNumber(set.distance)} m`, timeLabel].filter(Boolean).join(" • "),
+          };
+        }),
+    );
 }
 
 function toggleChartCardVisibility(card, isVisible) {
