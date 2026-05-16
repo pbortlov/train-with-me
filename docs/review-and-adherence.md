@@ -58,6 +58,12 @@ Program Strength Progress compares:
 - exercise progression by program week
 - top weight, max reps, completed sets, and logged set summaries
 
+Exercise improvement labels compare the current logged program week with the previous logged program week for the same exercise:
+- `Improved`: any current-week kg set has higher weight than any previous-week kg set, even if reps are lower
+- `Improved`: any current-week kg set uses the same weight as a previous-week kg set with higher reps
+- `Matched`: the current week repeats the same kg set performance as the previous logged week
+- extra sets alone do not mark the exercise as `Improved`
+
 Exercise progress rows can be sorted by:
 - `Program order`: the first planned session/block/exercise position
 - `Highest improvement`: strongest latest improvement compared with the previous logged week
