@@ -5466,11 +5466,8 @@ function buildProgramExerciseSortMeta(row, weeks, durationWeeks) {
   const previous = loggedWeeks.length > 1 ? loggedWeeks[loggedWeeks.length - 2] : null;
   const latestSnapshot = latest?.snapshot || null;
   const previousSnapshot = previous?.snapshot || null;
-  const weightDelta =
-    latestSnapshot && previousSnapshot && isNumber(latestSnapshot.maxWeight) && isNumber(previousSnapshot.maxWeight)
-      ? latestSnapshot.maxWeight - previousSnapshot.maxWeight
-      : 0;
-  const repsDelta = latestSnapshot && previousSnapshot ? (latestSnapshot.maxReps || 0) - (previousSnapshot.maxReps || 0) : 0;
+  const weightDelta = latestSnapshot && previousSnapshot ? getBestSetWeightImprovement(latestSnapshot, previousSnapshot) : 0;
+  const repsDelta = latestSnapshot && previousSnapshot ? getBestSameWeightRepImprovement(latestSnapshot, previousSnapshot) : 0;
   const setsDelta = latestSnapshot && previousSnapshot ? (latestSnapshot.totalSets || 0) - (previousSnapshot.totalSets || 0) : 0;
   const latestStatus = latest?.status || "";
   const missingWeekCount = weeks.filter((week) => !week.snapshot).length;
@@ -5546,6 +5543,7 @@ function combineActualExerciseSnapshots(snapshots) {
     totalSets: snapshots.reduce((sum, snapshot) => sum + snapshot.totalSets, 0),
     maxWeight: maxWeightValues.length ? Math.max(...maxWeightValues) : null,
     maxReps: Math.max(...snapshots.map((snapshot) => snapshot.maxReps || 0)),
+    performanceSets: snapshots.flatMap((snapshot) => snapshot.performanceSets || []),
     summary: snapshots.map((snapshot) => snapshot.summary).filter(Boolean).join(" | "),
   };
 }
@@ -5728,6 +5726,12 @@ function buildActualExerciseSnapshot(exercise) {
     maxWeight,
     maxReps,
     loadTypes: [...new Set(sets.map((set) => set.loadType || "kg"))],
+    performanceSets: sets
+      .map((set) => ({
+        reps: isNumber(set.reps) ? Number(set.reps) : null,
+        weight: (set.loadType || "kg") === "kg" && isNumber(set.weight) ? Number(set.weight) : null,
+      }))
+      .filter((set) => isNumber(set.reps)),
     summary: sets.map((set) => `${formatNumber(set.reps)} reps @ ${formatStrengthLoad(set)}`).join(", "),
   };
 }
@@ -5776,31 +5780,81 @@ function evaluateImprovementStatus(previous, current) {
   if (!previous) {
     return { label: "First logged week", explanation: "This is the first completed week for this exercise." };
   }
-  if (
-    isNumber(current.maxWeight) &&
-    isNumber(previous.maxWeight) &&
-    current.maxWeight > previous.maxWeight &&
-    current.maxReps >= previous.maxReps - 2
-  ) {
-    return { label: "Improved", explanation: "You handled a heavier top weight without a major rep drop." };
+  if (hasSetLevelImprovement(current, previous)) {
+    return { label: "Improved", explanation: "At least one set improved by using higher kg load, or more reps at the same kg load." };
   }
-  if (current.maxWeight === previous.maxWeight && current.maxReps > previous.maxReps) {
-    return { label: "Improved", explanation: "You hit more reps at the same top weight." };
-  }
-  if (current.maxWeight === previous.maxWeight && current.maxReps === previous.maxReps && current.totalSets > previous.totalSets) {
-    return { label: "Improved", explanation: "You matched the top set and added more completed work." };
-  }
-  if (current.maxWeight === previous.maxWeight && current.maxReps === previous.maxReps && current.totalSets === previous.totalSets) {
+  if (hasMatchingSetPerformance(current, previous)) {
     return { label: "Matched", explanation: "You repeated the previous week with the same output." };
   }
   if (
-    (isNumber(current.maxWeight) && isNumber(previous.maxWeight) && current.maxWeight > previous.maxWeight) ||
     current.maxReps > previous.maxReps ||
     current.totalSets > previous.totalSets
   ) {
     return { label: "Partial / mixed", explanation: "One metric improved, but another dropped enough to make it mixed." };
   }
   return { label: "Below previous", explanation: "This week landed below the previous completed week." };
+}
+
+function comparableKgSets(snapshot) {
+  return (snapshot?.performanceSets || []).filter((set) => isNumber(set.weight) && isNumber(set.reps));
+}
+
+function hasSetLevelImprovement(current, previous) {
+  const currentSets = comparableKgSets(current);
+  const previousSets = comparableKgSets(previous);
+  return currentSets.some((currentSet) =>
+    previousSets.some((previousSet) =>
+      currentSet.weight > previousSet.weight ||
+      (currentSet.weight === previousSet.weight && currentSet.reps > previousSet.reps),
+    ),
+  );
+}
+
+function hasMatchingSetPerformance(current, previous) {
+  const currentSets = comparableKgSets(current);
+  const previousSets = comparableKgSets(previous);
+  if (!currentSets.length || !previousSets.length) {
+    return current.maxWeight === previous.maxWeight && current.maxReps === previous.maxReps && current.totalSets === previous.totalSets;
+  }
+  if (currentSets.length !== previousSets.length) {
+    return false;
+  }
+  return serializeSetPerformance(currentSets) === serializeSetPerformance(previousSets);
+}
+
+function serializeSetPerformance(sets) {
+  return sets
+    .map((set) => `${set.weight}:${set.reps}`)
+    .sort()
+    .join("|");
+}
+
+function getBestSetWeightImprovement(current, previous) {
+  const currentSets = comparableKgSets(current);
+  const previousSets = comparableKgSets(previous);
+  if (!currentSets.length || !previousSets.length) {
+    return 0;
+  }
+  return Math.max(
+    0,
+    ...currentSets.flatMap((currentSet) => previousSets.map((previousSet) => currentSet.weight - previousSet.weight)),
+  );
+}
+
+function getBestSameWeightRepImprovement(current, previous) {
+  const currentSets = comparableKgSets(current);
+  const previousSets = comparableKgSets(previous);
+  if (!currentSets.length || !previousSets.length) {
+    return 0;
+  }
+  return Math.max(
+    0,
+    ...currentSets.flatMap((currentSet) =>
+      previousSets
+        .filter((previousSet) => currentSet.weight === previousSet.weight)
+        .map((previousSet) => currentSet.reps - previousSet.reps),
+    ),
+  );
 }
 
 function weekdayName(weekday) {
