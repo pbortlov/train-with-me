@@ -27,7 +27,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions
 - Completed planned sessions can be edited after `Log & Complete` to correct weights, reps, sets, times, or notes
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
-- Sprint logging includes a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
+- Sprint logging and sprint workout editing include a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
