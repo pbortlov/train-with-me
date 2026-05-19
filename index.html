@@ -158,6 +158,17 @@
                 </label>
                 <button type="button" id="add-sprint-set">Add Sprint Set</button>
               </div>
+              <label>
+                Sprint feeling
+                <select id="sprint-feeling">
+                  <option value="">Select feeling</option>
+                  <option value="sharp">Sharp ⚡</option>
+                  <option value="solid">Solid 🙂</option>
+                  <option value="flat">Flat 🪫</option>
+                  <option value="sluggish">Sluggish 🐢</option>
+                  <option value="pain">Pain ⚠️</option>
+                </select>
+              </label>
               <ol id="sprint-sets-list" class="sprint-sets-list"></ol>
             </div>
 
@@ -670,10 +681,23 @@
           </label>
         </div>
 
-        <label id="edit-sprint-fields">
-          Sprint sets (one per line: timeSec,distanceM)
-          <textarea id="edit-sprint-sets" rows="4"></textarea>
-        </label>
+        <div id="edit-sprint-fields">
+          <label>
+            Sprint sets (one per line: timeSec,distanceM)
+            <textarea id="edit-sprint-sets" rows="4"></textarea>
+          </label>
+          <label>
+            Sprint feeling
+            <select id="edit-sprint-feeling">
+              <option value="">Select feeling</option>
+              <option value="sharp">Sharp ⚡</option>
+              <option value="solid">Solid 🙂</option>
+              <option value="flat">Flat 🪫</option>
+              <option value="sluggish">Sluggish 🐢</option>
+              <option value="pain">Pain ⚠️</option>
+            </select>
+          </label>
+        </div>
 
         <div id="edit-strength-fields">
           <div class="grid">

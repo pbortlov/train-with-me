@@ -24,6 +24,7 @@ const activityInput = document.getElementById("activity");
 const activityFieldGroups = document.querySelectorAll(".activity-fields");
 const addSprintSetButton = document.getElementById("add-sprint-set");
 const sprintSetsList = document.getElementById("sprint-sets-list");
+const sprintFeelingInput = document.getElementById("sprint-feeling");
 const addStrengthSetButton = document.getElementById("add-strength-set");
 const addStrengthExerciseButton = document.getElementById("add-strength-exercise");
 const currentStrengthSetsList = document.getElementById("current-strength-sets");
@@ -65,6 +66,7 @@ const editDistanceInput = document.getElementById("edit-distance");
 const editTimeInput = document.getElementById("edit-time");
 const editPaceInput = document.getElementById("edit-pace");
 const editSprintSetsInput = document.getElementById("edit-sprint-sets");
+const editSprintFeelingInput = document.getElementById("edit-sprint-feeling");
 const editExerciseNameInput = document.getElementById("edit-exercise-name");
 const editStrengthRepsInput = document.getElementById("edit-strength-reps");
 const editStrengthLoadTypeInput = document.getElementById("edit-strength-load-type");
@@ -271,6 +273,7 @@ workoutForm.addEventListener("submit", (event) => {
     time: selectedActivity === "run" ? runTime : toNumberOrNull(valueOf("time")),
     pace: selectedActivity === "run" ? runPace : toNumberOrNull(valueOf("pace")),
     sprintSets: selectedActivity === "sprint" ? normalizeSprintSets(draftSprintSets) : [],
+    sprintFeeling: selectedActivity === "sprint" ? sprintFeelingInput?.value || "" : "",
     notes: valueOf("notes")?.trim() || "",
     createdAt: Date.now(),
   };
@@ -1551,6 +1554,9 @@ function openEditWorkoutDialog(workoutId) {
   editTimeInput.value = formatRunDuration(workout.time) || "";
   editPaceInput.value = isNumber(workout.pace) ? formatRunPace(workout.pace) : "";
   editSprintSetsInput.value = formatSprintSetsForEditor(workout.sprintSets);
+  if (editSprintFeelingInput) {
+    editSprintFeelingInput.value = workout.sprintFeeling || "";
+  }
   editDraftStrengthExercises = normalizeStrengthExercises(workout.strengthExercises);
   editDraftCurrentStrengthSets = [];
   if (editExerciseNameInput) {
@@ -1625,6 +1631,7 @@ function saveEditedWorkout() {
       time: editTimeInput.value,
       pace: editPaceInput.value,
       sprintSets: parseSprintSetsFromEditor(editSprintSetsInput.value),
+      sprintFeeling: existingWorkout.activity === "sprint" ? editSprintFeelingInput?.value || "" : "",
       strengthExercises: editDraftStrengthExercises,
     });
     if (normalized.activity === "run" && (!isNumber(normalized.distance) || normalized.distance <= 0 || !normalized.time || !isNumber(normalized.pace))) {
