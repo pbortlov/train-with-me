@@ -30,6 +30,17 @@ schema changes should be introduced later with focused Alembic migrations.
 - `role`: `owner`, `athlete`, or `coach`
 - `created_at`
 
+## Initial Migration
+
+The first Alembic migration creates only the core ownership tables:
+
+- `users`
+- `training_spaces`
+- `training_space_memberships`
+
+Coach collaboration and training data tables are intentionally deferred to later
+focused commits.
+
 ## Coach Collaboration
 
 ### `coach_invites`

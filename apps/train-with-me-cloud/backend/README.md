@@ -7,6 +7,20 @@ FastAPI backend for Train With Me Cloud.
 - `GET /api/health`
 - `GET /api/db-health`
 
+## Database
+
+Alembic migrations live in `migrations/`.
+
+```text
+python -m alembic upgrade head
+```
+
+The initial schema creates:
+
+- `users`
+- `training_spaces`
+- `training_space_memberships`
+
 ## Local Commands
 
 From this directory:
@@ -34,5 +48,5 @@ Settings use the `TWM_` prefix.
 ## Revert Notes
 
 The first backend chunk added the minimal API health app and tests. The database
-health chunk adds connectivity configuration and `/api/db-health` without
-adding schema or migrations.
+health chunk added connectivity configuration and `/api/db-health`. The initial
+schema chunk adds Alembic and the ownership tables only.
