@@ -30,7 +30,18 @@ tooling exist. The expected local services are:
 - PostgreSQL service
 - frontend service
 
-No local build or startup command is available in this scaffold commit.
+The backend currently has a minimal FastAPI health endpoint. From
+`apps/train-with-me-cloud/backend/`:
+
+```text
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e ".[dev]"
+python -m pytest
+python -m uvicorn app.main:app --reload
+```
+
+Containers are not available yet.
 
 ## Deployment Direction
 
