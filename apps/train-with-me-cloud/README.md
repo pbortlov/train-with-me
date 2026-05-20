@@ -41,12 +41,16 @@ python -m pytest
 python -m uvicorn app.main:app --reload
 ```
 
-Containers are not available yet.
+Local API and PostgreSQL containers are available from
+`apps/train-with-me-cloud/infra/`:
+
+```text
+docker compose -f compose.yaml up --build
+```
 
 The database health endpoint expects `TWM_DATABASE_URL` when checking a real
 database. The default points at the future local compose PostgreSQL service, so
-it is not expected to pass until that service exists or a local database URL is
-provided.
+it is expected to pass when the local compose PostgreSQL service is healthy.
 
 ## Deployment Direction
 

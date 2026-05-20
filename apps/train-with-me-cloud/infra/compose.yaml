@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: train_with_me
+      POSTGRES_USER: train_with_me
+      POSTGRES_PASSWORD: train_with_me
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U train_with_me -d train_with_me"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ../backend
+    environment:
+      TWM_DATABASE_URL: postgresql+psycopg://train_with_me:train_with_me@postgres:5432/train_with_me
+      TWM_ENVIRONMENT: local-compose
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres-data:

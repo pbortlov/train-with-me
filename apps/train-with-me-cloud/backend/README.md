@@ -35,6 +35,15 @@ python -m uvicorn app.main:app --reload
 
 The API docs are available at `/docs` when the development server is running.
 
+## Container
+
+The backend image is built by the local compose file in `../infra/compose.yaml`.
+It runs:
+
+```text
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
 ## Environment Variables
 
 Settings use the `TWM_` prefix.
@@ -49,4 +58,5 @@ Settings use the `TWM_` prefix.
 
 The first backend chunk added the minimal API health app and tests. The database
 health chunk added connectivity configuration and `/api/db-health`. The initial
-schema chunk adds Alembic and the ownership tables only.
+schema chunk adds Alembic and the ownership tables only. The local compose chunk
+adds the backend container and PostgreSQL service only.
