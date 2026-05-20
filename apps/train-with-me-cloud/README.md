@@ -30,7 +30,7 @@ tooling exist. The expected local services are:
 - PostgreSQL service
 - frontend service
 
-The backend currently has a minimal FastAPI health endpoint. From
+The backend currently has minimal FastAPI health endpoints. From
 `apps/train-with-me-cloud/backend/`:
 
 ```text
@@ -42,6 +42,11 @@ python -m uvicorn app.main:app --reload
 ```
 
 Containers are not available yet.
+
+The database health endpoint expects `TWM_DATABASE_URL` when checking a real
+database. The default points at the future local compose PostgreSQL service, so
+it is not expected to pass until that service exists or a local database URL is
+provided.
 
 ## Deployment Direction
 

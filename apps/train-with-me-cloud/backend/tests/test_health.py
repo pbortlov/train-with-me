@@ -15,3 +15,4 @@ def test_health_route_is_registered() -> None:
     }
 
     assert "/api/health" in route_paths
+    assert "/api/db-health" in route_paths
