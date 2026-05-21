@@ -29,6 +29,7 @@ def test_initial_migration_applies_cleanly(tmp_path: Path) -> None:
         "users",
         "training_spaces",
         "training_space_memberships",
+        "coach_invites",
     }
 
 
