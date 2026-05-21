@@ -52,6 +52,16 @@ The database health endpoint expects `TWM_DATABASE_URL` when checking a real
 database. The default points at the future local compose PostgreSQL service, so
 it is expected to pass when the local compose PostgreSQL service is healthy.
 
+The frontend currently has a Vite React shell. From
+`apps/train-with-me-cloud/frontend/`:
+
+```text
+npm install
+npm run typecheck
+npm run build
+npm run dev
+```
+
 ## Deployment Direction
 
 V2 is not intended to run on GitHub Pages because it requires backend and

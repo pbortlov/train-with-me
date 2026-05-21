@@ -1,0 +1,9 @@
+{
+  "name": "Train With Me Cloud",
+  "short_name": "TWM Cloud",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7faf7",
+  "theme_color": "#1f6f5b",
+  "icons": []
+}
