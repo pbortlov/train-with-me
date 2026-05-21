@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
+from datetime import date
+
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -20,6 +22,17 @@ class TrainingSpaceRole(StrEnum):
     owner = "owner"
     athlete = "athlete"
     coach = "coach"
+
+
+class WorkoutActivity(StrEnum):
+    strength = "strength"
+    run = "run"
+    sprint = "sprint"
+
+
+class WorkoutSource(StrEnum):
+    manual = "manual"
+    v1_import = "v1_import"
 
 
 class User(Base):
@@ -48,6 +61,7 @@ class TrainingSpace(Base):
     owner: Mapped[User] = relationship(back_populates="owned_training_spaces")
     memberships: Mapped[list["TrainingSpaceMembership"]] = relationship(back_populates="training_space")
     coach_invites: Mapped[list["CoachInvite"]] = relationship(back_populates="training_space")
+    workouts: Mapped[list["Workout"]] = relationship(back_populates="training_space")
 
 
 class TrainingSpaceMembership(Base):
@@ -81,3 +95,69 @@ class CoachInvite(Base):
     training_space: Mapped[TrainingSpace] = relationship(back_populates="coach_invites")
     created_by: Mapped[User] = relationship(foreign_keys=[created_by_user_id])
     accepted_by: Mapped[User | None] = relationship(foreign_keys=[accepted_by_user_id])
+
+
+class Workout(Base):
+    __tablename__ = "workouts"
+    __table_args__ = (
+        UniqueConstraint("training_space_id", "original_v1_id", name="uq_workouts_space_original_v1_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
+    activity: Mapped[str] = mapped_column(String(32), nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
+    distance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    time: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    pace: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sprint_feeling: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    source: Mapped[str] = mapped_column(String(32), nullable=False, default=WorkoutSource.manual.value)
+    coach_editable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    original_v1_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    training_space: Mapped[TrainingSpace] = relationship(back_populates="workouts")
+    strength_exercises: Mapped[list["WorkoutStrengthExercise"]] = relationship(
+        back_populates="workout",
+        cascade="all, delete-orphan",
+    )
+    sprint_sets: Mapped[list["SprintSet"]] = relationship(back_populates="workout", cascade="all, delete-orphan")
+
+
+class WorkoutStrengthExercise(Base):
+    __tablename__ = "workout_strength_exercises"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workout_id: Mapped[str] = mapped_column(ForeignKey("workouts.id"), nullable=False, index=True)
+    order: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+
+    workout: Mapped[Workout] = relationship(back_populates="strength_exercises")
+    sets: Mapped[list["WorkoutSet"]] = relationship(back_populates="strength_exercise", cascade="all, delete-orphan")
+
+
+class WorkoutSet(Base):
+    __tablename__ = "workout_sets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    strength_exercise_id: Mapped[str] = mapped_column(ForeignKey("workout_strength_exercises.id"), nullable=False, index=True)
+    order: Mapped[int] = mapped_column(Integer, nullable=False)
+    reps: Mapped[int] = mapped_column(Integer, nullable=False)
+    weight: Mapped[float | None] = mapped_column(Float, nullable=True)
+    load_type: Mapped[str] = mapped_column(String(32), nullable=False, default="kg")
+    band_color: Mapped[str] = mapped_column(String(32), nullable=False, default="")
+
+    strength_exercise: Mapped[WorkoutStrengthExercise] = relationship(back_populates="sets")
+
+
+class SprintSet(Base):
+    __tablename__ = "sprint_sets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workout_id: Mapped[str] = mapped_column(ForeignKey("workouts.id"), nullable=False, index=True)
+    order: Mapped[int] = mapped_column(Integer, nullable=False)
+    distance_m: Mapped[int] = mapped_column(Integer, nullable=False)
+    time_sec: Mapped[float] = mapped_column(Float, nullable=False)
+
+    workout: Mapped[Workout] = relationship(back_populates="sprint_sets")

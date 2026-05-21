@@ -39,7 +39,14 @@ The first Alembic migration creates only the core ownership tables:
 - `training_space_memberships`
 
 The second migration adds `coach_invites` for owner-created coach invite links.
-Coach suggestions and training data tables are intentionally deferred to later
+The third migration adds structured workout logging tables:
+
+- `workouts`
+- `workout_strength_exercises`
+- `workout_sets`
+- `sprint_sets`
+
+Coach suggestions and planned-session tables are intentionally deferred to later
 focused commits.
 
 ## Coach Collaboration
