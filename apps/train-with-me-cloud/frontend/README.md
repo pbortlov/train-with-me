@@ -23,6 +23,11 @@ VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev
 For deployed builds, set `VITE_API_BASE_URL` when the API is hosted on a
 different origin.
 
+## Container
+
+The local container serves the production build with nginx on port `8080`.
+Requests to `/api` are proxied to the backend API service in compose.
+
 ## Current UI
 
 - App shell.

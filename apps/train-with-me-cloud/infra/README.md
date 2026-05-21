@@ -14,17 +14,23 @@ Services:
 
 - `postgres`: PostgreSQL 16.
 - `api`: FastAPI backend on port `8000`.
+- `frontend`: Static frontend on port `8080`.
 
 Checks:
 
 ```text
 curl http://localhost:8000/api/health
 curl http://localhost:8000/api/db-health
+curl http://localhost:8080/
+curl http://localhost:8080/api/health
 ```
 
 The API container uses `TWM_DATABASE_URL` to reach the `postgres` service.
+The frontend container serves static assets and proxies `/api` requests to the
+API service over the compose network.
 
 ## Revert Notes
 
-This infrastructure chunk only adds local compose for API and PostgreSQL. It can
-be reverted independently.
+The first infrastructure chunk added local compose for API and PostgreSQL. The
+frontend container chunk adds the static frontend service and nginx API proxy
+only.

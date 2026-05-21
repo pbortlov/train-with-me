@@ -62,6 +62,8 @@ npm run build
 npm run dev
 ```
 
+The local compose stack also includes the frontend container on port `8080`.
+
 ## Deployment Direction
 
 V2 is not intended to run on GitHub Pages because it requires backend and
