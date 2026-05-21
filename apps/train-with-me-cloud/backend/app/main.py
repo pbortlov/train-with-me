@@ -1,12 +1,14 @@
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy.engine import Engine
 
+from app.auth.routes import router as auth_router
 from app.core.config import get_settings
 from app.db.health import DatabaseHealthError, check_database_health, get_database_engine
 
 settings = get_settings()
 
 app = FastAPI(title=settings.app_name)
+app.include_router(auth_router, prefix=f"{settings.api_prefix}/auth")
 
 
 @app.get(f"{settings.api_prefix}/health")

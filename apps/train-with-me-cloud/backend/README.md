@@ -6,6 +6,9 @@ FastAPI backend for Train With Me Cloud.
 
 - `GET /api/health`
 - `GET /api/db-health`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
 ## Database
 
@@ -53,6 +56,10 @@ Settings use the `TWM_` prefix.
 - `TWM_ENVIRONMENT`: runtime environment label. Defaults to `local`.
 - `TWM_DATABASE_URL`: SQLAlchemy database URL. Defaults to the future compose
   PostgreSQL service URL.
+- `TWM_JWT_SECRET_KEY`: secret key used to sign JWT access tokens. The default
+  is for local development only.
+- `TWM_ACCESS_TOKEN_EXPIRE_MINUTES`: access token lifetime in minutes. Defaults
+  to `60`.
 
 ## Revert Notes
 
