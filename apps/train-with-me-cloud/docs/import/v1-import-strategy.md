@@ -30,6 +30,11 @@ The first parser commit should not write to the database.
 The parser initially summarizes only the backup shape and entity counts. It
 does not normalize or persist V1 entities.
 
+The first API surface is `POST /api/imports/v1/preview`. It returns a summary,
+warnings, and unsupported top-level fields without writing to the database.
+Invalid backups return `valid: false` so users can inspect problems before any
+commit endpoint exists.
+
 ## Historical Import Rules
 
 - Preserve original V1 identifiers as `original_v1_id`.
