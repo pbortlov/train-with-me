@@ -27,6 +27,9 @@ The parser should return:
 
 The first parser commit should not write to the database.
 
+The parser initially summarizes only the backup shape and entity counts. It
+does not normalize or persist V1 entities.
+
 ## Historical Import Rules
 
 - Preserve original V1 identifiers as `original_v1_id`.

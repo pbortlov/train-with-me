@@ -1,0 +1,105 @@
+{
+  "version": 2,
+  "exportedAt": "2026-05-22T10:00:00.000Z",
+  "workouts": [
+    {
+      "id": "workout-1",
+      "date": "2026-05-20",
+      "activity": "run",
+      "distance": 5,
+      "time": "22:00",
+      "pace": 4.4,
+      "sprintSets": [],
+      "strengthExercises": [],
+      "notes": "Tempo",
+      "createdAt": 1779278400000
+    },
+    {
+      "id": "workout-2",
+      "date": "2026-05-21",
+      "activity": "strength",
+      "strengthExercises": [
+        {
+          "name": "Back squat",
+          "sets": [
+            {
+              "order": 1,
+              "reps": 5,
+              "weight": 100,
+              "loadType": "kg",
+              "bandColor": ""
+            }
+          ]
+        }
+      ],
+      "sprintSets": [],
+      "notes": "Heavy",
+      "createdAt": 1779364800000
+    }
+  ],
+  "goals": {
+    "version": 2,
+    "strength": 140,
+    "active": {
+      "run": {
+        "id": "goal-run-1",
+        "activity": "run",
+        "type": "distance",
+        "setAt": "2026-05-01",
+        "target": {
+          "distance": 5
+        }
+      },
+      "sprint": null
+    },
+    "history": [
+      {
+        "id": "goal-sprint-1",
+        "activity": "sprint",
+        "type": "time",
+        "setAt": "2026-04-01",
+        "target": {
+          "distance": 100,
+          "time": 14.2
+        },
+        "achievedAt": "2026-05-10"
+      }
+    ]
+  },
+  "plannedSessions": [
+    {
+      "id": "planned-1",
+      "date": "2026-05-22",
+      "type": "run",
+      "title": "Easy run",
+      "status": "planned",
+      "details": {
+        "distance": 5
+      }
+    }
+  ],
+  "phaseTemplates": [
+    {
+      "id": "phase-template-1",
+      "name": "Phase 1",
+      "durationWeeks": 4,
+      "weekdaySlots": []
+    }
+  ],
+  "phaseInstances": [
+    {
+      "id": "phase-instance-1",
+      "templateId": "phase-template-1",
+      "startDate": "2026-05-20",
+      "durationWeeks": 4,
+      "generatedSessionIds": [
+        "planned-1"
+      ]
+    }
+  ],
+  "uiSettings": {
+    "currentView": "calendar",
+    "coachMode": true,
+    "currentWeekStart": "2026-05-18"
+  }
+}
