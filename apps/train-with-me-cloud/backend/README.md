@@ -18,6 +18,8 @@ FastAPI backend for Train With Me Cloud.
 - `POST /api/training-spaces/{id}/workouts`
 - `GET /api/training-spaces/{id}/workouts`
 - `PATCH /api/training-spaces/{id}/workouts/{workout_id}`
+- `POST /api/training-spaces/{id}/planned-sessions`
+- `GET /api/training-spaces/{id}/planned-sessions`
 
 ## Database
 

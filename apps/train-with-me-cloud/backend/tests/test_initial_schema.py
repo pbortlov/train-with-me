@@ -34,6 +34,7 @@ def test_initial_migration_applies_cleanly(tmp_path: Path) -> None:
         "workout_strength_exercises",
         "workout_sets",
         "sprint_sets",
+        "planned_sessions",
     }
 
 
