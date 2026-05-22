@@ -47,8 +47,8 @@ The third migration adds structured workout logging tables:
 - `sprint_sets`
 
 The fourth migration adds `planned_sessions` with JSON fields for V1-compatible
-`details` and `actual` payloads. Coach suggestions are intentionally deferred to
-a later focused commit.
+`details` and `actual` payloads. The fifth migration adds `coach_suggestions`
+and `audit_events` for coach-suggestion accept/reject workflows.
 
 ## Coach Collaboration
 

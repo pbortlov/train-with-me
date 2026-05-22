@@ -1,8 +1,6 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from enum import StrEnum
 from uuid import uuid4
-
-from datetime import date
 
 from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -48,6 +46,12 @@ class PlannedSessionSource(StrEnum):
     v1_import = "v1_import"
 
 
+class CoachSuggestionStatus(StrEnum):
+    pending = "pending"
+    accepted = "accepted"
+    rejected = "rejected"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -76,6 +80,8 @@ class TrainingSpace(Base):
     coach_invites: Mapped[list["CoachInvite"]] = relationship(back_populates="training_space")
     workouts: Mapped[list["Workout"]] = relationship(back_populates="training_space")
     planned_sessions: Mapped[list["PlannedSession"]] = relationship(back_populates="training_space")
+    coach_suggestions: Mapped[list["CoachSuggestion"]] = relationship(back_populates="training_space")
+    audit_events: Mapped[list["AuditEvent"]] = relationship(back_populates="training_space")
 
 
 class TrainingSpaceMembership(Base):
@@ -206,3 +212,38 @@ class PlannedSession(Base):
 
     training_space: Mapped[TrainingSpace] = relationship(back_populates="planned_sessions")
     linked_workout: Mapped[Workout | None] = relationship()
+
+
+class CoachSuggestion(Base):
+    __tablename__ = "coach_suggestions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
+    target_entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_entity_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    suggested_change_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default=CoachSuggestionStatus.pending.value)
+    created_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    resolved_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    training_space: Mapped[TrainingSpace] = relationship(back_populates="coach_suggestions")
+    created_by: Mapped[User] = relationship(foreign_keys=[created_by_user_id])
+    resolved_by: Mapped[User | None] = relationship(foreign_keys=[resolved_by_user_id])
+
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
+    actor_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    entity_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    training_space: Mapped[TrainingSpace] = relationship(back_populates="audit_events")
+    actor: Mapped[User] = relationship()
