@@ -1,9 +1,15 @@
 from typing import Any
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
-from app.imports.schemas import V1BackupSummaryResponse, V1ImportPreviewResponse
+from app.auth.routes import get_current_user
+from app.db.models import TrainingSpaceRole, User
+from app.db.session import get_db_session
+from app.imports.schemas import V1BackupSummaryResponse, V1ImportCommitRequest, V1ImportCommitResponse, V1ImportPreviewResponse
 from app.imports.v1_parser import V1BackupParseError, parse_v1_backup_summary
+from app.imports.v1_workout_importer import import_v1_workouts
+from app.spaces.routes import get_membership
 
 router = APIRouter()
 
@@ -51,3 +57,39 @@ def unsupported_fields(payload: Any) -> list[str]:
     if not isinstance(payload, dict):
         return []
     return sorted(set(payload) - SUPPORTED_V1_TOP_LEVEL_FIELDS)
+
+
+@router.post("/v1/commit", response_model=V1ImportCommitResponse, response_model_by_alias=True)
+def commit_v1_backup(
+    payload: V1ImportCommitRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+) -> V1ImportCommitResponse:
+    membership = get_membership(db, payload.training_space_id, current_user.id)
+    if not membership:
+        raise imports_error("training_space_not_found", "Training space was not found.", status.HTTP_404_NOT_FOUND)
+    if membership.role == TrainingSpaceRole.coach.value:
+        raise imports_error("import_forbidden", "Coach members cannot import athlete history.", status.HTTP_403_FORBIDDEN)
+
+    try:
+        imported_count, skipped_count, existing_count, warnings = import_v1_workouts(
+            db,
+            payload.training_space_id,
+            payload.backup,
+        )
+    except V1BackupParseError as exc:
+        raise imports_error("invalid_v1_backup", str(exc), status.HTTP_400_BAD_REQUEST) from exc
+
+    return V1ImportCommitResponse(
+        imported_workout_count=imported_count,
+        skipped_workout_count=skipped_count,
+        existing_workout_count=existing_count,
+        warnings=warnings,
+    )
+
+
+def imports_error(code: str, message: str, status_code: int) -> HTTPException:
+    return HTTPException(
+        status_code=status_code,
+        detail={"error": {"code": code, "message": message}},
+    )

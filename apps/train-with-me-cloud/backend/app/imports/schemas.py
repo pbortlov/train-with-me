@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -20,3 +22,19 @@ class V1ImportPreviewResponse(BaseModel):
     summary: V1BackupSummaryResponse | None
     warnings: list[str]
     unsupported_fields: list[str] = Field(alias="unsupportedFields")
+
+
+class V1ImportCommitRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    training_space_id: str = Field(alias="trainingSpaceId")
+    backup: dict[str, Any]
+
+
+class V1ImportCommitResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    imported_workout_count: int = Field(alias="importedWorkoutCount")
+    skipped_workout_count: int = Field(alias="skippedWorkoutCount")
+    existing_workout_count: int = Field(alias="existingWorkoutCount")
+    warnings: list[str]

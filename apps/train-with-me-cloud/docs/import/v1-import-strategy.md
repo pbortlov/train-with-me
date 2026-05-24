@@ -35,6 +35,11 @@ warnings, and unsupported top-level fields without writing to the database.
 Invalid backups return `valid: false` so users can inspect problems before any
 commit endpoint exists.
 
+`POST /api/imports/v1/commit` starts with workouts only. Imported workout rows
+are historical data: `source = v1_import`, `coach_editable = false`, and the V1
+workout `id` is stored as `original_v1_id`. Re-running the same import skips
+existing workouts by training space and `original_v1_id`.
+
 ## Historical Import Rules
 
 - Preserve original V1 identifiers as `original_v1_id`.
