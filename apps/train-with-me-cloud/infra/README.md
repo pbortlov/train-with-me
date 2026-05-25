@@ -34,3 +34,12 @@ API service over the compose network.
 The first infrastructure chunk added local compose for API and PostgreSQL. The
 frontend container chunk adds the static frontend service and nginx API proxy
 only.
+
+## OpenShift
+
+Starter OpenShift manifests live in `openshift/`. They are placeholders for a
+future cluster deployment and should be reviewed before use:
+
+- Replace image references.
+- Replace example secret values.
+- Confirm route hostnames and storage settings.
