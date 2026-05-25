@@ -82,6 +82,7 @@ class TrainingSpace(Base):
     planned_sessions: Mapped[list["PlannedSession"]] = relationship(back_populates="training_space")
     coach_suggestions: Mapped[list["CoachSuggestion"]] = relationship(back_populates="training_space")
     audit_events: Mapped[list["AuditEvent"]] = relationship(back_populates="training_space")
+    imported_v1_metadata: Mapped[list["ImportedV1Metadata"]] = relationship(back_populates="training_space")
 
 
 class TrainingSpaceMembership(Base):
@@ -247,3 +248,26 @@ class AuditEvent(Base):
 
     training_space: Mapped[TrainingSpace] = relationship(back_populates="audit_events")
     actor: Mapped[User] = relationship()
+
+
+class ImportedV1Metadata(Base):
+    __tablename__ = "imported_v1_metadata"
+    __table_args__ = (
+        UniqueConstraint(
+            "training_space_id",
+            "entity_type",
+            "original_v1_id",
+            name="uq_imported_v1_metadata_space_type_original",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
+    entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    original_v1_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    payload_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    source: Mapped[str] = mapped_column(String(32), nullable=False, default="v1_import")
+    coach_editable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    training_space: Mapped[TrainingSpace] = relationship(back_populates="imported_v1_metadata")

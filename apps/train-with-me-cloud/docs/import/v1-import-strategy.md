@@ -46,6 +46,11 @@ metadata, `details`, `actual`, status, and the original V1 ID. `linkedWorkoutId`
 is mapped from the V1 workout ID to the imported workout row when that workout is
 available; missing links are skipped with a warning.
 
+The third write phase stores goals, phase templates, and phase instances as
+JSON-backed `imported_v1_metadata` rows. This preserves the V1 structures while
+V2 usage patterns are still evolving. Rows are idempotent by training space,
+entity type, and original V1 ID.
+
 ## Historical Import Rules
 
 - Preserve original V1 identifiers as `original_v1_id`.

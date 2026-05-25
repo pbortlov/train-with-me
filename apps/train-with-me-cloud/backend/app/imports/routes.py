@@ -7,6 +7,7 @@ from app.auth.routes import get_current_user
 from app.db.models import TrainingSpaceRole, User
 from app.db.session import get_db_session
 from app.imports.schemas import V1BackupSummaryResponse, V1ImportCommitRequest, V1ImportCommitResponse, V1ImportPreviewResponse
+from app.imports.v1_metadata_importer import import_v1_metadata
 from app.imports.v1_planned_session_importer import import_v1_planned_sessions
 from app.imports.v1_parser import V1BackupParseError, parse_v1_backup_summary
 from app.imports.v1_workout_importer import import_v1_workouts
@@ -83,6 +84,15 @@ def commit_v1_backup(
             payload.training_space_id,
             payload.backup,
         )
+        (
+            imported_goal_count,
+            existing_goal_count,
+            imported_phase_template_count,
+            existing_phase_template_count,
+            imported_phase_instance_count,
+            existing_phase_instance_count,
+            metadata_warnings,
+        ) = import_v1_metadata(db, payload.training_space_id, payload.backup)
     except V1BackupParseError as exc:
         raise imports_error("invalid_v1_backup", str(exc), status.HTTP_400_BAD_REQUEST) from exc
 
@@ -93,7 +103,13 @@ def commit_v1_backup(
         imported_planned_session_count=planned_imported_count,
         skipped_planned_session_count=planned_skipped_count,
         existing_planned_session_count=planned_existing_count,
-        warnings=[*warnings, *planned_warnings],
+        imported_goal_count=imported_goal_count,
+        existing_goal_count=existing_goal_count,
+        imported_phase_template_count=imported_phase_template_count,
+        existing_phase_template_count=existing_phase_template_count,
+        imported_phase_instance_count=imported_phase_instance_count,
+        existing_phase_instance_count=existing_phase_instance_count,
+        warnings=[*warnings, *planned_warnings, *metadata_warnings],
     )
 
 

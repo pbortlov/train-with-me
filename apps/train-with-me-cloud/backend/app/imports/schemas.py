@@ -40,4 +40,10 @@ class V1ImportCommitResponse(BaseModel):
     imported_planned_session_count: int = Field(alias="importedPlannedSessionCount")
     skipped_planned_session_count: int = Field(alias="skippedPlannedSessionCount")
     existing_planned_session_count: int = Field(alias="existingPlannedSessionCount")
+    imported_goal_count: int = Field(alias="importedGoalCount")
+    existing_goal_count: int = Field(alias="existingGoalCount")
+    imported_phase_template_count: int = Field(alias="importedPhaseTemplateCount")
+    existing_phase_template_count: int = Field(alias="existingPhaseTemplateCount")
+    imported_phase_instance_count: int = Field(alias="importedPhaseInstanceCount")
+    existing_phase_instance_count: int = Field(alias="existingPhaseInstanceCount")
     warnings: list[str]
