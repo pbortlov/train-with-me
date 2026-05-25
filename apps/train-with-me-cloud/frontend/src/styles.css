@@ -81,8 +81,7 @@ button:focus-visible {
   max-width: 620px;
 }
 
-.auth-intro p:last-child,
-.next-panel p {
+.auth-intro p:last-child {
   color: #52675e;
   font-size: 1rem;
   line-height: 1.6;
@@ -299,10 +298,103 @@ label {
   font-size: 0.9rem;
 }
 
-.next-panel {
-  border-top: 1px solid #edf2ef;
+.history-status {
+  margin-top: 18px;
+}
+
+.history-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 24px;
-  padding-top: 20px;
+}
+
+.history-panel {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.history-panel-header,
+.item-main {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.subtle-text {
+  color: #60746b;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.history-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.history-item {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.history-item h4 {
+  font-size: 1rem;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.history-item p,
+.linked-text {
+  color: #52675e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 5px 0 0;
+}
+
+.history-item time {
+  color: #33453d;
+  flex: 0 0 auto;
+  font-size: 0.86rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.history-badge,
+.source-badge,
+.status-badge {
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 750;
+  padding: 4px 8px;
+}
+
+.history-badge {
+  background: #fff4d6;
+  color: #7a4b00;
+}
+
+.source-badge {
+  background: #e7f4ef;
+  color: #174f42;
+}
+
+.status-badge {
+  background: #edf3f0;
+  color: #33453d;
+  text-transform: capitalize;
 }
 
 @media (max-width: 760px) {
@@ -311,7 +403,8 @@ label {
   }
 
   .auth-layout,
-  .dashboard-grid {
+  .dashboard-grid,
+  .history-grid {
     grid-template-columns: 1fr;
   }
 
@@ -328,5 +421,13 @@ label {
   .topbar button,
   .account-bar button {
     width: 100%;
+  }
+
+  .item-main {
+    display: grid;
+  }
+
+  .history-item time {
+    white-space: normal;
   }
 }

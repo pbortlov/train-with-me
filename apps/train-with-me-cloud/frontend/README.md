@@ -34,6 +34,8 @@ Requests to `/api` are proxied to the backend API service in compose.
 - Token-backed session restore through `GET /api/auth/me`.
 - Dashboard shell.
 - Training space selector and create form.
+- Read-only workout and planned-session lists for the selected training space.
+- Historical and V1 import badges on imported rows.
 
 ## Revert Notes
 
