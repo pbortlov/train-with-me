@@ -19,7 +19,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -43,7 +45,9 @@ button:disabled {
   cursor: wait;
 }
 
-input {
+input,
+select,
+textarea {
   border: 1px solid #bac8c1;
   border-radius: 6px;
   min-height: 42px;
@@ -52,9 +56,17 @@ input {
 }
 
 input:focus,
+select:focus,
+textarea:focus,
 button:focus-visible {
   outline: 3px solid #b9dfd4;
   outline-offset: 2px;
+}
+
+textarea {
+  line-height: 1.45;
+  min-height: 96px;
+  resize: vertical;
 }
 
 .app-shell {
@@ -217,6 +229,11 @@ label {
   margin: 0;
 }
 
+.neutral-status {
+  color: #33534a;
+  margin-top: 10px;
+}
+
 .dashboard-grid {
   display: grid;
   gap: 18px;
@@ -260,6 +277,18 @@ label {
 .empty-state {
   color: #60746b;
   margin: 18px 0 0;
+}
+
+.collab-panel {
+  border-top: 1px solid #edf2ef;
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+}
+
+.readonly-field {
+  margin-top: 2px;
 }
 
 .role-pill {
@@ -309,6 +338,12 @@ label {
   margin-top: 24px;
 }
 
+.coach-workspace {
+  border-top: 1px solid #edf2ef;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
 .history-panel {
   border: 1px solid #edf2ef;
   border-radius: 8px;
@@ -331,6 +366,13 @@ label {
 }
 
 .history-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.suggestion-list,
+.suggestion-form {
   display: grid;
   gap: 10px;
   margin-top: 14px;
@@ -370,6 +412,12 @@ label {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .history-badge,

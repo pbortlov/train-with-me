@@ -71,6 +71,33 @@ type PlannedSession = {
   original_v1_id: string | null;
 };
 
+type CoachInvite = {
+  token: string;
+  training_space_id: string;
+  training_space_name: string;
+  expires_at: string;
+  accepted_at: string | null;
+};
+
+type CoachInviteAcceptResponse = {
+  training_space_id: string;
+  training_space_name: string;
+  role: string;
+};
+
+type CoachSuggestion = {
+  id: string;
+  training_space_id: string;
+  target_entity_type: string;
+  target_entity_id: string;
+  suggested_change_json: Record<string, unknown>;
+  status: string;
+  created_by_user_id: string;
+  resolved_by_user_id: string | null;
+  resolved_at: string | null;
+  created_at: string;
+};
+
 type ApiErrorPayload = {
   detail?: {
     error?: {
@@ -137,6 +164,11 @@ function summarizePlanDetails(session: PlannedSession): string {
   return "No details";
 }
 
+function suggestionNotes(suggestion: CoachSuggestion): string {
+  const notes = suggestion.suggested_change_json.notes;
+  return typeof notes === "string" ? notes : "";
+}
+
 async function parseApiError(response: Response): Promise<string> {
   try {
     const payload = (await response.json()) as ApiErrorPayload;
@@ -175,11 +207,20 @@ export function App() {
   const [spaceStatus, setSpaceStatus] = useState("");
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
+  const [coachSuggestions, setCoachSuggestions] = useState<CoachSuggestion[]>([]);
+  const [lastInvite, setLastInvite] = useState<CoachInvite | null>(null);
+  const [inviteToken, setInviteToken] = useState(() => new URLSearchParams(window.location.search).get("coachInvite") ?? "");
   const [historyStatus, setHistoryStatus] = useState("");
+  const [inviteStatus, setInviteStatus] = useState("");
+  const [suggestionStatus, setSuggestionStatus] = useState("");
   const [isLoadingSession, setIsLoadingSession] = useState(Boolean(token));
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
+  const [isCreatingSuggestion, setIsCreatingSuggestion] = useState(false);
+  const [resolvingSuggestionId, setResolvingSuggestionId] = useState("");
 
   const selectedSpace = useMemo(
     () => spaces.find((space) => space.id === selectedSpaceId) ?? spaces[0] ?? null,
@@ -192,6 +233,10 @@ export function App() {
   const plannedSessionByWorkoutId = useMemo(
     () => new Map(plannedSessions.filter((session) => session.linked_workout_id).map((session) => [session.linked_workout_id, session])),
     [plannedSessions],
+  );
+  const pendingSuggestions = useMemo(
+    () => coachSuggestions.filter((suggestion) => suggestion.status === "pending"),
+    [coachSuggestions],
   );
 
   const loadSpaces = useCallback(async (activeToken: string) => {
@@ -290,6 +335,42 @@ export function App() {
     };
   }, [selectedSpaceId, token]);
 
+  const loadCoachSuggestions = useCallback(async (activeToken: string, trainingSpaceId: string, role: string) => {
+    if (role !== "owner") {
+      setCoachSuggestions([]);
+      return;
+    }
+    const nextSuggestions = await apiRequest<CoachSuggestion[]>(
+      `/api/training-spaces/${trainingSpaceId}/coach-suggestions`,
+      {},
+      activeToken,
+    );
+    setCoachSuggestions(nextSuggestions);
+  }, []);
+
+  useEffect(() => {
+    if (!token || !selectedSpace) {
+      setCoachSuggestions([]);
+      setSuggestionStatus("");
+      return;
+    }
+
+    let isActive = true;
+    setSuggestionStatus("");
+    loadCoachSuggestions(token, selectedSpace.id, selectedSpace.my_role)
+      .catch((error: unknown) => {
+        if (!isActive) {
+          return;
+        }
+        setCoachSuggestions([]);
+        setSuggestionStatus(error instanceof Error ? error.message : "Could not load coach suggestions.");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [loadCoachSuggestions, selectedSpace, token]);
+
   async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -342,6 +423,113 @@ export function App() {
     }
   }
 
+  async function handleCreateInvite() {
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    setIsCreatingInvite(true);
+    setInviteStatus("");
+    try {
+      const invite = await apiRequest<CoachInvite>(
+        `/api/training-spaces/${selectedSpace.id}/coach-invites`,
+        { method: "POST" },
+        token,
+      );
+      setLastInvite(invite);
+      setInviteToken(invite.token);
+      setInviteStatus("Invite created.");
+    } catch (error) {
+      setInviteStatus(error instanceof Error ? error.message : "Could not create invite.");
+    } finally {
+      setIsCreatingInvite(false);
+    }
+  }
+
+  async function handleAcceptInvite(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !inviteToken.trim()) {
+      return;
+    }
+
+    setIsAcceptingInvite(true);
+    setInviteStatus("");
+    try {
+      const invite = await apiRequest<CoachInvite>(`/api/coach-invites/${inviteToken.trim()}`);
+      const accepted = await apiRequest<CoachInviteAcceptResponse>(
+        `/api/coach-invites/${inviteToken.trim()}/accept`,
+        { method: "POST" },
+        token,
+      );
+      await loadSpaces(token);
+      setSelectedSpaceId(accepted.training_space_id);
+      setInviteStatus(`Accepted coach invite for ${invite.training_space_name}.`);
+    } catch (error) {
+      setInviteStatus(error instanceof Error ? error.message : "Could not accept invite.");
+    } finally {
+      setIsAcceptingInvite(false);
+    }
+  }
+
+  async function handleCreateSuggestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    const targetWorkoutId = String(form.get("targetWorkoutId") ?? "");
+    const notes = String(form.get("suggestedNotes") ?? "");
+
+    setIsCreatingSuggestion(true);
+    setSuggestionStatus("");
+    try {
+      await apiRequest<CoachSuggestion>(
+        `/api/training-spaces/${selectedSpace.id}/coach-suggestions`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            target_entity_type: "workout",
+            target_entity_id: targetWorkoutId,
+            suggested_change_json: { notes },
+          }),
+        },
+        token,
+      );
+      event.currentTarget.reset();
+      setSuggestionStatus("Suggestion sent.");
+    } catch (error) {
+      setSuggestionStatus(error instanceof Error ? error.message : "Could not send suggestion.");
+    } finally {
+      setIsCreatingSuggestion(false);
+    }
+  }
+
+  async function handleResolveSuggestion(suggestionId: string, action: "accept" | "reject") {
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    setResolvingSuggestionId(suggestionId);
+    setSuggestionStatus("");
+    try {
+      await apiRequest<CoachSuggestion>(
+        `/api/training-spaces/${selectedSpace.id}/coach-suggestions/${suggestionId}/${action}`,
+        { method: "POST" },
+        token,
+      );
+      await Promise.all([
+        loadCoachSuggestions(token, selectedSpace.id, selectedSpace.my_role),
+        apiRequest<Workout[]>(`/api/training-spaces/${selectedSpace.id}/workouts`, {}, token).then(setWorkouts),
+      ]);
+      setSuggestionStatus(action === "accept" ? "Suggestion accepted." : "Suggestion rejected.");
+    } catch (error) {
+      setSuggestionStatus(error instanceof Error ? error.message : `Could not ${action} suggestion.`);
+    } finally {
+      setResolvingSuggestionId("");
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem(tokenStorageKey);
     setToken("");
@@ -350,9 +538,14 @@ export function App() {
     setSelectedSpaceId("");
     setWorkouts([]);
     setPlannedSessions([]);
+    setCoachSuggestions([]);
+    setLastInvite(null);
+    setInviteToken("");
     setAuthStatus("");
     setSpaceStatus("");
     setHistoryStatus("");
+    setInviteStatus("");
+    setSuggestionStatus("");
   }
 
   if (isLoadingSession) {
@@ -477,6 +670,41 @@ export function App() {
               {isCreatingSpace ? "Creating" : "Create space"}
             </button>
           </form>
+
+          <section className="collab-panel" aria-label="Coach invite">
+            <div className="panel-header">
+              <div>
+                <p className="panel-kicker">Coach</p>
+                <h3>Invite</h3>
+              </div>
+            </div>
+            {selectedSpace?.my_role === "owner" && (
+              <button type="button" onClick={handleCreateInvite} disabled={isCreatingInvite}>
+                {isCreatingInvite ? "Creating" : "Create invite"}
+              </button>
+            )}
+            {lastInvite && (
+              <label className="readonly-field">
+                Invite token
+                <input value={lastInvite.token} readOnly />
+              </label>
+            )}
+            <form className="stacked-form compact" onSubmit={handleAcceptInvite}>
+              <label>
+                Accept token
+                <input
+                  value={inviteToken}
+                  onChange={(event) => setInviteToken(event.target.value)}
+                  placeholder="Paste invite token"
+                  required
+                />
+              </label>
+              <button type="submit" disabled={isAcceptingInvite || !inviteToken.trim()}>
+                {isAcceptingInvite ? "Accepting" : "Accept invite"}
+              </button>
+            </form>
+            {inviteStatus && <p className="form-status neutral-status" role="status">{inviteStatus}</p>}
+          </section>
         </aside>
 
         <section className="workspace-panel" aria-label="Dashboard">
@@ -576,6 +804,85 @@ export function App() {
               </div>
             </section>
           </div>
+
+          <section className="coach-workspace" aria-label="Coach suggestions">
+            <div className="history-panel-header">
+              <div>
+                <p className="panel-kicker">Coach</p>
+                <h3>Suggestions</h3>
+              </div>
+              {pendingSuggestions.length > 0 && <span className="source-badge">{pendingSuggestions.length} pending</span>}
+            </div>
+
+            {selectedSpace?.my_role === "coach" && (
+              <form className="suggestion-form" onSubmit={handleCreateSuggestion}>
+                <label>
+                  Workout
+                  <select name="targetWorkoutId" required disabled={!workouts.length}>
+                    <option value="">Select workout</option>
+                    {workouts.map((workout) => (
+                      <option key={workout.id} value={workout.id}>
+                        {formatDate(workout.date)} - {activityLabel(workout.activity)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Suggested notes
+                  <textarea name="suggestedNotes" rows={4} required />
+                </label>
+                <button type="submit" disabled={isCreatingSuggestion || !workouts.length}>
+                  {isCreatingSuggestion ? "Sending" : "Send suggestion"}
+                </button>
+              </form>
+            )}
+
+            {selectedSpace?.my_role === "owner" && (
+              <div className="suggestion-list">
+                {coachSuggestions.length ? coachSuggestions.map((suggestion) => {
+                  const workout = workoutsById.get(suggestion.target_entity_id);
+                  const isPending = suggestion.status === "pending";
+                  return (
+                    <article className="history-item" key={suggestion.id}>
+                      <div className="item-main">
+                        <div>
+                          <h4>{workout ? `${formatDate(workout.date)} ${activityLabel(workout.activity)}` : "Workout suggestion"}</h4>
+                          <p>{suggestionNotes(suggestion) || "No note text"}</p>
+                        </div>
+                        <span className="status-badge">{suggestion.status}</span>
+                      </div>
+                      {isPending && (
+                        <div className="action-row">
+                          <button
+                            type="button"
+                            onClick={() => void handleResolveSuggestion(suggestion.id, "accept")}
+                            disabled={resolvingSuggestionId === suggestion.id}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleResolveSuggestion(suggestion.id, "reject")}
+                            disabled={resolvingSuggestionId === suggestion.id}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </article>
+                  );
+                }) : (
+                  <p className="empty-state">No coach suggestions yet.</p>
+                )}
+              </div>
+            )}
+
+            {selectedSpace?.my_role !== "owner" && selectedSpace?.my_role !== "coach" && (
+              <p className="empty-state">Coach suggestions appear here when a coach is connected.</p>
+            )}
+
+            {suggestionStatus && <p className="form-status neutral-status" role="status">{suggestionStatus}</p>}
+          </section>
         </section>
       </section>
     </main>

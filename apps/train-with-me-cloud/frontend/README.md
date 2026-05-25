@@ -36,6 +36,8 @@ Requests to `/api` are proxied to the backend API service in compose.
 - Training space selector and create form.
 - Read-only workout and planned-session lists for the selected training space.
 - Historical and V1 import badges on imported rows.
+- Coach invite creation and invite-token acceptance.
+- Coach suggestion creation, list, accept, and reject controls.
 
 ## Revert Notes
 
