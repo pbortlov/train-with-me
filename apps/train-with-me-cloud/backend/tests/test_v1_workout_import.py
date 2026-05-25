@@ -55,6 +55,9 @@ def test_commit_v1_backup_imports_workouts_as_historical_data(db_session: Sessio
     assert response.imported_workout_count == 2
     assert response.skipped_workout_count == 0
     assert response.existing_workout_count == 0
+    assert response.imported_planned_session_count == 1
+    assert response.skipped_planned_session_count == 0
+    assert response.existing_planned_session_count == 0
     assert response.warnings == []
 
     workouts = db_session.scalars(select(Workout).order_by(Workout.original_v1_id)).all()
@@ -83,6 +86,8 @@ def test_commit_v1_backup_is_idempotent_by_original_v1_id(db_session: Session) -
     assert first.imported_workout_count == 2
     assert second.imported_workout_count == 0
     assert second.existing_workout_count == 2
+    assert second.imported_planned_session_count == 0
+    assert second.existing_planned_session_count == 1
     assert len(db_session.scalars(select(Workout)).all()) == 2
 
 

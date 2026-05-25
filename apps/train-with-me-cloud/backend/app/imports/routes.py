@@ -7,6 +7,7 @@ from app.auth.routes import get_current_user
 from app.db.models import TrainingSpaceRole, User
 from app.db.session import get_db_session
 from app.imports.schemas import V1BackupSummaryResponse, V1ImportCommitRequest, V1ImportCommitResponse, V1ImportPreviewResponse
+from app.imports.v1_planned_session_importer import import_v1_planned_sessions
 from app.imports.v1_parser import V1BackupParseError, parse_v1_backup_summary
 from app.imports.v1_workout_importer import import_v1_workouts
 from app.spaces.routes import get_membership
@@ -77,6 +78,11 @@ def commit_v1_backup(
             payload.training_space_id,
             payload.backup,
         )
+        planned_imported_count, planned_skipped_count, planned_existing_count, planned_warnings = import_v1_planned_sessions(
+            db,
+            payload.training_space_id,
+            payload.backup,
+        )
     except V1BackupParseError as exc:
         raise imports_error("invalid_v1_backup", str(exc), status.HTTP_400_BAD_REQUEST) from exc
 
@@ -84,7 +90,10 @@ def commit_v1_backup(
         imported_workout_count=imported_count,
         skipped_workout_count=skipped_count,
         existing_workout_count=existing_count,
-        warnings=warnings,
+        imported_planned_session_count=planned_imported_count,
+        skipped_planned_session_count=planned_skipped_count,
+        existing_planned_session_count=planned_existing_count,
+        warnings=[*warnings, *planned_warnings],
     )
 
 

@@ -37,4 +37,7 @@ class V1ImportCommitResponse(BaseModel):
     imported_workout_count: int = Field(alias="importedWorkoutCount")
     skipped_workout_count: int = Field(alias="skippedWorkoutCount")
     existing_workout_count: int = Field(alias="existingWorkoutCount")
+    imported_planned_session_count: int = Field(alias="importedPlannedSessionCount")
+    skipped_planned_session_count: int = Field(alias="skippedPlannedSessionCount")
+    existing_planned_session_count: int = Field(alias="existingPlannedSessionCount")
     warnings: list[str]
