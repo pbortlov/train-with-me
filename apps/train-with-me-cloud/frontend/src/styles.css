@@ -1,6 +1,6 @@
 :root {
   color: #17211d;
-  background: #f7faf7;
+  background: #f5f7f6;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -18,25 +18,89 @@ body {
   min-height: 100vh;
 }
 
+button,
+input {
+  font: inherit;
+}
+
 button {
   border: 1px solid #b8c7bf;
   border-radius: 6px;
   background: #ffffff;
   color: #17211d;
   cursor: pointer;
-  font: inherit;
   font-weight: 650;
   min-height: 40px;
   padding: 0 14px;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   border-color: #1f6f5b;
+}
+
+button:disabled {
+  color: #7b8a83;
+  cursor: wait;
+}
+
+input {
+  border: 1px solid #bac8c1;
+  border-radius: 6px;
+  min-height: 42px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+input:focus,
+button:focus-visible {
+  outline: 3px solid #b9dfd4;
+  outline-offset: 2px;
 }
 
 .app-shell {
   min-height: 100vh;
   padding: 24px;
+}
+
+.app-shell-centered {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-layout {
+  align-items: center;
+  display: grid;
+  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  margin: 0 auto;
+  max-width: 1080px;
+}
+
+.auth-intro {
+  max-width: 620px;
+}
+
+.auth-intro p:last-child,
+.next-panel p {
+  color: #52675e;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 16px 0 0;
+}
+
+.auth-panel,
+.loading-panel,
+.sidebar-panel,
+.workspace-panel {
+  background: #ffffff;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+}
+
+.auth-panel,
+.loading-panel {
+  padding: 22px;
 }
 
 .topbar {
@@ -46,7 +110,7 @@ button:hover {
   gap: 16px;
   justify-content: space-between;
   margin: 0 auto;
-  max-width: 1040px;
+  max-width: 1160px;
   padding-bottom: 18px;
 }
 
@@ -61,7 +125,8 @@ button:hover {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   letter-spacing: 0;
   margin: 0;
 }
@@ -75,85 +140,193 @@ h2 {
   font-size: 1.35rem;
 }
 
-.status-grid {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  margin: 28px auto 0;
-  max-width: 1040px;
+h3 {
+  font-size: 1.1rem;
 }
 
-.status-panel {
-  background: #ffffff;
-  border: 1px solid #d9e2dd;
-  border-radius: 8px;
-  padding: 20px;
-}
-
-.status-panel-header {
-  align-items: start;
+.account-bar {
+  align-items: center;
   display: flex;
-  justify-content: space-between;
+  gap: 12px;
 }
 
-.status-dot {
-  border-radius: 50%;
-  display: inline-block;
-  height: 14px;
-  margin-top: 4px;
-  width: 14px;
-}
-
-.status-dot-checking {
-  background: #e4a11b;
-}
-
-.status-dot-ok {
-  background: #1f8f62;
-}
-
-.status-dot-error {
-  background: #c24135;
-}
-
-.status-list {
+.account-bar div {
   display: grid;
-  gap: 14px;
-  margin: 22px 0 0;
-}
-
-.status-list div {
-  align-items: baseline;
-  border-top: 1px solid #edf2ef;
-  display: flex;
-  gap: 16px;
-  justify-content: space-between;
-  padding-top: 12px;
-}
-
-dt {
-  color: #557066;
-  font-size: 0.9rem;
-}
-
-dd {
-  font-weight: 700;
-  margin: 0;
-  overflow-wrap: anywhere;
+  gap: 2px;
   text-align: right;
 }
 
-@media (max-width: 560px) {
+.account-bar span {
+  font-weight: 750;
+}
+
+.account-bar small,
+.space-item small {
+  color: #60746b;
+}
+
+.segmented-control {
+  background: #edf3f0;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+}
+
+.segmented-control button {
+  border-color: transparent;
+  min-height: 38px;
+}
+
+.segmented-control button.active {
+  background: #1f6f5b;
+  color: #ffffff;
+}
+
+.stacked-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.stacked-form.compact {
+  border-top: 1px solid #edf2ef;
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+label {
+  color: #33453d;
+  display: grid;
+  font-size: 0.9rem;
+  font-weight: 700;
+  gap: 6px;
+}
+
+.primary-action {
+  background: #1f6f5b;
+  border-color: #1f6f5b;
+  color: #ffffff;
+}
+
+.form-status {
+  color: #9a3412;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  margin: 24px auto 0;
+  max-width: 1160px;
+}
+
+.sidebar-panel,
+.workspace-panel {
+  padding: 20px;
+}
+
+.panel-header {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.space-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.space-item {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  min-height: 48px;
+  text-align: left;
+  width: 100%;
+}
+
+.space-item.active {
+  background: #e7f4ef;
+  border-color: #1f6f5b;
+}
+
+.empty-state {
+  color: #60746b;
+  margin: 18px 0 0;
+}
+
+.role-pill {
+  background: #e7f4ef;
+  border: 1px solid #b7d7cd;
+  border-radius: 999px;
+  color: #174f42;
+  font-size: 0.82rem;
+  font-weight: 750;
+  padding: 6px 10px;
+  text-transform: capitalize;
+}
+
+.metric-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-top: 22px;
+}
+
+.metric-tile {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+}
+
+.metric-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.metric-label {
+  color: #60746b;
+  font-size: 0.9rem;
+}
+
+.next-panel {
+  border-top: 1px solid #edf2ef;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+@media (max-width: 760px) {
   .app-shell {
     padding: 18px;
   }
 
-  .topbar {
+  .auth-layout,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar,
+  .account-bar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  button {
+  .account-bar div {
+    text-align: left;
+  }
+
+  .topbar button,
+  .account-bar button {
     width: 100%;
   }
 }

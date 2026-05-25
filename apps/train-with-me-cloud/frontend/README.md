@@ -30,10 +30,12 @@ Requests to `/api` are proxied to the backend API service in compose.
 
 ## Current UI
 
-- App shell.
-- Backend health check against `GET /api/health`.
+- Login and register screens.
+- Token-backed session restore through `GET /api/auth/me`.
+- Dashboard shell.
+- Training space selector and create form.
 
 ## Revert Notes
 
-This chunk adds the initial frontend shell only. It can be reverted
-independently.
+The auth shell is frontend-only and uses the existing V2 API endpoints. It can
+be reverted independently from backend import behavior.
