@@ -310,6 +310,7 @@ export function App() {
   const [programStatus, setProgramStatus] = useState("");
   const [trainingFormStatus, setTrainingFormStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
+  const [exportStatus, setExportStatus] = useState("");
   const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
   const [importBackup, setImportBackup] = useState<Record<string, unknown> | null>(null);
   const [importCommit, setImportCommit] = useState<V1ImportCommit | null>(null);
@@ -322,6 +323,7 @@ export function App() {
   const [isSavingTraining, setIsSavingTraining] = useState(false);
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
   const [isCreatingSuggestion, setIsCreatingSuggestion] = useState(false);
@@ -805,6 +807,36 @@ export function App() {
       setImportStatus(error instanceof Error ? error.message : "Could not import backup.");
     } finally {
       setIsCommittingImport(false);
+    }
+  }
+
+  async function handleExportData() {
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    setIsExportingData(true);
+    setExportStatus("");
+    try {
+      const backup = await apiRequest<Record<string, unknown>>(
+        `/api/imports/v1/export/${selectedSpace.id}`,
+        {},
+        token,
+      );
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `train-with-me-cloud-${selectedSpace.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${dateKey(new Date())}.json`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportStatus("Backup exported.");
+    } catch (error) {
+      setExportStatus(error instanceof Error ? error.message : "Could not export backup.");
+    } finally {
+      setIsExportingData(false);
     }
   }
 
@@ -1574,9 +1606,21 @@ export function App() {
           <article className="workspace-panel">
             <p className="panel-kicker">Data</p>
             <h2>Cloud data</h2>
-            <p className="empty-state">Import a V1 JSON backup into the selected training space.</p>
+            <p className="empty-state">Export or import a V1-style JSON backup for the selected training space.</p>
 
             <div className="import-panel">
+              <div className="export-panel">
+                <button
+                  type="button"
+                  className="primary-action"
+                  onClick={() => void handleExportData()}
+                  disabled={!selectedSpace || isExportingData}
+                >
+                  {isExportingData ? "Exporting" : "Export selected space JSON"}
+                </button>
+                {exportStatus && <p className="form-status neutral-status" role="status">{exportStatus}</p>}
+              </div>
+
               <label>
                 V1 backup JSON
                 <input

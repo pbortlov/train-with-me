@@ -6,7 +6,7 @@ from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
 from app.db.models import ImportedV1Metadata, User
-from app.imports.routes import commit_v1_backup, list_v1_metadata
+from app.imports.routes import commit_v1_backup, export_v1_backup, list_v1_metadata
 from app.imports.schemas import V1ImportCommitRequest
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
@@ -126,3 +126,19 @@ def test_list_v1_metadata_returns_imported_phase_rows(db_session: Session) -> No
     ]
     phase_template = next(row for row in rows if row.entity_type == "phase_template")
     assert phase_template.payload["name"] == "Phase 1"
+
+
+def test_export_v1_backup_returns_importable_shape(db_session: Session) -> None:
+    owner = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, owner)
+    commit_v1_backup(commit_payload(space.id), owner, db_session)
+
+    exported = export_v1_backup(space.id, owner, db_session)
+
+    assert exported["version"] == 2
+    assert exported["exportedAt"]
+    assert len(exported["workouts"]) == 2
+    assert len(exported["plannedSessions"]) == 1
+    assert len(exported["phaseTemplates"]) == 1
+    assert len(exported["phaseInstances"]) == 1
+    assert exported["goals"]["version"] == 2

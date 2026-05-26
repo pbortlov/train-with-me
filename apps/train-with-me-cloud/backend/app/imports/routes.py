@@ -1,11 +1,12 @@
 from typing import Any
+from datetime import timezone
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.routes import get_current_user
-from app.db.models import ImportedV1Metadata, TrainingSpaceRole, User
+from app.db.models import ImportedV1Metadata, PlannedSession, TrainingSpaceRole, User, Workout
 from app.db.session import get_db_session
 from app.imports.schemas import (
     ImportedV1MetadataResponse,
@@ -144,6 +145,115 @@ def list_v1_metadata(
         )
         for row in rows
     ]
+
+
+@router.get("/v1/export/{training_space_id}")
+def export_v1_backup(
+    training_space_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+) -> dict[str, Any]:
+    membership = get_membership(db, training_space_id, current_user.id)
+    if not membership:
+        raise imports_error("training_space_not_found", "Training space was not found.", status.HTTP_404_NOT_FOUND)
+
+    workouts = db.scalars(
+        select(Workout)
+        .where(Workout.training_space_id == training_space_id)
+        .order_by(Workout.date, Workout.created_at, Workout.id),
+    ).all()
+    planned_sessions = db.scalars(
+        select(PlannedSession)
+        .where(PlannedSession.training_space_id == training_space_id)
+        .order_by(PlannedSession.date, PlannedSession.created_at, PlannedSession.id),
+    ).all()
+    metadata_rows = db.scalars(
+        select(ImportedV1Metadata).where(ImportedV1Metadata.training_space_id == training_space_id),
+    ).all()
+
+    metadata_by_type = {(row.entity_type, row.original_v1_id): row.payload_json for row in metadata_rows}
+    phase_templates = [row.payload_json for row in metadata_rows if row.entity_type == "phase_template"]
+    phase_instances = [row.payload_json for row in metadata_rows if row.entity_type == "phase_instance"]
+
+    return {
+        "version": 2,
+        "exportedAt": utc_iso_now(),
+        "workouts": [export_workout(workout) for workout in workouts],
+        "goals": metadata_by_type.get(("goals", "goals"), {"version": 2, "active": {}, "history": []}),
+        "plannedSessions": [export_planned_session(session, workouts) for session in planned_sessions],
+        "phaseTemplates": phase_templates,
+        "phaseInstances": phase_instances,
+        "uiSettings": {"currentView": "calendar", "coachMode": False},
+    }
+
+
+def utc_iso_now() -> str:
+    from datetime import datetime
+
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def export_workout(workout: Workout) -> dict[str, Any]:
+    exported: dict[str, Any] = {
+        "id": workout.original_v1_id or workout.id,
+        "date": workout.date.isoformat(),
+        "activity": workout.activity,
+        "notes": workout.notes,
+        "createdAt": int(workout.created_at.timestamp() * 1000),
+    }
+    if workout.activity == "run":
+        exported.update({"distance": workout.distance, "time": workout.time, "pace": workout.pace})
+    if workout.activity == "sprint":
+        exported["sprintFeeling"] = workout.sprint_feeling
+        exported["sprintSets"] = [
+            {"distance": sprint_set.distance_m, "time": sprint_set.time_sec}
+            for sprint_set in sorted(workout.sprint_sets, key=lambda item: item.order)
+        ]
+    if workout.activity == "strength":
+        exported["strengthExercises"] = [
+            {
+                "name": exercise.name,
+                "sets": [
+                    {
+                        "order": workout_set.order,
+                        "reps": workout_set.reps,
+                        "weight": workout_set.weight,
+                        "loadType": workout_set.load_type,
+                        "bandColor": workout_set.band_color,
+                    }
+                    for workout_set in sorted(exercise.sets, key=lambda item: item.order)
+                ],
+            }
+            for exercise in sorted(workout.strength_exercises, key=lambda item: item.order)
+        ]
+    return exported
+
+
+def export_planned_session(session: PlannedSession, workouts: list[Workout]) -> dict[str, Any]:
+    linked_workout_original_id = ""
+    if session.linked_workout_id:
+        linked_workout = next((workout for workout in workouts if workout.id == session.linked_workout_id), None)
+        linked_workout_original_id = (linked_workout.original_v1_id or linked_workout.id) if linked_workout else ""
+
+    exported: dict[str, Any] = {
+        "id": session.original_v1_id or session.id,
+        "date": session.date.isoformat(),
+        "type": session.type,
+        "title": session.title,
+        "status": session.status,
+        "details": session.details_json,
+        "actual": session.actual_json,
+        "linkedWorkoutId": linked_workout_original_id,
+        "phaseTemplateId": session.phase_template_id,
+        "phaseInstanceId": session.phase_instance_id,
+        "phaseSlotId": session.phase_slot_id,
+        "phaseWeekIndex": session.phase_week_index,
+        "generatedDate": session.generated_date.isoformat() if session.generated_date else None,
+        "dateMovedManually": session.date_moved_manually,
+        "modificationNote": session.modification_note,
+        "createdAt": int(session.created_at.timestamp() * 1000),
+    }
+    return exported
 
 
 def imports_error(code: str, message: str, status_code: int) -> HTTPException:
