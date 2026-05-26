@@ -39,6 +39,13 @@ class PlannedSessionCreateRequest(BaseModel):
         return self
 
 
+class PlannedSessionUpdateRequest(BaseModel):
+    modification_note: str | None = None
+    actual_json: dict[str, Any] | None = None
+    linked_workout_id: str | None = None
+    status: PlannedSessionStatusValue | None = None
+
+
 class PlannedSessionResponse(BaseModel):
     id: str
     training_space_id: str

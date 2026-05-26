@@ -348,6 +348,11 @@ function summarizePlanDetails(session: PlannedSession): string {
   return "No details";
 }
 
+function firstSprintBlock(session: PlannedSession): Record<string, unknown> {
+  const blocks = session.details_json.blocks;
+  return Array.isArray(blocks) ? asRecord(blocks[0]) ?? {} : {};
+}
+
 function suggestionNotes(suggestion: CoachSuggestion): string {
   const notes = suggestion.suggested_change_json.notes;
   return typeof notes === "string" ? notes : "";
@@ -404,6 +409,7 @@ export function App() {
   const [historyStatus, setHistoryStatus] = useState("");
   const [programStatus, setProgramStatus] = useState("");
   const [trainingFormStatus, setTrainingFormStatus] = useState("");
+  const [completionStatus, setCompletionStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [exportStatus, setExportStatus] = useState("");
   const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
@@ -416,6 +422,7 @@ export function App() {
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isSavingTraining, setIsSavingTraining] = useState(false);
+  const [isCompletingSessionId, setIsCompletingSessionId] = useState("");
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -465,6 +472,7 @@ export function App() {
   const selectedCalendarSessionWorkout = selectedCalendarSession?.linked_workout_id
     ? workoutsById.get(selectedCalendarSession.linked_workout_id) ?? null
     : null;
+  const selectedCalendarSprintBlock = selectedCalendarSession ? firstSprintBlock(selectedCalendarSession) : {};
   const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
   const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
   const reviewCounts = {
@@ -927,6 +935,82 @@ export function App() {
     }
   }
 
+  async function handleCompletePlannedSession(event: FormEvent<HTMLFormElement>, session: PlannedSession) {
+    event.preventDefault();
+    if (!token || !selectedSpace) {
+      return;
+    }
+    if (session.type !== "run" && session.type !== "sprint") {
+      setCompletionStatus("Calendar completion currently supports run and sprint sessions.");
+      return;
+    }
+
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const notes = String(form.get("completionNotes") ?? "");
+    const body: Record<string, unknown> = {
+      activity: session.type,
+      date: session.date,
+      notes: notes || `Completed planned ${session.type}: ${session.title}`,
+    };
+    let actualJson: Record<string, unknown>;
+
+    setIsCompletingSessionId(session.id);
+    setCompletionStatus("");
+    try {
+      if (session.type === "run") {
+        const distance = Number(form.get("completionRunDistance"));
+        const time = String(form.get("completionRunTime") ?? "");
+        const pace = runPace(distance, time);
+        if (!pace) {
+          throw new Error("Completed run needs distance and time like 22:00.");
+        }
+        body.distance = distance;
+        body.time = time;
+        body.pace = pace;
+        actualJson = { distance, time, pace };
+      } else {
+        const distance = Number(form.get("completionSprintDistance"));
+        const time = Number(form.get("completionSprintTime"));
+        const feeling = String(form.get("completionSprintFeeling") ?? "");
+        if (!distance || !time) {
+          throw new Error("Completed sprint needs distance and time.");
+        }
+        body.sprint_feeling = feeling || null;
+        body.sprint_sets = [{ distance_m: distance, time_sec: time }];
+        actualJson = { sprintSets: [{ distance, time }], feeling };
+      }
+
+      const workout = await apiRequest<Workout>(
+        `/api/training-spaces/${selectedSpace.id}/workouts`,
+        { method: "POST", body: JSON.stringify(body) },
+        token,
+      );
+      await apiRequest<PlannedSession>(
+        `/api/training-spaces/${selectedSpace.id}/planned-sessions/${session.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            linked_workout_id: workout.id,
+            status: "completed",
+            actual_json: actualJson,
+            modification_note: notes,
+          }),
+        },
+        token,
+      );
+
+      await loadTrainingHistory(token, selectedSpace.id);
+      setCalendarSelection({ type: "planned", id: session.id });
+      setCompletionStatus("Planned session completed.");
+      formElement.reset();
+    } catch (error) {
+      setCompletionStatus(error instanceof Error ? error.message : "Could not complete planned session.");
+    } finally {
+      setIsCompletingSessionId("");
+    }
+  }
+
   async function handleExportData() {
     if (!token || !selectedSpace) {
       return;
@@ -1309,26 +1393,99 @@ export function App() {
                 )}
 
                 {selectedCalendarSession && (
-                  <div className="calendar-detail-grid">
-                    <div>
-                      <strong>Date</strong>
-                      <p>{formatDate(selectedCalendarSession.date)}</p>
+                  <>
+                    <div className="calendar-detail-grid">
+                      <div>
+                        <strong>Date</strong>
+                        <p>{formatDate(selectedCalendarSession.date)}</p>
+                      </div>
+                      <div>
+                        <strong>Planned</strong>
+                        <p>{activityLabel(selectedCalendarSession.type)} • {summarizePlanDetails(selectedCalendarSession)}</p>
+                      </div>
+                      <div>
+                        <strong>Actual</strong>
+                        <p>
+                          {selectedCalendarSessionWorkout
+                            ? `${activityLabel(selectedCalendarSessionWorkout.activity)} • ${summarizeWorkout(selectedCalendarSessionWorkout) || "Logged workout"}`
+                            : selectedCalendarSession.actual_json
+                              ? "Actual data saved"
+                              : "No actual linked yet"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <strong>Planned</strong>
-                      <p>{activityLabel(selectedCalendarSession.type)} • {summarizePlanDetails(selectedCalendarSession)}</p>
-                    </div>
-                    <div>
-                      <strong>Actual</strong>
-                      <p>
-                        {selectedCalendarSessionWorkout
-                          ? `${activityLabel(selectedCalendarSessionWorkout.activity)} • ${summarizeWorkout(selectedCalendarSessionWorkout) || "Logged workout"}`
-                          : selectedCalendarSession.actual_json
-                            ? "Actual data saved"
-                            : "No actual linked yet"}
-                      </p>
-                    </div>
-                  </div>
+
+                    {!selectedCalendarSessionWorkout && selectedCalendarSession.status === "planned" && (
+                      selectedCalendarSession.type === "run" || selectedCalendarSession.type === "sprint"
+                    ) && (
+                      <form
+                        className="completion-form"
+                        onSubmit={(event) => void handleCompletePlannedSession(event, selectedCalendarSession)}
+                      >
+                        <h4>Log & complete</h4>
+                        {selectedCalendarSession.type === "run" ? (
+                          <div className="training-form-grid">
+                            <label>
+                              Distance (km)
+                              <input
+                                name="completionRunDistance"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={typeof selectedCalendarSession.details_json.distance === "number" ? selectedCalendarSession.details_json.distance : ""}
+                                required
+                              />
+                            </label>
+                            <label>
+                              Time
+                              <input name="completionRunTime" inputMode="numeric" placeholder="22:00" required />
+                            </label>
+                          </div>
+                        ) : (
+                          <div className="training-form-grid">
+                            <label>
+                              Distance (m)
+                              <input
+                                name="completionSprintDistance"
+                                type="number"
+                                min="1"
+                                step="1"
+                                defaultValue={
+                                  typeof selectedCalendarSprintBlock.distanceM === "number"
+                                    ? selectedCalendarSprintBlock.distanceM
+                                    : ""
+                                }
+                                required
+                              />
+                            </label>
+                            <label>
+                              Time (sec)
+                              <input name="completionSprintTime" type="number" min="0" step="0.01" required />
+                            </label>
+                            <label>
+                              Feeling
+                              <select name="completionSprintFeeling">
+                                <option value="">Select feeling</option>
+                                <option value="sharp">Sharp</option>
+                                <option value="solid">Solid</option>
+                                <option value="flat">Flat</option>
+                                <option value="sluggish">Sluggish</option>
+                                <option value="pain">Pain</option>
+                              </select>
+                            </label>
+                          </div>
+                        )}
+                        <label>
+                          Notes
+                          <textarea name="completionNotes" rows={2} placeholder="What changed or how did it feel?" />
+                        </label>
+                        {completionStatus && <p className="form-status neutral-status" role="status">{completionStatus}</p>}
+                        <button type="submit" disabled={isCompletingSessionId === selectedCalendarSession.id}>
+                          {isCompletingSessionId === selectedCalendarSession.id ? "Completing" : "Complete planned session"}
+                        </button>
+                      </form>
+                    )}
+                  </>
                 )}
               </section>
             )}

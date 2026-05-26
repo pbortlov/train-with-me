@@ -518,6 +518,18 @@ label {
   margin: 6px 0 0;
 }
 
+.completion-form {
+  border-top: 1px solid #edf2ef;
+  display: grid;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 16px;
+}
+
+.completion-form h4 {
+  margin: 0;
+}
+
 .add-training-card {
   border: 1px solid #edf2ef;
   border-radius: 8px;

@@ -11,8 +11,8 @@ from app.auth.schemas import RegisterRequest
 from app.db.base import Base
 from app.db.models import User
 from app.main import app
-from app.plans.routes import create_planned_session, list_planned_sessions
-from app.plans.schemas import PlannedSessionCreateRequest
+from app.plans.routes import create_planned_session, list_planned_sessions, update_planned_session
+from app.plans.schemas import PlannedSessionCreateRequest, PlannedSessionUpdateRequest
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
 from app.workouts.routes import create_workout
@@ -190,6 +190,89 @@ def test_create_planned_session_rejects_cross_space_workout_link(db_session: Ses
     }
 
 
+def test_update_planned_session_links_completed_workout(db_session: Session) -> None:
+    user = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, user)
+    session = create_planned_session(
+        space.id,
+        PlannedSessionCreateRequest(type="run", title="Easy run", date=date(2026, 5, 22), details_json={"distance": 5}),
+        user,
+        db_session,
+    )
+    workout = create_workout(
+        space.id,
+        WorkoutCreateRequest(
+            activity="run",
+            date=date(2026, 5, 22),
+            distance=5,
+            time="22:00",
+            pace=4.4,
+        ),
+        user,
+        db_session,
+    )
+
+    response = update_planned_session(
+        space.id,
+        session.id,
+        PlannedSessionUpdateRequest(
+            linked_workout_id=workout.id,
+            status="completed",
+            actual_json={"distance": 5, "time": "22:00", "pace": 4.4},
+            modification_note="Felt easy",
+        ),
+        user,
+        db_session,
+    )
+
+    assert response.linked_workout_id == workout.id
+    assert response.status == "completed"
+    assert response.actual_json == {"distance": 5, "time": "22:00", "pace": 4.4}
+    assert response.modification_note == "Felt easy"
+
+
+def test_update_planned_session_rejects_cross_space_workout_link(db_session: Session) -> None:
+    user = create_user(db_session, "athlete@example.com")
+    other_user = create_user(db_session, "other@example.com")
+    space = create_space(db_session, user)
+    other_space = create_space(db_session, other_user)
+    session = create_planned_session(
+        space.id,
+        PlannedSessionCreateRequest(type="run", title="Easy run", date=date(2026, 5, 22), details_json={"distance": 5}),
+        user,
+        db_session,
+    )
+    workout = create_workout(
+        other_space.id,
+        WorkoutCreateRequest(
+            activity="run",
+            date=date(2026, 5, 22),
+            distance=5,
+            time="22:00",
+            pace=4.4,
+        ),
+        other_user,
+        db_session,
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        update_planned_session(
+            space.id,
+            session.id,
+            PlannedSessionUpdateRequest(linked_workout_id=workout.id, status="completed"),
+            user,
+            db_session,
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == {
+        "error": {
+            "code": "workout_not_found",
+            "message": "Workout was not found.",
+        },
+    }
+
+
 def test_planned_session_routes_are_registered() -> None:
     route_paths = {
         route.path
@@ -198,3 +281,4 @@ def test_planned_session_routes_are_registered() -> None:
     }
 
     assert "/api/training-spaces/{training_space_id}/planned-sessions" in route_paths
+    assert "/api/training-spaces/{training_space_id}/planned-sessions/{session_id}" in route_paths

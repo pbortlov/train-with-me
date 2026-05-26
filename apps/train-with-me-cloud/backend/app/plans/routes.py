@@ -8,7 +8,7 @@ from app.auth.routes import get_current_user
 from app.db.models import PlannedSession, User, Workout
 from app.db.session import get_db_session
 from app.workouts.routes import workouts_error
-from app.plans.schemas import PlannedSessionCreateRequest, PlannedSessionResponse
+from app.plans.schemas import PlannedSessionCreateRequest, PlannedSessionResponse, PlannedSessionUpdateRequest
 
 router = APIRouter()
 
@@ -49,6 +49,21 @@ def validate_linked_workout(db: Session, training_space_id: str, workout_id: str
     )
     if not exists:
         raise workouts_error("workout_not_found", "Workout was not found.", status.HTTP_404_NOT_FOUND)
+
+
+def get_visible_planned_session(db: Session, training_space_id: str, session_id: str, user_id: str) -> PlannedSession:
+    from app.workouts.routes import require_membership
+
+    require_membership(db, training_space_id, user_id)
+    planned_session = db.scalar(
+        select(PlannedSession).where(
+            PlannedSession.id == session_id,
+            PlannedSession.training_space_id == training_space_id,
+        ),
+    )
+    if not planned_session:
+        raise workouts_error("planned_session_not_found", "Planned session was not found.", status.HTTP_404_NOT_FOUND)
+    return planned_session
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -104,3 +119,29 @@ def list_planned_sessions(
         .order_by(PlannedSession.date, PlannedSession.created_at, PlannedSession.id),
     ).all()
     return [planned_session_response(session) for session in sessions]
+
+
+@router.patch("/{session_id}")
+def update_planned_session(
+    training_space_id: str,
+    session_id: str,
+    payload: PlannedSessionUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db_session)],
+) -> PlannedSessionResponse:
+    planned_session = get_visible_planned_session(db, training_space_id, session_id, current_user.id)
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if "linked_workout_id" in update_data:
+        validate_linked_workout(db, training_space_id, payload.linked_workout_id)
+        planned_session.linked_workout_id = payload.linked_workout_id
+    if "actual_json" in update_data:
+        planned_session.actual_json = payload.actual_json
+    if "status" in update_data and payload.status is not None:
+        planned_session.status = payload.status
+    if "modification_note" in update_data and payload.modification_note is not None:
+        planned_session.modification_note = payload.modification_note
+
+    db.commit()
+    db.refresh(planned_session)
+    return planned_session_response(planned_session)
