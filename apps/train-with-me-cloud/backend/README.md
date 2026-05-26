@@ -33,6 +33,18 @@ Alembic migrations live in `migrations/`.
 python -m alembic upgrade head
 ```
 
+Migration rules:
+
+- Keep Alembic `revision` and `down_revision` values at 32 characters or less
+  for PostgreSQL compatibility.
+- Prefer compact IDs like `0001_initial_schema` instead of long descriptions.
+- Test schema migrations against PostgreSQL with Podman before relying on them
+  in containers.
+- Keep Alembic in the backend container only. The frontend container never runs
+  database migrations.
+- Treat V1 JSON training import as application data import, not an Alembic
+  schema migration.
+
 The initial schema creates:
 
 - `users`

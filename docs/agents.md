@@ -7,6 +7,14 @@ All agents should respect the project principle:
 - default UX must stay simple for non-technical users
 - advanced behavior belongs behind geek / coach mode
 
+## Database Migration Rules
+- Alembic `revision` and `down_revision` values must be 32 characters or less because PostgreSQL stores them in Alembic's default `alembic_version.version_num` column.
+- Use compact migration IDs such as `0001_initial_schema`, `0002_coach_invites`, or `0003_workout_logging`.
+- Test new migrations against PostgreSQL through Podman containers, not only against SQLite.
+- Backend services own schema migrations. Frontend containers must not install or run Alembic.
+- Importing V1 JSON training data is application data import, not an Alembic schema migration.
+- Before finishing migration work, verify a clean database can upgrade from empty to head.
+
 ## Agents
 
 ### Product Planner Agent
