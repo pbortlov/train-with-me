@@ -48,6 +48,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -e ".[dev]"
 python -m pytest
+python -m alembic upgrade head
 python -m uvicorn app.main:app --reload
 ```
 
@@ -56,10 +57,10 @@ The API docs are available at `/docs` when the development server is running.
 ## Container
 
 The backend image is built by the local compose file in `../infra/compose.yaml`.
-It runs:
+It applies pending Alembic migrations before starting Uvicorn:
 
 ```text
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ## Environment Variables

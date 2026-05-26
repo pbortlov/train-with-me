@@ -26,6 +26,8 @@ curl http://localhost:8080/api/health
 ```
 
 The API container uses `TWM_DATABASE_URL` to reach the `postgres` service.
+On startup, the API container applies pending Alembic migrations before serving
+requests, so a fresh Postgres volume is initialized automatically.
 The frontend container serves static assets and proxies `/api` requests to the
 API service over the compose network.
 
