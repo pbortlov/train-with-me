@@ -677,6 +677,69 @@ label {
   margin: 0;
 }
 
+.review-summary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  margin-top: 18px;
+}
+
+.review-summary article {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.review-summary span {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.review-summary small {
+  color: #52675e;
+}
+
+.review-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.review-card {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.review-card h4,
+.review-card p {
+  margin: 0;
+}
+
+.review-card p,
+.review-diff-grid p {
+  color: #52675e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.review-diff-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.review-diff-grid > div {
+  background: #fbfdfc;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  padding: 12px;
+}
+
 .history-item {
   border: 1px solid #edf2ef;
   border-radius: 8px;
@@ -756,6 +819,7 @@ label {
   .history-grid,
   .planner-header-top,
   .program-grid,
+  .review-diff-grid,
   .space-select-row,
   .inline-space-form,
   .training-form-grid {

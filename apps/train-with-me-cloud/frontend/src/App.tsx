@@ -363,6 +363,12 @@ export function App() {
   const weekLabel = `${formatDate(calendarDays[0]?.key ?? calendarWeekStart)} - ${formatDate(calendarDays[6]?.key ?? calendarWeekStart)}`;
   const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
   const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
+  const reviewCounts = {
+    planned: plannedSessions.filter((session) => session.status === "planned").length,
+    completed: plannedSessions.filter((session) => session.status === "completed").length,
+    modified: plannedSessions.filter((session) => session.status === "modified").length,
+    missed: plannedSessions.filter((session) => session.status === "missed").length,
+  };
 
   const loadSpaces = useCallback(async (activeToken: string) => {
     const nextSpaces = await apiRequest<TrainingSpace[]>("/api/training-spaces", {}, activeToken);
@@ -1407,7 +1413,64 @@ export function App() {
           <article className="workspace-panel">
             <p className="panel-kicker">Review</p>
             <h2>Planned vs actual</h2>
-            <p className="empty-state">Completed and modified planned sessions will appear here.</p>
+
+            <div className="review-summary">
+              <article>
+                <span>{reviewCounts.completed}</span>
+                <small>Completed</small>
+              </article>
+              <article>
+                <span>{reviewCounts.modified}</span>
+                <small>Modified</small>
+              </article>
+              <article>
+                <span>{reviewCounts.missed}</span>
+                <small>Missed</small>
+              </article>
+              <article>
+                <span>{reviewCounts.planned}</span>
+                <small>Still planned</small>
+              </article>
+            </div>
+
+            <div className="review-list">
+              {plannedSessions.length ? plannedSessions.map((session) => {
+                const linkedWorkout = session.linked_workout_id ? workoutsById.get(session.linked_workout_id) : null;
+                return (
+                  <article className="review-card" key={session.id}>
+                    <div className="item-main">
+                      <div>
+                        <h4>{session.title}</h4>
+                        <p>{formatDate(session.date)} • {activityLabel(session.type)}</p>
+                      </div>
+                      <span className="status-badge">{session.status}</span>
+                    </div>
+                    <div className="review-diff-grid">
+                      <div>
+                        <strong>Planned</strong>
+                        <p>{summarizePlanDetails(session)}</p>
+                      </div>
+                      <div>
+                        <strong>Actual</strong>
+                        <p>
+                          {linkedWorkout
+                            ? `${activityLabel(linkedWorkout.activity)} • ${summarizeWorkout(linkedWorkout) || "Logged workout"}`
+                            : session.actual_json
+                              ? "Actual data saved"
+                              : "No actual linked yet"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="badge-row">
+                      {isHistorical(session.source, session.coach_editable) && <span className="history-badge">Historical</span>}
+                      {session.original_v1_id && <span className="source-badge">V1</span>}
+                    </div>
+                  </article>
+                );
+              }) : (
+                <p className="empty-state">No planned sessions to review yet.</p>
+              )}
+            </div>
           </article>
         </section>
       )}
