@@ -369,6 +369,30 @@ export function App() {
     modified: plannedSessions.filter((session) => session.status === "modified").length,
     missed: plannedSessions.filter((session) => session.status === "missed").length,
   };
+  const reviewedSessionCount = reviewCounts.completed + reviewCounts.modified + reviewCounts.missed;
+  const adherencePercent = reviewedSessionCount
+    ? Math.round(((reviewCounts.completed + reviewCounts.modified) / reviewedSessionCount) * 100)
+    : 0;
+  const activityCounts = {
+    strength: workouts.filter((workout) => workout.activity === "strength").length,
+    run: workouts.filter((workout) => workout.activity === "run").length,
+    sprint: workouts.filter((workout) => workout.activity === "sprint").length,
+  };
+  const bestRunDistance = workouts
+    .filter((workout) => workout.activity === "run" && workout.distance != null)
+    .reduce((best, workout) => Math.max(best, workout.distance ?? 0), 0);
+  const bestSprintTime = workouts
+    .flatMap((workout) => workout.sprint_sets)
+    .reduce((best, sprintSet) => Math.min(best, sprintSet.time_sec), Number.POSITIVE_INFINITY);
+  const maxStrengthWeight = workouts
+    .flatMap((workout) => workout.strength_exercises)
+    .flatMap((exercise) => exercise.sets)
+    .filter((set) => set.load_type === "kg" && set.weight != null)
+    .reduce((best, set) => Math.max(best, set.weight ?? 0), 0);
+  const importedGoals = v1Metadata.find((row) => row.entityType === "goals")?.payload ?? null;
+  const activeGoals = importedGoals && typeof importedGoals.active === "object" && importedGoals.active != null
+    ? Object.values(importedGoals.active as Record<string, unknown>).filter(Boolean).length
+    : 0;
 
   const loadSpaces = useCallback(async (activeToken: string) => {
     const nextSpaces = await apiRequest<TrainingSpace[]>("/api/training-spaces", {}, activeToken);
@@ -1480,7 +1504,67 @@ export function App() {
           <article className="workspace-panel">
             <p className="panel-kicker">Stats</p>
             <h2>Progress</h2>
-            <p className="empty-state">Goals, adherence, and charts will be added in a later step.</p>
+
+            <div className="stats-summary">
+              <article>
+                <span>{workouts.length}</span>
+                <small>Total workouts</small>
+              </article>
+              <article>
+                <span>{plannedSessions.length}</span>
+                <small>Planned sessions</small>
+              </article>
+              <article>
+                <span>{adherencePercent}%</span>
+                <small>Reviewed adherence</small>
+              </article>
+              <article>
+                <span>{activeGoals}</span>
+                <small>Imported active goals</small>
+              </article>
+            </div>
+
+            <div className="stats-grid">
+              <section className="stats-section" aria-label="Activity totals">
+                <h3>Activity totals</h3>
+                <div className="stats-list">
+                  <div><strong>Strength</strong><span>{activityCounts.strength}</span></div>
+                  <div><strong>Run</strong><span>{activityCounts.run}</span></div>
+                  <div><strong>Sprint</strong><span>{activityCounts.sprint}</span></div>
+                </div>
+              </section>
+
+              <section className="stats-section" aria-label="Best results">
+                <h3>Best results</h3>
+                <div className="stats-list">
+                  <div><strong>Longest run</strong><span>{bestRunDistance ? `${formatNumber(bestRunDistance)} km` : "No data"}</span></div>
+                  <div><strong>Best sprint</strong><span>{Number.isFinite(bestSprintTime) ? `${formatNumber(bestSprintTime)} sec` : "No data"}</span></div>
+                  <div><strong>Highest strength load</strong><span>{maxStrengthWeight ? `${formatNumber(maxStrengthWeight)} kg` : "No data"}</span></div>
+                </div>
+              </section>
+
+              <section className="stats-section" aria-label="Imported goals">
+                <h3>Imported goals</h3>
+                {importedGoals ? (
+                  <div className="stats-list">
+                    <div>
+                      <strong>Strength goal</strong>
+                      <span>{typeof importedGoals.strength === "number" ? `${formatNumber(importedGoals.strength)} kg` : "No data"}</span>
+                    </div>
+                    <div>
+                      <strong>Active goals</strong>
+                      <span>{activeGoals}</span>
+                    </div>
+                    <div>
+                      <strong>Goal history</strong>
+                      <span>{Array.isArray(importedGoals.history) ? importedGoals.history.length : 0}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="empty-state">Import V1 data to see goals here.</p>
+                )}
+              </section>
+            </div>
           </article>
         </section>
       )}
