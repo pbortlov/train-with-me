@@ -1,6 +1,6 @@
 """initial user and training space schema
 
-Revision ID: 0001_initial_user_training_space_schema
+Revision ID: 0001_initial_schema
 Revises: 
 Create Date: 2026-05-20
 """
@@ -11,7 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision: str = "0001_initial_user_training_space_schema"
+revision: str = "0001_initial_schema"
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

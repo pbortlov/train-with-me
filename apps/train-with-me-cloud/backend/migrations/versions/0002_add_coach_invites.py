@@ -1,7 +1,7 @@
 """add coach invites
 
 Revision ID: 0002_add_coach_invites
-Revises: 0001_initial_user_training_space_schema
+Revises: 0001_initial_schema
 Create Date: 2026-05-21
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = "0002_add_coach_invites"
-down_revision: str | None = "0001_initial_user_training_space_schema"
+down_revision: str | None = "0001_initial_schema"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
