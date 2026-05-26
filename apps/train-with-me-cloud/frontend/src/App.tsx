@@ -102,6 +102,34 @@ type CoachSuggestion = {
   created_at: string;
 };
 
+type V1BackupSummary = {
+  version: number | null;
+  exportedAt: string | null;
+  workoutCount: number;
+  plannedSessionCount: number;
+  goalCount: number;
+  phaseTemplateCount: number;
+  phaseInstanceCount: number;
+};
+
+type V1ImportPreview = {
+  valid: boolean;
+  summary: V1BackupSummary | null;
+  warnings: string[];
+  unsupportedFields: string[];
+};
+
+type V1ImportCommit = {
+  importedWorkoutCount: number;
+  existingWorkoutCount: number;
+  importedPlannedSessionCount: number;
+  existingPlannedSessionCount: number;
+  importedGoalCount: number;
+  importedPhaseTemplateCount: number;
+  importedPhaseInstanceCount: number;
+  warnings: string[];
+};
+
 type ApiErrorPayload = {
   detail?: {
     error?: {
@@ -272,6 +300,10 @@ export function App() {
   const [inviteToken, setInviteToken] = useState(() => new URLSearchParams(window.location.search).get("coachInvite") ?? "");
   const [historyStatus, setHistoryStatus] = useState("");
   const [trainingFormStatus, setTrainingFormStatus] = useState("");
+  const [importStatus, setImportStatus] = useState("");
+  const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
+  const [importBackup, setImportBackup] = useState<Record<string, unknown> | null>(null);
+  const [importCommit, setImportCommit] = useState<V1ImportCommit | null>(null);
   const [inviteStatus, setInviteStatus] = useState("");
   const [suggestionStatus, setSuggestionStatus] = useState("");
   const [isLoadingSession, setIsLoadingSession] = useState(Boolean(token));
@@ -279,6 +311,8 @@ export function App() {
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isSavingTraining, setIsSavingTraining] = useState(false);
+  const [isPreviewingImport, setIsPreviewingImport] = useState(false);
+  const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
   const [isCreatingSuggestion, setIsCreatingSuggestion] = useState(false);
@@ -632,6 +666,72 @@ export function App() {
       setTrainingFormStatus(error instanceof Error ? error.message : "Could not save training.");
     } finally {
       setIsSavingTraining(false);
+    }
+  }
+
+  async function handleImportFileChange(event: FormEvent<HTMLInputElement>) {
+    if (!token) {
+      return;
+    }
+    const file = event.currentTarget.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setIsPreviewingImport(true);
+    setImportStatus("");
+    setImportPreview(null);
+    setImportBackup(null);
+    setImportCommit(null);
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Backup file must contain a JSON object.");
+      }
+      const backup = parsed as Record<string, unknown>;
+      const preview = await apiRequest<V1ImportPreview>(
+        "/api/imports/v1/preview",
+        { method: "POST", body: JSON.stringify(backup) },
+        token,
+      );
+      setImportPreview(preview);
+      setImportBackup(preview.valid ? backup : null);
+      setImportStatus(preview.valid ? "Backup preview is ready." : "Backup preview is invalid.");
+    } catch (error) {
+      setImportStatus(error instanceof Error ? error.message : "Could not preview backup.");
+    } finally {
+      setIsPreviewingImport(false);
+    }
+  }
+
+  async function handleCommitImport() {
+    if (!token || !selectedSpace || !importBackup) {
+      return;
+    }
+
+    setIsCommittingImport(true);
+    setImportStatus("");
+    setImportCommit(null);
+    try {
+      const result = await apiRequest<V1ImportCommit>(
+        "/api/imports/v1/commit",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            trainingSpaceId: selectedSpace.id,
+            backup: importBackup,
+          }),
+        },
+        token,
+      );
+      setImportCommit(result);
+      setImportStatus("Backup imported.");
+      await loadTrainingHistory(token, selectedSpace.id);
+      setActiveView("calendar");
+    } catch (error) {
+      setImportStatus(error instanceof Error ? error.message : "Could not import backup.");
+    } finally {
+      setIsCommittingImport(false);
     }
   }
 
@@ -1234,7 +1334,78 @@ export function App() {
           <article className="workspace-panel">
             <p className="panel-kicker">Data</p>
             <h2>Cloud data</h2>
-            <p className="empty-state">V1 JSON import will be added here. Coach invite tools stay available below for now.</p>
+            <p className="empty-state">Import a V1 JSON backup into the selected training space.</p>
+
+            <div className="import-panel">
+              <label>
+                V1 backup JSON
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={(event) => void handleImportFileChange(event)}
+                  disabled={isPreviewingImport || isCommittingImport}
+                />
+              </label>
+
+              {importPreview?.summary && (
+                <div className="import-summary" aria-label="Import preview">
+                  <article>
+                    <span>{importPreview.summary.workoutCount}</span>
+                    <small>Workouts</small>
+                  </article>
+                  <article>
+                    <span>{importPreview.summary.plannedSessionCount}</span>
+                    <small>Plans</small>
+                  </article>
+                  <article>
+                    <span>{importPreview.summary.goalCount}</span>
+                    <small>Goals</small>
+                  </article>
+                  <article>
+                    <span>{importPreview.summary.phaseTemplateCount + importPreview.summary.phaseInstanceCount}</span>
+                    <small>Phase items</small>
+                  </article>
+                </div>
+              )}
+
+              {importPreview && !importPreview.valid && (
+                <p className="form-status">Backup is invalid and cannot be imported.</p>
+              )}
+
+              {importPreview?.warnings.length ? (
+                <div className="import-messages">
+                  <strong>Warnings</strong>
+                  <ul>
+                    {importPreview.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+
+              {importPreview?.unsupportedFields.length ? (
+                <p className="neutral-status">Unsupported fields: {importPreview.unsupportedFields.join(", ")}</p>
+              ) : null}
+
+              {importCommit && (
+                <div className="import-messages">
+                  <strong>Last import</strong>
+                  <p>
+                    Imported {importCommit.importedWorkoutCount} workout(s), {importCommit.importedPlannedSessionCount} planned session(s),
+                    and {importCommit.importedGoalCount + importCommit.importedPhaseTemplateCount + importCommit.importedPhaseInstanceCount} metadata item(s).
+                    Existing: {importCommit.existingWorkoutCount + importCommit.existingPlannedSessionCount}.
+                  </p>
+                </div>
+              )}
+
+              {importStatus && <p className="form-status neutral-status" role="status">{importStatus}</p>}
+              <button
+                type="button"
+                className="primary-action"
+                onClick={() => void handleCommitImport()}
+                disabled={!importBackup || !selectedSpace || isCommittingImport}
+              >
+                {isCommittingImport ? "Importing" : "Import into selected space"}
+              </button>
+            </div>
           </article>
 
           <article className="workspace-panel collab-panel" aria-label="Coach invite">

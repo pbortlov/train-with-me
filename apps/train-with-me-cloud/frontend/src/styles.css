@@ -541,6 +541,49 @@ label {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.import-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.import-summary {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.import-summary article {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.import-summary span {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.import-summary small,
+.import-messages {
+  color: #52675e;
+}
+
+.import-messages {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  padding: 14px;
+}
+
+.import-messages p,
+.import-messages ul {
+  margin: 8px 0 0;
+}
+
 .history-grid {
   display: grid;
   gap: 16px;
