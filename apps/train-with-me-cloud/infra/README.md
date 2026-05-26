@@ -2,12 +2,12 @@
 
 Local container and future OpenShift assets for Train With Me Cloud.
 
-## Local Compose
+## Local Podman Compose
 
 From `apps/train-with-me-cloud/infra/`:
 
 ```text
-docker compose -f compose.yaml up --build
+podman compose -f compose.yaml up --build
 ```
 
 Services:
@@ -30,6 +30,41 @@ On startup, the API container applies pending Alembic migrations before serving
 requests, so a fresh Postgres volume is initialized automatically.
 The frontend container serves static assets and proxies `/api` requests to the
 API service over the compose network.
+
+## Keeping Local Data
+
+PostgreSQL data is stored in the named compose volume `infra_postgres-data`.
+Normal rebuilds keep this volume, so registered users and training spaces
+survive container rebuilds.
+
+Use this for everyday development:
+
+```text
+podman compose -f compose.yaml up --build
+```
+
+If only one service changed, rebuild just that service:
+
+```text
+podman compose -f compose.yaml up --build api
+podman compose -f compose.yaml up --build frontend
+```
+
+To stop containers while keeping database data:
+
+```text
+podman compose -f compose.yaml down
+```
+
+Only wipe the local database when you intentionally want a fresh start:
+
+```text
+podman compose -f compose.yaml down -v
+```
+
+Do not use `down -v`, `podman volume rm infra_postgres-data`, or
+`podman system prune --volumes` during normal development unless losing local
+users and training data is expected.
 
 ## Revert Notes
 
