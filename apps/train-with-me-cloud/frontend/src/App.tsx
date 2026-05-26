@@ -2,6 +2,9 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 type AuthMode = "login" | "register";
 type CloudView = "calendar" | "programs" | "review" | "stats" | "data";
+type AddTrainingMode = "log" | "plan";
+type Activity = "strength" | "run" | "sprint";
+type PlannedType = "run" | "sprint";
 
 type User = {
   id: string;
@@ -147,6 +150,28 @@ function startOfWeek(value: Date): Date {
   return next;
 }
 
+function parseDurationSeconds(value: string): number | null {
+  const parts = value.split(":").map((part) => Number(part));
+  if (parts.some((part) => !Number.isFinite(part) || part < 0)) {
+    return null;
+  }
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  return null;
+}
+
+function runPace(distance: number, time: string): number | null {
+  const seconds = parseDurationSeconds(time);
+  if (!seconds || distance <= 0) {
+    return null;
+  }
+  return seconds / 60 / distance;
+}
+
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
 }
@@ -236,6 +261,9 @@ export function App() {
   const [authStatus, setAuthStatus] = useState("");
   const [spaceStatus, setSpaceStatus] = useState("");
   const [activeView, setActiveView] = useState<CloudView>("calendar");
+  const [addTrainingMode, setAddTrainingMode] = useState<AddTrainingMode>("log");
+  const [actualActivity, setActualActivity] = useState<Activity>("strength");
+  const [plannedType, setPlannedType] = useState<PlannedType>("run");
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
@@ -243,12 +271,14 @@ export function App() {
   const [lastInvite, setLastInvite] = useState<CoachInvite | null>(null);
   const [inviteToken, setInviteToken] = useState(() => new URLSearchParams(window.location.search).get("coachInvite") ?? "");
   const [historyStatus, setHistoryStatus] = useState("");
+  const [trainingFormStatus, setTrainingFormStatus] = useState("");
   const [inviteStatus, setInviteStatus] = useState("");
   const [suggestionStatus, setSuggestionStatus] = useState("");
   const [isLoadingSession, setIsLoadingSession] = useState(Boolean(token));
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isSavingTraining, setIsSavingTraining] = useState(false);
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
   const [isCreatingSuggestion, setIsCreatingSuggestion] = useState(false);
@@ -307,6 +337,15 @@ export function App() {
     await loadSpaces(nextToken);
   }, [loadSpaces]);
 
+  const loadTrainingHistory = useCallback(async (activeToken: string, trainingSpaceId: string) => {
+    const [nextWorkouts, nextPlannedSessions] = await Promise.all([
+      apiRequest<Workout[]>(`/api/training-spaces/${trainingSpaceId}/workouts`, {}, activeToken),
+      apiRequest<PlannedSession[]>(`/api/training-spaces/${trainingSpaceId}/planned-sessions`, {}, activeToken),
+    ]);
+    setWorkouts(nextWorkouts);
+    setPlannedSessions(nextPlannedSessions);
+  }, []);
+
   useEffect(() => {
     if (!token) {
       setIsLoadingSession(false);
@@ -355,16 +394,11 @@ export function App() {
     let isActive = true;
     setIsLoadingHistory(true);
     setHistoryStatus("");
-    Promise.all([
-      apiRequest<Workout[]>(`/api/training-spaces/${selectedSpaceId}/workouts`, {}, token),
-      apiRequest<PlannedSession[]>(`/api/training-spaces/${selectedSpaceId}/planned-sessions`, {}, token),
-    ])
-      .then(([nextWorkouts, nextPlannedSessions]) => {
+    loadTrainingHistory(token, selectedSpaceId)
+      .then(() => {
         if (!isActive) {
           return;
         }
-        setWorkouts(nextWorkouts);
-        setPlannedSessions(nextPlannedSessions);
       })
       .catch((error: unknown) => {
         if (!isActive) {
@@ -383,7 +417,7 @@ export function App() {
     return () => {
       isActive = false;
     };
-  }, [selectedSpaceId, token]);
+  }, [loadTrainingHistory, selectedSpaceId, token]);
 
   const loadCoachSuggestions = useCallback(async (activeToken: string, trainingSpaceId: string, role: string) => {
     if (role !== "owner") {
@@ -494,6 +528,110 @@ export function App() {
       setInviteStatus(error instanceof Error ? error.message : "Could not create invite.");
     } finally {
       setIsCreatingInvite(false);
+    }
+  }
+
+  async function handleTrainingSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const date = String(form.get("trainingDate") ?? "");
+    const notes = String(form.get("trainingNotes") ?? "");
+
+    setIsSavingTraining(true);
+    setTrainingFormStatus("");
+    try {
+      if (addTrainingMode === "log") {
+        const activity = String(form.get("actualActivity") ?? actualActivity) as Activity;
+        const body: Record<string, unknown> = {
+          activity,
+          date,
+          notes,
+        };
+
+        if (activity === "run") {
+          const distance = Number(form.get("runDistance"));
+          const time = String(form.get("runTime") ?? "");
+          const pace = runPace(distance, time);
+          if (!pace) {
+            throw new Error("Run workouts need distance and time like 22:00.");
+          }
+          body.distance = distance;
+          body.time = time;
+          body.pace = pace;
+        }
+
+        if (activity === "sprint") {
+          body.sprint_feeling = String(form.get("sprintFeeling") ?? "") || null;
+          body.sprint_sets = [{
+            distance_m: Number(form.get("sprintDistance")),
+            time_sec: Number(form.get("sprintTime")),
+          }];
+        }
+
+        if (activity === "strength") {
+          const loadType = String(form.get("strengthLoadType") ?? "kg");
+          body.strength_exercises = [{
+            name: String(form.get("exerciseName") ?? ""),
+            sets: [{
+              reps: Number(form.get("strengthReps")),
+              weight: loadType === "kg" ? Number(form.get("strengthWeight")) : null,
+              load_type: loadType,
+              band_color: loadType === "band" ? String(form.get("bandColor") ?? "") : "",
+            }],
+          }];
+        }
+
+        await apiRequest<Workout>(
+          `/api/training-spaces/${selectedSpace.id}/workouts`,
+          { method: "POST", body: JSON.stringify(body) },
+          token,
+        );
+        setTrainingFormStatus("Workout saved.");
+      } else {
+        const type = String(form.get("plannedType") ?? plannedType) as PlannedType;
+        const details = type === "run"
+          ? {
+              distance: Number(form.get("plannedRunDistance")) || null,
+              paceGoal: Number(form.get("plannedRunPace")) || null,
+            }
+          : {
+              blocks: [{
+                reps: Number(form.get("plannedSprintReps")) || 1,
+                distanceM: Number(form.get("plannedSprintDistance")) || 100,
+                targetTimeSec: Number(form.get("plannedSprintTargetTime")) || null,
+                restSec: Number(form.get("plannedSprintRest")) || null,
+              }],
+            };
+
+        await apiRequest<PlannedSession>(
+          `/api/training-spaces/${selectedSpace.id}/planned-sessions`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              type,
+              title: String(form.get("plannedTitle") ?? ""),
+              date,
+              details_json: details,
+            }),
+          },
+          token,
+        );
+        setTrainingFormStatus("Planned session saved.");
+      }
+
+      await loadTrainingHistory(token, selectedSpace.id);
+      formElement.reset();
+      setActualActivity("strength");
+      setPlannedType("run");
+    } catch (error) {
+      setTrainingFormStatus(error instanceof Error ? error.message : "Could not save training.");
+    } finally {
+      setIsSavingTraining(false);
     }
   }
 
@@ -806,6 +944,185 @@ export function App() {
                 </article>
               ))}
             </div>
+
+            <section className="add-training-card" aria-label="Add training">
+              <div className="add-training-header">
+                <div>
+                  <p className="panel-kicker">Add training</p>
+                  <h3>{addTrainingMode === "log" ? "Log actual" : "Plan session"}</h3>
+                </div>
+                <div className="mode-toggle" aria-label="Add training mode">
+                  <button
+                    type="button"
+                    className={addTrainingMode === "log" ? "is-active" : ""}
+                    onClick={() => setAddTrainingMode("log")}
+                  >
+                    Log actual
+                  </button>
+                  <button
+                    type="button"
+                    className={addTrainingMode === "plan" ? "is-active" : ""}
+                    onClick={() => setAddTrainingMode("plan")}
+                  >
+                    Plan session
+                  </button>
+                </div>
+              </div>
+
+              <form className="training-form" onSubmit={handleTrainingSubmit}>
+                <div className="training-form-grid">
+                  <label>
+                    Date
+                    <input name="trainingDate" type="date" defaultValue={dateKey(new Date())} required />
+                  </label>
+
+                  {addTrainingMode === "log" ? (
+                    <label>
+                      Activity
+                      <select
+                        name="actualActivity"
+                        value={actualActivity}
+                        onChange={(event) => setActualActivity(event.target.value as Activity)}
+                      >
+                        <option value="strength">Strength</option>
+                        <option value="run">Run</option>
+                        <option value="sprint">Sprint</option>
+                      </select>
+                    </label>
+                  ) : (
+                    <label>
+                      Session type
+                      <select
+                        name="plannedType"
+                        value={plannedType}
+                        onChange={(event) => setPlannedType(event.target.value as PlannedType)}
+                      >
+                        <option value="run">Run</option>
+                        <option value="sprint">Sprint</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+
+                {addTrainingMode === "log" && actualActivity === "strength" && (
+                  <div className="training-form-grid">
+                    <label>
+                      Exercise
+                      <input name="exerciseName" placeholder="Back squat" required />
+                    </label>
+                    <label>
+                      Reps
+                      <input name="strengthReps" type="number" min="0" placeholder="5" required />
+                    </label>
+                    <label>
+                      Load type
+                      <select name="strengthLoadType">
+                        <option value="kg">kg</option>
+                        <option value="bodyweight">Body weight</option>
+                        <option value="band">Band</option>
+                      </select>
+                    </label>
+                    <label>
+                      Weight or band
+                      <input name="strengthWeight" type="number" min="0" step="0.1" placeholder="60" />
+                    </label>
+                    <label>
+                      Band color
+                      <input name="bandColor" placeholder="red" />
+                    </label>
+                  </div>
+                )}
+
+                {addTrainingMode === "log" && actualActivity === "run" && (
+                  <div className="training-form-grid">
+                    <label>
+                      Distance (km)
+                      <input name="runDistance" type="number" min="0" step="0.01" placeholder="5" required />
+                    </label>
+                    <label>
+                      Time
+                      <input name="runTime" inputMode="numeric" placeholder="22:00" required />
+                    </label>
+                  </div>
+                )}
+
+                {addTrainingMode === "log" && actualActivity === "sprint" && (
+                  <div className="training-form-grid">
+                    <label>
+                      Distance (m)
+                      <input name="sprintDistance" type="number" min="1" step="1" placeholder="100" required />
+                    </label>
+                    <label>
+                      Time (sec)
+                      <input name="sprintTime" type="number" min="0" step="0.01" placeholder="14.2" required />
+                    </label>
+                    <label>
+                      Feeling
+                      <select name="sprintFeeling">
+                        <option value="">Select feeling</option>
+                        <option value="sharp">Sharp</option>
+                        <option value="solid">Solid</option>
+                        <option value="flat">Flat</option>
+                        <option value="sluggish">Sluggish</option>
+                        <option value="pain">Pain</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
+
+                {addTrainingMode === "plan" && (
+                  <>
+                    <div className="training-form-grid">
+                      <label>
+                        Title
+                        <input name="plannedTitle" placeholder="Easy run" required />
+                      </label>
+                      {plannedType === "run" ? (
+                        <>
+                          <label>
+                            Distance (km)
+                            <input name="plannedRunDistance" type="number" min="0" step="0.01" placeholder="8" />
+                          </label>
+                          <label>
+                            Target pace
+                            <input name="plannedRunPace" type="number" min="0" step="0.01" placeholder="5.5" />
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <label>
+                            Reps
+                            <input name="plannedSprintReps" type="number" min="1" step="1" placeholder="6" />
+                          </label>
+                          <label>
+                            Distance (m)
+                            <input name="plannedSprintDistance" type="number" min="1" step="1" placeholder="100" />
+                          </label>
+                          <label>
+                            Target time (sec)
+                            <input name="plannedSprintTargetTime" type="number" min="0" step="0.01" placeholder="14.2" />
+                          </label>
+                          <label>
+                            Rest (sec)
+                            <input name="plannedSprintRest" type="number" min="0" step="1" placeholder="90" />
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <label>
+                  Notes
+                  <textarea name="trainingNotes" rows={3} placeholder="How did it feel or what is the plan?" />
+                </label>
+
+                {trainingFormStatus && <p className="form-status neutral-status" role="status">{trainingFormStatus}</p>}
+                <button type="submit" className="primary-action" disabled={isSavingTraining || !selectedSpace}>
+                  {isSavingTraining ? "Saving" : addTrainingMode === "log" ? "Save workout" : "Save planned session"}
+                </button>
+              </form>
+            </section>
 
             <div className="history-grid" aria-busy={isLoadingHistory}>
               <section className="history-panel" aria-label="Workouts">

@@ -495,6 +495,52 @@ label {
   border: 1px solid #b7d7cd;
 }
 
+.add-training-card {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+  padding: 18px;
+}
+
+.add-training-header {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.mode-toggle {
+  background: #edf3f0;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+
+.mode-toggle button {
+  border-color: transparent;
+  min-height: 36px;
+}
+
+.mode-toggle button.is-active {
+  background: #1f6f5b;
+  color: #ffffff;
+}
+
+.training-form {
+  display: grid;
+  gap: 14px;
+}
+
+.training-form-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .history-grid {
   display: grid;
   gap: 16px;
@@ -620,7 +666,8 @@ label {
   .history-grid,
   .planner-header-top,
   .space-select-row,
-  .inline-space-form {
+  .inline-space-form,
+  .training-form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -651,6 +698,11 @@ label {
 
   .calendar-nav button {
     flex: 1 1 140px;
+  }
+
+  .add-training-header,
+  .mode-toggle {
+    display: grid;
   }
 
   .item-main {
