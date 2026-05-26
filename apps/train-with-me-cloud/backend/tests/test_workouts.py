@@ -169,6 +169,34 @@ def test_list_workouts(db_session: Session) -> None:
     assert [workout.activity for workout in workouts] == ["sprint", "run"]
 
 
+def test_update_workout_notes(db_session: Session) -> None:
+    user = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, user)
+    workout = create_workout(
+        space.id,
+        WorkoutCreateRequest(
+            activity="run",
+            date=date(2026, 5, 21),
+            distance=5,
+            time="22:00",
+            pace=4.4,
+            notes="Initial notes",
+        ),
+        user,
+        db_session,
+    )
+
+    response = update_workout(
+        space.id,
+        workout.id,
+        WorkoutUpdateRequest(notes="Updated after review"),
+        user,
+        db_session,
+    )
+
+    assert response.notes == "Updated after review"
+
+
 def test_coach_cannot_mutate_historical_imported_workout(db_session: Session) -> None:
     owner = create_user(db_session, "athlete@example.com")
     coach = create_user(db_session, "coach@example.com")

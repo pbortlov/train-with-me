@@ -534,6 +534,18 @@ label {
   margin: 6px 0 0;
 }
 
+.workout-notes-form {
+  border-top: 1px solid #edf2ef;
+  display: grid;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 16px;
+}
+
+.workout-notes-form button {
+  justify-self: start;
+}
+
 .completion-form {
   border-top: 1px solid #edf2ef;
   display: grid;

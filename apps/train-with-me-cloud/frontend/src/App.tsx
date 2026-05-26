@@ -414,6 +414,7 @@ export function App() {
   const [programStatus, setProgramStatus] = useState("");
   const [trainingFormStatus, setTrainingFormStatus] = useState("");
   const [completionStatus, setCompletionStatus] = useState("");
+  const [workoutEditStatus, setWorkoutEditStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [exportStatus, setExportStatus] = useState("");
   const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
@@ -428,6 +429,7 @@ export function App() {
   const [isSavingTraining, setIsSavingTraining] = useState(false);
   const [isCompletingSessionId, setIsCompletingSessionId] = useState("");
   const [isDeletingCalendarItem, setIsDeletingCalendarItem] = useState(false);
+  const [isSavingWorkoutNotes, setIsSavingWorkoutNotes] = useState(false);
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -1043,6 +1045,36 @@ export function App() {
     }
   }
 
+  async function handleWorkoutNotesSubmit(event: FormEvent<HTMLFormElement>, workout: Workout) {
+    event.preventDefault();
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    const notes = String(form.get("workoutNotes") ?? "");
+
+    setIsSavingWorkoutNotes(true);
+    setWorkoutEditStatus("");
+    try {
+      await apiRequest<Workout>(
+        `/api/training-spaces/${selectedSpace.id}/workouts/${workout.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ notes }),
+        },
+        token,
+      );
+      await loadTrainingHistory(token, selectedSpace.id);
+      setCalendarSelection({ type: "workout", id: workout.id });
+      setWorkoutEditStatus("Notes saved.");
+    } catch (error) {
+      setWorkoutEditStatus(error instanceof Error ? error.message : "Could not save notes.");
+    } finally {
+      setIsSavingWorkoutNotes(false);
+    }
+  }
+
   async function handleDeletePlannedSession(session: PlannedSession) {
     if (!token || !selectedSpace) {
       return;
@@ -1457,20 +1489,36 @@ export function App() {
                 </div>
 
                 {selectedCalendarWorkout && (
-                  <div className="calendar-detail-grid">
-                    <div>
-                      <strong>Date</strong>
-                      <p>{formatDate(selectedCalendarWorkout.date)}</p>
+                  <>
+                    <div className="calendar-detail-grid">
+                      <div>
+                        <strong>Date</strong>
+                        <p>{formatDate(selectedCalendarWorkout.date)}</p>
+                      </div>
+                      <div>
+                        <strong>Summary</strong>
+                        <p>{summarizeWorkout(selectedCalendarWorkout) || "Logged workout"}</p>
+                      </div>
+                      <div>
+                        <strong>Notes</strong>
+                        <p>{selectedCalendarWorkout.notes || "No notes"}</p>
+                      </div>
                     </div>
-                    <div>
-                      <strong>Summary</strong>
-                      <p>{summarizeWorkout(selectedCalendarWorkout) || "Logged workout"}</p>
-                    </div>
-                    <div>
-                      <strong>Notes</strong>
-                      <p>{selectedCalendarWorkout.notes || "No notes"}</p>
-                    </div>
-                  </div>
+
+                    <form
+                      className="workout-notes-form"
+                      onSubmit={(event) => void handleWorkoutNotesSubmit(event, selectedCalendarWorkout)}
+                    >
+                      <label>
+                        Edit notes
+                        <textarea name="workoutNotes" rows={3} defaultValue={selectedCalendarWorkout.notes} />
+                      </label>
+                      {workoutEditStatus && <p className="form-status neutral-status" role="status">{workoutEditStatus}</p>}
+                      <button type="submit" disabled={isSavingWorkoutNotes}>
+                        {isSavingWorkoutNotes ? "Saving" : "Save notes"}
+                      </button>
+                    </form>
+                  </>
                 )}
 
                 {selectedCalendarSession && (
