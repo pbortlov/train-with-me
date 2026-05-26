@@ -1,12 +1,19 @@
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.routes import get_current_user
-from app.db.models import TrainingSpaceRole, User
+from app.db.models import ImportedV1Metadata, TrainingSpaceRole, User
 from app.db.session import get_db_session
-from app.imports.schemas import V1BackupSummaryResponse, V1ImportCommitRequest, V1ImportCommitResponse, V1ImportPreviewResponse
+from app.imports.schemas import (
+    ImportedV1MetadataResponse,
+    V1BackupSummaryResponse,
+    V1ImportCommitRequest,
+    V1ImportCommitResponse,
+    V1ImportPreviewResponse,
+)
 from app.imports.v1_metadata_importer import import_v1_metadata
 from app.imports.v1_planned_session_importer import import_v1_planned_sessions
 from app.imports.v1_parser import V1BackupParseError, parse_v1_backup_summary
@@ -111,6 +118,32 @@ def commit_v1_backup(
         existing_phase_instance_count=existing_phase_instance_count,
         warnings=[*warnings, *planned_warnings, *metadata_warnings],
     )
+
+
+@router.get("/v1/metadata/{training_space_id}", response_model=list[ImportedV1MetadataResponse], response_model_by_alias=True)
+def list_v1_metadata(
+    training_space_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+) -> list[ImportedV1MetadataResponse]:
+    membership = get_membership(db, training_space_id, current_user.id)
+    if not membership:
+        raise imports_error("training_space_not_found", "Training space was not found.", status.HTTP_404_NOT_FOUND)
+
+    rows = db.scalars(
+        select(ImportedV1Metadata)
+        .where(ImportedV1Metadata.training_space_id == training_space_id)
+        .order_by(ImportedV1Metadata.entity_type, ImportedV1Metadata.original_v1_id),
+    ).all()
+    return [
+        ImportedV1MetadataResponse(
+            id=row.id,
+            entity_type=row.entity_type,
+            original_v1_id=row.original_v1_id,
+            payload=row.payload_json,
+        )
+        for row in rows
+    ]
 
 
 def imports_error(code: str, message: str, status_code: int) -> HTTPException:

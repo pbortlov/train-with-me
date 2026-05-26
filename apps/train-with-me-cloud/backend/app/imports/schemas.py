@@ -47,3 +47,12 @@ class V1ImportCommitResponse(BaseModel):
     imported_phase_instance_count: int = Field(alias="importedPhaseInstanceCount")
     existing_phase_instance_count: int = Field(alias="existingPhaseInstanceCount")
     warnings: list[str]
+
+
+class ImportedV1MetadataResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    entity_type: str = Field(alias="entityType")
+    original_v1_id: str = Field(alias="originalV1Id")
+    payload: dict[str, Any]

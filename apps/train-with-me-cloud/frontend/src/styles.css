@@ -576,6 +576,44 @@ label {
   margin: 8px 0 0;
 }
 
+.program-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.program-section {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.program-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.program-card {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.program-card h4,
+.program-card p {
+  margin: 0;
+}
+
+.program-card p {
+  color: #52675e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .history-grid {
   display: grid;
   gap: 16px;
@@ -717,6 +755,7 @@ label {
   .coach-tools-grid,
   .history-grid,
   .planner-header-top,
+  .program-grid,
   .space-select-row,
   .inline-space-form,
   .training-form-grid {

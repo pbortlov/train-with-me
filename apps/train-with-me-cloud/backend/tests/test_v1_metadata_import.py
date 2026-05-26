@@ -6,7 +6,7 @@ from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
 from app.db.models import ImportedV1Metadata, User
-from app.imports.routes import commit_v1_backup
+from app.imports.routes import commit_v1_backup, list_v1_metadata
 from app.imports.schemas import V1ImportCommitRequest
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
@@ -110,3 +110,19 @@ def test_commit_v1_backup_warns_for_invalid_phase_metadata_rows(db_session: Sess
     assert response.imported_phase_instance_count == 1
     assert "phaseTemplates[1] is missing id; skipped." in response.warnings
     assert "phaseInstances[1] is not an object; skipped." in response.warnings
+
+
+def test_list_v1_metadata_returns_imported_phase_rows(db_session: Session) -> None:
+    owner = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, owner)
+    commit_v1_backup(commit_payload(space.id), owner, db_session)
+
+    rows = list_v1_metadata(space.id, owner, db_session)
+
+    assert [(row.entity_type, row.original_v1_id) for row in rows] == [
+        ("goals", "goals"),
+        ("phase_instance", "phase-instance-1"),
+        ("phase_template", "phase-template-1"),
+    ]
+    phase_template = next(row for row in rows if row.entity_type == "phase_template")
+    assert phase_template.payload["name"] == "Phase 1"

@@ -130,6 +130,13 @@ type V1ImportCommit = {
   warnings: string[];
 };
 
+type ImportedV1Metadata = {
+  id: string;
+  entityType: string;
+  originalV1Id: string;
+  payload: Record<string, unknown>;
+};
+
 type ApiErrorPayload = {
   detail?: {
     error?: {
@@ -295,10 +302,12 @@ export function App() {
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
+  const [v1Metadata, setV1Metadata] = useState<ImportedV1Metadata[]>([]);
   const [coachSuggestions, setCoachSuggestions] = useState<CoachSuggestion[]>([]);
   const [lastInvite, setLastInvite] = useState<CoachInvite | null>(null);
   const [inviteToken, setInviteToken] = useState(() => new URLSearchParams(window.location.search).get("coachInvite") ?? "");
   const [historyStatus, setHistoryStatus] = useState("");
+  const [programStatus, setProgramStatus] = useState("");
   const [trainingFormStatus, setTrainingFormStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
@@ -352,6 +361,8 @@ export function App() {
   const weekWorkoutCount = calendarDays.reduce((total, day) => total + day.workouts.length, 0);
   const weekPlanCount = calendarDays.reduce((total, day) => total + day.plannedSessions.length, 0);
   const weekLabel = `${formatDate(calendarDays[0]?.key ?? calendarWeekStart)} - ${formatDate(calendarDays[6]?.key ?? calendarWeekStart)}`;
+  const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
+  const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
 
   const loadSpaces = useCallback(async (activeToken: string) => {
     const nextSpaces = await apiRequest<TrainingSpace[]>("/api/training-spaces", {}, activeToken);
@@ -378,6 +389,11 @@ export function App() {
     ]);
     setWorkouts(nextWorkouts);
     setPlannedSessions(nextPlannedSessions);
+  }, []);
+
+  const loadV1Metadata = useCallback(async (activeToken: string, trainingSpaceId: string) => {
+    const rows = await apiRequest<ImportedV1Metadata[]>(`/api/imports/v1/metadata/${trainingSpaceId}`, {}, activeToken);
+    setV1Metadata(rows);
   }, []);
 
   useEffect(() => {
@@ -421,6 +437,7 @@ export function App() {
     if (!token || !selectedSpaceId) {
       setWorkouts([]);
       setPlannedSessions([]);
+      setV1Metadata([]);
       setHistoryStatus("");
       return;
     }
@@ -452,6 +469,29 @@ export function App() {
       isActive = false;
     };
   }, [loadTrainingHistory, selectedSpaceId, token]);
+
+  useEffect(() => {
+    if (!token || !selectedSpaceId) {
+      setV1Metadata([]);
+      setProgramStatus("");
+      return;
+    }
+
+    let isActive = true;
+    setProgramStatus("");
+    loadV1Metadata(token, selectedSpaceId)
+      .catch((error: unknown) => {
+        if (!isActive) {
+          return;
+        }
+        setV1Metadata([]);
+        setProgramStatus(error instanceof Error ? error.message : "Could not load imported programs.");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [loadV1Metadata, selectedSpaceId, token]);
 
   const loadCoachSuggestions = useCallback(async (activeToken: string, trainingSpaceId: string, role: string) => {
     if (role !== "owner") {
@@ -726,7 +766,10 @@ export function App() {
       );
       setImportCommit(result);
       setImportStatus("Backup imported.");
-      await loadTrainingHistory(token, selectedSpace.id);
+      await Promise.all([
+        loadTrainingHistory(token, selectedSpace.id),
+        loadV1Metadata(token, selectedSpace.id),
+      ]);
       setActiveView("calendar");
     } catch (error) {
       setImportStatus(error instanceof Error ? error.message : "Could not import backup.");
@@ -1304,7 +1347,57 @@ export function App() {
           <article className="workspace-panel">
             <p className="panel-kicker">Programs</p>
             <h2>Strength programs</h2>
-            <p className="empty-state">V1-style program import and scheduling will be restored here.</p>
+            <p className="empty-state">Imported V1 phase templates and scheduled phase instances for the selected space.</p>
+
+            {programStatus && <p className="form-status" role="status">{programStatus}</p>}
+
+            <div className="program-grid">
+              <section className="program-section" aria-label="Imported phase templates">
+                <h3>Saved phase templates</h3>
+                <div className="program-list">
+                  {phaseTemplates.length ? phaseTemplates.map((row) => {
+                    const name = typeof row.payload.name === "string" ? row.payload.name : row.originalV1Id;
+                    const duration = typeof row.payload.durationWeeks === "number" ? row.payload.durationWeeks : null;
+                    const slots = Array.isArray(row.payload.weekdaySlots) ? row.payload.weekdaySlots.length : null;
+                    return (
+                      <article className="program-card" key={row.id}>
+                        <h4>{name}</h4>
+                        <p>
+                          {duration != null ? `${duration} week(s)` : "Duration not set"}
+                          {slots != null ? ` • ${slots} weekday slot(s)` : ""}
+                        </p>
+                        <span className="source-badge">V1</span>
+                      </article>
+                    );
+                  }) : (
+                    <p className="empty-state">No imported phase templates yet.</p>
+                  )}
+                </div>
+              </section>
+
+              <section className="program-section" aria-label="Imported phase instances">
+                <h3>Scheduled phase instances</h3>
+                <div className="program-list">
+                  {phaseInstances.length ? phaseInstances.map((row) => {
+                    const templateId = typeof row.payload.templateId === "string" ? row.payload.templateId : "";
+                    const startDate = typeof row.payload.startDate === "string" ? row.payload.startDate : "";
+                    const generatedSessionIds = Array.isArray(row.payload.generatedSessionIds) ? row.payload.generatedSessionIds.length : null;
+                    return (
+                      <article className="program-card" key={row.id}>
+                        <h4>{templateId || row.originalV1Id}</h4>
+                        <p>
+                          {startDate ? `Starts ${formatDate(startDate)}` : "Start date not set"}
+                          {generatedSessionIds != null ? ` • ${generatedSessionIds} generated session(s)` : ""}
+                        </p>
+                        <span className="source-badge">V1</span>
+                      </article>
+                    );
+                  }) : (
+                    <p className="empty-state">No imported phase instances yet.</p>
+                  )}
+                </div>
+              </section>
+            </div>
           </article>
         </section>
       )}
