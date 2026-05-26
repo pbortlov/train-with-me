@@ -231,6 +231,33 @@ def test_update_planned_session_links_completed_workout(db_session: Session) -> 
     assert response.modification_note == "Felt easy"
 
 
+def test_update_planned_session_edits_title_date_and_details(db_session: Session) -> None:
+    user = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, user)
+    session = create_planned_session(
+        space.id,
+        PlannedSessionCreateRequest(type="run", title="Easy run", date=date(2026, 5, 22), details_json={"distance": 5}),
+        user,
+        db_session,
+    )
+
+    response = update_planned_session(
+        space.id,
+        session.id,
+        PlannedSessionUpdateRequest(
+            title="Long run",
+            date=date(2026, 5, 24),
+            details_json={"distance": 12, "paceGoal": 5.2},
+        ),
+        user,
+        db_session,
+    )
+
+    assert response.title == "Long run"
+    assert response.date == date(2026, 5, 24)
+    assert response.details_json == {"distance": 12, "paceGoal": 5.2}
+
+
 def test_update_planned_session_rejects_cross_space_workout_link(db_session: Session) -> None:
     user = create_user(db_session, "athlete@example.com")
     other_user = create_user(db_session, "other@example.com")

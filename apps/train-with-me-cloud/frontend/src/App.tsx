@@ -415,6 +415,7 @@ export function App() {
   const [trainingFormStatus, setTrainingFormStatus] = useState("");
   const [completionStatus, setCompletionStatus] = useState("");
   const [workoutEditStatus, setWorkoutEditStatus] = useState("");
+  const [plannedEditStatus, setPlannedEditStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [exportStatus, setExportStatus] = useState("");
   const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
@@ -430,6 +431,7 @@ export function App() {
   const [isCompletingSessionId, setIsCompletingSessionId] = useState("");
   const [isDeletingCalendarItem, setIsDeletingCalendarItem] = useState(false);
   const [isSavingWorkoutNotes, setIsSavingWorkoutNotes] = useState(false);
+  const [isSavingPlannedSession, setIsSavingPlannedSession] = useState(false);
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -1075,6 +1077,54 @@ export function App() {
     }
   }
 
+  async function handlePlannedSessionEditSubmit(event: FormEvent<HTMLFormElement>, session: PlannedSession) {
+    event.preventDefault();
+    if (!token || !selectedSpace) {
+      return;
+    }
+    if (session.type !== "run" && session.type !== "sprint") {
+      setPlannedEditStatus("Calendar editing currently supports run and sprint sessions.");
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    const title = String(form.get("plannedEditTitle") ?? "");
+    const date = String(form.get("plannedEditDate") ?? "");
+    const details = session.type === "run"
+      ? {
+          distance: Number(form.get("plannedEditRunDistance")) || null,
+          paceGoal: Number(form.get("plannedEditRunPace")) || null,
+        }
+      : {
+          blocks: [{
+            reps: Number(form.get("plannedEditSprintReps")) || 1,
+            distanceM: Number(form.get("plannedEditSprintDistance")) || 100,
+            targetTimeSec: Number(form.get("plannedEditSprintTargetTime")) || null,
+            restSec: Number(form.get("plannedEditSprintRest")) || null,
+          }],
+        };
+
+    setIsSavingPlannedSession(true);
+    setPlannedEditStatus("");
+    try {
+      await apiRequest<PlannedSession>(
+        `/api/training-spaces/${selectedSpace.id}/planned-sessions/${session.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ title, date, details_json: details }),
+        },
+        token,
+      );
+      await loadTrainingHistory(token, selectedSpace.id);
+      setCalendarSelection({ type: "planned", id: session.id });
+      setPlannedEditStatus("Planned session saved.");
+    } catch (error) {
+      setPlannedEditStatus(error instanceof Error ? error.message : "Could not save planned session.");
+    } finally {
+      setIsSavingPlannedSession(false);
+    }
+  }
+
   async function handleDeletePlannedSession(session: PlannedSession) {
     if (!token || !selectedSpace) {
       return;
@@ -1543,6 +1593,110 @@ export function App() {
                         </p>
                       </div>
                     </div>
+
+                    {!selectedCalendarSessionWorkout && selectedCalendarSession.status === "planned" && (
+                      selectedCalendarSession.type === "run" || selectedCalendarSession.type === "sprint"
+                    ) && (
+                      <form
+                        className="planned-session-edit-form"
+                        onSubmit={(event) => void handlePlannedSessionEditSubmit(event, selectedCalendarSession)}
+                      >
+                        <h4>Edit planned session</h4>
+                        <div className="training-form-grid">
+                          <label>
+                            Date
+                            <input name="plannedEditDate" type="date" defaultValue={selectedCalendarSession.date} required />
+                          </label>
+                          <label>
+                            Title
+                            <input name="plannedEditTitle" defaultValue={selectedCalendarSession.title} required />
+                          </label>
+                        </div>
+                        {selectedCalendarSession.type === "run" ? (
+                          <div className="training-form-grid">
+                            <label>
+                              Distance (km)
+                              <input
+                                name="plannedEditRunDistance"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={typeof selectedCalendarSession.details_json.distance === "number" ? selectedCalendarSession.details_json.distance : ""}
+                              />
+                            </label>
+                            <label>
+                              Target pace
+                              <input
+                                name="plannedEditRunPace"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={typeof selectedCalendarSession.details_json.paceGoal === "number" ? selectedCalendarSession.details_json.paceGoal : ""}
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <div className="training-form-grid">
+                            <label>
+                              Reps
+                              <input
+                                name="plannedEditSprintReps"
+                                type="number"
+                                min="1"
+                                step="1"
+                                defaultValue={typeof selectedCalendarSprintBlock.reps === "number" ? selectedCalendarSprintBlock.reps : ""}
+                              />
+                            </label>
+                            <label>
+                              Distance (m)
+                              <input
+                                name="plannedEditSprintDistance"
+                                type="number"
+                                min="1"
+                                step="1"
+                                defaultValue={
+                                  typeof selectedCalendarSprintBlock.distanceM === "number"
+                                    ? selectedCalendarSprintBlock.distanceM
+                                    : ""
+                                }
+                              />
+                            </label>
+                            <label>
+                              Target time (sec)
+                              <input
+                                name="plannedEditSprintTargetTime"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={
+                                  typeof selectedCalendarSprintBlock.targetTimeSec === "number"
+                                    ? selectedCalendarSprintBlock.targetTimeSec
+                                    : ""
+                                }
+                              />
+                            </label>
+                            <label>
+                              Rest (sec)
+                              <input
+                                name="plannedEditSprintRest"
+                                type="number"
+                                min="0"
+                                step="1"
+                                defaultValue={
+                                  typeof selectedCalendarSprintBlock.restSec === "number"
+                                    ? selectedCalendarSprintBlock.restSec
+                                    : ""
+                                }
+                              />
+                            </label>
+                          </div>
+                        )}
+                        {plannedEditStatus && <p className="form-status neutral-status" role="status">{plannedEditStatus}</p>}
+                        <button type="submit" disabled={isSavingPlannedSession}>
+                          {isSavingPlannedSession ? "Saving" : "Save planned session"}
+                        </button>
+                      </form>
+                    )}
 
                     {!selectedCalendarSessionWorkout && selectedCalendarSession.status === "planned" && (
                       selectedCalendarSession.type === "run" || selectedCalendarSession.type === "sprint"

@@ -135,6 +135,12 @@ def update_planned_session(
     if "linked_workout_id" in update_data:
         validate_linked_workout(db, training_space_id, payload.linked_workout_id)
         planned_session.linked_workout_id = payload.linked_workout_id
+    if "title" in update_data and payload.title is not None:
+        planned_session.title = payload.title
+    if "date" in update_data and payload.date is not None:
+        planned_session.date = payload.date
+    if "details_json" in update_data and payload.details_json is not None:
+        planned_session.details_json = payload.details_json
     if "actual_json" in update_data:
         planned_session.actual_json = payload.actual_json
     if "status" in update_data and payload.status is not None:

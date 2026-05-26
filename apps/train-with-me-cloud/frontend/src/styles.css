@@ -546,6 +546,22 @@ label {
   justify-self: start;
 }
 
+.planned-session-edit-form {
+  border-top: 1px solid #edf2ef;
+  display: grid;
+  gap: 12px;
+  margin-top: 2px;
+  padding-top: 16px;
+}
+
+.planned-session-edit-form h4 {
+  margin: 0;
+}
+
+.planned-session-edit-form button {
+  justify-self: start;
+}
+
 .completion-form {
   border-top: 1px solid #edf2ef;
   display: grid;

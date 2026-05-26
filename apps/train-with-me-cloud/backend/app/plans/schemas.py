@@ -1,4 +1,6 @@
-from datetime import date, datetime
+from __future__ import annotations
+
+from datetime import date as date_type, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -11,12 +13,12 @@ PlannedSessionSourceValue = Literal["manual", "phase-generated", "v1_import"]
 class PlannedSessionCreateRequest(BaseModel):
     type: PlannedSessionType
     title: str = Field(min_length=1, max_length=160)
-    date: date
+    date: date_type
     phase_template_id: str = Field(default="", max_length=128)
     phase_instance_id: str = Field(default="", max_length=128)
     phase_slot_id: str = Field(default="", max_length=128)
     phase_week_index: int | None = None
-    generated_date: date | None = None
+    generated_date: date_type | None = None
     date_moved_manually: bool = False
     modification_note: str = ""
     actual_json: dict[str, Any] | None = None
@@ -40,10 +42,18 @@ class PlannedSessionCreateRequest(BaseModel):
 
 
 class PlannedSessionUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=160)
+    date: date_type | None = None
+    details_json: dict[str, Any] | None = None
     modification_note: str | None = None
     actual_json: dict[str, Any] | None = None
     linked_workout_id: str | None = None
     status: PlannedSessionStatusValue | None = None
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(cls, value: str | None) -> str | None:
+        return value.strip() if value is not None else None
 
 
 class PlannedSessionResponse(BaseModel):
@@ -51,12 +61,12 @@ class PlannedSessionResponse(BaseModel):
     training_space_id: str
     type: str
     title: str
-    date: date
+    date: date_type
     phase_template_id: str
     phase_instance_id: str
     phase_slot_id: str
     phase_week_index: int | None
-    generated_date: date | None
+    generated_date: date_type | None
     date_moved_manually: bool
     modification_note: str
     actual_json: dict[str, Any] | None
