@@ -125,6 +125,28 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(parsed);
 }
 
+function dateKey(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(value: Date, days: number): Date {
+  const next = new Date(value);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function startOfWeek(value: Date): Date {
+  const next = new Date(value);
+  const day = next.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  next.setDate(next.getDate() + diff);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
 function formatNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
 }
@@ -214,6 +236,7 @@ export function App() {
   const [authStatus, setAuthStatus] = useState("");
   const [spaceStatus, setSpaceStatus] = useState("");
   const [activeView, setActiveView] = useState<CloudView>("calendar");
+  const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
   const [coachSuggestions, setCoachSuggestions] = useState<CoachSuggestion[]>([]);
@@ -247,6 +270,24 @@ export function App() {
     () => coachSuggestions.filter((suggestion) => suggestion.status === "pending"),
     [coachSuggestions],
   );
+  const calendarDays = useMemo(() => {
+    const weekStartDate = new Date(`${calendarWeekStart}T00:00:00`);
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = addDays(weekStartDate, index);
+      const key = dateKey(day);
+      return {
+        key,
+        label: day.toLocaleDateString(undefined, { weekday: "short" }),
+        dateLabel: day.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        isToday: key === dateKey(new Date()),
+        workouts: workouts.filter((workout) => workout.date === key),
+        plannedSessions: plannedSessions.filter((session) => session.date === key),
+      };
+    });
+  }, [calendarWeekStart, plannedSessions, workouts]);
+  const weekWorkoutCount = calendarDays.reduce((total, day) => total + day.workouts.length, 0);
+  const weekPlanCount = calendarDays.reduce((total, day) => total + day.plannedSessions.length, 0);
+  const weekLabel = `${formatDate(calendarDays[0]?.key ?? calendarWeekStart)} - ${formatDate(calendarDays[6]?.key ?? calendarWeekStart)}`;
 
   const loadSpaces = useCallback(async (activeToken: string) => {
     const nextSpaces = await apiRequest<TrainingSpace[]>("/api/training-spaces", {}, activeToken);
@@ -695,29 +736,76 @@ export function App() {
       {activeView === "calendar" && (
         <section className="view-panel" aria-label="Calendar">
           <article className="workspace-panel">
-            <div className="panel-header">
+            <div className="calendar-toolbar">
               <div>
-                <p className="panel-kicker">Current</p>
+                <p className="panel-kicker">Calendar</p>
                 <h2>{selectedSpace?.name ?? "Select a training space"}</h2>
+                <p className="calendar-week-label">{weekLabel}</p>
+              </div>
+              <div className="calendar-nav">
+                <button
+                  type="button"
+                  onClick={() => setCalendarWeekStart((current) => dateKey(addDays(new Date(`${current}T00:00:00`), -7)))}
+                >
+                  Previous week
+                </button>
+                <button type="button" onClick={() => setCalendarWeekStart(dateKey(startOfWeek(new Date())))}>
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarWeekStart((current) => dateKey(addDays(new Date(`${current}T00:00:00`), 7)))}
+                >
+                  Next week
+                </button>
               </div>
             </div>
 
             <div className="metric-grid">
               <article className="metric-tile">
-                <span className="metric-value">{spaces.length}</span>
-                <span className="metric-label">Spaces</span>
+                <span className="metric-value">{weekWorkoutCount}</span>
+                <span className="metric-label">Week workouts</span>
               </article>
               <article className="metric-tile">
-                <span className="metric-value">{workouts.length}</span>
-                <span className="metric-label">Workouts</span>
+                <span className="metric-value">{weekPlanCount}</span>
+                <span className="metric-label">Week plans</span>
               </article>
               <article className="metric-tile">
-                <span className="metric-value">{plannedSessions.length}</span>
-                <span className="metric-label">Plans</span>
+                <span className="metric-value">{workouts.length + plannedSessions.length}</span>
+                <span className="metric-label">All items</span>
               </article>
             </div>
 
             {historyStatus && <p className="form-status history-status" role="status">{historyStatus}</p>}
+
+            <div className="calendar-grid" aria-label="Weekly calendar">
+              {calendarDays.map((day) => (
+                <article key={day.key} className={day.isToday ? "calendar-day is-today" : "calendar-day"}>
+                  <div className="calendar-day-header">
+                    <span>{day.label}</span>
+                    <time dateTime={day.key}>{day.dateLabel}</time>
+                  </div>
+
+                  <div className="calendar-day-items">
+                    {day.plannedSessions.map((session) => (
+                      <div className="calendar-item planned" key={session.id}>
+                        <strong>{session.title}</strong>
+                        <span>{activityLabel(session.type)} • {session.status}</span>
+                      </div>
+                    ))}
+                    {day.workouts.map((workout) => (
+                      <div className="calendar-item actual" key={workout.id}>
+                        <strong>{activityLabel(workout.activity)}</strong>
+                        <span>{summarizeWorkout(workout) || "Logged workout"}</span>
+                      </div>
+                    ))}
+                    {!day.plannedSessions.length && !day.workouts.length && (
+                      <p className="calendar-empty">No training</p>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
 
             <div className="history-grid" aria-busy={isLoadingHistory}>
               <section className="history-panel" aria-label="Workouts">

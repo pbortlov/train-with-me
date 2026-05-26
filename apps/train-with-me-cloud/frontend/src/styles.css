@@ -247,6 +247,25 @@ h3 {
   gap: 18px;
 }
 
+.calendar-toolbar {
+  align-items: end;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.calendar-week-label {
+  color: #60746b;
+  margin: 8px 0 0;
+}
+
+.calendar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .segmented-control {
   background: #edf3f0;
   border: 1px solid #d9e2dd;
@@ -402,6 +421,80 @@ label {
   margin-top: 18px;
 }
 
+.calendar-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-top: 22px;
+}
+
+.calendar-day {
+  background: #fbfdfc;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-height: 180px;
+  padding: 12px;
+}
+
+.calendar-day.is-today {
+  border-color: #1f6f5b;
+  box-shadow: inset 0 0 0 1px #1f6f5b;
+}
+
+.calendar-day-header {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.calendar-day-header span {
+  font-weight: 800;
+}
+
+.calendar-day-header time {
+  color: #60746b;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.calendar-day-items {
+  align-content: start;
+  display: grid;
+  gap: 8px;
+}
+
+.calendar-item {
+  border-radius: 6px;
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+}
+
+.calendar-item strong {
+  font-size: 0.86rem;
+}
+
+.calendar-item span,
+.calendar-empty {
+  color: #52675e;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.calendar-item.planned {
+  background: #edf3f0;
+  border: 1px solid #d9e2dd;
+}
+
+.calendar-item.actual {
+  background: #e7f4ef;
+  border: 1px solid #b7d7cd;
+}
+
 .history-grid {
   display: grid;
   gap: 16px;
@@ -523,6 +616,7 @@ label {
 
   .auth-layout,
   .dashboard-grid,
+  .calendar-grid,
   .history-grid,
   .planner-header-top,
   .space-select-row,
@@ -544,6 +638,19 @@ label {
   .topbar button,
   .account-bar button {
     width: 100%;
+  }
+
+  .calendar-toolbar {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .calendar-nav {
+    justify-content: stretch;
+  }
+
+  .calendar-nav button {
+    flex: 1 1 140px;
   }
 
   .item-main {
