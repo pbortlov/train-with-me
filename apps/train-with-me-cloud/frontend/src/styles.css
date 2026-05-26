@@ -818,6 +818,10 @@ label {
   padding: 16px;
 }
 
+.stats-section[aria-label="Imported goals"] {
+  grid-column: 1 / -1;
+}
+
 .stats-section h3 {
   margin-bottom: 14px;
 }
@@ -844,6 +848,67 @@ label {
 .stats-list span {
   color: #52675e;
   font-weight: 700;
+  text-align: right;
+}
+
+.goal-card-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.goal-card {
+  background: #fbfdfc;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.goal-card h4,
+.goal-card p {
+  margin: 0;
+}
+
+.goal-card p {
+  color: #52675e;
+  font-size: 0.9rem;
+}
+
+.goal-card-label {
+  color: #6d8078;
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.goal-history-list {
+  border-top: 1px solid #edf2ef;
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+}
+
+.goal-history-list h4 {
+  margin: 0;
+}
+
+.goal-history-list div {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.goal-history-list span {
+  font-weight: 700;
+}
+
+.goal-history-list small {
+  color: #52675e;
   text-align: right;
 }
 

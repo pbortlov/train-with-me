@@ -138,6 +138,15 @@ type ImportedV1Metadata = {
   payload: Record<string, unknown>;
 };
 
+type V1Goal = {
+  id?: string;
+  activity?: string;
+  type?: string;
+  setAt?: string;
+  achievedAt?: string;
+  target?: Record<string, unknown>;
+};
+
 type ApiErrorPayload = {
   detail?: {
     error?: {
@@ -214,6 +223,90 @@ function formatNumber(value: number): string {
 
 function activityLabel(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value != null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function asGoal(value: unknown): V1Goal | null {
+  const record = asRecord(value);
+  if (!record) {
+    return null;
+  }
+  const target = asRecord(record.target) ?? {};
+  return {
+    id: typeof record.id === "string" ? record.id : undefined,
+    activity: typeof record.activity === "string" ? record.activity : undefined,
+    type: typeof record.type === "string" ? record.type : undefined,
+    setAt: typeof record.setAt === "string" ? record.setAt : undefined,
+    achievedAt: typeof record.achievedAt === "string" ? record.achievedAt : undefined,
+    target,
+  };
+}
+
+function numberValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function formatGoalTarget(goal: V1Goal): string {
+  const distance = numberValue(goal.target?.distance);
+  const time = numberValue(goal.target?.time);
+  const pace = numberValue(goal.target?.pace);
+
+  if (goal.activity === "run" && goal.type === "combined" && distance != null && typeof goal.target?.time === "string") {
+    return `${formatNumber(distance)} km under ${goal.target.time}`;
+  }
+  if (goal.activity === "run" && goal.type === "distance" && distance != null) {
+    return `${formatNumber(distance)} km`;
+  }
+  if (goal.activity === "run" && goal.type === "pace" && pace != null) {
+    return `Below ${formatNumber(pace)} min/km`;
+  }
+  if (goal.activity === "sprint" && time != null) {
+    return distance != null
+      ? `${formatNumber(distance)} m under ${formatNumber(time)} sec`
+      : `Under ${formatNumber(time)} sec`;
+  }
+  return "Goal target";
+}
+
+function formatGoalProgress(goal: V1Goal, workouts: Workout[]): string {
+  const since = goal.setAt ?? "0000-01-01";
+  if (goal.activity === "run" && goal.type === "distance") {
+    const longestRun = workouts
+      .filter((workout) => workout.activity === "run" && workout.date >= since && workout.distance != null)
+      .reduce((best, workout) => Math.max(best, workout.distance ?? 0), 0);
+    return longestRun ? `Best so far: ${formatNumber(longestRun)} km` : "No matching run yet";
+  }
+  if (goal.activity === "run" && goal.type === "pace") {
+    const bestPace = workouts
+      .filter((workout) => workout.activity === "run" && workout.date >= since && workout.pace != null)
+      .reduce((best, workout) => Math.min(best, workout.pace ?? best), Number.POSITIVE_INFINITY);
+    return Number.isFinite(bestPace) ? `Best so far: ${formatNumber(bestPace)} min/km` : "No matching run yet";
+  }
+  if (goal.activity === "run" && goal.type === "combined") {
+    const targetDistance = numberValue(goal.target?.distance);
+    const matchingRuns = workouts.filter((workout) => (
+      workout.activity === "run"
+      && workout.date >= since
+      && workout.distance != null
+      && (targetDistance == null || workout.distance >= targetDistance)
+    ));
+    return matchingRuns.length ? `${matchingRuns.length} matching run(s)` : "No matching run yet";
+  }
+  if (goal.activity === "sprint") {
+    const targetDistance = numberValue(goal.target?.distance);
+    const bestSprint = workouts
+      .filter((workout) => workout.activity === "sprint" && workout.date >= since)
+      .flatMap((workout) => workout.sprint_sets)
+      .filter((set) => targetDistance == null || set.distance_m === targetDistance)
+      .reduce((best, set) => Math.min(best, set.time_sec), Number.POSITIVE_INFINITY);
+    return Number.isFinite(bestSprint) ? `Best so far: ${formatNumber(bestSprint)} sec` : "No matching sprint yet";
+  }
+  return "Progress unavailable";
 }
 
 function isHistorical(source: string, coachEditable: boolean): boolean {
@@ -404,6 +497,21 @@ export function App() {
   const activeGoals = importedGoals && typeof importedGoals.active === "object" && importedGoals.active != null
     ? Object.values(importedGoals.active as Record<string, unknown>).filter(Boolean).length
     : 0;
+  const activeGoalRows = useMemo(() => {
+    const active = asRecord(importedGoals?.active);
+    if (!active) {
+      return [];
+    }
+    return ["run", "sprint"]
+      .map((activity) => asGoal(active[activity]))
+      .filter((goal): goal is V1Goal => Boolean(goal));
+  }, [importedGoals]);
+  const goalHistoryRows = useMemo(() => {
+    const history = importedGoals?.history;
+    return Array.isArray(history)
+      ? history.map(asGoal).filter((goal): goal is V1Goal => Boolean(goal))
+      : [];
+  }, [importedGoals]);
 
   const loadSpaces = useCallback(async (activeToken: string) => {
     const nextSpaces = await apiRequest<TrainingSpace[]>("/api/training-spaces", {}, activeToken);
@@ -1653,20 +1761,49 @@ export function App() {
               <section className="stats-section" aria-label="Imported goals">
                 <h3>Imported goals</h3>
                 {importedGoals ? (
-                  <div className="stats-list">
-                    <div>
-                      <strong>Strength goal</strong>
-                      <span>{typeof importedGoals.strength === "number" ? `${formatNumber(importedGoals.strength)} kg` : "No data"}</span>
+                  <>
+                    <div className="stats-list">
+                      <div>
+                        <strong>Strength goal</strong>
+                        <span>{typeof importedGoals.strength === "number" ? `${formatNumber(importedGoals.strength)} kg` : "No data"}</span>
+                      </div>
+                      <div>
+                        <strong>Active goals</strong>
+                        <span>{activeGoals}</span>
+                      </div>
+                      <div>
+                        <strong>Goal history</strong>
+                        <span>{goalHistoryRows.length}</span>
+                      </div>
                     </div>
-                    <div>
-                      <strong>Active goals</strong>
-                      <span>{activeGoals}</span>
+
+                    <div className="goal-card-list">
+                      {activeGoalRows.length ? activeGoalRows.map((goal, index) => (
+                        <article className="goal-card" key={goal.id ?? `${goal.activity}-${index}`}>
+                          <div>
+                            <span className="goal-card-label">Active {goal.activity ?? "goal"}</span>
+                            <h4>{formatGoalTarget(goal)}</h4>
+                          </div>
+                          <p>{goal.setAt ? `Set ${formatDate(goal.setAt)}` : "Set date unavailable"}</p>
+                          <p>{formatGoalProgress(goal, workouts)}</p>
+                        </article>
+                      )) : (
+                        <p className="empty-state">No active run or sprint goals imported.</p>
+                      )}
+
+                      {goalHistoryRows.length ? (
+                        <div className="goal-history-list">
+                          <h4>Achieved history</h4>
+                          {goalHistoryRows.slice(0, 5).map((goal, index) => (
+                            <div key={goal.id ?? `goal-history-${index}`}>
+                              <span>{formatGoalTarget(goal)}</span>
+                              <small>{goal.achievedAt ? `Achieved ${formatDate(goal.achievedAt)}` : "Not marked achieved"}</small>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
-                    <div>
-                      <strong>Goal history</strong>
-                      <span>{Array.isArray(importedGoals.history) ? importedGoals.history.length : 0}</span>
-                    </div>
-                  </div>
+                  </>
                 ) : (
                   <p className="empty-state">Import V1 data to see goals here.</p>
                 )}
