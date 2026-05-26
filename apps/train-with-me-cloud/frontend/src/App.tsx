@@ -403,7 +403,8 @@ export function App() {
       return;
     }
 
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const name = String(form.get("spaceName") ?? "");
 
     setIsCreatingSpace(true);
@@ -415,7 +416,7 @@ export function App() {
       }, token);
       await loadSpaces(token);
       setSelectedSpaceId(createdSpace.id);
-      event.currentTarget.reset();
+      formElement.reset();
     } catch (error) {
       setSpaceStatus(error instanceof Error ? error.message : "Could not create training space.");
     } finally {
@@ -477,7 +478,8 @@ export function App() {
       return;
     }
 
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const targetWorkoutId = String(form.get("targetWorkoutId") ?? "");
     const notes = String(form.get("suggestedNotes") ?? "");
 
@@ -496,7 +498,7 @@ export function App() {
         },
         token,
       );
-      event.currentTarget.reset();
+      formElement.reset();
       setSuggestionStatus("Suggestion sent.");
     } catch (error) {
       setSuggestionStatus(error instanceof Error ? error.message : "Could not send suggestion.");
