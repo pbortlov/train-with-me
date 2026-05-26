@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 type AuthMode = "login" | "register";
+type CloudView = "calendar" | "programs" | "review" | "stats" | "data";
 
 type User = {
   id: string;
@@ -108,6 +109,13 @@ type ApiErrorPayload = {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 const tokenStorageKey = "twm_cloud_access_token";
+const cloudViews: { id: CloudView; label: string }[] = [
+  { id: "calendar", label: "Calendar" },
+  { id: "programs", label: "Programs" },
+  { id: "review", label: "Review" },
+  { id: "stats", label: "Stats" },
+  { id: "data", label: "Data" },
+];
 
 function formatDate(value: string): string {
   const parsed = new Date(`${value}T00:00:00`);
@@ -205,6 +213,7 @@ export function App() {
   const [selectedSpaceId, setSelectedSpaceId] = useState("");
   const [authStatus, setAuthStatus] = useState("");
   const [spaceStatus, setSpaceStatus] = useState("");
+  const [activeView, setActiveView] = useState<CloudView>("calendar");
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
   const [coachSuggestions, setCoachSuggestions] = useState<CoachSuggestion[]>([]);
@@ -620,60 +629,210 @@ export function App() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Train With Me Cloud</p>
-          <h1>Dashboard</h1>
-        </div>
-        <div className="account-bar">
+    <main className="app-shell cloud-planner-shell">
+      <header className="planner-header">
+        <div className="planner-header-top">
           <div>
-            <span>{user.display_name}</span>
-            <small>{user.email}</small>
+            <h1>Train With Me</h1>
+            <p>Cloud planner: calendar-first training, shared spaces, and imported V1 history.</p>
           </div>
-          <button type="button" onClick={handleLogout}>Logout</button>
+          <div className="account-bar">
+            <div>
+              <span>{user.display_name}</span>
+              <small>{user.email}</small>
+            </div>
+            <button type="button" onClick={handleLogout}>Logout</button>
+          </div>
         </div>
+
+        <nav className="view-nav" aria-label="Main navigation">
+          {cloudViews.map((view) => (
+            <button
+              key={view.id}
+              type="button"
+              className={activeView === view.id ? "nav-button is-active" : "nav-button"}
+              onClick={() => setActiveView(view.id)}
+            >
+              {view.label}
+            </button>
+          ))}
+        </nav>
       </header>
 
-      <section className="dashboard-grid">
-        <aside className="sidebar-panel" aria-label="Training spaces">
-          <div className="panel-header">
-            <div>
-              <p className="panel-kicker">Spaces</p>
-              <h2>Training spaces</h2>
+      <section className="space-controls-panel" aria-label="Training space controls">
+        <div className="space-select-row">
+          <label>
+            Training space
+            <select
+              value={selectedSpace?.id ?? ""}
+              onChange={(event) => setSelectedSpaceId(event.target.value)}
+              disabled={!spaces.length}
+            >
+              {spaces.length ? spaces.map((space) => (
+                <option key={space.id} value={space.id}>
+                  {space.name} ({space.my_role})
+                </option>
+              )) : (
+                <option value="">No training spaces yet</option>
+              )}
+            </select>
+          </label>
+          {selectedSpace && <span className="role-pill">{selectedSpace.my_role}</span>}
+        </div>
+
+        <form className="inline-space-form" onSubmit={handleCreateSpace}>
+          <label>
+            New space
+            <input name="spaceName" placeholder="Base Season" minLength={1} maxLength={120} required />
+          </label>
+          <button type="submit" disabled={isCreatingSpace}>
+            {isCreatingSpace ? "Creating" : "Create space"}
+          </button>
+        </form>
+        {spaceStatus && <p className="form-status" role="status">{spaceStatus}</p>}
+      </section>
+
+      {activeView === "calendar" && (
+        <section className="view-panel" aria-label="Calendar">
+          <article className="workspace-panel">
+            <div className="panel-header">
+              <div>
+                <p className="panel-kicker">Current</p>
+                <h2>{selectedSpace?.name ?? "Select a training space"}</h2>
+              </div>
             </div>
-          </div>
 
-          {spaces.length > 0 ? (
-            <div className="space-list" role="listbox" aria-label="Select training space">
-              {spaces.map((space) => (
-                <button
-                  key={space.id}
-                  type="button"
-                  className={selectedSpace?.id === space.id ? "space-item active" : "space-item"}
-                  onClick={() => setSelectedSpaceId(space.id)}
-                >
-                  <span>{space.name}</span>
-                  <small>{space.my_role}</small>
-                </button>
-              ))}
+            <div className="metric-grid">
+              <article className="metric-tile">
+                <span className="metric-value">{spaces.length}</span>
+                <span className="metric-label">Spaces</span>
+              </article>
+              <article className="metric-tile">
+                <span className="metric-value">{workouts.length}</span>
+                <span className="metric-label">Workouts</span>
+              </article>
+              <article className="metric-tile">
+                <span className="metric-value">{plannedSessions.length}</span>
+                <span className="metric-label">Plans</span>
+              </article>
             </div>
-          ) : (
-            <p className="empty-state">No training spaces yet.</p>
-          )}
 
-          <form className="stacked-form compact" onSubmit={handleCreateSpace}>
-            <label>
-              New space
-              <input name="spaceName" placeholder="Base Season" minLength={1} maxLength={120} required />
-            </label>
-            {spaceStatus && <p className="form-status" role="status">{spaceStatus}</p>}
-            <button type="submit" disabled={isCreatingSpace}>
-              {isCreatingSpace ? "Creating" : "Create space"}
-            </button>
-          </form>
+            {historyStatus && <p className="form-status history-status" role="status">{historyStatus}</p>}
 
-          <section className="collab-panel" aria-label="Coach invite">
+            <div className="history-grid" aria-busy={isLoadingHistory}>
+              <section className="history-panel" aria-label="Workouts">
+                <div className="history-panel-header">
+                  <div>
+                    <p className="panel-kicker">Actual</p>
+                    <h3>Workouts</h3>
+                  </div>
+                  {isLoadingHistory && <span className="subtle-text">Loading</span>}
+                </div>
+
+                <div className="history-list">
+                  {workouts.length ? workouts.map((workout) => {
+                    const linkedPlan = plannedSessionByWorkoutId.get(workout.id);
+                    return (
+                      <article className="history-item" key={workout.id}>
+                        <div className="item-main">
+                          <div>
+                            <h4>{activityLabel(workout.activity)}</h4>
+                            <p>{summarizeWorkout(workout) || "No summary"}</p>
+                            {linkedPlan && <p className="linked-text">Plan: {linkedPlan.title}</p>}
+                          </div>
+                          <time>{formatDate(workout.date)}</time>
+                        </div>
+                        <div className="badge-row">
+                          {isHistorical(workout.source, workout.coach_editable) && <span className="history-badge">Historical</span>}
+                          {workout.original_v1_id && <span className="source-badge">V1</span>}
+                        </div>
+                      </article>
+                    );
+                  }) : (
+                    <p className="empty-state">No workouts in this space.</p>
+                  )}
+                </div>
+              </section>
+
+              <section className="history-panel" aria-label="Planned sessions">
+                <div className="history-panel-header">
+                  <div>
+                    <p className="panel-kicker">Planned</p>
+                    <h3>Sessions</h3>
+                  </div>
+                  {isLoadingHistory && <span className="subtle-text">Loading</span>}
+                </div>
+
+                <div className="history-list">
+                  {plannedSessions.length ? plannedSessions.map((session) => {
+                    const linkedWorkout = session.linked_workout_id ? workoutsById.get(session.linked_workout_id) : null;
+                    return (
+                      <article className="history-item" key={session.id}>
+                        <div className="item-main">
+                          <div>
+                            <h4>{session.title}</h4>
+                            <p>{activityLabel(session.type)} • {summarizePlanDetails(session)}</p>
+                            {linkedWorkout && <p className="linked-text">Actual: {activityLabel(linkedWorkout.activity)} on {formatDate(linkedWorkout.date)}</p>}
+                            {session.actual_json && <p className="linked-text">Actual data saved</p>}
+                          </div>
+                          <time>{formatDate(session.date)}</time>
+                        </div>
+                        <div className="badge-row">
+                          <span className="status-badge">{session.status}</span>
+                          {isHistorical(session.source, session.coach_editable) && <span className="history-badge">Historical</span>}
+                          {session.original_v1_id && <span className="source-badge">V1</span>}
+                        </div>
+                      </article>
+                    );
+                  }) : (
+                    <p className="empty-state">No planned sessions in this space.</p>
+                  )}
+                </div>
+              </section>
+            </div>
+          </article>
+        </section>
+      )}
+
+      {activeView === "programs" && (
+        <section className="view-panel" aria-label="Programs">
+          <article className="workspace-panel">
+            <p className="panel-kicker">Programs</p>
+            <h2>Strength programs</h2>
+            <p className="empty-state">V1-style program import and scheduling will be restored here.</p>
+          </article>
+        </section>
+      )}
+
+      {activeView === "review" && (
+        <section className="view-panel" aria-label="Review">
+          <article className="workspace-panel">
+            <p className="panel-kicker">Review</p>
+            <h2>Planned vs actual</h2>
+            <p className="empty-state">Completed and modified planned sessions will appear here.</p>
+          </article>
+        </section>
+      )}
+
+      {activeView === "stats" && (
+        <section className="view-panel" aria-label="Stats">
+          <article className="workspace-panel">
+            <p className="panel-kicker">Stats</p>
+            <h2>Progress</h2>
+            <p className="empty-state">Goals, adherence, and charts will be added in a later step.</p>
+          </article>
+        </section>
+      )}
+
+      {activeView === "data" && (
+        <section className="view-panel" aria-label="Data">
+          <article className="workspace-panel">
+            <p className="panel-kicker">Data</p>
+            <h2>Cloud data</h2>
+            <p className="empty-state">V1 JSON import will be added here. Coach invite tools stay available below for now.</p>
+          </article>
+
+          <article className="workspace-panel collab-panel" aria-label="Coach invite">
             <div className="panel-header">
               <div>
                 <p className="panel-kicker">Coach</p>
@@ -706,108 +865,13 @@ export function App() {
               </button>
             </form>
             {inviteStatus && <p className="form-status neutral-status" role="status">{inviteStatus}</p>}
-          </section>
-        </aside>
+          </article>
+        </section>
+      )}
 
-        <section className="workspace-panel" aria-label="Dashboard">
-          <div className="panel-header">
-            <div>
-              <p className="panel-kicker">Current</p>
-              <h2>{selectedSpace?.name ?? "Select a training space"}</h2>
-            </div>
-            {selectedSpace && <span className="role-pill">{selectedSpace.my_role}</span>}
-          </div>
-
-          <div className="metric-grid">
-            <article className="metric-tile">
-              <span className="metric-value">{spaces.length}</span>
-              <span className="metric-label">Spaces</span>
-            </article>
-            <article className="metric-tile">
-              <span className="metric-value">{workouts.length}</span>
-              <span className="metric-label">Workouts</span>
-            </article>
-            <article className="metric-tile">
-              <span className="metric-value">{plannedSessions.length}</span>
-              <span className="metric-label">Plans</span>
-            </article>
-          </div>
-
-          {historyStatus && <p className="form-status history-status" role="status">{historyStatus}</p>}
-
-          <div className="history-grid" aria-busy={isLoadingHistory}>
-            <section className="history-panel" aria-label="Workouts">
-              <div className="history-panel-header">
-                <div>
-                  <p className="panel-kicker">Actual</p>
-                  <h3>Workouts</h3>
-                </div>
-                {isLoadingHistory && <span className="subtle-text">Loading</span>}
-              </div>
-
-              <div className="history-list">
-                {workouts.length ? workouts.map((workout) => {
-                  const linkedPlan = plannedSessionByWorkoutId.get(workout.id);
-                  return (
-                    <article className="history-item" key={workout.id}>
-                      <div className="item-main">
-                        <div>
-                          <h4>{activityLabel(workout.activity)}</h4>
-                          <p>{summarizeWorkout(workout) || "No summary"}</p>
-                          {linkedPlan && <p className="linked-text">Plan: {linkedPlan.title}</p>}
-                        </div>
-                        <time>{formatDate(workout.date)}</time>
-                      </div>
-                      <div className="badge-row">
-                        {isHistorical(workout.source, workout.coach_editable) && <span className="history-badge">Historical</span>}
-                        {workout.original_v1_id && <span className="source-badge">V1</span>}
-                      </div>
-                    </article>
-                  );
-                }) : (
-                  <p className="empty-state">No workouts in this space.</p>
-                )}
-              </div>
-            </section>
-
-            <section className="history-panel" aria-label="Planned sessions">
-              <div className="history-panel-header">
-                <div>
-                  <p className="panel-kicker">Planned</p>
-                  <h3>Sessions</h3>
-                </div>
-                {isLoadingHistory && <span className="subtle-text">Loading</span>}
-              </div>
-
-              <div className="history-list">
-                {plannedSessions.length ? plannedSessions.map((session) => {
-                  const linkedWorkout = session.linked_workout_id ? workoutsById.get(session.linked_workout_id) : null;
-                  return (
-                    <article className="history-item" key={session.id}>
-                      <div className="item-main">
-                        <div>
-                          <h4>{session.title}</h4>
-                          <p>{activityLabel(session.type)} • {summarizePlanDetails(session)}</p>
-                          {linkedWorkout && <p className="linked-text">Actual: {activityLabel(linkedWorkout.activity)} on {formatDate(linkedWorkout.date)}</p>}
-                          {session.actual_json && <p className="linked-text">Actual data saved</p>}
-                        </div>
-                        <time>{formatDate(session.date)}</time>
-                      </div>
-                      <div className="badge-row">
-                        <span className="status-badge">{session.status}</span>
-                        {isHistorical(session.source, session.coach_editable) && <span className="history-badge">Historical</span>}
-                        {session.original_v1_id && <span className="source-badge">V1</span>}
-                      </div>
-                    </article>
-                  );
-                }) : (
-                  <p className="empty-state">No planned sessions in this space.</p>
-                )}
-              </div>
-            </section>
-          </div>
-
-          <section className="coach-workspace" aria-label="Coach suggestions">
+      {activeView === "data" && (
+        <section className="view-panel" aria-label="Coach suggestions">
+          <article className="workspace-panel coach-workspace">
             <div className="history-panel-header">
               <div>
                 <p className="panel-kicker">Coach</p>
@@ -884,9 +948,9 @@ export function App() {
             )}
 
             {suggestionStatus && <p className="form-status neutral-status" role="status">{suggestionStatus}</p>}
-          </section>
+          </article>
         </section>
-      </section>
+      )}
     </main>
   );
 }

@@ -74,6 +74,13 @@ textarea {
   padding: 24px;
 }
 
+.cloud-planner-shell {
+  display: grid;
+  gap: 18px;
+  margin: 0 auto;
+  max-width: 1180px;
+}
+
 .app-shell-centered {
   align-items: center;
   display: flex;
@@ -112,6 +119,34 @@ textarea {
 .auth-panel,
 .loading-panel {
   padding: 22px;
+}
+
+.planner-header,
+.space-controls-panel {
+  background: #ffffff;
+  border: 1px solid #d9e2dd;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.planner-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.planner-header-top {
+  align-items: start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.planner-header-top p {
+  color: #52675e;
+  line-height: 1.5;
+  margin: 10px 0 0;
+  max-width: 680px;
 }
 
 .topbar {
@@ -174,6 +209,42 @@ h3 {
 .account-bar small,
 .space-item small {
   color: #60746b;
+}
+
+.view-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.nav-button {
+  border-color: #d3dfd9;
+  min-height: 38px;
+}
+
+.nav-button.is-active {
+  background: #1f6f5b;
+  border-color: #1f6f5b;
+  color: #ffffff;
+}
+
+.space-controls-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.space-select-row,
+.inline-space-form {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1fr) auto;
+}
+
+.view-panel {
+  display: grid;
+  gap: 18px;
 }
 
 .segmented-control {
@@ -452,11 +523,15 @@ label {
 
   .auth-layout,
   .dashboard-grid,
-  .history-grid {
+  .history-grid,
+  .planner-header-top,
+  .space-select-row,
+  .inline-space-form {
     grid-template-columns: 1fr;
   }
 
   .topbar,
+  .planner-header-top,
   .account-bar {
     align-items: stretch;
     flex-direction: column;
