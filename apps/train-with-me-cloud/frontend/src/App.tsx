@@ -1408,122 +1408,118 @@ export function App() {
             </div>
           </article>
 
-          <article className="workspace-panel collab-panel" aria-label="Coach invite">
+          <article className="workspace-panel coach-tools-panel" aria-label="Coach tools">
             <div className="panel-header">
               <div>
                 <p className="panel-kicker">Coach</p>
-                <h3>Invite</h3>
-              </div>
-            </div>
-            {selectedSpace?.my_role === "owner" && (
-              <button type="button" onClick={handleCreateInvite} disabled={isCreatingInvite}>
-                {isCreatingInvite ? "Creating" : "Create invite"}
-              </button>
-            )}
-            {lastInvite && (
-              <label className="readonly-field">
-                Invite token
-                <input value={lastInvite.token} readOnly />
-              </label>
-            )}
-            <form className="stacked-form compact" onSubmit={handleAcceptInvite}>
-              <label>
-                Accept token
-                <input
-                  value={inviteToken}
-                  onChange={(event) => setInviteToken(event.target.value)}
-                  placeholder="Paste invite token"
-                  required
-                />
-              </label>
-              <button type="submit" disabled={isAcceptingInvite || !inviteToken.trim()}>
-                {isAcceptingInvite ? "Accepting" : "Accept invite"}
-              </button>
-            </form>
-            {inviteStatus && <p className="form-status neutral-status" role="status">{inviteStatus}</p>}
-          </article>
-        </section>
-      )}
-
-      {activeView === "data" && (
-        <section className="view-panel" aria-label="Coach suggestions">
-          <article className="workspace-panel coach-workspace">
-            <div className="history-panel-header">
-              <div>
-                <p className="panel-kicker">Coach</p>
-                <h3>Suggestions</h3>
+                <h3>Coach tools</h3>
               </div>
               {pendingSuggestions.length > 0 && <span className="source-badge">{pendingSuggestions.length} pending</span>}
             </div>
 
-            {selectedSpace?.my_role === "coach" && (
-              <form className="suggestion-form" onSubmit={handleCreateSuggestion}>
-                <label>
-                  Workout
-                  <select name="targetWorkoutId" required disabled={!workouts.length}>
-                    <option value="">Select workout</option>
-                    {workouts.map((workout) => (
-                      <option key={workout.id} value={workout.id}>
-                        {formatDate(workout.date)} - {activityLabel(workout.activity)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Suggested notes
-                  <textarea name="suggestedNotes" rows={4} required />
-                </label>
-                <button type="submit" disabled={isCreatingSuggestion || !workouts.length}>
-                  {isCreatingSuggestion ? "Sending" : "Send suggestion"}
-                </button>
-              </form>
-            )}
-
-            {selectedSpace?.my_role === "owner" && (
-              <div className="suggestion-list">
-                {coachSuggestions.length ? coachSuggestions.map((suggestion) => {
-                  const workout = workoutsById.get(suggestion.target_entity_id);
-                  const isPending = suggestion.status === "pending";
-                  return (
-                    <article className="history-item" key={suggestion.id}>
-                      <div className="item-main">
-                        <div>
-                          <h4>{workout ? `${formatDate(workout.date)} ${activityLabel(workout.activity)}` : "Workout suggestion"}</h4>
-                          <p>{suggestionNotes(suggestion) || "No note text"}</p>
-                        </div>
-                        <span className="status-badge">{suggestion.status}</span>
-                      </div>
-                      {isPending && (
-                        <div className="action-row">
-                          <button
-                            type="button"
-                            onClick={() => void handleResolveSuggestion(suggestion.id, "accept")}
-                            disabled={resolvingSuggestionId === suggestion.id}
-                          >
-                            Accept
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleResolveSuggestion(suggestion.id, "reject")}
-                            disabled={resolvingSuggestionId === suggestion.id}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                    </article>
-                  );
-                }) : (
-                  <p className="empty-state">No coach suggestions yet.</p>
+            <div className="coach-tools-grid">
+              <div className="coach-tool-section">
+                <h4>Invite</h4>
+                {selectedSpace?.my_role === "owner" && (
+                  <button type="button" onClick={handleCreateInvite} disabled={isCreatingInvite}>
+                    {isCreatingInvite ? "Creating" : "Create invite"}
+                  </button>
                 )}
+                {lastInvite && (
+                  <label className="readonly-field">
+                    Invite token
+                    <input value={lastInvite.token} readOnly />
+                  </label>
+                )}
+                <form className="stacked-form compact" onSubmit={handleAcceptInvite}>
+                  <label>
+                    Accept token
+                    <input
+                      value={inviteToken}
+                      onChange={(event) => setInviteToken(event.target.value)}
+                      placeholder="Paste invite token"
+                      required
+                    />
+                  </label>
+                  <button type="submit" disabled={isAcceptingInvite || !inviteToken.trim()}>
+                    {isAcceptingInvite ? "Accepting" : "Accept invite"}
+                  </button>
+                </form>
+                {inviteStatus && <p className="form-status neutral-status" role="status">{inviteStatus}</p>}
               </div>
-            )}
 
-            {selectedSpace?.my_role !== "owner" && selectedSpace?.my_role !== "coach" && (
-              <p className="empty-state">Coach suggestions appear here when a coach is connected.</p>
-            )}
+              <div className="coach-tool-section">
+                <h4>Suggestions</h4>
+                {selectedSpace?.my_role === "coach" && (
+                  <form className="suggestion-form" onSubmit={handleCreateSuggestion}>
+                    <label>
+                      Workout
+                      <select name="targetWorkoutId" required disabled={!workouts.length}>
+                        <option value="">Select workout</option>
+                        {workouts.map((workout) => (
+                          <option key={workout.id} value={workout.id}>
+                            {formatDate(workout.date)} - {activityLabel(workout.activity)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Suggested notes
+                      <textarea name="suggestedNotes" rows={4} required />
+                    </label>
+                    <button type="submit" disabled={isCreatingSuggestion || !workouts.length}>
+                      {isCreatingSuggestion ? "Sending" : "Send suggestion"}
+                    </button>
+                  </form>
+                )}
 
-            {suggestionStatus && <p className="form-status neutral-status" role="status">{suggestionStatus}</p>}
+                {selectedSpace?.my_role === "owner" && (
+                  <div className="suggestion-list">
+                    {coachSuggestions.length ? coachSuggestions.map((suggestion) => {
+                      const workout = workoutsById.get(suggestion.target_entity_id);
+                      const isPending = suggestion.status === "pending";
+                      return (
+                        <article className="history-item" key={suggestion.id}>
+                          <div className="item-main">
+                            <div>
+                              <h4>{workout ? `${formatDate(workout.date)} ${activityLabel(workout.activity)}` : "Workout suggestion"}</h4>
+                              <p>{suggestionNotes(suggestion) || "No note text"}</p>
+                            </div>
+                            <span className="status-badge">{suggestion.status}</span>
+                          </div>
+                          {isPending && (
+                            <div className="action-row">
+                              <button
+                                type="button"
+                                onClick={() => void handleResolveSuggestion(suggestion.id, "accept")}
+                                disabled={resolvingSuggestionId === suggestion.id}
+                              >
+                                Accept
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleResolveSuggestion(suggestion.id, "reject")}
+                                disabled={resolvingSuggestionId === suggestion.id}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          )}
+                        </article>
+                      );
+                    }) : (
+                      <p className="empty-state">No coach suggestions yet.</p>
+                    )}
+                  </div>
+                )}
+
+                {selectedSpace?.my_role !== "owner" && selectedSpace?.my_role !== "coach" && (
+                  <p className="empty-state">Coach suggestions appear here when a coach is connected.</p>
+                )}
+
+                {suggestionStatus && <p className="form-status neutral-status" role="status">{suggestionStatus}</p>}
+              </div>
+            </div>
           </article>
         </section>
       )}

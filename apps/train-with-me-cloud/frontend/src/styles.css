@@ -369,14 +369,6 @@ label {
   margin: 18px 0 0;
 }
 
-.collab-panel {
-  border-top: 1px solid #edf2ef;
-  display: grid;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 20px;
-}
-
 .readonly-field {
   margin-top: 2px;
 }
@@ -591,12 +583,6 @@ label {
   margin-top: 24px;
 }
 
-.coach-workspace {
-  border-top: 1px solid #edf2ef;
-  margin-top: 24px;
-  padding-top: 20px;
-}
-
 .history-panel {
   border: 1px solid #edf2ef;
   border-radius: 8px;
@@ -629,6 +615,28 @@ label {
   display: grid;
   gap: 10px;
   margin-top: 14px;
+}
+
+.coach-tools-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.coach-tools-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.coach-tool-section {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.coach-tool-section h4 {
+  margin: 0;
 }
 
 .history-item {
@@ -706,6 +714,7 @@ label {
   .auth-layout,
   .dashboard-grid,
   .calendar-grid,
+  .coach-tools-grid,
   .history-grid,
   .planner-header-top,
   .space-select-row,
