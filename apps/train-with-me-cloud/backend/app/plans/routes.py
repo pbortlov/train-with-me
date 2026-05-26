@@ -145,3 +145,15 @@ def update_planned_session(
     db.commit()
     db.refresh(planned_session)
     return planned_session_response(planned_session)
+
+
+@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_planned_session(
+    training_space_id: str,
+    session_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db_session)],
+) -> None:
+    planned_session = get_visible_planned_session(db, training_space_id, session_id, current_user.id)
+    db.delete(planned_session)
+    db.commit()

@@ -383,6 +383,10 @@ async function apiRequest<T>(path: string, options: RequestInit = {}, token?: st
     throw new Error(await parseApiError(response));
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return await response.json() as T;
 }
 
@@ -423,6 +427,7 @@ export function App() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isSavingTraining, setIsSavingTraining] = useState(false);
   const [isCompletingSessionId, setIsCompletingSessionId] = useState("");
+  const [isDeletingCalendarItem, setIsDeletingCalendarItem] = useState(false);
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -1011,6 +1016,60 @@ export function App() {
     }
   }
 
+  async function handleDeleteWorkout(workout: Workout) {
+    if (!token || !selectedSpace) {
+      return;
+    }
+    const confirmed = window.confirm(`Delete ${activityLabel(workout.activity)} workout from ${formatDate(workout.date)}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingCalendarItem(true);
+    setCompletionStatus("");
+    try {
+      await apiRequest<void>(
+        `/api/training-spaces/${selectedSpace.id}/workouts/${workout.id}`,
+        { method: "DELETE" },
+        token,
+      );
+      await loadTrainingHistory(token, selectedSpace.id);
+      setCalendarSelection(null);
+      setHistoryStatus("Workout deleted.");
+    } catch (error) {
+      setCompletionStatus(error instanceof Error ? error.message : "Could not delete workout.");
+    } finally {
+      setIsDeletingCalendarItem(false);
+    }
+  }
+
+  async function handleDeletePlannedSession(session: PlannedSession) {
+    if (!token || !selectedSpace) {
+      return;
+    }
+    const confirmed = window.confirm(`Delete planned session "${session.title}" from ${formatDate(session.date)}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingCalendarItem(true);
+    setCompletionStatus("");
+    try {
+      await apiRequest<void>(
+        `/api/training-spaces/${selectedSpace.id}/planned-sessions/${session.id}`,
+        { method: "DELETE" },
+        token,
+      );
+      await loadTrainingHistory(token, selectedSpace.id);
+      setCalendarSelection(null);
+      setHistoryStatus("Planned session deleted.");
+    } catch (error) {
+      setCompletionStatus(error instanceof Error ? error.message : "Could not delete planned session.");
+    } finally {
+      setIsDeletingCalendarItem(false);
+    }
+  }
+
   async function handleExportData() {
     if (!token || !selectedSpace) {
       return;
@@ -1372,7 +1431,29 @@ export function App() {
                         : selectedCalendarSession?.title}
                     </h3>
                   </div>
-                  <button type="button" onClick={() => setCalendarSelection(null)}>Close</button>
+                  <div className="calendar-detail-actions">
+                    {selectedCalendarWorkout && (
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => void handleDeleteWorkout(selectedCalendarWorkout)}
+                        disabled={isDeletingCalendarItem}
+                      >
+                        {isDeletingCalendarItem ? "Deleting" : "Delete"}
+                      </button>
+                    )}
+                    {selectedCalendarSession && (
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => void handleDeletePlannedSession(selectedCalendarSession)}
+                        disabled={isDeletingCalendarItem}
+                      >
+                        {isDeletingCalendarItem ? "Deleting" : "Delete"}
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setCalendarSelection(null)}>Close</button>
+                  </div>
                 </div>
 
                 {selectedCalendarWorkout && (

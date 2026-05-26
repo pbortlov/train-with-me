@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.routes import get_current_user
 from app.db.models import (
+    PlannedSession,
     SprintSet,
     TrainingSpaceMembership,
     TrainingSpaceRole,
@@ -192,3 +193,37 @@ def update_workout(
     db.commit()
     db.refresh(workout)
     return workout_response(workout)
+
+
+@router.delete("/{workout_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_workout(
+    training_space_id: str,
+    workout_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db_session)],
+) -> None:
+    workout, membership = get_visible_workout(db, training_space_id, workout_id, current_user.id)
+    if (
+        membership.role == TrainingSpaceRole.coach.value
+        and workout.source == WorkoutSource.v1_import.value
+        and not workout.coach_editable
+    ):
+        raise workouts_error(
+            "workout_not_editable",
+            "Imported historical workout cannot be deleted by a coach.",
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    linked_sessions = db.scalars(
+        select(PlannedSession).where(
+            PlannedSession.training_space_id == training_space_id,
+            PlannedSession.linked_workout_id == workout_id,
+        ),
+    ).all()
+    for session in linked_sessions:
+        session.linked_workout_id = None
+        session.actual_json = None
+        session.status = "planned"
+
+    db.delete(workout)
+    db.commit()

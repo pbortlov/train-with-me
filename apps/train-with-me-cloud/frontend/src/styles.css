@@ -40,6 +40,15 @@ button:hover:not(:disabled) {
   border-color: #1f6f5b;
 }
 
+.danger-button {
+  border-color: #d8aaa4;
+  color: #9d2f23;
+}
+
+.danger-button:hover:not(:disabled) {
+  border-color: #9d2f23;
+}
+
 button:disabled {
   color: #7b8a83;
   cursor: wait;
@@ -496,6 +505,13 @@ label {
   gap: 14px;
   margin-top: 18px;
   padding: 16px;
+}
+
+.calendar-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .calendar-detail-grid {

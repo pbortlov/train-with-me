@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
-from app.db.models import User
+from app.db.models import PlannedSession, User
 from app.main import app
-from app.plans.routes import create_planned_session, list_planned_sessions, update_planned_session
+from app.plans.routes import create_planned_session, delete_planned_session, list_planned_sessions, update_planned_session
 from app.plans.schemas import PlannedSessionCreateRequest, PlannedSessionUpdateRequest
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
@@ -271,6 +271,21 @@ def test_update_planned_session_rejects_cross_space_workout_link(db_session: Ses
             "message": "Workout was not found.",
         },
     }
+
+
+def test_delete_planned_session(db_session: Session) -> None:
+    user = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, user)
+    session = create_planned_session(
+        space.id,
+        PlannedSessionCreateRequest(type="run", title="Easy run", date=date(2026, 5, 22), details_json={"distance": 5}),
+        user,
+        db_session,
+    )
+
+    delete_planned_session(space.id, session.id, user, db_session)
+
+    assert db_session.get(PlannedSession, session.id) is None
 
 
 def test_planned_session_routes_are_registered() -> None:

@@ -10,6 +10,7 @@ from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
 from app.db.models import (
+    PlannedSession,
     TrainingSpaceMembership,
     TrainingSpaceRole,
     User,
@@ -19,7 +20,7 @@ from app.db.models import (
 from app.main import app
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
-from app.workouts.routes import create_workout, list_workouts, update_workout
+from app.workouts.routes import create_workout, delete_workout, list_workouts, update_workout
 from app.workouts.schemas import (
     SprintSetPayload,
     StrengthExercisePayload,
@@ -211,6 +212,43 @@ def test_coach_cannot_mutate_historical_imported_workout(db_session: Session) ->
             "message": "Imported historical workout cannot be edited by a coach.",
         },
     }
+
+
+def test_delete_workout_unlinks_planned_session(db_session: Session) -> None:
+    user = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, user)
+    workout = create_workout(
+        space.id,
+        WorkoutCreateRequest(
+            activity="run",
+            date=date(2026, 5, 21),
+            distance=5,
+            time="22:00",
+            pace=4.4,
+        ),
+        user,
+        db_session,
+    )
+    planned_session = PlannedSession(
+        training_space_id=space.id,
+        type="run",
+        title="Easy run",
+        date=date(2026, 5, 21),
+        linked_workout_id=workout.id,
+        actual_json={"distance": 5},
+        details_json={"distance": 5},
+        status="completed",
+    )
+    db_session.add(planned_session)
+    db_session.commit()
+
+    delete_workout(space.id, workout.id, user, db_session)
+
+    assert db_session.get(Workout, workout.id) is None
+    db_session.refresh(planned_session)
+    assert planned_session.linked_workout_id is None
+    assert planned_session.actual_json is None
+    assert planned_session.status == "planned"
 
 
 def test_workout_routes_are_registered() -> None:
