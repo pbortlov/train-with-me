@@ -462,7 +462,9 @@ label {
   border-radius: 6px;
   display: grid;
   gap: 3px;
+  min-height: auto;
   padding: 8px;
+  text-align: left;
 }
 
 .calendar-item strong {
@@ -485,6 +487,35 @@ label {
 .calendar-item.actual {
   background: #e7f4ef;
   border: 1px solid #b7d7cd;
+}
+
+.calendar-detail-panel {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.calendar-detail-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.calendar-detail-grid > div {
+  background: #fbfdfc;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.calendar-detail-grid p {
+  color: #52675e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin: 6px 0 0;
 }
 
 .add-training-card {
@@ -891,6 +922,7 @@ label {
   .auth-layout,
   .dashboard-grid,
   .calendar-grid,
+  .calendar-detail-grid,
   .coach-tools-grid,
   .history-grid,
   .planner-header-top,

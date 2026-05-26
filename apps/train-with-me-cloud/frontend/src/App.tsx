@@ -5,6 +5,7 @@ type CloudView = "calendar" | "programs" | "review" | "stats" | "data";
 type AddTrainingMode = "log" | "plan";
 type Activity = "strength" | "run" | "sprint";
 type PlannedType = "run" | "sprint";
+type CalendarSelection = { type: "workout" | "planned"; id: string } | null;
 
 type User = {
   id: string;
@@ -299,6 +300,7 @@ export function App() {
   const [addTrainingMode, setAddTrainingMode] = useState<AddTrainingMode>("log");
   const [actualActivity, setActualActivity] = useState<Activity>("strength");
   const [plannedType, setPlannedType] = useState<PlannedType>("run");
+  const [calendarSelection, setCalendarSelection] = useState<CalendarSelection>(null);
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
@@ -363,6 +365,13 @@ export function App() {
   const weekWorkoutCount = calendarDays.reduce((total, day) => total + day.workouts.length, 0);
   const weekPlanCount = calendarDays.reduce((total, day) => total + day.plannedSessions.length, 0);
   const weekLabel = `${formatDate(calendarDays[0]?.key ?? calendarWeekStart)} - ${formatDate(calendarDays[6]?.key ?? calendarWeekStart)}`;
+  const selectedCalendarWorkout = calendarSelection?.type === "workout" ? workoutsById.get(calendarSelection.id) ?? null : null;
+  const selectedCalendarSession = calendarSelection?.type === "planned"
+    ? plannedSessions.find((session) => session.id === calendarSelection.id) ?? null
+    : null;
+  const selectedCalendarSessionWorkout = selectedCalendarSession?.linked_workout_id
+    ? workoutsById.get(selectedCalendarSession.linked_workout_id) ?? null
+    : null;
   const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
   const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
   const reviewCounts = {
@@ -1131,16 +1140,26 @@ export function App() {
 
                   <div className="calendar-day-items">
                     {day.plannedSessions.map((session) => (
-                      <div className="calendar-item planned" key={session.id}>
+                      <button
+                        type="button"
+                        className="calendar-item planned"
+                        key={session.id}
+                        onClick={() => setCalendarSelection({ type: "planned", id: session.id })}
+                      >
                         <strong>{session.title}</strong>
                         <span>{activityLabel(session.type)} • {session.status}</span>
-                      </div>
+                      </button>
                     ))}
                     {day.workouts.map((workout) => (
-                      <div className="calendar-item actual" key={workout.id}>
+                      <button
+                        type="button"
+                        className="calendar-item actual"
+                        key={workout.id}
+                        onClick={() => setCalendarSelection({ type: "workout", id: workout.id })}
+                      >
                         <strong>{activityLabel(workout.activity)}</strong>
                         <span>{summarizeWorkout(workout) || "Logged workout"}</span>
-                      </div>
+                      </button>
                     ))}
                     {!day.plannedSessions.length && !day.workouts.length && (
                       <p className="calendar-empty">No training</p>
@@ -1149,6 +1168,62 @@ export function App() {
                 </article>
               ))}
             </div>
+
+            {(selectedCalendarWorkout || selectedCalendarSession) && (
+              <section className="calendar-detail-panel" aria-label="Selected calendar item">
+                <div className="panel-header">
+                  <div>
+                    <p className="panel-kicker">{selectedCalendarWorkout ? "Actual" : "Planned"}</p>
+                    <h3>
+                      {selectedCalendarWorkout
+                        ? activityLabel(selectedCalendarWorkout.activity)
+                        : selectedCalendarSession?.title}
+                    </h3>
+                  </div>
+                  <button type="button" onClick={() => setCalendarSelection(null)}>Close</button>
+                </div>
+
+                {selectedCalendarWorkout && (
+                  <div className="calendar-detail-grid">
+                    <div>
+                      <strong>Date</strong>
+                      <p>{formatDate(selectedCalendarWorkout.date)}</p>
+                    </div>
+                    <div>
+                      <strong>Summary</strong>
+                      <p>{summarizeWorkout(selectedCalendarWorkout) || "Logged workout"}</p>
+                    </div>
+                    <div>
+                      <strong>Notes</strong>
+                      <p>{selectedCalendarWorkout.notes || "No notes"}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedCalendarSession && (
+                  <div className="calendar-detail-grid">
+                    <div>
+                      <strong>Date</strong>
+                      <p>{formatDate(selectedCalendarSession.date)}</p>
+                    </div>
+                    <div>
+                      <strong>Planned</strong>
+                      <p>{activityLabel(selectedCalendarSession.type)} • {summarizePlanDetails(selectedCalendarSession)}</p>
+                    </div>
+                    <div>
+                      <strong>Actual</strong>
+                      <p>
+                        {selectedCalendarSessionWorkout
+                          ? `${activityLabel(selectedCalendarSessionWorkout.activity)} • ${summarizeWorkout(selectedCalendarSessionWorkout) || "Logged workout"}`
+                          : selectedCalendarSession.actual_json
+                            ? "Actual data saved"
+                            : "No actual linked yet"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
 
             <section className="add-training-card" aria-label="Add training">
               <div className="add-training-header">
