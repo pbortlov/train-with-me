@@ -153,6 +153,12 @@ type ProgramProgressModel = {
   weeks: { label: string; total: number; completed: number; modified: number; missed: number; planned: number }[];
 };
 
+type ChartPoint = {
+  label: string;
+  value: number;
+  meta?: string;
+};
+
 type V1Goal = {
   id?: string;
   activity?: string;
@@ -358,6 +364,45 @@ function formatStrengthSet(set: WorkoutSet): string {
     return `${set.reps} reps @ ${set.band_color || "band"}`;
   }
   return `${set.reps} reps`;
+}
+
+function maxStrengthLoad(workout: Workout): number {
+  return workout.strength_exercises
+    .flatMap((exercise) => exercise.sets)
+    .filter((set) => set.load_type === "kg" && set.weight != null)
+    .reduce((best, set) => Math.max(best, set.weight ?? 0), 0);
+}
+
+function weekBucketLabel(dateValue: string): string {
+  const parsed = new Date(`${dateValue}T00:00:00`);
+  return Number.isNaN(parsed.getTime())
+    ? dateValue
+    : parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function MiniBarChart({ points, unit }: { points: ChartPoint[]; unit: string }) {
+  const maxValue = points.reduce((max, point) => Math.max(max, point.value), 0);
+
+  if (!points.length || maxValue <= 0) {
+    return <p className="empty-state">No chart data yet.</p>;
+  }
+
+  return (
+    <div className="mini-chart" role="img" aria-label={`${unit} chart`}>
+      {points.map((point) => (
+        <div className="mini-chart-row" key={`${point.label}-${point.meta ?? ""}`}>
+          <div className="mini-chart-label">
+            <strong>{point.label}</strong>
+            {point.meta && <span>{point.meta}</span>}
+          </div>
+          <div className="mini-chart-track">
+            <span style={{ width: `${Math.max(4, (point.value / maxValue) * 100)}%` }} />
+          </div>
+          <span className="mini-chart-value">{formatNumber(point.value)} {unit}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function summarizePlanDetails(session: PlannedSession): string {
@@ -591,6 +636,41 @@ export function App() {
         .map((exercise) => exercise.name.trim())
         .filter(Boolean),
     )).sort((a, b) => a.localeCompare(b))
+  ), [workouts]);
+  const weeklyWorkoutChart = useMemo<ChartPoint[]>(() => {
+    const buckets = new Map<string, number>();
+    workouts.forEach((workout) => {
+      const weekStart = dateKey(startOfWeek(new Date(`${workout.date}T00:00:00`)));
+      buckets.set(weekStart, (buckets.get(weekStart) ?? 0) + 1);
+    });
+    return Array.from(buckets.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .slice(-8)
+      .map(([weekStart, count]) => ({ label: weekBucketLabel(weekStart), value: count }));
+  }, [workouts]);
+  const runDistanceChart = useMemo<ChartPoint[]>(() => (
+    workouts
+      .filter((workout) => workout.activity === "run" && workout.distance != null)
+      .sort((left, right) => left.date.localeCompare(right.date))
+      .slice(-8)
+      .map((workout) => ({
+        label: weekBucketLabel(workout.date),
+        value: workout.distance ?? 0,
+        meta: workout.time ?? undefined,
+      }))
+  ), [workouts]);
+  const strengthLoadChart = useMemo<ChartPoint[]>(() => (
+    workouts
+      .filter((workout) => workout.activity === "strength")
+      .map((workout) => ({ workout, maxLoad: maxStrengthLoad(workout) }))
+      .filter((row) => row.maxLoad > 0)
+      .sort((left, right) => left.workout.date.localeCompare(right.workout.date))
+      .slice(-8)
+      .map((row) => ({
+        label: weekBucketLabel(row.workout.date),
+        value: row.maxLoad,
+        meta: summarizeWorkout(row.workout) || undefined,
+      }))
   ), [workouts]);
   const bestRunDistance = workouts
     .filter((workout) => workout.activity === "run" && workout.distance != null)
@@ -2574,6 +2654,24 @@ export function App() {
                   <div><strong>Longest run</strong><span>{bestRunDistance ? `${formatNumber(bestRunDistance)} km` : "No data"}</span></div>
                   <div><strong>Best sprint</strong><span>{Number.isFinite(bestSprintTime) ? `${formatNumber(bestSprintTime)} sec` : "No data"}</span></div>
                   <div><strong>Highest strength load</strong><span>{maxStrengthWeight ? `${formatNumber(maxStrengthWeight)} kg` : "No data"}</span></div>
+                </div>
+              </section>
+
+              <section className="stats-section stats-chart-section" aria-label="Workout charts">
+                <h3>Workout charts</h3>
+                <div className="stats-chart-grid">
+                  <article>
+                    <h4>Weekly volume</h4>
+                    <MiniBarChart points={weeklyWorkoutChart} unit="workout(s)" />
+                  </article>
+                  <article>
+                    <h4>Run distance</h4>
+                    <MiniBarChart points={runDistanceChart} unit="km" />
+                  </article>
+                  <article>
+                    <h4>Strength load</h4>
+                    <MiniBarChart points={strengthLoadChart} unit="kg" />
+                  </article>
                 </div>
               </section>
 

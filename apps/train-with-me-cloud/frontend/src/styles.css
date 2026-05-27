@@ -1050,6 +1050,10 @@ label {
   grid-column: 1 / -1;
 }
 
+.stats-chart-section {
+  grid-column: 1 / -1;
+}
+
 .stats-section h3 {
   margin-bottom: 14px;
 }
@@ -1076,6 +1080,76 @@ label {
 .stats-list span {
   color: #52675e;
   font-weight: 700;
+  text-align: right;
+}
+
+.stats-chart-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stats-chart-grid article {
+  background: #fbfdfc;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.stats-chart-grid h4 {
+  margin: 0;
+}
+
+.mini-chart {
+  display: grid;
+  gap: 10px;
+}
+
+.mini-chart-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(70px, 0.8fr) minmax(100px, 1.4fr) minmax(80px, 0.8fr);
+}
+
+.mini-chart-label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mini-chart-label strong,
+.mini-chart-value {
+  font-size: 0.84rem;
+}
+
+.mini-chart-label span {
+  color: #6d8078;
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-chart-track {
+  background: #edf3f0;
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.mini-chart-track span {
+  background: #1f6f5b;
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+}
+
+.mini-chart-value {
+  color: #52675e;
+  font-weight: 800;
   text-align: right;
 }
 
@@ -1223,6 +1297,7 @@ label {
   .program-grid,
   .review-diff-grid,
   .space-select-row,
+  .stats-chart-grid,
   .stats-grid,
   .inline-space-form,
   .training-form-grid {
@@ -1256,6 +1331,14 @@ label {
 
   .calendar-nav button {
     flex: 1 1 140px;
+  }
+
+  .mini-chart-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-chart-value {
+    text-align: left;
   }
 
   .add-training-header,
