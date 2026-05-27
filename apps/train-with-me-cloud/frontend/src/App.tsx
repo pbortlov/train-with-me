@@ -519,6 +519,14 @@ export function App() {
     run: workouts.filter((workout) => workout.activity === "run").length,
     sprint: workouts.filter((workout) => workout.activity === "sprint").length,
   };
+  const strengthExerciseSuggestions = useMemo(() => (
+    Array.from(new Set(
+      workouts
+        .flatMap((workout) => workout.strength_exercises)
+        .map((exercise) => exercise.name.trim())
+        .filter(Boolean),
+    )).sort((a, b) => a.localeCompare(b))
+  ), [workouts]);
   const bestRunDistance = workouts
     .filter((workout) => workout.activity === "run" && workout.distance != null)
     .reduce((best, workout) => Math.max(best, workout.distance ?? 0), 0);
@@ -2022,10 +2030,16 @@ export function App() {
                       <label>
                         Exercise
                         <input
+                          list="strength-exercise-suggestions"
                           value={strengthExerciseName}
                           onChange={(event) => setStrengthExerciseName(event.target.value)}
                           placeholder="Back squat"
                         />
+                        <datalist id="strength-exercise-suggestions">
+                          {strengthExerciseSuggestions.map((name) => (
+                            <option key={name} value={name} />
+                          ))}
+                        </datalist>
                       </label>
                       <label>
                         Reps
