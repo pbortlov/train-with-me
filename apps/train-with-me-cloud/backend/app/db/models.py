@@ -52,6 +52,12 @@ class CoachSuggestionStatus(StrEnum):
     rejected = "rejected"
 
 
+class TrainingGoalActivity(StrEnum):
+    strength = "strength"
+    run = "run"
+    sprint = "sprint"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -83,6 +89,7 @@ class TrainingSpace(Base):
     coach_suggestions: Mapped[list["CoachSuggestion"]] = relationship(back_populates="training_space")
     audit_events: Mapped[list["AuditEvent"]] = relationship(back_populates="training_space")
     imported_v1_metadata: Mapped[list["ImportedV1Metadata"]] = relationship(back_populates="training_space")
+    training_goals: Mapped[list["TrainingGoal"]] = relationship(back_populates="training_space")
 
 
 class TrainingSpaceMembership(Base):
@@ -271,3 +278,20 @@ class ImportedV1Metadata(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     training_space: Mapped[TrainingSpace] = relationship(back_populates="imported_v1_metadata")
+
+
+class TrainingGoal(Base):
+    __tablename__ = "training_goals"
+    __table_args__ = (
+        UniqueConstraint("training_space_id", "activity", name="uq_training_goals_space_activity"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
+    activity: Mapped[str] = mapped_column(String(32), nullable=False)
+    target_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+
+    training_space: Mapped[TrainingSpace] = relationship(back_populates="training_goals")

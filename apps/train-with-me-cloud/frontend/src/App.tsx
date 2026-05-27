@@ -106,6 +106,16 @@ type CoachSuggestion = {
   created_at: string;
 };
 
+type TrainingGoal = {
+  id: string;
+  training_space_id: string;
+  activity: string;
+  target_json: Record<string, unknown>;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type V1BackupSummary = {
   version: number | null;
   exportedAt: string | null;
@@ -330,6 +340,27 @@ function formatGoalProgress(goal: V1Goal, workouts: Workout[]): string {
   return "Progress unavailable";
 }
 
+function formatCloudGoal(goal: TrainingGoal): string {
+  const distance = numberValue(goal.target_json.distance);
+  const time = typeof goal.target_json.time === "string" ? goal.target_json.time : "";
+  const weight = numberValue(goal.target_json.weight);
+  const sprintTime = numberValue(goal.target_json.timeSec);
+  const sprintDistance = numberValue(goal.target_json.distanceM);
+
+  if (goal.activity === "strength" && weight != null) {
+    return `${formatNumber(weight)} kg`;
+  }
+  if (goal.activity === "run" && distance != null) {
+    return time ? `${formatNumber(distance)} km under ${time}` : `${formatNumber(distance)} km`;
+  }
+  if (goal.activity === "sprint" && sprintTime != null) {
+    return sprintDistance != null
+      ? `${formatNumber(sprintDistance)} m under ${formatNumber(sprintTime)} sec`
+      : `Under ${formatNumber(sprintTime)} sec`;
+  }
+  return "Goal target";
+}
+
 function isHistorical(source: string, coachEditable: boolean): boolean {
   return source === "v1_import" || !coachEditable;
 }
@@ -489,6 +520,7 @@ export function App() {
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
+  const [trainingGoals, setTrainingGoals] = useState<TrainingGoal[]>([]);
   const [v1Metadata, setV1Metadata] = useState<ImportedV1Metadata[]>([]);
   const [coachSuggestions, setCoachSuggestions] = useState<CoachSuggestion[]>([]);
   const [lastInvite, setLastInvite] = useState<CoachInvite | null>(null);
@@ -499,6 +531,7 @@ export function App() {
   const [completionStatus, setCompletionStatus] = useState("");
   const [workoutEditStatus, setWorkoutEditStatus] = useState("");
   const [plannedEditStatus, setPlannedEditStatus] = useState("");
+  const [goalStatus, setGoalStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [exportStatus, setExportStatus] = useState("");
   const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
@@ -516,6 +549,7 @@ export function App() {
   const [isSavingWorkoutNotes, setIsSavingWorkoutNotes] = useState(false);
   const [isSavingPlannedSession, setIsSavingPlannedSession] = useState(false);
   const [isMarkingMissedSessionId, setIsMarkingMissedSessionId] = useState("");
+  const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -568,6 +602,10 @@ export function App() {
   const selectedCalendarSprintBlock = selectedCalendarSession ? firstSprintBlock(selectedCalendarSession) : {};
   const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
   const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
+  const goalsByActivity = useMemo(
+    () => new Map(trainingGoals.map((goal) => [goal.activity, goal])),
+    [trainingGoals],
+  );
   const programProgress = useMemo<ProgramProgressModel[]>(() => {
     const templateNames = new Map(
       phaseTemplates.map((row) => [
@@ -687,6 +725,7 @@ export function App() {
   const activeGoals = importedGoals && typeof importedGoals.active === "object" && importedGoals.active != null
     ? Object.values(importedGoals.active as Record<string, unknown>).filter(Boolean).length
     : 0;
+  const cloudGoalCount = trainingGoals.length;
   const activeGoalRows = useMemo(() => {
     const active = asRecord(importedGoals?.active);
     if (!active) {
@@ -728,6 +767,11 @@ export function App() {
     ]);
     setWorkouts(nextWorkouts);
     setPlannedSessions(nextPlannedSessions);
+  }, []);
+
+  const loadTrainingGoals = useCallback(async (activeToken: string, trainingSpaceId: string) => {
+    const nextGoals = await apiRequest<TrainingGoal[]>(`/api/training-spaces/${trainingSpaceId}/goals`, {}, activeToken);
+    setTrainingGoals(nextGoals);
   }, []);
 
   const loadV1Metadata = useCallback(async (activeToken: string, trainingSpaceId: string) => {
@@ -776,6 +820,7 @@ export function App() {
     if (!token || !selectedSpaceId) {
       setWorkouts([]);
       setPlannedSessions([]);
+      setTrainingGoals([]);
       setV1Metadata([]);
       setHistoryStatus("");
       return;
@@ -796,6 +841,7 @@ export function App() {
         }
         setWorkouts([]);
         setPlannedSessions([]);
+        setTrainingGoals([]);
         setHistoryStatus(error instanceof Error ? error.message : "Could not load training history.");
       })
       .finally(() => {
@@ -808,6 +854,29 @@ export function App() {
       isActive = false;
     };
   }, [loadTrainingHistory, selectedSpaceId, token]);
+
+  useEffect(() => {
+    if (!token || !selectedSpaceId) {
+      setTrainingGoals([]);
+      setGoalStatus("");
+      return;
+    }
+
+    let isActive = true;
+    setGoalStatus("");
+    loadTrainingGoals(token, selectedSpaceId)
+      .catch((error: unknown) => {
+        if (!isActive) {
+          return;
+        }
+        setTrainingGoals([]);
+        setGoalStatus(error instanceof Error ? error.message : "Could not load goals.");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [loadTrainingGoals, selectedSpaceId, token]);
 
   useEffect(() => {
     if (!token || !selectedSpaceId) {
@@ -1459,6 +1528,47 @@ export function App() {
       setCompletionStatus(error instanceof Error ? error.message : "Could not delete planned session.");
     } finally {
       setIsDeletingCalendarItem(false);
+    }
+  }
+
+  async function handleGoalSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    const activity = String(form.get("goalActivity") ?? "run");
+    const notes = String(form.get("goalNotes") ?? "");
+    const target = activity === "strength"
+      ? { weight: Number(form.get("goalStrengthWeight")) || null }
+      : activity === "run"
+        ? {
+            distance: Number(form.get("goalRunDistance")) || null,
+            time: String(form.get("goalRunTime") ?? ""),
+          }
+        : {
+            distanceM: Number(form.get("goalSprintDistance")) || null,
+            timeSec: Number(form.get("goalSprintTime")) || null,
+          };
+
+    setIsSavingGoal(true);
+    setGoalStatus("");
+    try {
+      await apiRequest<TrainingGoal>(
+        `/api/training-spaces/${selectedSpace.id}/goals/${activity}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ target_json: target, notes }),
+        },
+        token,
+      );
+      await loadTrainingGoals(token, selectedSpace.id);
+      setGoalStatus("Goal saved.");
+    } catch (error) {
+      setGoalStatus(error instanceof Error ? error.message : "Could not save goal.");
+    } finally {
+      setIsSavingGoal(false);
     }
   }
 
@@ -2633,8 +2743,8 @@ export function App() {
                 <small>Reviewed adherence</small>
               </article>
               <article>
-                <span>{activeGoals}</span>
-                <small>Imported active goals</small>
+                <span>{cloudGoalCount}</span>
+                <small>Cloud goals</small>
               </article>
             </div>
 
@@ -2672,6 +2782,93 @@ export function App() {
                     <h4>Strength load</h4>
                     <MiniBarChart points={strengthLoadChart} unit="kg" />
                   </article>
+                </div>
+              </section>
+
+              <section className="stats-section cloud-goals-section" aria-label="Cloud goals">
+                <h3>Cloud goals</h3>
+                <form className="goal-edit-form" onSubmit={handleGoalSubmit}>
+                  <div className="training-form-grid">
+                    <label>
+                      Activity
+                      <select name="goalActivity" defaultValue="run">
+                        <option value="run">Run</option>
+                        <option value="sprint">Sprint</option>
+                        <option value="strength">Strength</option>
+                      </select>
+                    </label>
+                    <label>
+                      Run distance (km)
+                      <input
+                        name="goalRunDistance"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        defaultValue={numberValue(goalsByActivity.get("run")?.target_json.distance) ?? ""}
+                      />
+                    </label>
+                    <label>
+                      Run time
+                      <input
+                        name="goalRunTime"
+                        inputMode="numeric"
+                        placeholder="22:00"
+                        defaultValue={typeof goalsByActivity.get("run")?.target_json.time === "string" ? String(goalsByActivity.get("run")?.target_json.time) : ""}
+                      />
+                    </label>
+                    <label>
+                      Sprint distance (m)
+                      <input
+                        name="goalSprintDistance"
+                        type="number"
+                        min="0"
+                        step="1"
+                        defaultValue={numberValue(goalsByActivity.get("sprint")?.target_json.distanceM) ?? ""}
+                      />
+                    </label>
+                    <label>
+                      Sprint time (sec)
+                      <input
+                        name="goalSprintTime"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        defaultValue={numberValue(goalsByActivity.get("sprint")?.target_json.timeSec) ?? ""}
+                      />
+                    </label>
+                    <label>
+                      Strength load (kg)
+                      <input
+                        name="goalStrengthWeight"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        defaultValue={numberValue(goalsByActivity.get("strength")?.target_json.weight) ?? ""}
+                      />
+                    </label>
+                  </div>
+                  <label>
+                    Notes
+                    <textarea name="goalNotes" rows={2} placeholder="Goal context" />
+                  </label>
+                  {goalStatus && <p className="form-status neutral-status" role="status">{goalStatus}</p>}
+                  <button type="submit" disabled={isSavingGoal}>
+                    {isSavingGoal ? "Saving" : "Save goal"}
+                  </button>
+                </form>
+
+                <div className="goal-card-list">
+                  {trainingGoals.length ? trainingGoals.map((goal) => (
+                    <article className="goal-card" key={goal.id}>
+                      <div>
+                        <span className="goal-card-label">{activityLabel(goal.activity)} goal</span>
+                        <h4>{formatCloudGoal(goal)}</h4>
+                      </div>
+                      {goal.notes && <p>{goal.notes}</p>}
+                    </article>
+                  )) : (
+                    <p className="empty-state">No cloud goals saved yet.</p>
+                  )}
                 </div>
               </section>
 

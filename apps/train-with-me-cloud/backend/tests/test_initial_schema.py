@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session
 
 from app.db.base import Base
-from app.db.models import ImportedV1Metadata, TrainingSpace, TrainingSpaceMembership, TrainingSpaceRole, User
+from app.db.models import ImportedV1Metadata, TrainingGoal, TrainingSpace, TrainingSpaceMembership, TrainingSpaceRole, User
 
 
 def alembic_config(database_url: str) -> Config:
@@ -38,6 +38,7 @@ def test_initial_migration_applies_cleanly(tmp_path: Path) -> None:
         "coach_suggestions",
         "audit_events",
         "imported_v1_metadata",
+        "training_goals",
     }
 
 
@@ -94,3 +95,30 @@ def test_imported_v1_metadata_model_creation() -> None:
         assert saved_metadata.payload_json == {"name": "Phase 1"}
         assert saved_metadata.source == "v1_import"
         assert saved_metadata.coach_editable is False
+
+
+def test_training_goal_model_creation() -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        user = User(
+            email="athlete@example.com",
+            password_hash="not-a-real-hash-yet",
+            display_name="Athlete",
+        )
+        training_space = TrainingSpace(name="Base Season", owner=user)
+        goal = TrainingGoal(
+            training_space=training_space,
+            activity="run",
+            target_json={"distance": 5, "time": "22:00"},
+            notes="Race target",
+        )
+
+        session.add_all([user, training_space, goal])
+        session.commit()
+
+        saved_goal = session.query(TrainingGoal).filter_by(activity="run").one()
+
+        assert saved_goal.target_json == {"distance": 5, "time": "22:00"}
+        assert saved_goal.notes == "Race target"
