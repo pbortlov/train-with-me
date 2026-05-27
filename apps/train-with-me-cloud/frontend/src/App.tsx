@@ -432,6 +432,7 @@ export function App() {
   const [isDeletingCalendarItem, setIsDeletingCalendarItem] = useState(false);
   const [isSavingWorkoutNotes, setIsSavingWorkoutNotes] = useState(false);
   const [isSavingPlannedSession, setIsSavingPlannedSession] = useState(false);
+  const [isMarkingMissedSessionId, setIsMarkingMissedSessionId] = useState("");
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -1125,6 +1126,40 @@ export function App() {
     }
   }
 
+  async function handleMarkPlannedSessionMissed(session: PlannedSession) {
+    if (!token || !selectedSpace) {
+      return;
+    }
+    const confirmed = window.confirm(`Mark "${session.title}" as missed?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setIsMarkingMissedSessionId(session.id);
+    setPlannedEditStatus("");
+    setCompletionStatus("");
+    try {
+      await apiRequest<PlannedSession>(
+        `/api/training-spaces/${selectedSpace.id}/planned-sessions/${session.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status: "missed",
+            modification_note: "Marked missed from calendar.",
+          }),
+        },
+        token,
+      );
+      await loadTrainingHistory(token, selectedSpace.id);
+      setCalendarSelection({ type: "planned", id: session.id });
+      setPlannedEditStatus("Planned session marked missed.");
+    } catch (error) {
+      setPlannedEditStatus(error instanceof Error ? error.message : "Could not mark session missed.");
+    } finally {
+      setIsMarkingMissedSessionId("");
+    }
+  }
+
   async function handleDeletePlannedSession(session: PlannedSession) {
     if (!token || !selectedSpace) {
       return;
@@ -1525,6 +1560,16 @@ export function App() {
                       </button>
                     )}
                     {selectedCalendarSession && (
+                      <>
+                        {selectedCalendarSession.status === "planned" && !selectedCalendarSessionWorkout && (
+                          <button
+                            type="button"
+                            onClick={() => void handleMarkPlannedSessionMissed(selectedCalendarSession)}
+                            disabled={isMarkingMissedSessionId === selectedCalendarSession.id}
+                          >
+                            {isMarkingMissedSessionId === selectedCalendarSession.id ? "Marking" : "Mark missed"}
+                          </button>
+                        )}
                       <button
                         type="button"
                         className="danger-button"
@@ -1533,6 +1578,7 @@ export function App() {
                       >
                         {isDeletingCalendarItem ? "Deleting" : "Delete"}
                       </button>
+                      </>
                     )}
                     <button type="button" onClick={() => setCalendarSelection(null)}>Close</button>
                   </div>
