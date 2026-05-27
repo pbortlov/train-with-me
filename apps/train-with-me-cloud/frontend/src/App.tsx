@@ -67,6 +67,9 @@ type PlannedSession = {
   type: string;
   title: string;
   date: string;
+  phase_template_id: string;
+  phase_instance_id: string;
+  phase_week_index: number | null;
   actual_json: Record<string, unknown> | null;
   details_json: Record<string, unknown>;
   linked_workout_id: string | null;
@@ -136,6 +139,18 @@ type ImportedV1Metadata = {
   entityType: string;
   originalV1Id: string;
   payload: Record<string, unknown>;
+};
+
+type ProgramProgressModel = {
+  id: string;
+  name: string;
+  startDate: string;
+  total: number;
+  completed: number;
+  modified: number;
+  missed: number;
+  planned: number;
+  weeks: { label: string; total: number; completed: number; modified: number; missed: number; planned: number }[];
 };
 
 type V1Goal = {
@@ -366,6 +381,10 @@ function firstSprintBlock(session: PlannedSession): Record<string, unknown> {
   return Array.isArray(blocks) ? asRecord(blocks[0]) ?? {} : {};
 }
 
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
 function suggestionNotes(suggestion: CoachSuggestion): string {
   const notes = suggestion.suggested_change_json.notes;
   return typeof notes === "string" ? notes : "";
@@ -504,6 +523,52 @@ export function App() {
   const selectedCalendarSprintBlock = selectedCalendarSession ? firstSprintBlock(selectedCalendarSession) : {};
   const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
   const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
+  const programProgress = useMemo<ProgramProgressModel[]>(() => {
+    const templateNames = new Map(
+      phaseTemplates.map((row) => [
+        row.originalV1Id,
+        typeof row.payload.name === "string" ? row.payload.name : row.originalV1Id,
+      ]),
+    );
+
+    return phaseInstances.map((row) => {
+      const generatedSessionIds = new Set(stringArray(row.payload.generatedSessionIds));
+      const templateId = typeof row.payload.templateId === "string" ? row.payload.templateId : "";
+      const startDate = typeof row.payload.startDate === "string" ? row.payload.startDate : "";
+      const sessions = plannedSessions.filter((session) => (
+        session.phase_instance_id === row.originalV1Id
+        || (session.original_v1_id != null && generatedSessionIds.has(session.original_v1_id))
+      ));
+      const statusCount = (statusValue: string) => sessions.filter((session) => session.status === statusValue).length;
+      const weeksByIndex = new Map<number, PlannedSession[]>();
+      sessions.forEach((session) => {
+        const weekIndex = session.phase_week_index ?? 0;
+        weeksByIndex.set(weekIndex, [...weeksByIndex.get(weekIndex) ?? [], session]);
+      });
+      const weeks = Array.from(weeksByIndex.entries())
+        .sort(([left], [right]) => left - right)
+        .map(([weekIndex, weekSessions]) => ({
+          label: `Week ${weekIndex + 1}`,
+          total: weekSessions.length,
+          completed: weekSessions.filter((session) => session.status === "completed").length,
+          modified: weekSessions.filter((session) => session.status === "modified").length,
+          missed: weekSessions.filter((session) => session.status === "missed").length,
+          planned: weekSessions.filter((session) => session.status === "planned").length,
+        }));
+
+      return {
+        id: row.id,
+        name: templateNames.get(templateId) ?? (templateId || row.originalV1Id),
+        startDate,
+        total: sessions.length,
+        completed: statusCount("completed"),
+        modified: statusCount("modified"),
+        missed: statusCount("missed"),
+        planned: statusCount("planned"),
+        weeks,
+      };
+    });
+  }, [phaseInstances, phaseTemplates, plannedSessions]);
   const reviewCounts = {
     planned: plannedSessions.filter((session) => session.status === "planned").length,
     completed: plannedSessions.filter((session) => session.status === "completed").length,
@@ -2346,6 +2411,57 @@ export function App() {
                 </div>
               </section>
             </div>
+
+            <section className="program-progress-section" aria-label="Program progress">
+              <h3>Program progress</h3>
+              <div className="program-progress-list">
+                {programProgress.length ? programProgress.map((program) => (
+                  <article className="program-progress-card" key={program.id}>
+                    <div className="program-progress-header">
+                      <div>
+                        <h4>{program.name}</h4>
+                        <p>
+                          {program.startDate ? `Starts ${formatDate(program.startDate)}` : "Start date not set"}
+                          {program.total ? ` • ${program.total} session(s)` : ""}
+                        </p>
+                      </div>
+                      <span className="status-badge">
+                        {program.total
+                          ? `${Math.round(((program.completed + program.modified) / program.total) * 100)}% reviewed`
+                          : "No sessions"}
+                      </span>
+                    </div>
+
+                    <div className="program-progress-summary">
+                      <div><strong>{program.completed}</strong><span>Completed</span></div>
+                      <div><strong>{program.modified}</strong><span>Modified</span></div>
+                      <div><strong>{program.missed}</strong><span>Missed</span></div>
+                      <div><strong>{program.planned}</strong><span>Planned</span></div>
+                    </div>
+
+                    {program.weeks.length ? (
+                      <div className="program-week-list">
+                        {program.weeks.map((week) => (
+                          <div className="program-week-row" key={`${program.id}-${week.label}`}>
+                            <strong>{week.label}</strong>
+                            <span>
+                              {week.completed} completed
+                              {week.modified ? ` • ${week.modified} modified` : ""}
+                              {week.missed ? ` • ${week.missed} missed` : ""}
+                              {week.planned ? ` • ${week.planned} planned` : ""}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="empty-state">No generated sessions were imported for this program.</p>
+                    )}
+                  </article>
+                )) : (
+                  <p className="empty-state">Import scheduled V1 programs to see progress here.</p>
+                )}
+              </div>
+            </section>
           </article>
         </section>
       )}

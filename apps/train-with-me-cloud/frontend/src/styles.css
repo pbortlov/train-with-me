@@ -801,6 +801,88 @@ label {
   line-height: 1.45;
 }
 
+.program-progress-section {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.program-progress-section h3 {
+  margin: 0;
+}
+
+.program-progress-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.program-progress-card {
+  background: #fbfdfc;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.program-progress-header {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.program-progress-header h4,
+.program-progress-header p {
+  margin: 0;
+}
+
+.program-progress-header p,
+.program-week-row span {
+  color: #52675e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.program-progress-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.program-progress-summary div {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+}
+
+.program-progress-summary strong {
+  font-size: 1.1rem;
+}
+
+.program-progress-summary span {
+  color: #52675e;
+  font-size: 0.82rem;
+}
+
+.program-week-list {
+  display: grid;
+  gap: 8px;
+}
+
+.program-week-row {
+  align-items: baseline;
+  border-top: 1px solid #edf2ef;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding-top: 8px;
+}
+
 .history-grid {
   display: grid;
   gap: 16px;
@@ -1137,6 +1219,7 @@ label {
   .coach-tools-grid,
   .history-grid,
   .planner-header-top,
+  .program-progress-summary,
   .program-grid,
   .review-diff-grid,
   .space-select-row,
@@ -1176,6 +1259,8 @@ label {
   }
 
   .add-training-header,
+  .program-progress-header,
+  .program-week-row,
   .mode-toggle {
     display: grid;
   }
