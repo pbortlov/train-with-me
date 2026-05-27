@@ -332,6 +332,19 @@ function summarizeWorkout(workout: Workout): string {
   return workout.notes;
 }
 
+function formatStrengthSet(set: WorkoutSet): string {
+  if (set.load_type === "kg" && set.weight != null) {
+    return `${set.reps} reps @ ${formatNumber(set.weight)} kg`;
+  }
+  if (set.load_type === "bodyweight") {
+    return `${set.reps} reps @ body weight`;
+  }
+  if (set.load_type === "band") {
+    return `${set.reps} reps @ ${set.band_color || "band"}`;
+  }
+  return `${set.reps} reps`;
+}
+
 function summarizePlanDetails(session: PlannedSession): string {
   if (session.type === "run") {
     const distance = session.details_json.distance;
@@ -402,6 +415,12 @@ export function App() {
   const [addTrainingMode, setAddTrainingMode] = useState<AddTrainingMode>("log");
   const [actualActivity, setActualActivity] = useState<Activity>("strength");
   const [plannedType, setPlannedType] = useState<PlannedType>("run");
+  const [strengthDraftExercises, setStrengthDraftExercises] = useState<StrengthExercise[]>([]);
+  const [strengthExerciseName, setStrengthExerciseName] = useState("");
+  const [strengthReps, setStrengthReps] = useState("");
+  const [strengthLoadType, setStrengthLoadType] = useState("kg");
+  const [strengthWeight, setStrengthWeight] = useState("");
+  const [strengthBandColor, setStrengthBandColor] = useState("");
   const [calendarSelection, setCalendarSelection] = useState<CalendarSelection>(null);
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -749,6 +768,97 @@ export function App() {
     }
   }
 
+  function resetStrengthDraft() {
+    setStrengthDraftExercises([]);
+    setStrengthExerciseName("");
+    setStrengthReps("");
+    setStrengthLoadType("kg");
+    setStrengthWeight("");
+    setStrengthBandColor("");
+  }
+
+  function currentStrengthSetDraft(): { name: string; set: WorkoutSet } | null {
+    const name = strengthExerciseName.trim();
+    const reps = Number(strengthReps);
+    const weight = strengthLoadType === "kg" ? Number(strengthWeight) : null;
+    const bandColor = strengthLoadType === "band" ? strengthBandColor.trim() : "";
+
+    if (!name) {
+      setTrainingFormStatus("Enter an exercise name before adding a set.");
+      return null;
+    }
+    if (!Number.isFinite(reps) || reps < 0) {
+      setTrainingFormStatus("Enter reps before adding a set.");
+      return null;
+    }
+    if (strengthLoadType === "kg" && (!Number.isFinite(weight) || weight == null || weight < 0)) {
+      setTrainingFormStatus("Enter a valid kg load before adding a set.");
+      return null;
+    }
+    return {
+      name,
+      set: {
+        order: 1,
+        reps,
+        weight,
+        load_type: strengthLoadType,
+        band_color: bandColor,
+      },
+    };
+  }
+
+  function appendStrengthSet(current: StrengthExercise[], name: string, set: WorkoutSet): StrengthExercise[] {
+    const existingIndex = current.findIndex((exercise) => exercise.name.toLowerCase() === name.toLowerCase());
+    if (existingIndex === -1) {
+      return [
+        ...current,
+        {
+          order: current.length + 1,
+          name,
+          sets: [{ ...set, order: 1 }],
+        },
+      ];
+    }
+
+    return current.map((exercise, index) => {
+      if (index !== existingIndex) {
+        return exercise;
+      }
+      return {
+        ...exercise,
+        sets: [
+          ...exercise.sets,
+          { ...set, order: exercise.sets.length + 1 },
+        ],
+      };
+    });
+  }
+
+  function handleAddStrengthSet() {
+    setTrainingFormStatus("");
+    const draft = currentStrengthSetDraft();
+    if (!draft) {
+      return;
+    }
+
+    setStrengthDraftExercises((current) => appendStrengthSet(current, draft.name, draft.set));
+    setStrengthReps("");
+    setStrengthWeight("");
+    setStrengthBandColor("");
+  }
+
+  function handleRemoveStrengthSet(exerciseIndex: number, setIndex: number) {
+    setStrengthDraftExercises((current) => current.flatMap((exercise, currentExerciseIndex) => {
+      if (currentExerciseIndex !== exerciseIndex) {
+        return [exercise];
+      }
+      const nextSets = exercise.sets
+        .filter((_, currentSetIndex) => currentSetIndex !== setIndex)
+        .map((set, nextSetIndex) => ({ ...set, order: nextSetIndex + 1 }));
+      return nextSets.length ? [{ ...exercise, sets: nextSets }] : [];
+    }).map((exercise, index) => ({ ...exercise, order: index + 1 })));
+  }
+
   async function handleCreateInvite() {
     if (!token || !selectedSpace) {
       return;
@@ -815,16 +925,27 @@ export function App() {
         }
 
         if (activity === "strength") {
-          const loadType = String(form.get("strengthLoadType") ?? "kg");
-          body.strength_exercises = [{
-            name: String(form.get("exerciseName") ?? ""),
-            sets: [{
-              reps: Number(form.get("strengthReps")),
-              weight: loadType === "kg" ? Number(form.get("strengthWeight")) : null,
-              load_type: loadType,
-              band_color: loadType === "band" ? String(form.get("bandColor") ?? "") : "",
-            }],
-          }];
+          let strengthExercises = strengthDraftExercises;
+          const hasCurrentStrengthInput = strengthExerciseName.trim() || strengthReps || strengthWeight || strengthBandColor.trim();
+          if (hasCurrentStrengthInput) {
+            const draft = currentStrengthSetDraft();
+            if (!draft) {
+              throw new Error("Finish or clear the current strength set before saving.");
+            }
+            strengthExercises = appendStrengthSet(strengthExercises, draft.name, draft.set);
+          }
+          if (!strengthExercises.length) {
+            throw new Error("Add at least one strength set before saving.");
+          }
+          body.strength_exercises = strengthExercises.map((exercise) => ({
+            name: exercise.name,
+            sets: exercise.sets.map((set) => ({
+              reps: set.reps,
+              weight: set.weight,
+              load_type: set.load_type,
+              band_color: set.band_color,
+            })),
+          }));
         }
 
         await apiRequest<Workout>(
@@ -869,6 +990,7 @@ export function App() {
       formElement.reset();
       setActualActivity("strength");
       setPlannedType("run");
+      resetStrengthDraft();
     } catch (error) {
       setTrainingFormStatus(error instanceof Error ? error.message : "Could not save training.");
     } finally {
@@ -1600,6 +1722,22 @@ export function App() {
                         <p>{selectedCalendarWorkout.notes || "No notes"}</p>
                       </div>
                     </div>
+                    {selectedCalendarWorkout.activity === "strength" && selectedCalendarWorkout.strength_exercises.length > 0 && (
+                      <div className="strength-detail-list">
+                        {selectedCalendarWorkout.strength_exercises.map((exercise) => (
+                          <article key={`${selectedCalendarWorkout.id}-${exercise.order}`}>
+                            <h4>{exercise.name}</h4>
+                            <ul>
+                              {exercise.sets.map((set) => (
+                                <li key={`${selectedCalendarWorkout.id}-${exercise.order}-${set.order}`}>
+                                  Set {set.order}: {formatStrengthSet(set)}
+                                </li>
+                              ))}
+                            </ul>
+                          </article>
+                        ))}
+                      </div>
+                    )}
 
                     <form
                       className="workout-notes-form"
@@ -1879,32 +2017,97 @@ export function App() {
                 </div>
 
                 {addTrainingMode === "log" && actualActivity === "strength" && (
-                  <div className="training-form-grid">
-                    <label>
-                      Exercise
-                      <input name="exerciseName" placeholder="Back squat" required />
-                    </label>
-                    <label>
-                      Reps
-                      <input name="strengthReps" type="number" min="0" placeholder="5" required />
-                    </label>
-                    <label>
-                      Load type
-                      <select name="strengthLoadType">
-                        <option value="kg">kg</option>
-                        <option value="bodyweight">Body weight</option>
-                        <option value="band">Band</option>
-                      </select>
-                    </label>
-                    <label>
-                      Weight or band
-                      <input name="strengthWeight" type="number" min="0" step="0.1" placeholder="60" />
-                    </label>
-                    <label>
-                      Band color
-                      <input name="bandColor" placeholder="red" />
-                    </label>
-                  </div>
+                  <section className="strength-builder" aria-label="Strength workout builder">
+                    <div className="training-form-grid">
+                      <label>
+                        Exercise
+                        <input
+                          value={strengthExerciseName}
+                          onChange={(event) => setStrengthExerciseName(event.target.value)}
+                          placeholder="Back squat"
+                        />
+                      </label>
+                      <label>
+                        Reps
+                        <input
+                          type="number"
+                          min="0"
+                          value={strengthReps}
+                          onChange={(event) => setStrengthReps(event.target.value)}
+                          placeholder="5"
+                        />
+                      </label>
+                      <label>
+                        Load type
+                        <select
+                          value={strengthLoadType}
+                          onChange={(event) => setStrengthLoadType(event.target.value)}
+                        >
+                          <option value="kg">kg</option>
+                          <option value="bodyweight">Body weight</option>
+                          <option value="band">Band</option>
+                        </select>
+                      </label>
+                      {strengthLoadType === "kg" && (
+                        <label>
+                          Weight
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={strengthWeight}
+                            onChange={(event) => setStrengthWeight(event.target.value)}
+                            placeholder="60"
+                          />
+                        </label>
+                      )}
+                      {strengthLoadType === "band" && (
+                        <label>
+                          Band color
+                          <input
+                            value={strengthBandColor}
+                            onChange={(event) => setStrengthBandColor(event.target.value)}
+                            placeholder="red"
+                          />
+                        </label>
+                      )}
+                    </div>
+                    <div className="strength-builder-actions">
+                      <button type="button" onClick={handleAddStrengthSet}>Add set to workout</button>
+                      <button type="button" onClick={resetStrengthDraft} disabled={!strengthDraftExercises.length}>
+                        Clear sets
+                      </button>
+                    </div>
+                    <div className="strength-draft-list" aria-live="polite">
+                      {strengthDraftExercises.length > 0 && (
+                        <div className="strength-draft-summary">
+                          {strengthDraftExercises.reduce((total, exercise) => total + exercise.sets.length, 0)} set(s) ready to save
+                        </div>
+                      )}
+                      {strengthDraftExercises.length ? strengthDraftExercises.map((exercise, exerciseIndex) => (
+                        <article className="strength-draft-exercise" key={`${exercise.name}-${exercise.order}`}>
+                          <h4>{exercise.name}</h4>
+                          <div className="strength-draft-sets">
+                            {exercise.sets.map((set, setIndex) => (
+                              <div key={`${exercise.name}-${set.order}`} className="strength-draft-set">
+                                <span>
+                                  Set {set.order}: {formatStrengthSet(set)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveStrengthSet(exerciseIndex, setIndex)}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </article>
+                      )) : (
+                        <p className="empty-state">No strength sets added yet.</p>
+                      )}
+                    </div>
+                  </section>
                 )}
 
                 {addTrainingMode === "log" && actualActivity === "run" && (

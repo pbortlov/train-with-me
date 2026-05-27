@@ -620,6 +620,96 @@ label {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.strength-builder {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.strength-builder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.strength-builder-actions button:first-child {
+  background: #1f6f5b;
+  border-color: #1f6f5b;
+  color: #ffffff;
+}
+
+.strength-draft-list {
+  display: grid;
+  gap: 10px;
+}
+
+.strength-draft-summary {
+  background: #e7f4ef;
+  border: 1px solid #b7d7cd;
+  border-radius: 8px;
+  color: #174f42;
+  font-weight: 800;
+  padding: 10px 12px;
+}
+
+.strength-draft-exercise {
+  background: #fbfdfc;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.strength-draft-exercise h4 {
+  margin: 0;
+}
+
+.strength-draft-sets {
+  display: grid;
+  gap: 8px;
+}
+
+.strength-draft-set {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.strength-draft-set span {
+  color: #52675e;
+  font-size: 0.9rem;
+}
+
+.strength-draft-set button {
+  min-height: 34px;
+}
+
+.strength-detail-list {
+  display: grid;
+  gap: 10px;
+}
+
+.strength-detail-list article {
+  background: #fbfdfc;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.strength-detail-list h4 {
+  margin: 0 0 8px;
+}
+
+.strength-detail-list ul {
+  color: #52675e;
+  margin: 0;
+  padding-left: 18px;
+}
+
 .import-panel {
   display: grid;
   gap: 16px;
