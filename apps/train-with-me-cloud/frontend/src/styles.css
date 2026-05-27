@@ -776,6 +776,141 @@ label {
   padding: 16px;
 }
 
+.cloud-program-section {
+  margin-top: 18px;
+}
+
+.program-section-header {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.program-section-header h3,
+.program-section-header p {
+  margin: 0;
+}
+
+.program-section-header p {
+  color: #52675e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.program-template-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.program-template-form button {
+  justify-self: start;
+}
+
+.program-slot-builder {
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.program-slot-builder h4 {
+  margin: 0;
+}
+
+.program-slot-form {
+  border-top: 1px solid #edf2ef;
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.program-slot-form:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.program-slot-form h5 {
+  margin: 0;
+}
+
+.program-slot-form button {
+  justify-self: start;
+}
+
+.program-slot-list {
+  display: grid;
+  gap: 10px;
+}
+
+.program-slot-card {
+  align-items: start;
+  background: #fbfdfc;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.program-slot-card > div {
+  display: grid;
+  gap: 10px;
+}
+
+.program-slot-card h5,
+.program-slot-card p {
+  margin: 0;
+}
+
+.program-slot-card p {
+  color: #52675e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.program-block-preview {
+  background: #ffffff;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.program-block-preview-header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.program-block-preview-header button,
+.program-block-preview li button {
+  min-height: 30px;
+}
+
+.program-block-preview ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.program-block-preview li {
+  color: #52675e;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.program-block-preview li button {
+  margin-left: 8px;
+}
+
 .program-list {
   display: grid;
   gap: 10px;
@@ -1356,6 +1491,7 @@ label {
 
   .add-training-header,
   .program-progress-header,
+  .program-slot-card,
   .program-week-row,
   .mode-toggle {
     display: grid;

@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session
 
 from app.db.base import Base
-from app.db.models import ImportedV1Metadata, TrainingGoal, TrainingSpace, TrainingSpaceMembership, TrainingSpaceRole, User
+from app.db.models import ImportedV1Metadata, ProgramTemplate, TrainingGoal, TrainingSpace, TrainingSpaceMembership, TrainingSpaceRole, User
 
 
 def alembic_config(database_url: str) -> Config:
@@ -39,6 +39,7 @@ def test_initial_migration_applies_cleanly(tmp_path: Path) -> None:
         "audit_events",
         "imported_v1_metadata",
         "training_goals",
+        "program_templates",
     }
 
 
@@ -122,3 +123,32 @@ def test_training_goal_model_creation() -> None:
 
         assert saved_goal.target_json == {"distance": 5, "time": "22:00"}
         assert saved_goal.notes == "Race target"
+
+
+def test_program_template_model_creation() -> None:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        user = User(
+            email="athlete@example.com",
+            password_hash="not-a-real-hash-yet",
+            display_name="Athlete",
+        )
+        training_space = TrainingSpace(name="Base Season", owner=user)
+        template = ProgramTemplate(
+            training_space=training_space,
+            name="Base strength",
+            duration_weeks=4,
+            template_json={"weekdaySlots": []},
+            notes="Cloud template",
+        )
+
+        session.add_all([user, training_space, template])
+        session.commit()
+
+        saved_template = session.query(ProgramTemplate).filter_by(name="Base strength").one()
+
+        assert saved_template.duration_weeks == 4
+        assert saved_template.template_json == {"weekdaySlots": []}
+        assert saved_template.notes == "Cloud template"

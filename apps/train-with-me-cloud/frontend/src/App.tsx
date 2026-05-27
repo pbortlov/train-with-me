@@ -116,6 +116,40 @@ type TrainingGoal = {
   updated_at: string;
 };
 
+type ProgramTemplate = {
+  id: string;
+  training_space_id: string;
+  name: string;
+  duration_weeks: number;
+  template_json: Record<string, unknown>;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type ProgramExerciseDraft = {
+  code: string;
+  name: string;
+  reps: string;
+  notes: string;
+  weight: number | null;
+};
+
+type ProgramBlockDraft = {
+  id: string;
+  label: string;
+  sets: string;
+  exercises: ProgramExerciseDraft[];
+};
+
+type ProgramSlotDraft = {
+  id: string;
+  weekday: number;
+  title: string;
+  notes: string;
+  blocks: ProgramBlockDraft[];
+};
+
 type V1BackupSummary = {
   version: number | null;
   exportedAt: string | null;
@@ -411,6 +445,10 @@ function weekBucketLabel(dateValue: string): string {
     : parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function weekdayLabel(value: number): string {
+  return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][value - 1] ?? "Day";
+}
+
 function MiniBarChart({ points, unit }: { points: ChartPoint[]; unit: string }) {
   const maxValue = points.reduce((max, point) => Math.max(max, point.value), 0);
 
@@ -516,11 +554,13 @@ export function App() {
   const [strengthLoadType, setStrengthLoadType] = useState("kg");
   const [strengthWeight, setStrengthWeight] = useState("");
   const [strengthBandColor, setStrengthBandColor] = useState("");
+  const [programSlotDrafts, setProgramSlotDrafts] = useState<ProgramSlotDraft[]>([]);
   const [calendarSelection, setCalendarSelection] = useState<CalendarSelection>(null);
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
   const [trainingGoals, setTrainingGoals] = useState<TrainingGoal[]>([]);
+  const [programTemplates, setProgramTemplates] = useState<ProgramTemplate[]>([]);
   const [v1Metadata, setV1Metadata] = useState<ImportedV1Metadata[]>([]);
   const [coachSuggestions, setCoachSuggestions] = useState<CoachSuggestion[]>([]);
   const [lastInvite, setLastInvite] = useState<CoachInvite | null>(null);
@@ -532,6 +572,7 @@ export function App() {
   const [workoutEditStatus, setWorkoutEditStatus] = useState("");
   const [plannedEditStatus, setPlannedEditStatus] = useState("");
   const [goalStatus, setGoalStatus] = useState("");
+  const [programTemplateStatus, setProgramTemplateStatus] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [exportStatus, setExportStatus] = useState("");
   const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
@@ -550,6 +591,7 @@ export function App() {
   const [isSavingPlannedSession, setIsSavingPlannedSession] = useState(false);
   const [isMarkingMissedSessionId, setIsMarkingMissedSessionId] = useState("");
   const [isSavingGoal, setIsSavingGoal] = useState(false);
+  const [isSavingProgramTemplate, setIsSavingProgramTemplate] = useState(false);
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -774,6 +816,15 @@ export function App() {
     setTrainingGoals(nextGoals);
   }, []);
 
+  const loadProgramTemplates = useCallback(async (activeToken: string, trainingSpaceId: string) => {
+    const nextTemplates = await apiRequest<ProgramTemplate[]>(
+      `/api/training-spaces/${trainingSpaceId}/program-templates`,
+      {},
+      activeToken,
+    );
+    setProgramTemplates(nextTemplates);
+  }, []);
+
   const loadV1Metadata = useCallback(async (activeToken: string, trainingSpaceId: string) => {
     const rows = await apiRequest<ImportedV1Metadata[]>(`/api/imports/v1/metadata/${trainingSpaceId}`, {}, activeToken);
     setV1Metadata(rows);
@@ -881,25 +932,32 @@ export function App() {
   useEffect(() => {
     if (!token || !selectedSpaceId) {
       setV1Metadata([]);
+      setProgramTemplates([]);
       setProgramStatus("");
+      setProgramTemplateStatus("");
       return;
     }
 
     let isActive = true;
     setProgramStatus("");
-    loadV1Metadata(token, selectedSpaceId)
+    setProgramTemplateStatus("");
+    Promise.all([
+      loadV1Metadata(token, selectedSpaceId),
+      loadProgramTemplates(token, selectedSpaceId),
+    ])
       .catch((error: unknown) => {
         if (!isActive) {
           return;
         }
         setV1Metadata([]);
-        setProgramStatus(error instanceof Error ? error.message : "Could not load imported programs.");
+        setProgramTemplates([]);
+        setProgramStatus(error instanceof Error ? error.message : "Could not load programs.");
       });
 
     return () => {
       isActive = false;
     };
-  }, [loadV1Metadata, selectedSpaceId, token]);
+  }, [loadProgramTemplates, loadV1Metadata, selectedSpaceId, token]);
 
   const loadCoachSuggestions = useCallback(async (activeToken: string, trainingSpaceId: string, role: string) => {
     if (role !== "owner") {
@@ -1079,6 +1137,140 @@ export function App() {
         .map((set, nextSetIndex) => ({ ...set, order: nextSetIndex + 1 }));
       return nextSets.length ? [{ ...exercise, sets: nextSets }] : [];
     }).map((exercise, index) => ({ ...exercise, order: index + 1 })));
+  }
+
+  function handleAddProgramSlot(formElement: HTMLFormElement) {
+    const form = new FormData(formElement);
+    const weekday = Number(form.get("programSlotWeekday"));
+    const title = String(form.get("programSlotTitle") ?? "").trim();
+    const notes = String(form.get("programSlotNotes") ?? "").trim();
+
+    setProgramTemplateStatus("");
+    if (!weekday || !title) {
+      setProgramTemplateStatus("Fill weekday and session title before adding a workout slot.");
+      return;
+    }
+
+    setProgramSlotDrafts((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        weekday,
+        title,
+        notes,
+        blocks: [],
+      },
+    ]);
+  }
+
+  function handleRemoveProgramSlot(slotId: string) {
+    setProgramSlotDrafts((current) => current.filter((slot) => slot.id !== slotId));
+  }
+
+  function handleAddProgramBlock(formElement: HTMLFormElement) {
+    const form = new FormData(formElement);
+    const slotId = String(form.get("programBlockSlotId") ?? "");
+    const label = String(form.get("programBlockLabel") ?? "").trim();
+    const sets = String(form.get("programBlockSets") ?? "").trim();
+
+    setProgramTemplateStatus("");
+    if (!slotId || !label || !sets) {
+      setProgramTemplateStatus("Choose a workout slot and fill block name and sets.");
+      return;
+    }
+
+    setProgramSlotDrafts((current) => current.map((slot) => {
+      if (slot.id !== slotId) {
+        return slot;
+      }
+      return {
+        ...slot,
+        blocks: [
+          ...slot.blocks,
+          {
+            id: crypto.randomUUID(),
+            label,
+            sets,
+            exercises: [],
+          },
+        ],
+      };
+    }));
+  }
+
+  function handleRemoveProgramBlock(slotId: string, blockId: string) {
+    setProgramSlotDrafts((current) => current.map((slot) => {
+      if (slot.id !== slotId) {
+        return slot;
+      }
+      return {
+        ...slot,
+        blocks: slot.blocks.filter((block) => block.id !== blockId),
+      };
+    }));
+  }
+
+  function handleAddProgramExercise(formElement: HTMLFormElement) {
+    const form = new FormData(formElement);
+    const blockRef = String(form.get("programExerciseBlockRef") ?? "");
+    const [slotId, blockId] = blockRef.split("::");
+    const name = String(form.get("programExerciseName") ?? "").trim();
+    const reps = String(form.get("programExerciseReps") ?? "").trim();
+    const weight = Number(form.get("programExerciseWeight"));
+    const notes = String(form.get("programExerciseNotes") ?? "").trim();
+
+    setProgramTemplateStatus("");
+    if (!slotId || !blockId || !name || !reps) {
+      setProgramTemplateStatus("Choose a block and fill exercise name and reps.");
+      return;
+    }
+
+    setProgramSlotDrafts((current) => current.map((slot) => {
+      if (slot.id !== slotId) {
+        return slot;
+      }
+      return {
+        ...slot,
+        blocks: slot.blocks.map((block) => {
+          if (block.id !== blockId) {
+            return block;
+          }
+          return {
+            ...block,
+            exercises: [
+              ...block.exercises,
+              {
+                code: `E${block.exercises.length + 1}`,
+                name,
+                reps,
+                notes,
+                weight: Number.isFinite(weight) && weight > 0 ? weight : null,
+              },
+            ],
+          };
+        }),
+      };
+    }));
+  }
+
+  function handleRemoveProgramExercise(slotId: string, blockId: string, exerciseIndex: number) {
+    setProgramSlotDrafts((current) => current.map((slot) => {
+      if (slot.id !== slotId) {
+        return slot;
+      }
+      return {
+        ...slot,
+        blocks: slot.blocks.map((block) => {
+          if (block.id !== blockId) {
+            return block;
+          }
+          return {
+            ...block,
+            exercises: block.exercises.filter((_, index) => index !== exerciseIndex),
+          };
+        }),
+      };
+    }));
   }
 
   async function handleCreateInvite() {
@@ -1569,6 +1761,58 @@ export function App() {
       setGoalStatus(error instanceof Error ? error.message : "Could not save goal.");
     } finally {
       setIsSavingGoal(false);
+    }
+  }
+
+  async function handleProgramTemplateSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const name = String(form.get("programTemplateName") ?? "");
+    const durationWeeks = Number(form.get("programTemplateDuration"));
+    const startDate = String(form.get("programTemplateStartDate") ?? "");
+    const notes = String(form.get("programTemplateNotes") ?? "");
+
+    setIsSavingProgramTemplate(true);
+    setProgramTemplateStatus("");
+    try {
+      if (!programSlotDrafts.length) {
+        throw new Error("Add at least one workout slot before saving the template.");
+      }
+      if (programSlotDrafts.some((slot) => !slot.blocks.length)) {
+        throw new Error("Every workout slot needs at least one block.");
+      }
+      if (programSlotDrafts.some((slot) => slot.blocks.some((block) => !block.exercises.length))) {
+        throw new Error("Every block needs at least one exercise.");
+      }
+      await apiRequest<ProgramTemplate>(
+        `/api/training-spaces/${selectedSpace.id}/program-templates`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name,
+            duration_weeks: durationWeeks,
+            notes,
+            template_json: {
+              startDate,
+              weekdaySlots: programSlotDrafts,
+            },
+          }),
+        },
+        token,
+      );
+      await loadProgramTemplates(token, selectedSpace.id);
+      formElement.reset();
+      setProgramSlotDrafts([]);
+      setProgramTemplateStatus("Program template saved.");
+    } catch (error) {
+      setProgramTemplateStatus(error instanceof Error ? error.message : "Could not save program template.");
+    } finally {
+      setIsSavingProgramTemplate(false);
     }
   }
 
@@ -2553,6 +2797,213 @@ export function App() {
             <p className="empty-state">Imported V1 phase templates and scheduled phase instances for the selected space.</p>
 
             {programStatus && <p className="form-status" role="status">{programStatus}</p>}
+            {programTemplateStatus && <p className="form-status neutral-status" role="status">{programTemplateStatus}</p>}
+
+            <section className="program-section cloud-program-section" aria-label="Cloud program templates">
+              <div className="program-section-header">
+                <div>
+                  <h3>Cloud program templates</h3>
+                  <p>Create reusable strength templates here. Scheduling generated sessions is the next step.</p>
+                </div>
+              </div>
+
+              <form className="program-template-form" onSubmit={handleProgramTemplateSubmit}>
+                <div className="training-form-grid">
+                  <label>
+                    Name
+                    <input name="programTemplateName" placeholder="Base strength" required />
+                  </label>
+                  <label>
+                    Duration (weeks)
+                    <input name="programTemplateDuration" type="number" min="1" max="52" defaultValue="4" required />
+                  </label>
+                  <label>
+                    Start date
+                    <input name="programTemplateStartDate" type="date" required />
+                  </label>
+                  <label>
+                    Notes
+                    <input name="programTemplateNotes" placeholder="Optional" />
+                  </label>
+                </div>
+                <section className="program-slot-builder" aria-label="Program workout builder">
+                  <h4>Workout structure</h4>
+                  <div className="program-slot-form">
+                    <div className="training-form-grid">
+                      <label>
+                        Weekday
+                        <select name="programSlotWeekday" defaultValue="1">
+                          <option value="1">Monday</option>
+                          <option value="2">Tuesday</option>
+                          <option value="3">Wednesday</option>
+                          <option value="4">Thursday</option>
+                          <option value="5">Friday</option>
+                          <option value="6">Saturday</option>
+                          <option value="7">Sunday</option>
+                        </select>
+                      </label>
+                      <label>
+                        Session title
+                        <input name="programSlotTitle" placeholder="Strength A" />
+                      </label>
+                      <label>
+                        Slot notes
+                        <input name="programSlotNotes" placeholder="Optional" />
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        if (event.currentTarget.form) {
+                          handleAddProgramSlot(event.currentTarget.form);
+                        }
+                      }}
+                    >
+                      Add weekday workout
+                    </button>
+                  </div>
+
+                  {programSlotDrafts.length > 0 && (
+                    <div className="program-slot-form">
+                      <h5>Add block</h5>
+                      <div className="training-form-grid">
+                        <label>
+                          Workout
+                          <select name="programBlockSlotId">
+                            {programSlotDrafts.map((slot) => (
+                              <option key={slot.id} value={slot.id}>{weekdayLabel(slot.weekday)} • {slot.title}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Block
+                          <input name="programBlockLabel" placeholder="Main lift" />
+                        </label>
+                        <label>
+                          Sets
+                          <input name="programBlockSets" placeholder="3" />
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          if (event.currentTarget.form) {
+                            handleAddProgramBlock(event.currentTarget.form);
+                          }
+                        }}
+                      >
+                        Add block
+                      </button>
+                    </div>
+                  )}
+
+                  {programSlotDrafts.some((slot) => slot.blocks.length > 0) && (
+                    <div className="program-slot-form">
+                      <h5>Add exercise</h5>
+                      <div className="training-form-grid">
+                        <label>
+                          Block
+                          <select name="programExerciseBlockRef">
+                            {programSlotDrafts.flatMap((slot) => slot.blocks.map((block) => (
+                              <option key={`${slot.id}-${block.id}`} value={`${slot.id}::${block.id}`}>
+                                {weekdayLabel(slot.weekday)} • {slot.title} • {block.label}
+                              </option>
+                            )))}
+                          </select>
+                        </label>
+                        <label>
+                          Exercise
+                          <input name="programExerciseName" placeholder="Back squat" />
+                        </label>
+                        <label>
+                          Reps
+                          <input name="programExerciseReps" placeholder="5" />
+                        </label>
+                        <label>
+                          Target weight
+                          <input name="programExerciseWeight" type="number" min="0" step="0.1" placeholder="Optional" />
+                        </label>
+                        <label>
+                          Exercise notes
+                          <input name="programExerciseNotes" placeholder="Optional" />
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          if (event.currentTarget.form) {
+                            handleAddProgramExercise(event.currentTarget.form);
+                          }
+                        }}
+                      >
+                        Add exercise
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="program-slot-list">
+                    {programSlotDrafts.length ? programSlotDrafts.map((slot) => (
+                      <article className="program-slot-card" key={slot.id}>
+                        <div>
+                          <h5>{weekdayLabel(slot.weekday)} • {slot.title}</h5>
+                          {slot.notes && <p>{slot.notes}</p>}
+                          {slot.blocks.length ? slot.blocks.map((block) => (
+                            <div className="program-block-preview" key={block.id}>
+                              <div className="program-block-preview-header">
+                                <strong>{block.label}</strong>
+                                <button type="button" onClick={() => handleRemoveProgramBlock(slot.id, block.id)}>Remove block</button>
+                              </div>
+                              <p>{block.sets} set(s)</p>
+                              {block.exercises.length ? (
+                                <ul>
+                                  {block.exercises.map((exercise, exerciseIndex) => (
+                                    <li key={`${block.id}-${exerciseIndex}`}>
+                                      {exercise.name} • {exercise.reps} reps
+                                      {exercise.weight != null ? ` @ ${formatNumber(exercise.weight)} kg` : ""}
+                                      {exercise.notes ? ` • ${exercise.notes}` : ""}
+                                      <button type="button" onClick={() => handleRemoveProgramExercise(slot.id, block.id, exerciseIndex)}>Remove</button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p>No exercises in this block yet.</p>
+                              )}
+                            </div>
+                          )) : (
+                            <p>No blocks in this workout yet.</p>
+                          )}
+                        </div>
+                        <button type="button" onClick={() => handleRemoveProgramSlot(slot.id)}>Remove workout</button>
+                      </article>
+                    )) : (
+                      <p className="empty-state">No workout slots added yet.</p>
+                    )}
+                  </div>
+                </section>
+                <button type="submit" disabled={isSavingProgramTemplate}>
+                  {isSavingProgramTemplate ? "Saving" : "Save template"}
+                </button>
+              </form>
+
+              <div className="program-list">
+                {programTemplates.length ? programTemplates.map((template) => (
+                  <article className="program-card" key={template.id}>
+                    <h4>{template.name}</h4>
+                    <p>
+                      {template.duration_weeks} week(s)
+                      {typeof template.template_json.startDate === "string" && template.template_json.startDate
+                        ? ` • Starts ${formatDate(template.template_json.startDate)}`
+                        : ""}
+                      {Array.isArray(template.template_json.weekdaySlots) ? ` • ${template.template_json.weekdaySlots.length} workout slot(s)` : ""}
+                      {template.notes ? ` • ${template.notes}` : ""}
+                    </p>
+                    <span className="status-badge">Cloud</span>
+                  </article>
+                )) : (
+                  <p className="empty-state">No cloud program templates yet.</p>
+                )}
+              </div>
+            </section>
 
             <div className="program-grid">
               <section className="program-section" aria-label="Imported phase templates">

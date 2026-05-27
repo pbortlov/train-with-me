@@ -8,6 +8,7 @@ from app.db.health import DatabaseHealthError, check_database_health, get_databa
 from app.goals.routes import router as goals_router
 from app.imports.routes import router as imports_router
 from app.plans.routes import router as plans_router
+from app.programs.routes import router as programs_router
 from app.spaces.routes import router as spaces_router
 from app.suggestions.routes import router as suggestions_router
 from app.workouts.routes import router as workouts_router
@@ -21,6 +22,7 @@ app.include_router(goals_router, prefix=f"{settings.api_prefix}/training-spaces/
 app.include_router(imports_router, prefix=f"{settings.api_prefix}/imports")
 app.include_router(spaces_router, prefix=f"{settings.api_prefix}/training-spaces")
 app.include_router(plans_router, prefix=f"{settings.api_prefix}/training-spaces/{{training_space_id}}/planned-sessions")
+app.include_router(programs_router, prefix=f"{settings.api_prefix}/training-spaces/{{training_space_id}}/program-templates")
 app.include_router(suggestions_router, prefix=f"{settings.api_prefix}/training-spaces/{{training_space_id}}/coach-suggestions")
 app.include_router(workouts_router, prefix=f"{settings.api_prefix}/training-spaces/{{training_space_id}}/workouts")
 
