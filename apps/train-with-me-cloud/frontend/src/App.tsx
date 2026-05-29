@@ -232,7 +232,15 @@ type ProgramProgressModel = {
   modified: number;
   missed: number;
   planned: number;
-  weeks: { label: string; total: number; completed: number; modified: number; missed: number; planned: number }[];
+  weeks: {
+    label: string;
+    total: number;
+    completed: number;
+    modified: number;
+    missed: number;
+    planned: number;
+    sessions: PlannedSession[];
+  }[];
 };
 
 type ChartPoint = {
@@ -531,6 +539,18 @@ function summarizePlanDetails(session: PlannedSession): string {
 function firstSprintBlock(session: PlannedSession): Record<string, unknown> {
   const blocks = session.details_json.blocks;
   return Array.isArray(blocks) ? asRecord(blocks[0]) ?? {} : {};
+}
+
+function strengthPlanPreview(session: PlannedSession): string {
+  const exercises = plannedStrengthBlocks(session).flatMap((block) => plannedExerciseRows(block));
+  return exercises
+    .slice(0, 3)
+    .map((exercise) => {
+      const name = typeof exercise.name === "string" ? exercise.name : "Exercise";
+      const reps = exercise.reps ? ` ${String(exercise.reps)}` : "";
+      return `${name}${reps}`;
+    })
+    .join(" • ");
 }
 
 function plannedStrengthBlocks(session: PlannedSession): Record<string, unknown>[] {
@@ -864,6 +884,7 @@ export function App() {
           modified: weekSessions.filter((session) => session.status === "modified").length,
           missed: weekSessions.filter((session) => session.status === "missed").length,
           planned: weekSessions.filter((session) => session.status === "planned").length,
+          sessions: [...weekSessions].sort((left, right) => left.date.localeCompare(right.date) || left.title.localeCompare(right.title)),
         }));
 
       return {
@@ -900,6 +921,7 @@ export function App() {
           modified: weekSessions.filter((session) => session.status === "modified").length,
           missed: weekSessions.filter((session) => session.status === "missed").length,
           planned: weekSessions.filter((session) => session.status === "planned").length,
+          sessions: [...weekSessions].sort((left, right) => left.date.localeCompare(right.date) || left.title.localeCompare(right.title)),
         }));
       return {
         id: instance.id,
@@ -2113,6 +2135,12 @@ export function App() {
     } finally {
       setIsDeletingCalendarItem(false);
     }
+  }
+
+  function openProgramSessionInCalendar(session: PlannedSession) {
+    setCalendarWeekStart(dateKey(startOfWeek(new Date(`${session.date}T00:00:00`))));
+    setCalendarSelection({ type: "planned", id: session.id });
+    setActiveView("calendar");
   }
 
   async function handleGoalSubmit(event: FormEvent<HTMLFormElement>) {
@@ -3742,15 +3770,46 @@ export function App() {
                     {program.weeks.length ? (
                       <div className="program-week-list">
                         {program.weeks.map((week) => (
-                          <div className="program-week-row" key={`${program.id}-${week.label}`}>
-                            <strong>{week.label}</strong>
-                            <span>
-                              {week.completed} completed
-                              {week.modified ? ` • ${week.modified} modified` : ""}
-                              {week.missed ? ` • ${week.missed} missed` : ""}
-                              {week.planned ? ` • ${week.planned} planned` : ""}
-                            </span>
-                          </div>
+                          <details className="program-week-detail" key={`${program.id}-${week.label}`}>
+                            <summary className="program-week-row">
+                              <strong>{week.label}</strong>
+                              <span>
+                                {week.completed} completed
+                                {week.modified ? ` • ${week.modified} modified` : ""}
+                                {week.missed ? ` • ${week.missed} missed` : ""}
+                                {week.planned ? ` • ${week.planned} planned` : ""}
+                              </span>
+                            </summary>
+                            <div className="program-session-list">
+                              {week.sessions.map((session) => {
+                                const linkedWorkout = session.linked_workout_id ? workoutsById.get(session.linked_workout_id) : null;
+                                return (
+                                  <article className="program-session-row" key={`${program.id}-${session.id}`}>
+                                    <div>
+                                      <strong>{formatDate(session.date)} • {session.title}</strong>
+                                      <p>
+                                        {activityLabel(session.type)} • {summarizePlanDetails(session)}
+                                        {session.type === "strength" && strengthPlanPreview(session) ? ` • ${strengthPlanPreview(session)}` : ""}
+                                      </p>
+                                      <p>
+                                        {linkedWorkout
+                                          ? `Actual: ${summarizeWorkout(linkedWorkout) || "Logged workout"}`
+                                          : session.actual_json
+                                            ? "Actual data saved"
+                                            : "No actual linked yet"}
+                                      </p>
+                                    </div>
+                                    <div className="program-session-actions">
+                                      <span className="status-badge">{session.status}</span>
+                                      <button type="button" onClick={() => openProgramSessionInCalendar(session)}>
+                                        Open in Calendar
+                                      </button>
+                                    </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          </details>
                         ))}
                       </div>
                     ) : (
