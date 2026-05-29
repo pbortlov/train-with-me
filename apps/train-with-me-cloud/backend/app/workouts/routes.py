@@ -139,6 +139,44 @@ def build_workout(training_space_id: str, payload: WorkoutCreateRequest) -> Work
     return workout
 
 
+def apply_workout_payload(workout: Workout, payload: WorkoutCreateRequest) -> None:
+    workout.activity = payload.activity
+    workout.date = payload.date
+    workout.distance = payload.distance if payload.activity == WorkoutActivity.run.value else None
+    workout.time = payload.time if payload.activity == WorkoutActivity.run.value else None
+    workout.pace = payload.pace if payload.activity == WorkoutActivity.run.value else None
+    workout.sprint_feeling = payload.sprint_feeling if payload.activity == WorkoutActivity.sprint.value else None
+    workout.notes = payload.notes
+
+    workout.strength_exercises = []
+    workout.sprint_sets = []
+
+    if payload.activity == WorkoutActivity.strength.value:
+        workout.strength_exercises = [
+            WorkoutStrengthExercise(
+                order=exercise_index + 1,
+                name=exercise.name,
+                sets=[
+                    WorkoutSet(
+                        order=set_index + 1,
+                        reps=workout_set.reps,
+                        weight=workout_set.weight,
+                        load_type=workout_set.load_type,
+                        band_color=workout_set.band_color,
+                    )
+                    for set_index, workout_set in enumerate(exercise.sets)
+                ],
+            )
+            for exercise_index, exercise in enumerate(payload.strength_exercises)
+        ]
+
+    if payload.activity == WorkoutActivity.sprint.value:
+        workout.sprint_sets = [
+            SprintSet(order=index + 1, distance_m=sprint_set.distance_m, time_sec=sprint_set.time_sec)
+            for index, sprint_set in enumerate(payload.sprint_sets)
+        ]
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_workout(
     training_space_id: str,
@@ -189,7 +227,7 @@ def update_workout(
             status.HTTP_403_FORBIDDEN,
         )
 
-    workout.notes = payload.notes
+    apply_workout_payload(workout, payload)
     db.commit()
     db.refresh(workout)
     return workout_response(workout)

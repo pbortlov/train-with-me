@@ -743,6 +743,8 @@ export function App() {
   const [strengthBandColor, setStrengthBandColor] = useState("");
   const [programSlotDrafts, setProgramSlotDrafts] = useState<ProgramSlotDraft[]>([]);
   const [strengthCompletionDraft, setStrengthCompletionDraft] = useState<StrengthCompletionBlockDraft[]>([]);
+  const [workoutEditStrengthDraft, setWorkoutEditStrengthDraft] = useState<StrengthExercise[]>([]);
+  const [workoutEditSprintDraft, setWorkoutEditSprintDraft] = useState<SprintSet[]>([]);
   const [calendarSelection, setCalendarSelection] = useState<CalendarSelection>(null);
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -847,6 +849,20 @@ export function App() {
     }
     setStrengthCompletionDraft([]);
   }, [selectedCalendarSession, selectedCalendarSessionWorkout]);
+  useEffect(() => {
+    if (selectedCalendarWorkout?.activity === "strength") {
+      setWorkoutEditStrengthDraft(selectedCalendarWorkout.strength_exercises);
+      setWorkoutEditSprintDraft([]);
+      return;
+    }
+    if (selectedCalendarWorkout?.activity === "sprint") {
+      setWorkoutEditSprintDraft(selectedCalendarWorkout.sprint_sets);
+      setWorkoutEditStrengthDraft([]);
+      return;
+    }
+    setWorkoutEditStrengthDraft([]);
+    setWorkoutEditSprintDraft([]);
+  }, [selectedCalendarWorkout]);
   const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
   const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
   const goalsByActivity = useMemo(
@@ -1991,14 +2007,144 @@ export function App() {
     }
   }
 
-  async function handleWorkoutNotesSubmit(event: FormEvent<HTMLFormElement>, workout: Workout) {
+  function updateWorkoutEditStrengthSet(exerciseIndex: number, setIndex: number, changes: Partial<WorkoutSet>) {
+    setWorkoutEditStrengthDraft((current) => current.map((exercise, currentExerciseIndex) => {
+      if (currentExerciseIndex !== exerciseIndex) {
+        return exercise;
+      }
+      return {
+        ...exercise,
+        sets: exercise.sets.map((set, currentSetIndex) => (
+          currentSetIndex === setIndex ? { ...set, ...changes } : set
+        )),
+      };
+    }));
+  }
+
+  function updateWorkoutEditStrengthExercise(exerciseIndex: number, name: string) {
+    setWorkoutEditStrengthDraft((current) => current.map((exercise, currentExerciseIndex) => (
+      currentExerciseIndex === exerciseIndex ? { ...exercise, name } : exercise
+    )));
+  }
+
+  function addWorkoutEditStrengthSet(exerciseIndex: number) {
+    setWorkoutEditStrengthDraft((current) => current.map((exercise, currentExerciseIndex) => {
+      if (currentExerciseIndex !== exerciseIndex) {
+        return exercise;
+      }
+      return {
+        ...exercise,
+        sets: [
+          ...exercise.sets,
+          { order: exercise.sets.length + 1, reps: 0, weight: null, load_type: "kg", band_color: "" },
+        ],
+      };
+    }));
+  }
+
+  function removeWorkoutEditStrengthSet(exerciseIndex: number, setIndex: number) {
+    setWorkoutEditStrengthDraft((current) => current.flatMap((exercise, currentExerciseIndex) => {
+      if (currentExerciseIndex !== exerciseIndex) {
+        return [exercise];
+      }
+      const sets = exercise.sets
+        .filter((_, currentSetIndex) => currentSetIndex !== setIndex)
+        .map((set, index) => ({ ...set, order: index + 1 }));
+      return sets.length ? [{ ...exercise, sets }] : [];
+    }).map((exercise, index) => ({ ...exercise, order: index + 1 })));
+  }
+
+  function addWorkoutEditStrengthExercise() {
+    setWorkoutEditStrengthDraft((current) => [
+      ...current,
+      {
+        order: current.length + 1,
+        name: "Exercise",
+        sets: [{ order: 1, reps: 0, weight: null, load_type: "kg", band_color: "" }],
+      },
+    ]);
+  }
+
+  function updateWorkoutEditSprintSet(setIndex: number, changes: Partial<SprintSet>) {
+    setWorkoutEditSprintDraft((current) => current.map((set, currentSetIndex) => (
+      currentSetIndex === setIndex ? { ...set, ...changes } : set
+    )));
+  }
+
+  function addWorkoutEditSprintSet() {
+    setWorkoutEditSprintDraft((current) => [
+      ...current,
+      { order: current.length + 1, distance_m: 100, time_sec: 0 },
+    ]);
+  }
+
+  function removeWorkoutEditSprintSet(setIndex: number) {
+    setWorkoutEditSprintDraft((current) => current
+      .filter((_, currentSetIndex) => currentSetIndex !== setIndex)
+      .map((set, index) => ({ ...set, order: index + 1 })));
+  }
+
+  async function handleWorkoutEditSubmit(event: FormEvent<HTMLFormElement>, workout: Workout) {
     event.preventDefault();
     if (!token || !selectedSpace) {
       return;
     }
 
     const form = new FormData(event.currentTarget);
+    const date = String(form.get("workoutDate") ?? workout.date);
     const notes = String(form.get("workoutNotes") ?? "");
+    const body: Record<string, unknown> = {
+      activity: workout.activity,
+      date,
+      notes,
+    };
+
+    if (workout.activity === "run") {
+      const distance = Number(form.get("workoutRunDistance"));
+      const time = String(form.get("workoutRunTime") ?? "");
+      const pace = runPace(distance, time);
+      if (!pace) {
+        setWorkoutEditStatus("Run workouts need distance and time like 22:00.");
+        return;
+      }
+      body.distance = distance;
+      body.time = time;
+      body.pace = pace;
+    }
+
+    if (workout.activity === "sprint") {
+      const sprintSets = workoutEditSprintDraft.filter((set) => set.distance_m > 0 && set.time_sec > 0);
+      if (!sprintSets.length) {
+        setWorkoutEditStatus("Sprint workouts need at least one sprint set.");
+        return;
+      }
+      body.sprint_feeling = String(form.get("workoutSprintFeeling") ?? "") || null;
+      body.sprint_sets = sprintSets.map((set) => ({
+        distance_m: set.distance_m,
+        time_sec: set.time_sec,
+      }));
+    }
+
+    if (workout.activity === "strength") {
+      const strengthExercises = workoutEditStrengthDraft
+        .map((exercise) => ({
+          name: exercise.name.trim(),
+          sets: exercise.sets
+            .filter((set) => Number.isFinite(set.reps) && set.reps >= 0)
+            .map((set) => ({
+              reps: set.reps,
+              weight: set.load_type === "kg" ? set.weight : null,
+              load_type: set.load_type,
+              band_color: set.load_type === "band" ? set.band_color : "",
+            })),
+        }))
+        .filter((exercise) => exercise.name && exercise.sets.length);
+      if (!strengthExercises.length) {
+        setWorkoutEditStatus("Strength workouts need at least one exercise set.");
+        return;
+      }
+      body.strength_exercises = strengthExercises;
+    }
 
     setIsSavingWorkoutNotes(true);
     setWorkoutEditStatus("");
@@ -2007,15 +2153,15 @@ export function App() {
         `/api/training-spaces/${selectedSpace.id}/workouts/${workout.id}`,
         {
           method: "PATCH",
-          body: JSON.stringify({ notes }),
+          body: JSON.stringify(body),
         },
         token,
       );
       await loadTrainingHistory(token, selectedSpace.id);
       setCalendarSelection({ type: "workout", id: workout.id });
-      setWorkoutEditStatus("Notes saved.");
+      setWorkoutEditStatus("Workout saved.");
     } catch (error) {
-      setWorkoutEditStatus(error instanceof Error ? error.message : "Could not save notes.");
+      setWorkoutEditStatus(error instanceof Error ? error.message : "Could not save workout.");
     } finally {
       setIsSavingWorkoutNotes(false);
     }
@@ -2762,15 +2908,156 @@ export function App() {
 
                     <form
                       className="workout-notes-form"
-                      onSubmit={(event) => void handleWorkoutNotesSubmit(event, selectedCalendarWorkout)}
+                      onSubmit={(event) => void handleWorkoutEditSubmit(event, selectedCalendarWorkout)}
                     >
+                      <h4>Edit workout</h4>
+                      <div className="training-form-grid">
+                        <label>
+                          Date
+                          <input name="workoutDate" type="date" defaultValue={selectedCalendarWorkout.date} required />
+                        </label>
+                        {selectedCalendarWorkout.activity === "run" && (
+                          <>
+                            <label>
+                              Distance (km)
+                              <input
+                                name="workoutRunDistance"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                defaultValue={selectedCalendarWorkout.distance ?? ""}
+                                required
+                              />
+                            </label>
+                            <label>
+                              Time
+                              <input name="workoutRunTime" inputMode="numeric" defaultValue={selectedCalendarWorkout.time ?? ""} required />
+                            </label>
+                          </>
+                        )}
+                        {selectedCalendarWorkout.activity === "sprint" && (
+                          <label>
+                            Feeling
+                            <select name="workoutSprintFeeling" defaultValue={selectedCalendarWorkout.sprint_feeling ?? ""}>
+                              <option value="">Select feeling</option>
+                              <option value="sharp">Sharp</option>
+                              <option value="solid">Solid</option>
+                              <option value="flat">Flat</option>
+                              <option value="sluggish">Sluggish</option>
+                              <option value="pain">Pain</option>
+                            </select>
+                          </label>
+                        )}
+                      </div>
+                      {selectedCalendarWorkout.activity === "sprint" && (
+                        <div className="strength-detail-list">
+                          {workoutEditSprintDraft.map((set, setIndex) => (
+                            <article key={`${selectedCalendarWorkout.id}-sprint-edit-${setIndex}`}>
+                              <h4>Set {setIndex + 1}</h4>
+                              <div className="training-form-grid">
+                                <label>
+                                  Distance (m)
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={set.distance_m}
+                                    onChange={(event) => updateWorkoutEditSprintSet(setIndex, { distance_m: Number(event.currentTarget.value) })}
+                                  />
+                                </label>
+                                <label>
+                                  Time (sec)
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={set.time_sec}
+                                    onChange={(event) => updateWorkoutEditSprintSet(setIndex, { time_sec: Number(event.currentTarget.value) })}
+                                  />
+                                </label>
+                                <button type="button" className="danger-button" onClick={() => removeWorkoutEditSprintSet(setIndex)}>
+                                  Remove set
+                                </button>
+                              </div>
+                            </article>
+                          ))}
+                          <button type="button" onClick={addWorkoutEditSprintSet}>Add sprint set</button>
+                        </div>
+                      )}
+                      {selectedCalendarWorkout.activity === "strength" && (
+                        <div className="strength-detail-list">
+                          {workoutEditStrengthDraft.map((exercise, exerciseIndex) => (
+                            <article key={`${selectedCalendarWorkout.id}-strength-edit-${exerciseIndex}`}>
+                              <label>
+                                Exercise
+                                <input value={exercise.name} onChange={(event) => updateWorkoutEditStrengthExercise(exerciseIndex, event.currentTarget.value)} />
+                              </label>
+                              {exercise.sets.map((set, setIndex) => (
+                                <div className="training-form-grid" key={`${selectedCalendarWorkout.id}-strength-edit-${exerciseIndex}-${setIndex}`}>
+                                  <label>
+                                    Reps
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={set.reps}
+                                      onChange={(event) => updateWorkoutEditStrengthSet(exerciseIndex, setIndex, { reps: Number(event.currentTarget.value) })}
+                                    />
+                                  </label>
+                                  <label>
+                                    Load
+                                    <select
+                                      value={set.load_type}
+                                      onChange={(event) => updateWorkoutEditStrengthSet(exerciseIndex, setIndex, {
+                                        load_type: event.currentTarget.value,
+                                        weight: null,
+                                        band_color: "",
+                                      })}
+                                    >
+                                      <option value="kg">kg</option>
+                                      <option value="bodyweight">body weight</option>
+                                      <option value="band">band</option>
+                                    </select>
+                                  </label>
+                                  {set.load_type === "kg" && (
+                                    <label>
+                                      Weight
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
+                                        value={set.weight ?? ""}
+                                        onChange={(event) => updateWorkoutEditStrengthSet(exerciseIndex, setIndex, {
+                                          weight: event.currentTarget.value ? Number(event.currentTarget.value) : null,
+                                        })}
+                                      />
+                                    </label>
+                                  )}
+                                  {set.load_type === "band" && (
+                                    <label>
+                                      Band
+                                      <input
+                                        value={set.band_color}
+                                        onChange={(event) => updateWorkoutEditStrengthSet(exerciseIndex, setIndex, { band_color: event.currentTarget.value })}
+                                      />
+                                    </label>
+                                  )}
+                                  <button type="button" className="danger-button" onClick={() => removeWorkoutEditStrengthSet(exerciseIndex, setIndex)}>
+                                    Remove set
+                                  </button>
+                                </div>
+                              ))}
+                              <button type="button" onClick={() => addWorkoutEditStrengthSet(exerciseIndex)}>Add set</button>
+                            </article>
+                          ))}
+                          <button type="button" onClick={addWorkoutEditStrengthExercise}>Add exercise</button>
+                        </div>
+                      )}
                       <label>
-                        Edit notes
+                        Notes
                         <textarea name="workoutNotes" rows={3} defaultValue={selectedCalendarWorkout.notes} />
                       </label>
                       {workoutEditStatus && <p className="form-status neutral-status" role="status">{workoutEditStatus}</p>}
                       <button type="submit" disabled={isSavingWorkoutNotes}>
-                        {isSavingWorkoutNotes ? "Saving" : "Save notes"}
+                        {isSavingWorkoutNotes ? "Saving" : "Save workout"}
                       </button>
                     </form>
                   </>

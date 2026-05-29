@@ -51,8 +51,8 @@ class WorkoutCreateRequest(BaseModel):
         return self
 
 
-class WorkoutUpdateRequest(BaseModel):
-    notes: str = ""
+class WorkoutUpdateRequest(WorkoutCreateRequest):
+    pass
 
 
 class WorkoutSetResponse(BaseModel):

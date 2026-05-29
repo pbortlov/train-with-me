@@ -169,7 +169,7 @@ def test_list_workouts(db_session: Session) -> None:
     assert [workout.activity for workout in workouts] == ["sprint", "run"]
 
 
-def test_update_workout_notes(db_session: Session) -> None:
+def test_update_workout_replaces_payload(db_session: Session) -> None:
     user = create_user(db_session, "athlete@example.com")
     space = create_space(db_session, user)
     workout = create_workout(
@@ -189,12 +189,30 @@ def test_update_workout_notes(db_session: Session) -> None:
     response = update_workout(
         space.id,
         workout.id,
-        WorkoutUpdateRequest(notes="Updated after review"),
+        WorkoutUpdateRequest(
+            activity="strength",
+            date=date(2026, 5, 22),
+            strength_exercises=[
+                StrengthExercisePayload(
+                    name="Back squat",
+                    sets=[
+                        WorkoutSetPayload(reps=3, weight=110, load_type="kg"),
+                        WorkoutSetPayload(reps=3, weight=112.5, load_type="kg"),
+                    ],
+                ),
+            ],
+            notes="Updated after review",
+        ),
         user,
         db_session,
     )
 
+    assert response.activity == "strength"
+    assert response.date == date(2026, 5, 22)
+    assert response.distance is None
+    assert response.time is None
     assert response.notes == "Updated after review"
+    assert response.strength_exercises[0].sets[1].weight == 112.5
 
 
 def test_coach_cannot_mutate_historical_imported_workout(db_session: Session) -> None:
@@ -228,7 +246,14 @@ def test_coach_cannot_mutate_historical_imported_workout(db_session: Session) ->
         update_workout(
             space.id,
             imported_workout.id,
-            WorkoutUpdateRequest(notes="Coach edit"),
+            WorkoutUpdateRequest(
+                activity="run",
+                date=date(2026, 5, 21),
+                distance=5,
+                time="22:00",
+                pace=4.4,
+                notes="Coach edit",
+            ),
             coach,
             db_session,
         )
