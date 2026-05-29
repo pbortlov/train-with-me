@@ -763,6 +763,7 @@ export function App() {
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isSavingProgramTemplate, setIsSavingProgramTemplate] = useState(false);
   const [isSchedulingProgramId, setIsSchedulingProgramId] = useState("");
+  const [isDeletingProgramTemplateId, setIsDeletingProgramTemplateId] = useState("");
   const [isRemovingProgramInstanceId, setIsRemovingProgramInstanceId] = useState("");
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
@@ -2271,6 +2272,36 @@ export function App() {
     }
   }
 
+  async function handleDeleteProgramTemplate(template: ProgramTemplate) {
+    if (!token || !selectedSpace) {
+      return;
+    }
+    const confirmed = window.confirm(`Delete program template "${template.name}"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingProgramTemplateId(template.id);
+    setProgramTemplateStatus("");
+    try {
+      await apiRequest<void>(
+        `/api/training-spaces/${selectedSpace.id}/program-templates/${template.id}`,
+        { method: "DELETE" },
+        token,
+      );
+      if (editingProgramTemplate?.id === template.id) {
+        setEditingProgramTemplate(null);
+        setProgramSlotDrafts([]);
+      }
+      await loadProgramTemplates(token, selectedSpace.id);
+      setProgramTemplateStatus("Program template deleted.");
+    } catch (error) {
+      setProgramTemplateStatus(error instanceof Error ? error.message : "Could not delete program template.");
+    } finally {
+      setIsDeletingProgramTemplateId("");
+    }
+  }
+
   async function handleExportData() {
     if (!token || !selectedSpace) {
       return;
@@ -3583,6 +3614,14 @@ export function App() {
                     <span className="status-badge">Cloud</span>
                     <button type="button" className="ghost-button" onClick={() => handleEditProgramTemplate(template)}>
                       Edit template
+                    </button>
+                    <button
+                      type="button"
+                      className="danger-button"
+                      onClick={() => void handleDeleteProgramTemplate(template)}
+                      disabled={isDeletingProgramTemplateId === template.id}
+                    >
+                      {isDeletingProgramTemplateId === template.id ? "Deleting" : "Delete template"}
                     </button>
                     <button
                       type="button"

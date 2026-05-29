@@ -203,6 +203,31 @@ def update_program_template(
     return program_template_response(template)
 
 
+@router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_program_template(
+    training_space_id: str,
+    template_id: str,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db_session)],
+) -> None:
+    require_membership(db, training_space_id, current_user.id)
+    template = get_template(db, training_space_id, template_id)
+    existing_instance_id = db.scalar(
+        select(ProgramInstance.id).where(
+            ProgramInstance.training_space_id == training_space_id,
+            ProgramInstance.template_id == template.id,
+        ),
+    )
+    if existing_instance_id:
+        raise workouts_error(
+            "program_template_has_instances",
+            "Remove scheduled programs from this template before deleting it.",
+            status.HTTP_409_CONFLICT,
+        )
+    db.delete(template)
+    db.commit()
+
+
 @router.post("/{template_id}/schedule", status_code=status.HTTP_201_CREATED)
 def schedule_program_template(
     training_space_id: str,
