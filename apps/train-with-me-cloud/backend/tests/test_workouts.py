@@ -304,6 +304,124 @@ def test_delete_workout_unlinks_planned_session(db_session: Session) -> None:
     assert planned_session.status == "planned"
 
 
+def test_update_linked_run_workout_syncs_planned_actual(db_session: Session) -> None:
+    user = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, user)
+    workout = create_workout(
+        space.id,
+        WorkoutCreateRequest(
+            activity="run",
+            date=date(2026, 5, 21),
+            distance=5,
+            time="22:00",
+            pace=4.4,
+        ),
+        user,
+        db_session,
+    )
+    planned_session = PlannedSession(
+        training_space_id=space.id,
+        type="run",
+        title="Easy run",
+        date=date(2026, 5, 21),
+        linked_workout_id=workout.id,
+        actual_json={"distance": 5, "time": "22:00", "pace": 4.4},
+        details_json={"distance": 5},
+        status="completed",
+    )
+    db_session.add(planned_session)
+    db_session.commit()
+
+    update_workout(
+        space.id,
+        workout.id,
+        WorkoutUpdateRequest(
+            activity="run",
+            date=date(2026, 5, 21),
+            distance=6,
+            time="27:00",
+            pace=4.5,
+        ),
+        user,
+        db_session,
+    )
+
+    db_session.refresh(planned_session)
+    assert planned_session.actual_json == {"distance": 6.0, "time": "27:00", "pace": 4.5}
+    assert planned_session.status == "completed"
+
+
+def test_update_linked_strength_workout_syncs_modified_status(db_session: Session) -> None:
+    user = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, user)
+    workout = create_workout(
+        space.id,
+        WorkoutCreateRequest(
+            activity="strength",
+            date=date(2026, 5, 21),
+            strength_exercises=[
+                StrengthExercisePayload(
+                    name="Back squat",
+                    sets=[
+                        WorkoutSetPayload(reps=5, weight=100, load_type="kg"),
+                        WorkoutSetPayload(reps=5, weight=100, load_type="kg"),
+                        WorkoutSetPayload(reps=5, weight=100, load_type="kg"),
+                    ],
+                ),
+            ],
+        ),
+        user,
+        db_session,
+    )
+    planned_session = PlannedSession(
+        training_space_id=space.id,
+        type="strength",
+        title="Strength A",
+        date=date(2026, 5, 21),
+        linked_workout_id=workout.id,
+        actual_json={"strengthExercises": []},
+        details_json={
+            "blocks": [
+                {
+                    "sets": "3",
+                    "exercises": [{"name": "Back squat", "reps": "5", "weight": 100}],
+                },
+            ],
+        },
+        status="completed",
+    )
+    db_session.add(planned_session)
+    db_session.commit()
+
+    update_workout(
+        space.id,
+        workout.id,
+        WorkoutUpdateRequest(
+            activity="strength",
+            date=date(2026, 5, 21),
+            strength_exercises=[
+                StrengthExercisePayload(
+                    name="Back squat",
+                    sets=[WorkoutSetPayload(reps=4, weight=100, load_type="kg")],
+                ),
+            ],
+        ),
+        user,
+        db_session,
+    )
+
+    db_session.refresh(planned_session)
+    assert planned_session.status == "modified"
+    assert planned_session.actual_json == {
+        "strengthExercises": [
+            {
+                "name": "Back squat",
+                "sets": [{"reps": 4, "weight": 100.0, "loadType": "kg", "bandColor": ""}],
+            },
+        ],
+    }
+
+
 def test_workout_routes_are_registered() -> None:
     route_paths = {
         route.path

@@ -177,6 +177,106 @@ def apply_workout_payload(workout: Workout, payload: WorkoutCreateRequest) -> No
         ]
 
 
+def workout_actual_json(workout: Workout) -> dict:
+    if workout.activity == WorkoutActivity.run.value:
+        return {
+            "distance": workout.distance,
+            "time": workout.time,
+            "pace": workout.pace,
+        }
+    if workout.activity == WorkoutActivity.sprint.value:
+        return {
+            "sprintSets": [
+                {"distance": sprint_set.distance_m, "time": sprint_set.time_sec}
+                for sprint_set in sorted(workout.sprint_sets, key=lambda item: item.order)
+            ],
+            "feeling": workout.sprint_feeling or "",
+        }
+    return {
+        "strengthExercises": [
+            {
+                "name": exercise.name,
+                "sets": [
+                    {
+                        "reps": workout_set.reps,
+                        "weight": workout_set.weight,
+                        "loadType": workout_set.load_type,
+                        "bandColor": workout_set.band_color,
+                    }
+                    for workout_set in sorted(exercise.sets, key=lambda item: item.order)
+                ],
+            }
+            for exercise in sorted(workout.strength_exercises, key=lambda item: item.order)
+        ],
+    }
+
+
+def first_int(value: object) -> int | None:
+    digits = ""
+    for char in str(value or ""):
+        if char.isdigit():
+            digits += char
+        elif digits:
+            break
+    return int(digits) if digits else None
+
+
+def strength_workout_meets_plan(workout: Workout, planned_session: PlannedSession) -> bool:
+    blocks = planned_session.details_json.get("blocks")
+    if not isinstance(blocks, list) or not blocks:
+        return True
+
+    actual_by_name = {
+        exercise.name.strip().lower(): sorted(exercise.sets, key=lambda item: item.order)
+        for exercise in workout.strength_exercises
+    }
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        planned_sets = first_int(block.get("sets"))
+        exercises = block.get("exercises")
+        if not isinstance(exercises, list):
+            continue
+        for exercise in exercises:
+            if not isinstance(exercise, dict):
+                continue
+            name = str(exercise.get("name") or "").strip().lower()
+            if not name or name not in actual_by_name:
+                return False
+            actual_sets = actual_by_name[name]
+            if planned_sets is not None and len(actual_sets) < planned_sets:
+                return False
+            planned_reps = first_int(exercise.get("reps"))
+            planned_weight = exercise.get("weight")
+            planned_weight_value = planned_weight if isinstance(planned_weight, int | float) else None
+            for actual_set in actual_sets[: planned_sets or len(actual_sets)]:
+                if planned_reps is not None and actual_set.reps < planned_reps:
+                    return False
+                if planned_weight_value is not None and (
+                    actual_set.load_type != "kg" or actual_set.weight is None or actual_set.weight < planned_weight_value
+                ):
+                    return False
+    return True
+
+
+def sync_linked_planned_sessions(db: Session, workout: Workout) -> None:
+    linked_sessions = db.scalars(
+        select(PlannedSession).where(
+            PlannedSession.training_space_id == workout.training_space_id,
+            PlannedSession.linked_workout_id == workout.id,
+        ),
+    ).all()
+    actual_json = workout_actual_json(workout)
+    for planned_session in linked_sessions:
+        planned_session.actual_json = actual_json
+        if planned_session.type != workout.activity:
+            planned_session.status = "modified"
+        elif workout.activity == WorkoutActivity.strength.value:
+            planned_session.status = "completed" if strength_workout_meets_plan(workout, planned_session) else "modified"
+        else:
+            planned_session.status = "completed"
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_workout(
     training_space_id: str,
@@ -228,6 +328,7 @@ def update_workout(
         )
 
     apply_workout_payload(workout, payload)
+    sync_linked_planned_sessions(db, workout)
     db.commit()
     db.refresh(workout)
     return workout_response(workout)
