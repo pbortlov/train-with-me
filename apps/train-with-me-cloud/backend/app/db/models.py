@@ -91,6 +91,7 @@ class TrainingSpace(Base):
     imported_v1_metadata: Mapped[list["ImportedV1Metadata"]] = relationship(back_populates="training_space")
     training_goals: Mapped[list["TrainingGoal"]] = relationship(back_populates="training_space")
     program_templates: Mapped[list["ProgramTemplate"]] = relationship(back_populates="training_space")
+    program_instances: Mapped[list["ProgramInstance"]] = relationship(back_populates="training_space")
 
 
 class TrainingSpaceMembership(Base):
@@ -311,3 +312,20 @@ class ProgramTemplate(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
 
     training_space: Mapped[TrainingSpace] = relationship(back_populates="program_templates")
+    instances: Mapped[list["ProgramInstance"]] = relationship(back_populates="template")
+
+
+class ProgramInstance(Base):
+    __tablename__ = "program_instances"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
+    template_id: Mapped[str] = mapped_column(ForeignKey("program_templates.id"), nullable=False, index=True)
+    template_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    duration_weeks: Mapped[int] = mapped_column(Integer, nullable=False)
+    generated_session_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    training_space: Mapped[TrainingSpace] = relationship(back_populates="program_instances")
+    template: Mapped[ProgramTemplate] = relationship(back_populates="instances")

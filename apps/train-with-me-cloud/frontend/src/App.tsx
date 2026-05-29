@@ -69,7 +69,11 @@ type PlannedSession = {
   date: string;
   phase_template_id: string;
   phase_instance_id: string;
+  phase_slot_id: string;
   phase_week_index: number | null;
+  generated_date: string | null;
+  date_moved_manually: boolean;
+  modification_note: string;
   actual_json: Record<string, unknown> | null;
   details_json: Record<string, unknown>;
   linked_workout_id: string | null;
@@ -125,6 +129,40 @@ type ProgramTemplate = {
   notes: string;
   created_at: string;
   updated_at: string;
+};
+
+type ProgramInstance = {
+  id: string;
+  training_space_id: string;
+  template_id: string;
+  template_name: string;
+  start_date: string;
+  duration_weeks: number;
+  generated_session_ids: string[];
+  created_at: string;
+};
+
+type StrengthCompletionSetDraft = {
+  id: string;
+  reps: string;
+  load_type: string;
+  weight: string;
+  band_color: string;
+};
+
+type StrengthCompletionExerciseDraft = {
+  code: string;
+  name: string;
+  planned_reps: string;
+  planned_weight: number | null;
+  completed: boolean;
+  actual_sets: StrengthCompletionSetDraft[];
+};
+
+type StrengthCompletionBlockDraft = {
+  label: string;
+  planned_sets: string;
+  exercises: StrengthCompletionExerciseDraft[];
 };
 
 type ProgramExerciseDraft = {
@@ -495,6 +533,108 @@ function firstSprintBlock(session: PlannedSession): Record<string, unknown> {
   return Array.isArray(blocks) ? asRecord(blocks[0]) ?? {} : {};
 }
 
+function plannedStrengthBlocks(session: PlannedSession): Record<string, unknown>[] {
+  const blocks = session.details_json.blocks;
+  return Array.isArray(blocks)
+    ? blocks.map(asRecord).filter((block): block is Record<string, unknown> => Boolean(block))
+    : [];
+}
+
+function defaultSetCount(value: unknown): number {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function plannedExerciseRows(block: Record<string, unknown>): Record<string, unknown>[] {
+  const exercises = block.exercises;
+  return Array.isArray(exercises)
+    ? exercises.map(asRecord).filter((exercise): exercise is Record<string, unknown> => Boolean(exercise))
+    : [];
+}
+
+function buildStrengthCompletionDraft(session: PlannedSession): StrengthCompletionBlockDraft[] {
+  return plannedStrengthBlocks(session).map((block, blockIndex) => {
+    const plannedSets = String(block.sets ?? "");
+    const setCount = defaultSetCount(plannedSets);
+    return {
+      label: typeof block.label === "string" && block.label ? block.label : `Block ${blockIndex + 1}`,
+      planned_sets: plannedSets,
+      exercises: plannedExerciseRows(block).map((exercise) => {
+        const reps = String(exercise.reps ?? "");
+        const weight = typeof exercise.weight === "number" ? exercise.weight : null;
+        return {
+          code: typeof exercise.code === "string" ? exercise.code : "",
+          name: typeof exercise.name === "string" && exercise.name ? exercise.name : "Exercise",
+          planned_reps: reps,
+          planned_weight: weight,
+          completed: true,
+          actual_sets: Array.from({ length: setCount }, () => ({
+            id: crypto.randomUUID(),
+            reps: reps.match(/\d+/)?.[0] ?? "",
+            load_type: "kg",
+            weight: weight != null ? String(weight) : "",
+            band_color: "",
+          })),
+        };
+      }),
+    };
+  });
+}
+
+function strengthCompletionPayload(blocks: StrengthCompletionBlockDraft[]): {
+  actualJson: Record<string, unknown>;
+  strengthExercises: { name: string; sets: { reps: number; weight: number | null; load_type: string; band_color: string }[] }[];
+  isModified: boolean;
+} {
+  let isModified = false;
+  const actualBlocks = blocks.map((block) => ({
+    label: block.label,
+    plannedSets: block.planned_sets,
+    actualSets: block.exercises.reduce((max, exercise) => Math.max(max, exercise.actual_sets.length), 0),
+    exercises: block.exercises.map((exercise) => {
+      const validSets = exercise.actual_sets
+        .map((set, index) => ({
+          order: index + 1,
+          reps: Number(set.reps),
+          loadType: set.load_type,
+          weight: set.load_type === "kg" && set.weight ? Number(set.weight) : null,
+          bandColor: set.load_type === "band" ? set.band_color : "",
+        }))
+        .filter((set) => Number.isFinite(set.reps) && set.reps >= 0);
+      const plannedReps = Number(exercise.planned_reps.match(/\d+/)?.[0] ?? 0);
+      const belowPlannedLoad = validSets.some((set) => (
+        (plannedReps > 0 && set.reps < plannedReps)
+        || (exercise.planned_weight != null && (set.loadType !== "kg" || set.weight == null || set.weight < exercise.planned_weight))
+      ));
+      if (!exercise.completed || validSets.length < defaultSetCount(block.planned_sets) || belowPlannedLoad) {
+        isModified = true;
+      }
+      return {
+        code: exercise.code,
+        name: exercise.name,
+        reps: exercise.planned_reps,
+        completed: exercise.completed,
+        actualSets: validSets,
+      };
+    }),
+  }));
+  const strengthExercises = actualBlocks
+    .flatMap((block) => block.exercises)
+    .filter((exercise) => exercise.completed)
+    .map((exercise) => ({
+      name: exercise.name,
+      sets: exercise.actualSets.map((set) => ({
+        reps: set.reps,
+        weight: set.weight,
+        load_type: set.loadType,
+        band_color: set.bandColor,
+      })),
+    }))
+    .filter((exercise) => exercise.sets.length > 0);
+
+  return { actualJson: { blocks: actualBlocks }, strengthExercises, isModified };
+}
+
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
@@ -555,12 +695,14 @@ export function App() {
   const [strengthWeight, setStrengthWeight] = useState("");
   const [strengthBandColor, setStrengthBandColor] = useState("");
   const [programSlotDrafts, setProgramSlotDrafts] = useState<ProgramSlotDraft[]>([]);
+  const [strengthCompletionDraft, setStrengthCompletionDraft] = useState<StrengthCompletionBlockDraft[]>([]);
   const [calendarSelection, setCalendarSelection] = useState<CalendarSelection>(null);
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => dateKey(startOfWeek(new Date())));
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [plannedSessions, setPlannedSessions] = useState<PlannedSession[]>([]);
   const [trainingGoals, setTrainingGoals] = useState<TrainingGoal[]>([]);
   const [programTemplates, setProgramTemplates] = useState<ProgramTemplate[]>([]);
+  const [programInstances, setProgramInstances] = useState<ProgramInstance[]>([]);
   const [v1Metadata, setV1Metadata] = useState<ImportedV1Metadata[]>([]);
   const [coachSuggestions, setCoachSuggestions] = useState<CoachSuggestion[]>([]);
   const [lastInvite, setLastInvite] = useState<CoachInvite | null>(null);
@@ -592,6 +734,8 @@ export function App() {
   const [isMarkingMissedSessionId, setIsMarkingMissedSessionId] = useState("");
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isSavingProgramTemplate, setIsSavingProgramTemplate] = useState(false);
+  const [isSchedulingProgramId, setIsSchedulingProgramId] = useState("");
+  const [isRemovingProgramInstanceId, setIsRemovingProgramInstanceId] = useState("");
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
@@ -642,6 +786,18 @@ export function App() {
     ? workoutsById.get(selectedCalendarSession.linked_workout_id) ?? null
     : null;
   const selectedCalendarSprintBlock = selectedCalendarSession ? firstSprintBlock(selectedCalendarSession) : {};
+  useEffect(() => {
+    if (
+      selectedCalendarSession
+      && selectedCalendarSession.type === "strength"
+      && selectedCalendarSession.status === "planned"
+      && !selectedCalendarSessionWorkout
+    ) {
+      setStrengthCompletionDraft(buildStrengthCompletionDraft(selectedCalendarSession));
+      return;
+    }
+    setStrengthCompletionDraft([]);
+  }, [selectedCalendarSession, selectedCalendarSessionWorkout]);
   const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
   const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
   const goalsByActivity = useMemo(
@@ -656,7 +812,7 @@ export function App() {
       ]),
     );
 
-    return phaseInstances.map((row) => {
+    const importedProgress = phaseInstances.map((row) => {
       const generatedSessionIds = new Set(stringArray(row.payload.generatedSessionIds));
       const templateId = typeof row.payload.templateId === "string" ? row.payload.templateId : "";
       const startDate = typeof row.payload.startDate === "string" ? row.payload.startDate : "";
@@ -693,7 +849,44 @@ export function App() {
         weeks,
       };
     });
-  }, [phaseInstances, phaseTemplates, plannedSessions]);
+
+    const cloudProgress = programInstances.map((instance) => {
+      const generatedSessionIds = new Set(instance.generated_session_ids);
+      const sessions = plannedSessions.filter((session) => (
+        session.phase_instance_id === instance.id
+        || generatedSessionIds.has(session.id)
+      ));
+      const statusCount = (statusValue: string) => sessions.filter((session) => session.status === statusValue).length;
+      const weeksByIndex = new Map<number, PlannedSession[]>();
+      sessions.forEach((session) => {
+        const weekIndex = session.phase_week_index ?? 0;
+        weeksByIndex.set(weekIndex, [...weeksByIndex.get(weekIndex) ?? [], session]);
+      });
+      const weeks = Array.from(weeksByIndex.entries())
+        .sort(([left], [right]) => left - right)
+        .map(([weekIndex, weekSessions]) => ({
+          label: `Week ${weekIndex + 1}`,
+          total: weekSessions.length,
+          completed: weekSessions.filter((session) => session.status === "completed").length,
+          modified: weekSessions.filter((session) => session.status === "modified").length,
+          missed: weekSessions.filter((session) => session.status === "missed").length,
+          planned: weekSessions.filter((session) => session.status === "planned").length,
+        }));
+      return {
+        id: instance.id,
+        name: instance.template_name,
+        startDate: instance.start_date,
+        total: sessions.length,
+        completed: statusCount("completed"),
+        modified: statusCount("modified"),
+        missed: statusCount("missed"),
+        planned: statusCount("planned"),
+        weeks,
+      };
+    });
+
+    return [...cloudProgress, ...importedProgress];
+  }, [phaseInstances, phaseTemplates, plannedSessions, programInstances]);
   const reviewCounts = {
     planned: plannedSessions.filter((session) => session.status === "planned").length,
     completed: plannedSessions.filter((session) => session.status === "completed").length,
@@ -825,6 +1018,15 @@ export function App() {
     setProgramTemplates(nextTemplates);
   }, []);
 
+  const loadProgramInstances = useCallback(async (activeToken: string, trainingSpaceId: string) => {
+    const nextInstances = await apiRequest<ProgramInstance[]>(
+      `/api/training-spaces/${trainingSpaceId}/program-templates/instances`,
+      {},
+      activeToken,
+    );
+    setProgramInstances(nextInstances);
+  }, []);
+
   const loadV1Metadata = useCallback(async (activeToken: string, trainingSpaceId: string) => {
     const rows = await apiRequest<ImportedV1Metadata[]>(`/api/imports/v1/metadata/${trainingSpaceId}`, {}, activeToken);
     setV1Metadata(rows);
@@ -933,6 +1135,7 @@ export function App() {
     if (!token || !selectedSpaceId) {
       setV1Metadata([]);
       setProgramTemplates([]);
+      setProgramInstances([]);
       setProgramStatus("");
       setProgramTemplateStatus("");
       return;
@@ -944,6 +1147,7 @@ export function App() {
     Promise.all([
       loadV1Metadata(token, selectedSpaceId),
       loadProgramTemplates(token, selectedSpaceId),
+      loadProgramInstances(token, selectedSpaceId),
     ])
       .catch((error: unknown) => {
         if (!isActive) {
@@ -951,13 +1155,14 @@ export function App() {
         }
         setV1Metadata([]);
         setProgramTemplates([]);
+        setProgramInstances([]);
         setProgramStatus(error instanceof Error ? error.message : "Could not load programs.");
       });
 
     return () => {
       isActive = false;
     };
-  }, [loadProgramTemplates, loadV1Metadata, selectedSpaceId, token]);
+  }, [loadProgramInstances, loadProgramTemplates, loadV1Metadata, selectedSpaceId, token]);
 
   const loadCoachSuggestions = useCallback(async (activeToken: string, trainingSpaceId: string, role: string) => {
     if (role !== "owner") {
@@ -1557,6 +1762,144 @@ export function App() {
     }
   }
 
+  function updateStrengthCompletionSet(
+    blockIndex: number,
+    exerciseIndex: number,
+    setId: string,
+    changes: Partial<StrengthCompletionSetDraft>,
+  ) {
+    setStrengthCompletionDraft((current) => current.map((block, currentBlockIndex) => {
+      if (currentBlockIndex !== blockIndex) {
+        return block;
+      }
+      return {
+        ...block,
+        exercises: block.exercises.map((exercise, currentExerciseIndex) => {
+          if (currentExerciseIndex !== exerciseIndex) {
+            return exercise;
+          }
+          return {
+            ...exercise,
+            actual_sets: exercise.actual_sets.map((set) => (set.id === setId ? { ...set, ...changes } : set)),
+          };
+        }),
+      };
+    }));
+  }
+
+  function updateStrengthCompletionExercise(
+    blockIndex: number,
+    exerciseIndex: number,
+    changes: Partial<StrengthCompletionExerciseDraft>,
+  ) {
+    setStrengthCompletionDraft((current) => current.map((block, currentBlockIndex) => {
+      if (currentBlockIndex !== blockIndex) {
+        return block;
+      }
+      return {
+        ...block,
+        exercises: block.exercises.map((exercise, currentExerciseIndex) => (
+          currentExerciseIndex === exerciseIndex ? { ...exercise, ...changes } : exercise
+        )),
+      };
+    }));
+  }
+
+  function addStrengthCompletionSet(blockIndex: number, exerciseIndex: number) {
+    setStrengthCompletionDraft((current) => current.map((block, currentBlockIndex) => {
+      if (currentBlockIndex !== blockIndex) {
+        return block;
+      }
+      return {
+        ...block,
+        exercises: block.exercises.map((exercise, currentExerciseIndex) => {
+          if (currentExerciseIndex !== exerciseIndex) {
+            return exercise;
+          }
+          return {
+            ...exercise,
+            actual_sets: [
+              ...exercise.actual_sets,
+              { id: crypto.randomUUID(), reps: "", load_type: "kg", weight: "", band_color: "" },
+            ],
+          };
+        }),
+      };
+    }));
+  }
+
+  function removeStrengthCompletionSet(blockIndex: number, exerciseIndex: number, setId: string) {
+    setStrengthCompletionDraft((current) => current.map((block, currentBlockIndex) => {
+      if (currentBlockIndex !== blockIndex) {
+        return block;
+      }
+      return {
+        ...block,
+        exercises: block.exercises.map((exercise, currentExerciseIndex) => {
+          if (currentExerciseIndex !== exerciseIndex) {
+            return exercise;
+          }
+          return {
+            ...exercise,
+            actual_sets: exercise.actual_sets.filter((set) => set.id !== setId),
+          };
+        }),
+      };
+    }));
+  }
+
+  async function handleCompleteStrengthSession(event: FormEvent<HTMLFormElement>, session: PlannedSession) {
+    event.preventDefault();
+    if (!token || !selectedSpace) {
+      return;
+    }
+    const form = new FormData(event.currentTarget);
+    const notes = String(form.get("completionNotes") ?? "");
+    const payload = strengthCompletionPayload(strengthCompletionDraft);
+    if (!payload.strengthExercises.length) {
+      setCompletionStatus("Strength completion needs at least one logged set.");
+      return;
+    }
+
+    setIsCompletingSessionId(session.id);
+    setCompletionStatus("");
+    try {
+      const workout = await apiRequest<Workout>(
+        `/api/training-spaces/${selectedSpace.id}/workouts`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            activity: "strength",
+            date: session.date,
+            notes: notes || `Completed planned strength: ${session.title}`,
+            strength_exercises: payload.strengthExercises,
+          }),
+        },
+        token,
+      );
+      await apiRequest<PlannedSession>(
+        `/api/training-spaces/${selectedSpace.id}/planned-sessions/${session.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            linked_workout_id: workout.id,
+            status: payload.isModified ? "modified" : "completed",
+            actual_json: payload.actualJson,
+            modification_note: notes,
+          }),
+        },
+        token,
+      );
+      await loadTrainingHistory(token, selectedSpace.id);
+      setCalendarSelection({ type: "planned", id: session.id });
+      setCompletionStatus("Planned strength session completed.");
+    } catch (error) {
+      setCompletionStatus(error instanceof Error ? error.message : "Could not complete strength session.");
+    } finally {
+      setIsCompletingSessionId("");
+    }
+  }
+
   async function handleDeleteWorkout(workout: Workout) {
     if (!token || !selectedSpace) {
       return;
@@ -1619,8 +1962,8 @@ export function App() {
     if (!token || !selectedSpace) {
       return;
     }
-    if (session.type !== "run" && session.type !== "sprint") {
-      setPlannedEditStatus("Calendar editing currently supports run and sprint sessions.");
+    if (session.type !== "run" && session.type !== "sprint" && session.type !== "strength") {
+      setPlannedEditStatus("Calendar editing supports run, sprint, and strength sessions.");
       return;
     }
 
@@ -1632,14 +1975,16 @@ export function App() {
           distance: Number(form.get("plannedEditRunDistance")) || null,
           paceGoal: Number(form.get("plannedEditRunPace")) || null,
         }
-      : {
-          blocks: [{
-            reps: Number(form.get("plannedEditSprintReps")) || 1,
-            distanceM: Number(form.get("plannedEditSprintDistance")) || 100,
-            targetTimeSec: Number(form.get("plannedEditSprintTargetTime")) || null,
-            restSec: Number(form.get("plannedEditSprintRest")) || null,
-          }],
-        };
+      : session.type === "sprint"
+        ? {
+            blocks: [{
+              reps: Number(form.get("plannedEditSprintReps")) || 1,
+              distanceM: Number(form.get("plannedEditSprintDistance")) || 100,
+              targetTimeSec: Number(form.get("plannedEditSprintTargetTime")) || null,
+              restSec: Number(form.get("plannedEditSprintRest")) || null,
+            }],
+          }
+        : session.details_json;
 
     setIsSavingPlannedSession(true);
     setPlannedEditStatus("");
@@ -1648,7 +1993,12 @@ export function App() {
         `/api/training-spaces/${selectedSpace.id}/planned-sessions/${session.id}`,
         {
           method: "PATCH",
-          body: JSON.stringify({ title, date, details_json: details }),
+          body: JSON.stringify({
+            title,
+            date,
+            details_json: details,
+            date_moved_manually: session.source === "phase-generated" && date !== session.generated_date,
+          }),
         },
         token,
       );
@@ -1813,6 +2163,66 @@ export function App() {
       setProgramTemplateStatus(error instanceof Error ? error.message : "Could not save program template.");
     } finally {
       setIsSavingProgramTemplate(false);
+    }
+  }
+
+  async function handleScheduleProgramTemplate(template: ProgramTemplate) {
+    if (!token || !selectedSpace) {
+      return;
+    }
+    const startDate = typeof template.template_json.startDate === "string" ? template.template_json.startDate : "";
+    if (!startDate) {
+      setProgramTemplateStatus("Template needs a start date before scheduling.");
+      return;
+    }
+
+    setIsSchedulingProgramId(template.id);
+    setProgramTemplateStatus("");
+    try {
+      await apiRequest<ProgramInstance>(
+        `/api/training-spaces/${selectedSpace.id}/program-templates/${template.id}/schedule`,
+        { method: "POST", body: JSON.stringify({ start_date: startDate }) },
+        token,
+      );
+      await Promise.all([
+        loadTrainingHistory(token, selectedSpace.id),
+        loadProgramInstances(token, selectedSpace.id),
+      ]);
+      setProgramTemplateStatus("Program scheduled.");
+      setActiveView("calendar");
+    } catch (error) {
+      setProgramTemplateStatus(error instanceof Error ? error.message : "Could not schedule program.");
+    } finally {
+      setIsSchedulingProgramId("");
+    }
+  }
+
+  async function handleRemoveProgramInstance(instance: ProgramInstance) {
+    if (!token || !selectedSpace) {
+      return;
+    }
+    const confirmed = window.confirm(`Remove scheduled program "${instance.template_name}"? Planned generated sessions will be removed.`);
+    if (!confirmed) {
+      return;
+    }
+
+    setIsRemovingProgramInstanceId(instance.id);
+    setProgramStatus("");
+    try {
+      await apiRequest<void>(
+        `/api/training-spaces/${selectedSpace.id}/program-templates/instances/${instance.id}`,
+        { method: "DELETE" },
+        token,
+      );
+      await Promise.all([
+        loadTrainingHistory(token, selectedSpace.id),
+        loadProgramInstances(token, selectedSpace.id),
+      ]);
+      setProgramStatus("Scheduled program removed.");
+    } catch (error) {
+      setProgramStatus(error instanceof Error ? error.message : "Could not remove scheduled program.");
+    } finally {
+      setIsRemovingProgramInstanceId("");
     }
   }
 
@@ -2286,7 +2696,7 @@ export function App() {
                     </div>
 
                     {!selectedCalendarSessionWorkout && selectedCalendarSession.status === "planned" && (
-                      selectedCalendarSession.type === "run" || selectedCalendarSession.type === "sprint"
+                      selectedCalendarSession.type === "run" || selectedCalendarSession.type === "sprint" || selectedCalendarSession.type === "strength"
                     ) && (
                       <form
                         className="planned-session-edit-form"
@@ -2326,7 +2736,7 @@ export function App() {
                               />
                             </label>
                           </div>
-                        ) : (
+                        ) : selectedCalendarSession.type === "sprint" ? (
                           <div className="training-form-grid">
                             <label>
                               Reps
@@ -2380,6 +2790,24 @@ export function App() {
                                 }
                               />
                             </label>
+                          </div>
+                        ) : (
+                          <div className="strength-detail-list">
+                            {plannedStrengthBlocks(selectedCalendarSession).map((block, blockIndex) => (
+                              <article key={`${selectedCalendarSession.id}-planned-${blockIndex}`}>
+                                <h4>{typeof block.label === "string" ? block.label : `Block ${blockIndex + 1}`}</h4>
+                                <p>{block.sets ? `${String(block.sets)} set(s)` : "Sets not specified"}</p>
+                                <ul>
+                                  {plannedExerciseRows(block).map((exercise, exerciseIndex) => (
+                                    <li key={`${selectedCalendarSession.id}-planned-${blockIndex}-${exerciseIndex}`}>
+                                      {typeof exercise.name === "string" ? exercise.name : "Exercise"}
+                                      {exercise.reps ? ` • ${String(exercise.reps)} reps` : ""}
+                                      {typeof exercise.weight === "number" ? ` @ ${formatNumber(exercise.weight)} kg` : ""}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </article>
+                            ))}
                           </div>
                         )}
                         {plannedEditStatus && <p className="form-status neutral-status" role="status">{plannedEditStatus}</p>}
@@ -2456,6 +2884,96 @@ export function App() {
                         {completionStatus && <p className="form-status neutral-status" role="status">{completionStatus}</p>}
                         <button type="submit" disabled={isCompletingSessionId === selectedCalendarSession.id}>
                           {isCompletingSessionId === selectedCalendarSession.id ? "Completing" : "Complete planned session"}
+                        </button>
+                      </form>
+                    )}
+
+                    {!selectedCalendarSessionWorkout && selectedCalendarSession.status === "planned" && selectedCalendarSession.type === "strength" && (
+                      <form
+                        className="completion-form"
+                        onSubmit={(event) => void handleCompleteStrengthSession(event, selectedCalendarSession)}
+                      >
+                        <h4>Log & complete</h4>
+                        <div className="strength-detail-list">
+                          {strengthCompletionDraft.map((block, blockIndex) => (
+                            <article key={`${selectedCalendarSession.id}-completion-${blockIndex}`}>
+                              <h4>{block.label}</h4>
+                              <p>{block.planned_sets ? `${block.planned_sets} planned set(s)` : "Sets not specified"}</p>
+                              {block.exercises.map((exercise, exerciseIndex) => (
+                                <div className="program-block-preview" key={`${block.label}-${exerciseIndex}`}>
+                                  <label className="checkbox-label">
+                                    <input
+                                      type="checkbox"
+                                      checked={exercise.completed}
+                                      onChange={(event) => updateStrengthCompletionExercise(blockIndex, exerciseIndex, { completed: event.currentTarget.checked })}
+                                    />
+                                    {exercise.name}
+                                  </label>
+                                  <p>
+                                    Planned: {exercise.planned_reps || "-"} reps
+                                    {exercise.planned_weight != null ? ` @ ${formatNumber(exercise.planned_weight)} kg` : ""}
+                                  </p>
+                                  {exercise.actual_sets.map((set) => (
+                                    <div className="training-form-grid" key={set.id}>
+                                      <label>
+                                        Reps
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={set.reps}
+                                          onChange={(event) => updateStrengthCompletionSet(blockIndex, exerciseIndex, set.id, { reps: event.currentTarget.value })}
+                                        />
+                                      </label>
+                                      <label>
+                                        Load
+                                        <select
+                                          value={set.load_type}
+                                          onChange={(event) => updateStrengthCompletionSet(blockIndex, exerciseIndex, set.id, { load_type: event.currentTarget.value, weight: "", band_color: "" })}
+                                        >
+                                          <option value="kg">kg</option>
+                                          <option value="bodyweight">body weight</option>
+                                          <option value="band">band</option>
+                                        </select>
+                                      </label>
+                                      {set.load_type === "kg" && (
+                                        <label>
+                                          Weight
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={set.weight}
+                                            onChange={(event) => updateStrengthCompletionSet(blockIndex, exerciseIndex, set.id, { weight: event.currentTarget.value })}
+                                          />
+                                        </label>
+                                      )}
+                                      {set.load_type === "band" && (
+                                        <label>
+                                          Band
+                                          <input
+                                            value={set.band_color}
+                                            onChange={(event) => updateStrengthCompletionSet(blockIndex, exerciseIndex, set.id, { band_color: event.currentTarget.value })}
+                                          />
+                                        </label>
+                                      )}
+                                      <button type="button" className="danger-button" onClick={() => removeStrengthCompletionSet(blockIndex, exerciseIndex, set.id)}>
+                                        Remove set
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button type="button" onClick={() => addStrengthCompletionSet(blockIndex, exerciseIndex)}>Add set</button>
+                                </div>
+                              ))}
+                            </article>
+                          ))}
+                        </div>
+                        <label>
+                          Notes
+                          <textarea name="completionNotes" rows={2} placeholder="What changed or how did it feel?" />
+                        </label>
+                        {completionStatus && <p className="form-status neutral-status" role="status">{completionStatus}</p>}
+                        <button type="submit" disabled={isCompletingSessionId === selectedCalendarSession.id}>
+                          {isCompletingSessionId === selectedCalendarSession.id ? "Completing" : "Complete planned strength"}
                         </button>
                       </form>
                     )}
@@ -2803,7 +3321,7 @@ export function App() {
               <div className="program-section-header">
                 <div>
                   <h3>Cloud program templates</h3>
-                  <p>Create reusable strength templates here. Scheduling generated sessions is the next step.</p>
+                  <p>Create reusable strength templates and schedule them into the calendar.</p>
                 </div>
               </div>
 
@@ -2998,6 +3516,13 @@ export function App() {
                       {template.notes ? ` • ${template.notes}` : ""}
                     </p>
                     <span className="status-badge">Cloud</span>
+                    <button
+                      type="button"
+                      onClick={() => void handleScheduleProgramTemplate(template)}
+                      disabled={isSchedulingProgramId === template.id}
+                    >
+                      {isSchedulingProgramId === template.id ? "Scheduling" : "Schedule program"}
+                    </button>
                   </article>
                 )) : (
                   <p className="empty-state">No cloud program templates yet.</p>
@@ -3006,6 +3531,33 @@ export function App() {
             </section>
 
             <div className="program-grid">
+              <section className="program-section" aria-label="Cloud scheduled programs">
+                <h3>Scheduled cloud programs</h3>
+                <div className="program-list">
+                  {programInstances.length ? programInstances.map((instance) => (
+                    <article className="program-card" key={instance.id}>
+                      <h4>{instance.template_name}</h4>
+                      <p>
+                        Starts {formatDate(instance.start_date)}
+                        {` • ${instance.duration_weeks} week(s)`}
+                        {` • ${instance.generated_session_ids.length} generated session(s)`}
+                      </p>
+                      <span className="status-badge">Cloud</span>
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => void handleRemoveProgramInstance(instance)}
+                        disabled={isRemovingProgramInstanceId === instance.id}
+                      >
+                        {isRemovingProgramInstanceId === instance.id ? "Removing" : "Remove scheduled program"}
+                      </button>
+                    </article>
+                  )) : (
+                    <p className="empty-state">No scheduled cloud programs yet.</p>
+                  )}
+                </div>
+              </section>
+
               <section className="program-section" aria-label="Imported phase templates">
                 <h3>Saved phase templates</h3>
                 <div className="program-list">

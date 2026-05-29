@@ -44,6 +44,8 @@ class PlannedSessionCreateRequest(BaseModel):
 class PlannedSessionUpdateRequest(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=160)
     date: date_type | None = None
+    generated_date: date_type | None = None
+    date_moved_manually: bool | None = None
     details_json: dict[str, Any] | None = None
     modification_note: str | None = None
     actual_json: dict[str, Any] | None = None

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
@@ -25,3 +25,18 @@ class ProgramTemplateResponse(BaseModel):
     notes: str
     created_at: datetime
     updated_at: datetime
+
+
+class ProgramScheduleRequest(BaseModel):
+    start_date: date | None = None
+
+
+class ProgramInstanceResponse(BaseModel):
+    id: str
+    training_space_id: str
+    template_id: str
+    template_name: str
+    start_date: date
+    duration_weeks: int
+    generated_session_ids: list[str]
+    created_at: datetime

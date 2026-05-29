@@ -139,6 +139,10 @@ def update_planned_session(
         planned_session.title = payload.title
     if "date" in update_data and payload.date is not None:
         planned_session.date = payload.date
+    if "generated_date" in update_data:
+        planned_session.generated_date = payload.generated_date
+    if "date_moved_manually" in update_data and payload.date_moved_manually is not None:
+        planned_session.date_moved_manually = payload.date_moved_manually
     if "details_json" in update_data and payload.details_json is not None:
         planned_session.details_json = payload.details_json
     if "actual_json" in update_data:
