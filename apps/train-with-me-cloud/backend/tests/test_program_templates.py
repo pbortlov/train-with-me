@@ -7,8 +7,15 @@ from app.auth.schemas import RegisterRequest
 from app.db.base import Base
 from app.db.models import PlannedSession, User
 from app.main import app
-from app.programs.routes import create_program_template, list_program_instances, list_program_templates, remove_program_instance, schedule_program_template
-from app.programs.schemas import ProgramScheduleRequest, ProgramTemplateCreateRequest
+from app.programs.routes import (
+    create_program_template,
+    list_program_instances,
+    list_program_templates,
+    remove_program_instance,
+    schedule_program_template,
+    update_program_template,
+)
+from app.programs.schemas import ProgramScheduleRequest, ProgramTemplateCreateRequest, ProgramTemplateUpdateRequest
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
 
@@ -106,6 +113,77 @@ def test_schedule_and_remove_program_template_generates_strength_sessions() -> N
 
         assert list_program_instances(space.id, user, db) == []
         assert db.query(PlannedSession).filter(PlannedSession.phase_instance_id == instance.id).count() == 0
+
+
+def test_update_program_template_changes_future_schedules_only() -> None:
+    with db_session() as db:
+        user = create_user(db, "athlete@example.com")
+        space = create_training_space(TrainingSpaceCreateRequest(name="Base Season"), user, db)
+        template = create_program_template(
+            space.id,
+            ProgramTemplateCreateRequest(
+                name="Base strength",
+                duration_weeks=1,
+                template_json={
+                    "startDate": "2026-06-01",
+                    "weekdaySlots": [
+                        {
+                            "id": "slot-a",
+                            "weekday": 1,
+                            "title": "Strength A",
+                            "blocks": [
+                                {
+                                    "id": "block-a",
+                                    "label": "Squat",
+                                    "sets": "3",
+                                    "exercises": [{"code": "E1", "name": "Back squat", "reps": "5"}],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ),
+            user,
+            db,
+        )
+        first_instance = schedule_program_template(space.id, template.id, ProgramScheduleRequest(), user, db)
+
+        updated = update_program_template(
+            space.id,
+            template.id,
+            ProgramTemplateUpdateRequest(
+                name="Edited strength",
+                duration_weeks=1,
+                template_json={
+                    "startDate": "2026-06-01",
+                    "weekdaySlots": [
+                        {
+                            "id": "slot-a",
+                            "weekday": 1,
+                            "title": "Strength A",
+                            "blocks": [
+                                {
+                                    "id": "block-a",
+                                    "label": "Squat",
+                                    "sets": "4",
+                                    "exercises": [{"code": "E1", "name": "Front squat", "reps": "6"}],
+                                },
+                            ],
+                        },
+                    ],
+                },
+                notes="Edited",
+            ),
+            user,
+            db,
+        )
+        second_instance = schedule_program_template(space.id, template.id, ProgramScheduleRequest(), user, db)
+        first_session = db.query(PlannedSession).filter(PlannedSession.phase_instance_id == first_instance.id).one()
+        second_session = db.query(PlannedSession).filter(PlannedSession.phase_instance_id == second_instance.id).one()
+
+        assert updated.name == "Edited strength"
+        assert first_session.details_json["blocks"][0]["exercises"][0]["name"] == "Back squat"
+        assert second_session.details_json["blocks"][0]["exercises"][0]["name"] == "Front squat"
 
 
 def test_program_template_routes_are_registered() -> None:

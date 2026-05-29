@@ -13,6 +13,7 @@ from app.programs.schemas import (
     ProgramScheduleRequest,
     ProgramTemplateCreateRequest,
     ProgramTemplateResponse,
+    ProgramTemplateUpdateRequest,
 )
 from app.workouts.routes import require_membership, workouts_error
 
@@ -181,6 +182,25 @@ def list_program_instances(
         .order_by(ProgramInstance.created_at.desc(), ProgramInstance.id),
     ).all()
     return [program_instance_response(instance) for instance in instances]
+
+
+@router.patch("/{template_id}")
+def update_program_template(
+    training_space_id: str,
+    template_id: str,
+    payload: ProgramTemplateUpdateRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db_session)],
+) -> ProgramTemplateResponse:
+    require_membership(db, training_space_id, current_user.id)
+    template = get_template(db, training_space_id, template_id)
+    template.name = payload.name
+    template.duration_weeks = payload.duration_weeks
+    template.template_json = payload.template_json
+    template.notes = payload.notes
+    db.commit()
+    db.refresh(template)
+    return program_template_response(template)
 
 
 @router.post("/{template_id}/schedule", status_code=status.HTTP_201_CREATED)

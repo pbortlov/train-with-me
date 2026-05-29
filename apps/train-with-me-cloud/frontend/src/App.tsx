@@ -581,6 +581,33 @@ function buildStrengthCompletionDraft(session: PlannedSession): StrengthCompleti
   });
 }
 
+function normalizeProgramSlotDrafts(value: unknown): ProgramSlotDraft[] {
+  return Array.isArray(value)
+    ? value.map(asRecord).filter((slot): slot is Record<string, unknown> => Boolean(slot)).map((slot, slotIndex) => ({
+      id: typeof slot.id === "string" ? slot.id : crypto.randomUUID(),
+      weekday: typeof slot.weekday === "number" ? slot.weekday : 1,
+      title: typeof slot.title === "string" ? slot.title : `Strength ${slotIndex + 1}`,
+      notes: typeof slot.notes === "string" ? slot.notes : "",
+      blocks: Array.isArray(slot.blocks)
+        ? slot.blocks.map(asRecord).filter((block): block is Record<string, unknown> => Boolean(block)).map((block, blockIndex) => ({
+          id: typeof block.id === "string" ? block.id : crypto.randomUUID(),
+          label: typeof block.label === "string" ? block.label : `Block ${blockIndex + 1}`,
+          sets: typeof block.sets === "string" ? block.sets : String(block.sets ?? ""),
+          exercises: Array.isArray(block.exercises)
+            ? block.exercises.map(asRecord).filter((exercise): exercise is Record<string, unknown> => Boolean(exercise)).map((exercise, exerciseIndex) => ({
+              code: typeof exercise.code === "string" ? exercise.code : `E${exerciseIndex + 1}`,
+              name: typeof exercise.name === "string" ? exercise.name : "Exercise",
+              reps: typeof exercise.reps === "string" ? exercise.reps : String(exercise.reps ?? ""),
+              notes: typeof exercise.notes === "string" ? exercise.notes : "",
+              weight: typeof exercise.weight === "number" ? exercise.weight : null,
+            }))
+            : [],
+        }))
+        : [],
+    }))
+    : [];
+}
+
 function strengthCompletionPayload(blocks: StrengthCompletionBlockDraft[]): {
   actualJson: Record<string, unknown>;
   strengthExercises: { name: string; sets: { reps: number; weight: number | null; load_type: string; band_color: string }[] }[];
@@ -703,6 +730,7 @@ export function App() {
   const [trainingGoals, setTrainingGoals] = useState<TrainingGoal[]>([]);
   const [programTemplates, setProgramTemplates] = useState<ProgramTemplate[]>([]);
   const [programInstances, setProgramInstances] = useState<ProgramInstance[]>([]);
+  const [editingProgramTemplate, setEditingProgramTemplate] = useState<ProgramTemplate | null>(null);
   const [v1Metadata, setV1Metadata] = useState<ImportedV1Metadata[]>([]);
   const [coachSuggestions, setCoachSuggestions] = useState<CoachSuggestion[]>([]);
   const [lastInvite, setLastInvite] = useState<CoachInvite | null>(null);
@@ -1478,6 +1506,19 @@ export function App() {
     }));
   }
 
+  function handleEditProgramTemplate(template: ProgramTemplate) {
+    setEditingProgramTemplate(template);
+    setProgramSlotDrafts(normalizeProgramSlotDrafts(template.template_json.weekdaySlots));
+    setProgramTemplateStatus(`Editing "${template.name}". Changes affect future schedules only.`);
+  }
+
+  function cancelProgramTemplateEdit(formElement?: HTMLFormElement | null) {
+    setEditingProgramTemplate(null);
+    setProgramSlotDrafts([]);
+    setProgramTemplateStatus("");
+    formElement?.reset();
+  }
+
   async function handleCreateInvite() {
     if (!token || !selectedSpace) {
       return;
@@ -2139,10 +2180,13 @@ export function App() {
       if (programSlotDrafts.some((slot) => slot.blocks.some((block) => !block.exercises.length))) {
         throw new Error("Every block needs at least one exercise.");
       }
+      const templatePath = editingProgramTemplate
+        ? `/api/training-spaces/${selectedSpace.id}/program-templates/${editingProgramTemplate.id}`
+        : `/api/training-spaces/${selectedSpace.id}/program-templates`;
       await apiRequest<ProgramTemplate>(
-        `/api/training-spaces/${selectedSpace.id}/program-templates`,
+        templatePath,
         {
-          method: "POST",
+          method: editingProgramTemplate ? "PATCH" : "POST",
           body: JSON.stringify({
             name,
             duration_weeks: durationWeeks,
@@ -2158,7 +2202,8 @@ export function App() {
       await loadProgramTemplates(token, selectedSpace.id);
       formElement.reset();
       setProgramSlotDrafts([]);
-      setProgramTemplateStatus("Program template saved.");
+      setEditingProgramTemplate(null);
+      setProgramTemplateStatus(editingProgramTemplate ? "Program template updated." : "Program template saved.");
     } catch (error) {
       setProgramTemplateStatus(error instanceof Error ? error.message : "Could not save program template.");
     } finally {
@@ -3325,23 +3370,32 @@ export function App() {
                 </div>
               </div>
 
-              <form className="program-template-form" onSubmit={handleProgramTemplateSubmit}>
+              <form
+                key={editingProgramTemplate?.id ?? "new-program-template"}
+                className="program-template-form"
+                onSubmit={handleProgramTemplateSubmit}
+              >
                 <div className="training-form-grid">
                   <label>
                     Name
-                    <input name="programTemplateName" placeholder="Base strength" required />
+                    <input name="programTemplateName" placeholder="Base strength" defaultValue={editingProgramTemplate?.name ?? ""} required />
                   </label>
                   <label>
                     Duration (weeks)
-                    <input name="programTemplateDuration" type="number" min="1" max="52" defaultValue="4" required />
+                    <input name="programTemplateDuration" type="number" min="1" max="52" defaultValue={editingProgramTemplate?.duration_weeks ?? 4} required />
                   </label>
                   <label>
                     Start date
-                    <input name="programTemplateStartDate" type="date" required />
+                    <input
+                      name="programTemplateStartDate"
+                      type="date"
+                      defaultValue={typeof editingProgramTemplate?.template_json.startDate === "string" ? editingProgramTemplate.template_json.startDate : ""}
+                      required
+                    />
                   </label>
                   <label>
                     Notes
-                    <input name="programTemplateNotes" placeholder="Optional" />
+                    <input name="programTemplateNotes" placeholder="Optional" defaultValue={editingProgramTemplate?.notes ?? ""} />
                   </label>
                 </div>
                 <section className="program-slot-builder" aria-label="Program workout builder">
@@ -3498,9 +3552,20 @@ export function App() {
                     )}
                   </div>
                 </section>
-                <button type="submit" disabled={isSavingProgramTemplate}>
-                  {isSavingProgramTemplate ? "Saving" : "Save template"}
-                </button>
+                <div className="dialog-actions">
+                  <button type="submit" disabled={isSavingProgramTemplate}>
+                    {isSavingProgramTemplate ? "Saving" : editingProgramTemplate ? "Save template changes" : "Save template"}
+                  </button>
+                  {editingProgramTemplate && (
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={(event) => cancelProgramTemplateEdit(event.currentTarget.form)}
+                    >
+                      Cancel edit
+                    </button>
+                  )}
+                </div>
               </form>
 
               <div className="program-list">
@@ -3516,6 +3581,9 @@ export function App() {
                       {template.notes ? ` • ${template.notes}` : ""}
                     </p>
                     <span className="status-badge">Cloud</span>
+                    <button type="button" className="ghost-button" onClick={() => handleEditProgramTemplate(template)}>
+                      Edit template
+                    </button>
                     <button
                       type="button"
                       onClick={() => void handleScheduleProgramTemplate(template)}

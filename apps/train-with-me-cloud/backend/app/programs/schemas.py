@@ -16,6 +16,10 @@ class ProgramTemplateCreateRequest(BaseModel):
         return value.strip()
 
 
+class ProgramTemplateUpdateRequest(ProgramTemplateCreateRequest):
+    pass
+
+
 class ProgramTemplateResponse(BaseModel):
     id: str
     training_space_id: str
