@@ -1,11 +1,30 @@
 :root {
-  color: #17211d;
-  background: #f5f7f6;
+  color: #f5f7ff;
+  background: #06080f;
+  color-scheme: dark;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  --bg: #06080f;
+  --card: #111623;
+  --panel: #0a1326;
+  --panel-deep: #081121;
+  --field: #0b1120;
+  --text: #f5f7ff;
+  --muted: #9aa7c7;
+  --muted-strong: #cfe2ff;
+  --accent: #00e5ff;
+  --accent-weak: #00e5ff66;
+  --accent-soft: #00e5ff12;
+  --border: #24324f;
+  --success: #6dff5c;
+  --success-soft: #6dff5c12;
+  --danger: #ff4d6d;
+  --danger-soft: #ff4d6d12;
+  --warning: #ffd37a;
+  --warning-soft: #ffd37a12;
 }
 
 * {
@@ -13,6 +32,8 @@
 }
 
 body {
+  background: var(--bg);
+  color: var(--text);
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
@@ -26,39 +47,47 @@ textarea {
 }
 
 button {
-  border: 1px solid #b8c7bf;
+  border: 1px solid var(--accent-weak);
   border-radius: 6px;
-  background: #ffffff;
-  color: #17211d;
+  background: var(--accent);
+  color: #001018;
   cursor: pointer;
   font-weight: 650;
   min-height: 40px;
   padding: 0 14px;
+  box-shadow: 0 0 0.6rem #00e5ff33;
 }
 
 button:hover:not(:disabled) {
-  border-color: #1f6f5b;
+  border-color: var(--accent);
 }
 
 .danger-button {
-  border-color: #d8aaa4;
-  color: #9d2f23;
+  background: var(--danger-soft);
+  border-color: #ff4d6d88;
+  color: var(--danger);
+  box-shadow: none;
 }
 
 .danger-button:hover:not(:disabled) {
-  border-color: #9d2f23;
+  border-color: var(--danger);
 }
 
 button:disabled {
-  color: #7b8a83;
+  background: #1f2c46;
+  border-color: var(--border);
+  color: #64748b;
   cursor: wait;
+  box-shadow: none;
 }
 
 input,
 select,
 textarea {
-  border: 1px solid #bac8c1;
+  background: var(--field);
+  border: 1px solid var(--border);
   border-radius: 6px;
+  color: var(--text);
   min-height: 42px;
   padding: 8px 10px;
   width: 100%;
@@ -68,7 +97,7 @@ input:focus,
 select:focus,
 textarea:focus,
 button:focus-visible {
-  outline: 3px solid #b9dfd4;
+  outline: 3px solid #00e5ff55;
   outline-offset: 2px;
 }
 
@@ -110,7 +139,7 @@ textarea {
 }
 
 .auth-intro p:last-child {
-  color: #52675e;
+  color: var(--muted);
   font-size: 1rem;
   line-height: 1.6;
   margin: 16px 0 0;
@@ -120,8 +149,8 @@ textarea {
 .loading-panel,
 .sidebar-panel,
 .workspace-panel {
-  background: #ffffff;
-  border: 1px solid #d9e2dd;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 
@@ -132,8 +161,8 @@ textarea {
 
 .planner-header,
 .space-controls-panel {
-  background: #ffffff;
-  border: 1px solid #d9e2dd;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 20px;
 }
@@ -152,7 +181,7 @@ textarea {
 }
 
 .planner-header-top p {
-  color: #52675e;
+  color: var(--muted);
   line-height: 1.5;
   margin: 10px 0 0;
   max-width: 680px;
@@ -160,7 +189,7 @@ textarea {
 
 .topbar {
   align-items: center;
-  border-bottom: 1px solid #d9e2dd;
+  border-bottom: 1px solid var(--border);
   display: flex;
   gap: 16px;
   justify-content: space-between;
@@ -171,7 +200,7 @@ textarea {
 
 .eyebrow,
 .panel-kicker {
-  color: #557066;
+  color: var(--accent);
   font-size: 0.78rem;
   font-weight: 750;
   letter-spacing: 0;
@@ -217,7 +246,7 @@ h3 {
 
 .account-bar small,
 .space-item small {
-  color: #60746b;
+  color: var(--muted);
 }
 
 .view-nav {
@@ -228,14 +257,18 @@ h3 {
 }
 
 .nav-button {
-  border-color: #d3dfd9;
+  background: var(--panel-deep);
+  border-color: var(--border);
+  color: var(--muted-strong);
   min-height: 38px;
+  box-shadow: none;
 }
 
 .nav-button.is-active {
-  background: #1f6f5b;
-  border-color: #1f6f5b;
-  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #001018;
+  box-shadow: 0 0 0.6rem #00e5ff44;
 }
 
 .space-controls-panel {
@@ -264,7 +297,7 @@ h3 {
 }
 
 .calendar-week-label {
-  color: #60746b;
+  color: var(--muted);
   margin: 8px 0 0;
 }
 
@@ -276,8 +309,8 @@ h3 {
 }
 
 .segmented-control {
-  background: #edf3f0;
-  border: 1px solid #d9e2dd;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -286,13 +319,16 @@ h3 {
 }
 
 .segmented-control button {
+  background: transparent;
   border-color: transparent;
+  color: var(--muted-strong);
   min-height: 38px;
+  box-shadow: none;
 }
 
 .segmented-control button.active {
-  background: #1f6f5b;
-  color: #ffffff;
+  background: var(--accent);
+  color: #001018;
 }
 
 .stacked-form {
@@ -302,13 +338,13 @@ h3 {
 }
 
 .stacked-form.compact {
-  border-top: 1px solid #edf2ef;
+  border-top: 1px solid var(--border);
   margin-top: 18px;
   padding-top: 18px;
 }
 
 label {
-  color: #33453d;
+  color: var(--muted);
   display: grid;
   font-size: 0.9rem;
   font-weight: 700;
@@ -316,20 +352,20 @@ label {
 }
 
 .primary-action {
-  background: #1f6f5b;
-  border-color: #1f6f5b;
-  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #001018;
 }
 
 .form-status {
-  color: #9a3412;
+  color: var(--warning);
   font-size: 0.92rem;
   line-height: 1.45;
   margin: 0;
 }
 
 .neutral-status {
-  color: #33534a;
+  color: var(--muted-strong);
   margin-top: 10px;
 }
 
@@ -369,12 +405,12 @@ label {
 }
 
 .space-item.active {
-  background: #e7f4ef;
-  border-color: #1f6f5b;
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 .empty-state {
-  color: #60746b;
+  color: var(--muted);
   margin: 18px 0 0;
 }
 
@@ -383,10 +419,10 @@ label {
 }
 
 .role-pill {
-  background: #e7f4ef;
-  border: 1px solid #b7d7cd;
+  background: var(--success-soft);
+  border: 1px solid #6dff5c55;
   border-radius: 999px;
-  color: #174f42;
+  color: #8dffb4;
   font-size: 0.82rem;
   font-weight: 750;
   padding: 6px 10px;
