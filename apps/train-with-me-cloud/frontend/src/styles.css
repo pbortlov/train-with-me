@@ -25,6 +25,11 @@
   --danger-soft: #ff4d6d12;
   --warning: #ffd37a;
   --warning-soft: #ffd37a12;
+  --activity-run: #4da3ff;
+  --activity-sprint: #ff7a00;
+  --activity-strength: #e879f9;
+  --planned: #7dd3fc;
+  --planned-soft: #7dd3fc1a;
 }
 
 * {
@@ -530,7 +535,7 @@ label {
 }
 
 .calendar-item.planned {
-  background: #7dd3fc1a;
+  background: var(--planned-soft);
   border: 1px solid #7dd3fc55;
   color: var(--text);
 }
@@ -539,6 +544,42 @@ label {
   background: var(--success-soft);
   border: 1px solid #6dff5c55;
   color: var(--text);
+}
+
+.calendar-item.activity-run {
+  border-color: #4da3ff66;
+}
+
+.calendar-item.activity-run.actual {
+  background: #4da3ff18;
+}
+
+.calendar-item.activity-sprint {
+  border-color: #ff7a0066;
+}
+
+.calendar-item.activity-sprint.actual {
+  background: #ff7a0018;
+}
+
+.calendar-item.activity-strength {
+  border-color: #e879f966;
+}
+
+.calendar-item.activity-strength.actual {
+  background: #e879f918;
+}
+
+.calendar-item.status-completed {
+  box-shadow: inset 3px 0 0 var(--success);
+}
+
+.calendar-item.status-modified {
+  box-shadow: inset 3px 0 0 var(--warning);
+}
+
+.calendar-item.status-missed {
+  box-shadow: inset 3px 0 0 var(--danger);
 }
 
 .calendar-detail-panel {
@@ -1539,6 +1580,37 @@ label {
   border-color: var(--accent-weak);
   color: var(--accent);
   text-transform: capitalize;
+}
+
+.status-badge.status-planned,
+.status-badge.status-progress {
+  background: var(--planned-soft);
+  border-color: #7dd3fc66;
+  color: var(--planned);
+}
+
+.status-badge.status-completed {
+  background: var(--success-soft);
+  border-color: #6dff5c66;
+  color: #8dffb4;
+}
+
+.status-badge.status-modified {
+  background: var(--warning-soft);
+  border-color: #ffd37a66;
+  color: var(--warning);
+}
+
+.status-badge.status-missed {
+  background: var(--danger-soft);
+  border-color: #ff4d6d88;
+  color: var(--danger);
+}
+
+.status-badge.status-cloud {
+  background: var(--accent-soft);
+  border-color: var(--accent-weak);
+  color: var(--accent);
 }
 
 @media (max-width: 760px) {

@@ -336,6 +336,14 @@ function activityLabel(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function activityClassName(value: string): string {
+  return ["run", "sprint", "strength"].includes(value) ? `activity-${value}` : "activity-other";
+}
+
+function statusClassName(value: string): string {
+  return ["planned", "completed", "modified", "missed"].includes(value) ? `status-${value}` : "status-other";
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value != null && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -2799,7 +2807,7 @@ export function App() {
                     {day.plannedSessions.map((session) => (
                       <button
                         type="button"
-                        className="calendar-item planned"
+                        className={`calendar-item planned ${activityClassName(session.type)} ${statusClassName(session.status)}`}
                         key={session.id}
                         onClick={() => setCalendarSelection({ type: "planned", id: session.id })}
                       >
@@ -2810,7 +2818,7 @@ export function App() {
                     {day.workouts.map((workout) => (
                       <button
                         type="button"
-                        className="calendar-item actual"
+                        className={`calendar-item actual ${activityClassName(workout.activity)}`}
                         key={workout.id}
                         onClick={() => setCalendarSelection({ type: "workout", id: workout.id })}
                       >
@@ -3682,7 +3690,7 @@ export function App() {
                           <time>{formatDate(session.date)}</time>
                         </div>
                         <div className="badge-row">
-                          <span className="status-badge">{session.status}</span>
+                          <span className={`status-badge ${statusClassName(session.status)}`}>{session.status}</span>
                           {isHistorical(session.source, session.coach_editable) && <span className="history-badge">Historical</span>}
                           {session.original_v1_id && <span className="source-badge">V1</span>}
                         </div>
@@ -3926,7 +3934,7 @@ export function App() {
                       {Array.isArray(template.template_json.weekdaySlots) ? ` • ${template.template_json.weekdaySlots.length} workout slot(s)` : ""}
                       {template.notes ? ` • ${template.notes}` : ""}
                     </p>
-                    <span className="status-badge">Cloud</span>
+                    <span className="status-badge status-cloud">Cloud</span>
                     <button type="button" className="ghost-button" onClick={() => handleEditProgramTemplate(template)}>
                       Edit template
                     </button>
@@ -3964,7 +3972,7 @@ export function App() {
                         {` • ${instance.duration_weeks} week(s)`}
                         {` • ${instance.generated_session_ids.length} generated session(s)`}
                       </p>
-                      <span className="status-badge">Cloud</span>
+                      <span className="status-badge status-cloud">Cloud</span>
                       <button
                         type="button"
                         className="danger-button"
@@ -4040,7 +4048,7 @@ export function App() {
                           {program.total ? ` • ${program.total} session(s)` : ""}
                         </p>
                       </div>
-                      <span className="status-badge">
+                      <span className="status-badge status-progress">
                         {program.total
                           ? `${Math.round(((program.completed + program.modified) / program.total) * 100)}% reviewed`
                           : "No sessions"}
@@ -4087,7 +4095,7 @@ export function App() {
                                       </p>
                                     </div>
                                     <div className="program-session-actions">
-                                      <span className="status-badge">{session.status}</span>
+                                      <span className={`status-badge ${statusClassName(session.status)}`}>{session.status}</span>
                                       <button type="button" onClick={() => openProgramSessionInCalendar(session)}>
                                         Open in Calendar
                                       </button>
@@ -4147,7 +4155,7 @@ export function App() {
                         <h4>{session.title}</h4>
                         <p>{formatDate(session.date)} • {activityLabel(session.type)}</p>
                       </div>
-                      <span className="status-badge">{session.status}</span>
+                      <span className={`status-badge ${statusClassName(session.status)}`}>{session.status}</span>
                     </div>
                     <div className="review-diff-grid">
                       <div>
@@ -4551,7 +4559,7 @@ export function App() {
                               <h4>{workout ? `${formatDate(workout.date)} ${activityLabel(workout.activity)}` : "Workout suggestion"}</h4>
                               <p>{suggestionNotes(suggestion) || "No note text"}</p>
                             </div>
-                            <span className="status-badge">{suggestion.status}</span>
+                            <span className={`status-badge ${statusClassName(suggestion.status)}`}>{suggestion.status}</span>
                           </div>
                           {isPending && (
                             <div className="action-row">
