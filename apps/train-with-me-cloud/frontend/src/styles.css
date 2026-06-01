@@ -56,6 +56,7 @@ button {
   min-height: 40px;
   padding: 0 14px;
   box-shadow: 0 0 0.6rem #00e5ff33;
+  overflow-wrap: anywhere;
 }
 
 button:hover:not(:disabled) {
@@ -213,6 +214,7 @@ h2,
 h3 {
   letter-spacing: 0;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 h1 {
@@ -516,6 +518,7 @@ label {
 
 .calendar-item strong {
   font-size: 0.86rem;
+  overflow-wrap: anywhere;
 }
 
 .calendar-item span,
@@ -915,6 +918,7 @@ label {
 .program-slot-card h5,
 .program-slot-card p {
   margin: 0;
+  min-width: 0;
 }
 
 .program-slot-card p {
@@ -1074,6 +1078,7 @@ label {
   display: flex;
   gap: 12px;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .program-session-list {
@@ -1091,6 +1096,10 @@ label {
   gap: 10px;
   grid-template-columns: minmax(0, 1fr) auto;
   padding: 10px;
+}
+
+.program-session-row strong {
+  overflow-wrap: anywhere;
 }
 
 .program-session-row p {
@@ -1128,6 +1137,7 @@ label {
   display: flex;
   gap: 12px;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .subtle-text {
@@ -1470,6 +1480,7 @@ label {
   font-size: 1rem;
   letter-spacing: 0;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .history-item p,
@@ -1508,6 +1519,7 @@ label {
   font-size: 0.76rem;
   font-weight: 750;
   padding: 4px 8px;
+  white-space: nowrap;
 }
 
 .history-badge {
@@ -1581,6 +1593,26 @@ label {
     flex: 1 1 140px;
   }
 
+  .calendar-day {
+    min-height: auto;
+  }
+
+  .calendar-detail-actions,
+  .strength-builder-actions,
+  .action-row,
+  .program-session-actions {
+    display: grid;
+    justify-items: stretch;
+  }
+
+  .calendar-detail-actions button,
+  .strength-builder-actions button,
+  .action-row button,
+  .program-session-actions button,
+  .program-slot-card > button {
+    width: 100%;
+  }
+
   .mini-chart-row {
     grid-template-columns: 1fr;
   }
@@ -1592,13 +1624,22 @@ label {
   .add-training-header,
   .program-progress-header,
   .program-slot-card,
+  .program-session-row,
   .program-week-row,
   .mode-toggle {
     display: grid;
   }
 
+  .program-week-row span {
+    min-width: 0;
+  }
+
   .item-main {
     display: grid;
+  }
+
+  .badge-row {
+    align-items: start;
   }
 
   .history-item time {
