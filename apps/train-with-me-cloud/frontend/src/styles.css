@@ -817,7 +817,8 @@ label {
 }
 
 .program-section {
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
 }
@@ -838,7 +839,7 @@ label {
 }
 
 .program-section-header p {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
   margin-top: 4px;
@@ -855,7 +856,8 @@ label {
 }
 
 .program-slot-builder {
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -867,7 +869,7 @@ label {
 }
 
 .program-slot-form {
-  border-top: 1px solid #edf2ef;
+  border-top: 1px solid var(--border);
   display: grid;
   gap: 12px;
   padding-top: 12px;
@@ -893,8 +895,8 @@ label {
 
 .program-slot-card {
   align-items: start;
-  background: #fbfdfc;
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: flex;
   gap: 12px;
@@ -913,15 +915,15 @@ label {
 }
 
 .program-slot-card p {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
   margin-top: 4px;
 }
 
 .program-block-preview {
-  background: #ffffff;
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 8px;
@@ -948,7 +950,7 @@ label {
 }
 
 .program-block-preview li {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -964,7 +966,8 @@ label {
 }
 
 .program-card {
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 8px;
@@ -977,13 +980,14 @@ label {
 }
 
 .program-card p {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
 }
 
 .program-progress-section {
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   margin-top: 18px;
   padding: 16px;
@@ -1000,8 +1004,8 @@ label {
 }
 
 .program-progress-card {
-  background: #fbfdfc;
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 14px;
@@ -1022,7 +1026,7 @@ label {
 
 .program-progress-header p,
 .program-week-row span {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -1034,7 +1038,8 @@ label {
 }
 
 .program-progress-summary div {
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 2px;
@@ -1046,7 +1051,7 @@ label {
 }
 
 .program-progress-summary span {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.82rem;
 }
 
@@ -1056,7 +1061,7 @@ label {
 }
 
 .program-week-detail {
-  border-top: 1px solid #edf2ef;
+  border-top: 1px solid var(--border);
   padding-top: 8px;
 }
 
@@ -1076,8 +1081,8 @@ label {
 
 .program-session-row {
   align-items: start;
-  background: #fff;
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 10px;
@@ -1086,7 +1091,7 @@ label {
 }
 
 .program-session-row p {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.45;
   margin: 4px 0 0;
@@ -1488,6 +1493,7 @@ label {
 .history-badge,
 .source-badge,
 .status-badge {
+  border: 1px solid var(--border);
   border-radius: 999px;
   font-size: 0.76rem;
   font-weight: 750;
@@ -1495,18 +1501,21 @@ label {
 }
 
 .history-badge {
-  background: #fff4d6;
-  color: #7a4b00;
+  background: var(--warning-soft);
+  border-color: #ffd37a66;
+  color: var(--warning);
 }
 
 .source-badge {
-  background: #e7f4ef;
-  color: #174f42;
+  background: #7dd3fc1a;
+  border-color: #7dd3fc66;
+  color: #7dd3fc;
 }
 
 .status-badge {
-  background: #edf3f0;
-  color: #33453d;
+  background: var(--accent-soft);
+  border-color: var(--accent-weak);
+  color: var(--accent);
   text-transform: capitalize;
 }
 
