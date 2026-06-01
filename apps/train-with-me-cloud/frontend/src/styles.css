@@ -764,7 +764,8 @@ label {
 
 .export-panel {
   align-items: center;
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: flex;
   flex-wrap: wrap;
@@ -779,7 +780,8 @@ label {
 }
 
 .import-summary article {
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -793,11 +795,12 @@ label {
 
 .import-summary small,
 .import-messages {
-  color: #52675e;
+  color: var(--muted);
 }
 
 .import-messages {
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.92rem;
   line-height: 1.45;
@@ -1112,7 +1115,8 @@ label {
 }
 
 .history-panel {
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   min-width: 0;
   padding: 16px;
@@ -1127,7 +1131,7 @@ label {
 }
 
 .subtle-text {
-  color: #60746b;
+  color: var(--muted);
   font-size: 0.86rem;
   font-weight: 700;
 }
@@ -1157,7 +1161,8 @@ label {
 }
 
 .coach-tool-section {
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   min-width: 0;
   padding: 16px;
@@ -1175,7 +1180,8 @@ label {
 }
 
 .review-summary article {
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -1188,7 +1194,7 @@ label {
 }
 
 .review-summary small {
-  color: #52675e;
+  color: var(--muted);
 }
 
 .review-list {
@@ -1198,7 +1204,8 @@ label {
 }
 
 .review-card {
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 14px;
@@ -1212,7 +1219,7 @@ label {
 
 .review-card p,
 .review-diff-grid p {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -1224,8 +1231,8 @@ label {
 }
 
 .review-diff-grid > div {
-  background: #fbfdfc;
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
 }
@@ -1238,7 +1245,8 @@ label {
 }
 
 .stats-summary article {
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -1251,7 +1259,7 @@ label {
 }
 
 .stats-summary small {
-  color: #52675e;
+  color: var(--muted);
 }
 
 .stats-grid {
@@ -1262,7 +1270,8 @@ label {
 }
 
 .stats-section {
-  border: 1px solid #edf2ef;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
 }
@@ -1290,7 +1299,7 @@ label {
 
 .stats-list div {
   align-items: baseline;
-  border-bottom: 1px solid #edf2ef;
+  border-bottom: 1px solid var(--border);
   display: flex;
   gap: 12px;
   justify-content: space-between;
@@ -1303,7 +1312,7 @@ label {
 }
 
 .stats-list span {
-  color: #52675e;
+  color: var(--muted);
   font-weight: 700;
   text-align: right;
 }
@@ -1315,8 +1324,8 @@ label {
 }
 
 .stats-chart-grid article {
-  background: #fbfdfc;
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -1351,7 +1360,7 @@ label {
 }
 
 .mini-chart-label span {
-  color: #6d8078;
+  color: var(--muted);
   font-size: 0.74rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1359,21 +1368,21 @@ label {
 }
 
 .mini-chart-track {
-  background: #edf3f0;
+  background: var(--panel-deep);
   border-radius: 999px;
   height: 10px;
   overflow: hidden;
 }
 
 .mini-chart-track span {
-  background: #1f6f5b;
+  background: var(--accent);
   border-radius: inherit;
   display: block;
   height: 100%;
 }
 
 .mini-chart-value {
-  color: #52675e;
+  color: var(--muted);
   font-weight: 800;
   text-align: right;
 }
@@ -1394,8 +1403,8 @@ label {
 }
 
 .goal-card {
-  background: #fbfdfc;
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 8px;
@@ -1408,12 +1417,12 @@ label {
 }
 
 .goal-card p {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
 .goal-card-label {
-  color: #6d8078;
+  color: var(--accent);
   display: block;
   font-size: 0.78rem;
   font-weight: 800;
@@ -1422,7 +1431,7 @@ label {
 }
 
 .goal-history-list {
-  border-top: 1px solid #edf2ef;
+  border-top: 1px solid var(--border);
   display: grid;
   gap: 10px;
   padding-top: 14px;
@@ -1444,12 +1453,13 @@ label {
 }
 
 .goal-history-list small {
-  color: #52675e;
+  color: var(--muted);
   text-align: right;
 }
 
 .history-item {
-  border: 1px solid #edf2ef;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -1464,14 +1474,14 @@ label {
 
 .history-item p,
 .linked-text {
-  color: #52675e;
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
   margin: 5px 0 0;
 }
 
 .history-item time {
-  color: #33453d;
+  color: var(--muted-strong);
   flex: 0 0 auto;
   font-size: 0.86rem;
   font-weight: 750;
