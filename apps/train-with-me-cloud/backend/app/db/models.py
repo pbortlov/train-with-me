@@ -301,6 +301,9 @@ class TrainingGoal(Base):
 
 class ProgramTemplate(Base):
     __tablename__ = "program_templates"
+    __table_args__ = (
+        UniqueConstraint("training_space_id", "original_v1_id", name="uq_program_templates_space_original_v1_id"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
@@ -308,6 +311,7 @@ class ProgramTemplate(Base):
     duration_weeks: Mapped[int] = mapped_column(Integer, nullable=False)
     template_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    original_v1_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
 

@@ -3,13 +3,14 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.models import ImportedV1Metadata
+from app.db.models import ImportedV1Metadata, ProgramTemplate
 
 V1_IMPORT_SOURCE = "v1_import"
 
 
 def import_v1_metadata(db: Session, training_space_id: str, backup: dict[str, Any]) -> tuple[int, int, int, int, int, int, list[str]]:
     goal_imported, goal_existing, goal_warnings = import_goal_metadata(db, training_space_id, backup.get("goals"))
+    import_v1_program_templates(db, training_space_id, backup.get("phaseTemplates"))
     template_imported, template_existing, template_warnings = import_collection_metadata(
         db,
         training_space_id,
@@ -33,6 +34,48 @@ def import_v1_metadata(db: Session, training_space_id: str, backup: dict[str, An
         instance_imported,
         instance_existing,
         [*goal_warnings, *template_warnings, *instance_warnings],
+    )
+
+
+def import_v1_program_templates(db: Session, training_space_id: str, raw_templates: Any) -> None:
+    if not isinstance(raw_templates, list):
+        return
+    for raw_template in raw_templates:
+        if not isinstance(raw_template, dict):
+            continue
+        original_v1_id = raw_template.get("id")
+        if not isinstance(original_v1_id, str) or not original_v1_id.strip():
+            continue
+        exists = db.scalar(
+            select(ProgramTemplate.id).where(
+                ProgramTemplate.training_space_id == training_space_id,
+                ProgramTemplate.original_v1_id == original_v1_id,
+            ),
+        )
+        if exists:
+            continue
+        db.add(build_program_template(training_space_id, original_v1_id, raw_template))
+
+
+def build_program_template(training_space_id: str, original_v1_id: str, raw_template: dict[str, Any]) -> ProgramTemplate:
+    name = raw_template.get("name") if isinstance(raw_template.get("name"), str) and raw_template.get("name").strip() else original_v1_id
+    duration_weeks = raw_template.get("durationWeeks")
+    if not isinstance(duration_weeks, int) or duration_weeks < 1:
+        duration_weeks = 1
+    template_json: dict[str, Any] = {
+        "weekdaySlots": raw_template.get("weekdaySlots") if isinstance(raw_template.get("weekdaySlots"), list) else [],
+        "v1PhaseTemplateId": original_v1_id,
+    }
+    if isinstance(raw_template.get("startDate"), str):
+        template_json["startDate"] = raw_template["startDate"]
+    notes = raw_template.get("notes") if isinstance(raw_template.get("notes"), str) else ""
+    return ProgramTemplate(
+        training_space_id=training_space_id,
+        name=name.strip(),
+        duration_weeks=duration_weeks,
+        template_json=template_json,
+        notes=notes,
+        original_v1_id=original_v1_id,
     )
 
 

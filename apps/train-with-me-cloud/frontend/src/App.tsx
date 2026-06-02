@@ -3716,10 +3716,10 @@ export function App() {
             {programStatus && <p className="form-status" role="status">{programStatus}</p>}
             {programTemplateStatus && <p className="form-status neutral-status" role="status">{programTemplateStatus}</p>}
 
-            <section className="program-section cloud-program-section" aria-label="Cloud program templates">
+            <section className="program-section cloud-program-section" aria-label="Program templates">
               <div className="program-section-header">
                 <div>
-                  <h3>Cloud program templates</h3>
+                  <h3>Program templates</h3>
                   <p>Create reusable strength templates and schedule them into the calendar.</p>
                 </div>
               </div>
@@ -3955,7 +3955,7 @@ export function App() {
                     </button>
                   </article>
                 )) : (
-                  <p className="empty-state">No cloud program templates yet.</p>
+                  <p className="empty-state">No program templates yet.</p>
                 )}
               </div>
             </section>
@@ -3984,29 +3984,6 @@ export function App() {
                     </article>
                   )) : (
                     <p className="empty-state">No scheduled cloud programs yet.</p>
-                  )}
-                </div>
-              </section>
-
-              <section className="program-section" aria-label="Imported phase templates">
-                <h3>Saved phase templates</h3>
-                <div className="program-list">
-                  {phaseTemplates.length ? phaseTemplates.map((row) => {
-                    const name = typeof row.payload.name === "string" ? row.payload.name : row.originalV1Id;
-                    const duration = typeof row.payload.durationWeeks === "number" ? row.payload.durationWeeks : null;
-                    const slots = Array.isArray(row.payload.weekdaySlots) ? row.payload.weekdaySlots.length : null;
-                    return (
-                      <article className="program-card" key={row.id}>
-                        <h4>{name}</h4>
-                        <p>
-                          {duration != null ? `${duration} week(s)` : "Duration not set"}
-                          {slots != null ? ` • ${slots} weekday slot(s)` : ""}
-                        </p>
-                        <span className="source-badge">V1</span>
-                      </article>
-                    );
-                  }) : (
-                    <p className="empty-state">No imported phase templates yet.</p>
                   )}
                 </div>
               </section>

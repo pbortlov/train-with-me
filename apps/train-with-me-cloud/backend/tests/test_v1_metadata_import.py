@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
-from app.db.models import ImportedV1Metadata, User
+from app.db.models import ImportedV1Metadata, ProgramTemplate, User
 from app.imports.routes import commit_v1_backup, export_v1_backup, list_v1_metadata
 from app.imports.schemas import V1ImportCommitRequest
 from app.spaces.routes import create_training_space
@@ -77,6 +77,13 @@ def test_commit_v1_backup_imports_goals_and_phase_metadata(db_session: Session) 
     phase_instance = next(row for row in metadata_rows if row.entity_type == "phase_instance")
     assert phase_instance.payload_json == backup["phaseInstances"][0]
 
+    program_template = db_session.scalar(select(ProgramTemplate).where(ProgramTemplate.original_v1_id == "phase-template-1"))
+    assert program_template is not None
+    assert program_template.name == "Phase 1"
+    assert program_template.duration_weeks == 4
+    assert program_template.template_json["weekdaySlots"] == backup["phaseTemplates"][0]["weekdaySlots"]
+    assert program_template.template_json["v1PhaseTemplateId"] == "phase-template-1"
+
 
 def test_commit_v1_backup_is_idempotent_for_goals_and_phase_metadata(db_session: Session) -> None:
     owner = create_user(db_session, "athlete@example.com")
@@ -95,6 +102,7 @@ def test_commit_v1_backup_is_idempotent_for_goals_and_phase_metadata(db_session:
     assert second.existing_phase_template_count == 1
     assert second.existing_phase_instance_count == 1
     assert len(db_session.scalars(select(ImportedV1Metadata)).all()) == 3
+    assert len(db_session.scalars(select(ProgramTemplate)).all()) == 1
 
 
 def test_commit_v1_backup_warns_for_invalid_phase_metadata_rows(db_session: Session) -> None:
