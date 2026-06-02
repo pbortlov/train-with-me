@@ -10,6 +10,7 @@ from app.db.models import ImportedV1Metadata, PlannedSession, TrainingSpaceRole,
 from app.db.session import get_db_session
 from app.imports.schemas import (
     ImportedV1MetadataResponse,
+    V1BackfillResponse,
     V1BackupSummaryResponse,
     V1ImportCommitRequest,
     V1ImportCommitResponse,
@@ -146,6 +147,22 @@ def list_v1_metadata(
         )
         for row in rows
     ]
+
+
+@router.post("/v1/backfill/{training_space_id}", response_model=V1BackfillResponse, response_model_by_alias=True)
+def backfill_v1_import(
+    training_space_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+) -> V1BackfillResponse:
+    membership = get_membership(db, training_space_id, current_user.id)
+    if not membership:
+        raise imports_error("training_space_not_found", "Training space was not found.", status.HTTP_404_NOT_FOUND)
+    if membership.role == TrainingSpaceRole.coach.value:
+        raise imports_error("import_forbidden", "Coach members cannot backfill athlete history.", status.HTTP_403_FORBIDDEN)
+
+    linked_count = consolidate_v1_planned_sessions_with_workouts(db, training_space_id)
+    return V1BackfillResponse(linked_planned_session_count=linked_count)
 
 
 @router.get("/v1/export/{training_space_id}")

@@ -1,12 +1,13 @@
 import pytest
+from fastapi import HTTPException
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
-from app.db.models import PlannedSession, PlannedSessionSource, ProgramInstance, ProgramTemplate, User, Workout
-from app.imports.routes import commit_v1_backup
+from app.db.models import PlannedSession, PlannedSessionSource, ProgramInstance, ProgramTemplate, TrainingSpaceMembership, TrainingSpaceRole, User, Workout
+from app.imports.routes import backfill_v1_import, commit_v1_backup
 from app.imports.schemas import V1ImportCommitRequest
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
@@ -165,6 +166,63 @@ def test_commit_v1_backup_links_same_day_program_strength_to_actual_workout(db_s
             },
         ],
     }
+
+
+def test_backfill_v1_import_links_existing_program_strength_to_actual_workout(db_session: Session) -> None:
+    owner = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, owner)
+    backup = load_sample_backup()
+    backup["plannedSessions"][0] = {
+        **backup["plannedSessions"][0],
+        "date": "2026-05-21",
+        "type": "strength",
+        "title": "Training 3",
+        "phaseTemplateId": "phase-template-1",
+        "phaseInstanceId": "phase-instance-1",
+        "details": {
+            "blocks": [
+                {
+                    "label": "Strength",
+                    "sets": "1",
+                    "exercises": [{"name": "Back squat", "reps": "5", "weight": 100}],
+                },
+            ],
+        },
+    }
+    commit_v1_backup(commit_payload(space.id, backup), owner, db_session)
+    planned_session = db_session.scalar(select(PlannedSession).where(PlannedSession.original_v1_id == "planned-1"))
+    assert planned_session is not None
+    planned_session.linked_workout_id = None
+    planned_session.actual_json = None
+    planned_session.status = "planned"
+    db_session.commit()
+
+    response = backfill_v1_import(space.id, owner, db_session)
+
+    strength_workout = db_session.scalar(select(Workout).where(Workout.original_v1_id == "workout-2"))
+    assert strength_workout is not None
+    assert response.linked_planned_session_count == 1
+    assert planned_session.linked_workout_id == strength_workout.id
+    assert planned_session.status == "completed"
+
+
+def test_coach_cannot_backfill_v1_import(db_session: Session) -> None:
+    owner = create_user(db_session, "athlete@example.com")
+    coach = create_user(db_session, "coach@example.com")
+    space = create_space(db_session, owner)
+    db_session.add(
+        TrainingSpaceMembership(
+            training_space_id=space.id,
+            user_id=coach.id,
+            role=TrainingSpaceRole.coach.value,
+        ),
+    )
+    db_session.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        backfill_v1_import(space.id, coach, db_session)
+
+    assert exc_info.value.status_code == 403
 
 
 def test_commit_v1_backup_skips_invalid_planned_session_rows(db_session: Session) -> None:

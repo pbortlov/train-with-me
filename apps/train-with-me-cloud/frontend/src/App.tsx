@@ -216,6 +216,10 @@ type V1ImportCommit = {
   warnings: string[];
 };
 
+type V1Backfill = {
+  linkedPlannedSessionCount: number;
+};
+
 type ImportedV1Metadata = {
   id: string;
   entityType: string;
@@ -770,6 +774,7 @@ export function App() {
   const [importPreview, setImportPreview] = useState<V1ImportPreview | null>(null);
   const [importBackup, setImportBackup] = useState<Record<string, unknown> | null>(null);
   const [importCommit, setImportCommit] = useState<V1ImportCommit | null>(null);
+  const [backfillResult, setBackfillResult] = useState<V1Backfill | null>(null);
   const [inviteStatus, setInviteStatus] = useState("");
   const [suggestionStatus, setSuggestionStatus] = useState("");
   const [isLoadingSession, setIsLoadingSession] = useState(Boolean(token));
@@ -789,6 +794,7 @@ export function App() {
   const [isRemovingProgramInstanceId, setIsRemovingProgramInstanceId] = useState("");
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
+  const [isBackfillingImport, setIsBackfillingImport] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
@@ -1713,6 +1719,36 @@ export function App() {
       setImportStatus(error instanceof Error ? error.message : "Could not import backup.");
     } finally {
       setIsCommittingImport(false);
+    }
+  }
+
+  async function handleBackfillImport() {
+    if (!token || !selectedSpace) {
+      return;
+    }
+
+    setIsBackfillingImport(true);
+    setImportStatus("");
+    setBackfillResult(null);
+    try {
+      const result = await apiRequest<V1Backfill>(
+        `/api/imports/v1/backfill/${selectedSpace.id}`,
+        { method: "POST" },
+        token,
+      );
+      setBackfillResult(result);
+      setImportStatus(result.linkedPlannedSessionCount
+        ? `Backfill linked ${result.linkedPlannedSessionCount} planned session(s).`
+        : "Backfill found no sessions to link.");
+      await Promise.all([
+        loadTrainingHistory(token, selectedSpace.id),
+        loadProgramInstances(token, selectedSpace.id),
+      ]);
+      setActiveView("calendar");
+    } catch (error) {
+      setImportStatus(error instanceof Error ? error.message : "Could not backfill imported data.");
+    } finally {
+      setIsBackfillingImport(false);
     }
   }
 
@@ -4371,6 +4407,13 @@ export function App() {
                 </div>
               )}
 
+              {backfillResult && (
+                <div className="import-messages">
+                  <strong>Last backfill</strong>
+                  <p>Linked {backfillResult.linkedPlannedSessionCount} planned session(s) to matching actual workouts.</p>
+                </div>
+              )}
+
               {importStatus && <p className="form-status neutral-status" role="status">{importStatus}</p>}
               <button
                 type="button"
@@ -4379,6 +4422,13 @@ export function App() {
                 disabled={!importBackup || !selectedSpace || isCommittingImport}
               >
                 {isCommittingImport ? "Importing" : "Import into selected space"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleBackfillImport()}
+                disabled={!selectedSpace || isBackfillingImport}
+              >
+                {isBackfillingImport ? "Backfilling" : "Backfill imported data"}
               </button>
             </div>
           </article>

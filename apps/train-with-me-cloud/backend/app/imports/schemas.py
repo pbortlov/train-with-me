@@ -49,6 +49,12 @@ class V1ImportCommitResponse(BaseModel):
     warnings: list[str]
 
 
+class V1BackfillResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    linked_planned_session_count: int = Field(alias="linkedPlannedSessionCount")
+
+
 class ImportedV1MetadataResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
