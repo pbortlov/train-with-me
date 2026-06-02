@@ -195,6 +195,9 @@ def export_v1_backup(
 
     return {
         "version": 2,
+        "exportFormat": "train-with-me-cloud-v2",
+        "appVersion": "v2",
+        "sourceApp": "train-with-me-cloud",
         "exportedAt": utc_iso_now(),
         "workouts": [export_workout(workout) for workout in workouts],
         "goals": metadata_by_type.get(("goals", "goals"), {"version": 2, "active": {}, "history": []}),

@@ -158,6 +158,9 @@ def test_export_v1_backup_returns_importable_shape(db_session: Session) -> None:
     exported = export_v1_backup(space.id, owner, db_session)
 
     assert exported["version"] == 2
+    assert exported["exportFormat"] == "train-with-me-cloud-v2"
+    assert exported["appVersion"] == "v2"
+    assert exported["sourceApp"] == "train-with-me-cloud"
     assert exported["exportedAt"]
     assert len(exported["workouts"]) == 2
     assert len(exported["plannedSessions"]) == 1

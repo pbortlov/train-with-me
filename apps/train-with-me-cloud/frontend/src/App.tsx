@@ -2479,12 +2479,12 @@ export function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `train-with-me-cloud-${selectedSpace.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${dateKey(new Date())}.json`;
+      link.download = `train-with-me-cloud-v2-${selectedSpace.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${dateKey(new Date())}.json`;
       document.body.append(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setExportStatus("Backup exported.");
+      setExportStatus("V2 cloud export downloaded.");
     } catch (error) {
       setExportStatus(error instanceof Error ? error.message : "Could not export backup.");
     } finally {
@@ -4333,7 +4333,7 @@ export function App() {
           <article className="workspace-panel">
             <p className="panel-kicker">Data</p>
             <h2>Cloud data</h2>
-            <p className="empty-state">Export or import a V1-style JSON backup for the selected training space.</p>
+            <p className="empty-state">Export V2 cloud data or import a V1-style JSON backup for the selected training space.</p>
 
             <div className="import-panel">
               <div className="export-panel">
@@ -4343,7 +4343,7 @@ export function App() {
                   onClick={() => void handleExportData()}
                   disabled={!selectedSpace || isExportingData}
                 >
-                  {isExportingData ? "Exporting" : "Export selected space JSON"}
+                  {isExportingData ? "Exporting" : "Export V2 cloud JSON"}
                 </button>
                 {exportStatus && <p className="form-status neutral-status" role="status">{exportStatus}</p>}
               </div>
