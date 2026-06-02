@@ -16,7 +16,7 @@ from app.imports.schemas import (
     V1ImportPreviewResponse,
 )
 from app.imports.v1_metadata_importer import import_v1_metadata
-from app.imports.v1_planned_session_importer import import_v1_planned_sessions
+from app.imports.v1_planned_session_importer import consolidate_v1_planned_sessions_with_workouts, import_v1_planned_sessions
 from app.imports.v1_parser import V1BackupParseError, parse_v1_backup_summary
 from app.imports.v1_workout_importer import import_v1_workouts
 from app.spaces.routes import get_membership
@@ -101,6 +101,7 @@ def commit_v1_backup(
             existing_phase_instance_count,
             metadata_warnings,
         ) = import_v1_metadata(db, payload.training_space_id, payload.backup)
+        consolidate_v1_planned_sessions_with_workouts(db, payload.training_space_id)
     except V1BackupParseError as exc:
         raise imports_error("invalid_v1_backup", str(exc), status.HTTP_400_BAD_REQUEST) from exc
 

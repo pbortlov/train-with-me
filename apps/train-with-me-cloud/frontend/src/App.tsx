@@ -449,10 +449,6 @@ function formatCloudGoal(goal: TrainingGoal): string {
   return "Goal target";
 }
 
-function isHistorical(source: string, coachEditable: boolean): boolean {
-  return source === "v1_import" || !coachEditable;
-}
-
 function summarizeWorkout(workout: Workout): string {
   if (workout.activity === "run") {
     return [
@@ -825,11 +821,11 @@ export function App() {
         label: day.toLocaleDateString(undefined, { weekday: "short" }),
         dateLabel: day.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
         isToday: key === dateKey(new Date()),
-        workouts: workouts.filter((workout) => workout.date === key),
+        workouts: workouts.filter((workout) => workout.date === key && !plannedSessionByWorkoutId.has(workout.id)),
         plannedSessions: plannedSessions.filter((session) => session.date === key),
       };
     });
-  }, [calendarWeekStart, plannedSessions, workouts]);
+  }, [calendarWeekStart, plannedSessionByWorkoutId, plannedSessions, workouts]);
   const weekWorkoutCount = calendarDays.reduce((total, day) => total + day.workouts.length, 0);
   const weekPlanCount = calendarDays.reduce((total, day) => total + day.plannedSessions.length, 0);
   const weekLabel = `${formatDate(calendarDays[0]?.key ?? calendarWeekStart)} - ${formatDate(calendarDays[6]?.key ?? calendarWeekStart)}`;
@@ -3039,6 +3035,22 @@ export function App() {
                         </p>
                       </div>
                     </div>
+                    {selectedCalendarSessionWorkout?.activity === "strength" && selectedCalendarSessionWorkout.strength_exercises.length > 0 && (
+                      <div className="strength-detail-list">
+                        {selectedCalendarSessionWorkout.strength_exercises.map((exercise) => (
+                          <article key={`${selectedCalendarSession.id}-${selectedCalendarSessionWorkout.id}-${exercise.order}`}>
+                            <h4>{exercise.name}</h4>
+                            <ul>
+                              {exercise.sets.map((set) => (
+                                <li key={`${selectedCalendarSession.id}-${selectedCalendarSessionWorkout.id}-${exercise.order}-${set.order}`}>
+                                  Set {set.order}: {formatStrengthSet(set)}
+                                </li>
+                              ))}
+                            </ul>
+                          </article>
+                        ))}
+                      </div>
+                    )}
 
                     {!selectedCalendarSessionWorkout && selectedCalendarSession.status === "planned" && (
                       selectedCalendarSession.type === "run" || selectedCalendarSession.type === "sprint" || selectedCalendarSession.type === "strength"
@@ -3600,10 +3612,6 @@ export function App() {
                           </div>
                           <time>{formatDate(workout.date)}</time>
                         </div>
-                        <div className="badge-row">
-                          {isHistorical(workout.source, workout.coach_editable) && <span className="history-badge">Historical</span>}
-                          {workout.original_v1_id && <span className="source-badge">V1</span>}
-                        </div>
                       </article>
                     );
                   }) : (
@@ -3637,8 +3645,6 @@ export function App() {
                         </div>
                         <div className="badge-row">
                           <span className={`status-badge ${statusClassName(session.status)}`}>{session.status}</span>
-                          {isHistorical(session.source, session.coach_editable) && <span className="history-badge">Historical</span>}
-                          {session.original_v1_id && <span className="source-badge">V1</span>}
                         </div>
                       </article>
                     );
@@ -3657,7 +3663,7 @@ export function App() {
           <article className="workspace-panel">
             <p className="panel-kicker">Programs</p>
             <h2>Strength programs</h2>
-            <p className="empty-state">Imported V1 phase templates and scheduled phase instances for the selected space.</p>
+            <p className="empty-state">Create, schedule, and review strength programs for the selected space.</p>
 
             {programStatus && <p className="form-status" role="status">{programStatus}</p>}
             {programTemplateStatus && <p className="form-status neutral-status" role="status">{programTemplateStatus}</p>}
@@ -3880,7 +3886,6 @@ export function App() {
                       {Array.isArray(template.template_json.weekdaySlots) ? ` • ${template.template_json.weekdaySlots.length} workout slot(s)` : ""}
                       {template.notes ? ` • ${template.notes}` : ""}
                     </p>
-                    <span className="status-badge status-cloud">Cloud</span>
                     <button type="button" className="ghost-button" onClick={() => handleEditProgramTemplate(template)}>
                       Edit template
                     </button>
@@ -3918,7 +3923,6 @@ export function App() {
                         {` • ${instance.duration_weeks} week(s)`}
                         {` • ${instance.generated_session_ids.length} generated session(s)`}
                       </p>
-                      <span className="status-badge status-cloud">Cloud</span>
                       <button
                         type="button"
                         className="danger-button"
@@ -4013,7 +4017,7 @@ export function App() {
                     )}
                   </article>
                 )) : (
-                  <p className="empty-state">Import scheduled V1 programs to see progress here.</p>
+                  <p className="empty-state">Schedule programs to see progress here.</p>
                 )}
               </div>
             </section>
@@ -4073,10 +4077,6 @@ export function App() {
                               : "No actual linked yet"}
                         </p>
                       </div>
-                    </div>
-                    <div className="badge-row">
-                      {isHistorical(session.source, session.coach_editable) && <span className="history-badge">Historical</span>}
-                      {session.original_v1_id && <span className="source-badge">V1</span>}
                     </div>
                   </article>
                 );

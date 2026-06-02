@@ -122,6 +122,51 @@ def test_commit_v1_backup_warns_when_planned_session_link_is_missing(db_session:
     assert planned_session.linked_workout_id is None
 
 
+def test_commit_v1_backup_links_same_day_program_strength_to_actual_workout(db_session: Session) -> None:
+    owner = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, owner)
+    backup = load_sample_backup()
+    backup["plannedSessions"][0] = {
+        **backup["plannedSessions"][0],
+        "date": "2026-05-21",
+        "type": "strength",
+        "title": "Training 3",
+        "phaseTemplateId": "phase-template-1",
+        "phaseInstanceId": "phase-instance-1",
+        "phaseSlotId": "slot-a",
+        "phaseWeekIndex": 0,
+        "generatedDate": "2026-05-21",
+        "status": "planned",
+        "details": {
+            "blocks": [
+                {
+                    "label": "Strength",
+                    "sets": "1",
+                    "exercises": [{"name": "Back squat", "reps": "5", "weight": 100}],
+                },
+            ],
+        },
+    }
+    backup["phaseInstances"][0]["generatedSessionIds"] = ["planned-1"]
+
+    commit_v1_backup(commit_payload(space.id, backup), owner, db_session)
+
+    planned_session = db_session.scalar(select(PlannedSession).where(PlannedSession.original_v1_id == "planned-1"))
+    strength_workout = db_session.scalar(select(Workout).where(Workout.original_v1_id == "workout-2"))
+    assert planned_session is not None
+    assert strength_workout is not None
+    assert planned_session.linked_workout_id == strength_workout.id
+    assert planned_session.status == "completed"
+    assert planned_session.actual_json == {
+        "strengthExercises": [
+            {
+                "name": "Back squat",
+                "sets": [{"reps": 5, "weight": 100.0, "loadType": "kg", "bandColor": ""}],
+            },
+        ],
+    }
+
+
 def test_commit_v1_backup_skips_invalid_planned_session_rows(db_session: Session) -> None:
     owner = create_user(db_session, "athlete@example.com")
     space = create_space(db_session, owner)
