@@ -321,6 +321,9 @@ class ProgramTemplate(Base):
 
 class ProgramInstance(Base):
     __tablename__ = "program_instances"
+    __table_args__ = (
+        UniqueConstraint("training_space_id", "original_v1_id", name="uq_program_instances_space_original_v1_id"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
@@ -329,6 +332,7 @@ class ProgramInstance(Base):
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     duration_weeks: Mapped[int] = mapped_column(Integer, nullable=False)
     generated_session_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    original_v1_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     training_space: Mapped[TrainingSpace] = relationship(back_populates="program_instances")

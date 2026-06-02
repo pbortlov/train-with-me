@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
-from app.db.models import ImportedV1Metadata, ProgramTemplate, User
+from app.db.models import ImportedV1Metadata, PlannedSession, ProgramInstance, ProgramTemplate, User
 from app.imports.routes import commit_v1_backup, export_v1_backup, list_v1_metadata
 from app.imports.schemas import V1ImportCommitRequest
 from app.spaces.routes import create_training_space
@@ -84,6 +84,19 @@ def test_commit_v1_backup_imports_goals_and_phase_metadata(db_session: Session) 
     assert program_template.template_json["weekdaySlots"] == backup["phaseTemplates"][0]["weekdaySlots"]
     assert program_template.template_json["v1PhaseTemplateId"] == "phase-template-1"
 
+    program_instance = db_session.scalar(select(ProgramInstance).where(ProgramInstance.original_v1_id == "phase-instance-1"))
+    assert program_instance is not None
+    assert program_instance.template_id == program_template.id
+    assert program_instance.template_name == "Phase 1"
+    assert program_instance.start_date.isoformat() == "2026-05-20"
+    assert program_instance.duration_weeks == 4
+
+    planned_session = db_session.scalar(select(PlannedSession).where(PlannedSession.original_v1_id == "planned-1"))
+    assert planned_session is not None
+    assert planned_session.phase_template_id == program_template.id
+    assert planned_session.phase_instance_id == program_instance.id
+    assert program_instance.generated_session_ids == [planned_session.id]
+
 
 def test_commit_v1_backup_is_idempotent_for_goals_and_phase_metadata(db_session: Session) -> None:
     owner = create_user(db_session, "athlete@example.com")
@@ -103,6 +116,7 @@ def test_commit_v1_backup_is_idempotent_for_goals_and_phase_metadata(db_session:
     assert second.existing_phase_instance_count == 1
     assert len(db_session.scalars(select(ImportedV1Metadata)).all()) == 3
     assert len(db_session.scalars(select(ProgramTemplate)).all()) == 1
+    assert len(db_session.scalars(select(ProgramInstance)).all()) == 1
 
 
 def test_commit_v1_backup_warns_for_invalid_phase_metadata_rows(db_session: Session) -> None:

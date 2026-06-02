@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
-from app.db.models import PlannedSession, PlannedSessionSource, User, Workout
+from app.db.models import PlannedSession, PlannedSessionSource, ProgramInstance, ProgramTemplate, User, Workout
 from app.imports.routes import commit_v1_backup
 from app.imports.schemas import V1ImportCommitRequest
 from app.spaces.routes import create_training_space
@@ -75,8 +75,12 @@ def test_commit_v1_backup_imports_planned_sessions_as_historical_data(db_session
     assert planned_session.title == "Easy run"
     assert planned_session.source == PlannedSessionSource.v1_import.value
     assert planned_session.coach_editable is False
-    assert planned_session.phase_template_id == "phase-template-1"
-    assert planned_session.phase_instance_id == "phase-instance-1"
+    program_template = db_session.scalar(select(ProgramTemplate).where(ProgramTemplate.original_v1_id == "phase-template-1"))
+    program_instance = db_session.scalar(select(ProgramInstance).where(ProgramInstance.original_v1_id == "phase-instance-1"))
+    assert program_template is not None
+    assert program_instance is not None
+    assert planned_session.phase_template_id == program_template.id
+    assert planned_session.phase_instance_id == program_instance.id
     assert planned_session.phase_slot_id == "slot-a"
     assert planned_session.phase_week_index == 2
     assert planned_session.date_moved_manually is True

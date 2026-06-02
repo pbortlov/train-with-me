@@ -690,10 +690,6 @@ function strengthCompletionPayload(blocks: StrengthCompletionBlockDraft[]): {
   return { actualJson: { blocks: actualBlocks }, strengthExercises, isModified };
 }
 
-function stringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
 function suggestionNotes(suggestion: CoachSuggestion): string {
   const notes = suggestion.suggested_change_json.notes;
   return typeof notes === "string" ? notes : "";
@@ -871,60 +867,12 @@ export function App() {
     setWorkoutEditStrengthDraft([]);
     setWorkoutEditSprintDraft([]);
   }, [selectedCalendarWorkout]);
-  const phaseTemplates = v1Metadata.filter((row) => row.entityType === "phase_template");
-  const phaseInstances = v1Metadata.filter((row) => row.entityType === "phase_instance");
   const goalsByActivity = useMemo(
     () => new Map(trainingGoals.map((goal) => [goal.activity, goal])),
     [trainingGoals],
   );
   const programProgress = useMemo<ProgramProgressModel[]>(() => {
-    const templateNames = new Map(
-      phaseTemplates.map((row) => [
-        row.originalV1Id,
-        typeof row.payload.name === "string" ? row.payload.name : row.originalV1Id,
-      ]),
-    );
-
-    const importedProgress = phaseInstances.map((row) => {
-      const generatedSessionIds = new Set(stringArray(row.payload.generatedSessionIds));
-      const templateId = typeof row.payload.templateId === "string" ? row.payload.templateId : "";
-      const startDate = typeof row.payload.startDate === "string" ? row.payload.startDate : "";
-      const sessions = plannedSessions.filter((session) => (
-        session.phase_instance_id === row.originalV1Id
-        || (session.original_v1_id != null && generatedSessionIds.has(session.original_v1_id))
-      ));
-      const statusCount = (statusValue: string) => sessions.filter((session) => session.status === statusValue).length;
-      const weeksByIndex = new Map<number, PlannedSession[]>();
-      sessions.forEach((session) => {
-        const weekIndex = session.phase_week_index ?? 0;
-        weeksByIndex.set(weekIndex, [...weeksByIndex.get(weekIndex) ?? [], session]);
-      });
-      const weeks = Array.from(weeksByIndex.entries())
-        .sort(([left], [right]) => left - right)
-        .map(([weekIndex, weekSessions]) => ({
-          label: `Week ${weekIndex + 1}`,
-          total: weekSessions.length,
-          completed: weekSessions.filter((session) => session.status === "completed").length,
-          modified: weekSessions.filter((session) => session.status === "modified").length,
-          missed: weekSessions.filter((session) => session.status === "missed").length,
-          planned: weekSessions.filter((session) => session.status === "planned").length,
-          sessions: [...weekSessions].sort((left, right) => left.date.localeCompare(right.date) || left.title.localeCompare(right.title)),
-        }));
-
-      return {
-        id: row.id,
-        name: templateNames.get(templateId) ?? (templateId || row.originalV1Id),
-        startDate,
-        total: sessions.length,
-        completed: statusCount("completed"),
-        modified: statusCount("modified"),
-        missed: statusCount("missed"),
-        planned: statusCount("planned"),
-        weeks,
-      };
-    });
-
-    const cloudProgress = programInstances.map((instance) => {
+    return programInstances.map((instance) => {
       const generatedSessionIds = new Set(instance.generated_session_ids);
       const sessions = plannedSessions.filter((session) => (
         session.phase_instance_id === instance.id
@@ -959,9 +907,7 @@ export function App() {
         weeks,
       };
     });
-
-    return [...cloudProgress, ...importedProgress];
-  }, [phaseInstances, phaseTemplates, plannedSessions, programInstances]);
+  }, [plannedSessions, programInstances]);
   const reviewCounts = {
     planned: plannedSessions.filter((session) => session.status === "planned").length,
     completed: plannedSessions.filter((session) => session.status === "completed").length,
@@ -3961,8 +3907,8 @@ export function App() {
             </section>
 
             <div className="program-grid">
-              <section className="program-section" aria-label="Cloud scheduled programs">
-                <h3>Scheduled cloud programs</h3>
+              <section className="program-section" aria-label="Scheduled programs">
+                <h3>Scheduled programs</h3>
                 <div className="program-list">
                   {programInstances.length ? programInstances.map((instance) => (
                     <article className="program-card" key={instance.id}>
@@ -3983,33 +3929,11 @@ export function App() {
                       </button>
                     </article>
                   )) : (
-                    <p className="empty-state">No scheduled cloud programs yet.</p>
+                    <p className="empty-state">No scheduled programs yet.</p>
                   )}
                 </div>
               </section>
 
-              <section className="program-section" aria-label="Imported phase instances">
-                <h3>Scheduled phase instances</h3>
-                <div className="program-list">
-                  {phaseInstances.length ? phaseInstances.map((row) => {
-                    const templateId = typeof row.payload.templateId === "string" ? row.payload.templateId : "";
-                    const startDate = typeof row.payload.startDate === "string" ? row.payload.startDate : "";
-                    const generatedSessionIds = Array.isArray(row.payload.generatedSessionIds) ? row.payload.generatedSessionIds.length : null;
-                    return (
-                      <article className="program-card" key={row.id}>
-                        <h4>{templateId || row.originalV1Id}</h4>
-                        <p>
-                          {startDate ? `Starts ${formatDate(startDate)}` : "Start date not set"}
-                          {generatedSessionIds != null ? ` • ${generatedSessionIds} generated session(s)` : ""}
-                        </p>
-                        <span className="source-badge">V1</span>
-                      </article>
-                    );
-                  }) : (
-                    <p className="empty-state">No imported phase instances yet.</p>
-                  )}
-                </div>
-              </section>
             </div>
 
             <section className="program-progress-section" aria-label="Program progress">
