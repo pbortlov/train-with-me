@@ -2471,7 +2471,7 @@ export function App() {
     setExportStatus("");
     try {
       const backup = await apiRequest<Record<string, unknown>>(
-        `/api/imports/v1/export/${selectedSpace.id}`,
+        `/api/imports/v2/export/${selectedSpace.id}`,
         {},
         token,
       );
@@ -2479,7 +2479,7 @@ export function App() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `train-with-me-cloud-v2-${selectedSpace.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${dateKey(new Date())}.json`;
+      link.download = `train-with-me-cloud-v2-native-${selectedSpace.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-${dateKey(new Date())}.json`;
       document.body.append(link);
       link.click();
       link.remove();

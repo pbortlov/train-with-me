@@ -6,7 +6,9 @@ from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
 from app.db.models import ImportedV1Metadata, PlannedSession, ProgramInstance, ProgramTemplate, User
-from app.imports.routes import commit_v1_backup, export_v1_backup, list_v1_metadata
+from app.goals.routes import upsert_training_goal
+from app.goals.schemas import TrainingGoalUpsertRequest
+from app.imports.routes import commit_v1_backup, export_v1_backup, export_v2_cloud_data, list_v1_metadata
 from app.imports.schemas import V1ImportCommitRequest
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
@@ -167,3 +169,36 @@ def test_export_v1_backup_returns_importable_shape(db_session: Session) -> None:
     assert len(exported["phaseTemplates"]) == 1
     assert len(exported["phaseInstances"]) == 1
     assert exported["goals"]["version"] == 2
+
+
+def test_export_v2_cloud_data_returns_native_shape(db_session: Session) -> None:
+    owner = create_user(db_session, "athlete@example.com")
+    space = create_space(db_session, owner)
+    commit_v1_backup(commit_payload(space.id), owner, db_session)
+    upsert_training_goal(
+        space.id,
+        "run",
+        TrainingGoalUpsertRequest(target_json={"distance": 10, "time": "45:00"}, notes="Cloud goal"),
+        owner,
+        db_session,
+    )
+
+    exported = export_v2_cloud_data(space.id, owner, db_session)
+
+    assert exported["version"] == 2
+    assert exported["exportFormat"] == "train-with-me-cloud-v2-native"
+    assert exported["sourceApp"] == "train-with-me-cloud"
+    assert exported["trainingSpace"] == {"id": space.id, "role": "owner"}
+    assert len(exported["workouts"]) == 2
+    assert len(exported["plannedSessions"]) == 1
+    assert len(exported["trainingGoals"]) == 1
+    assert len(exported["programTemplates"]) == 1
+    assert len(exported["programInstances"]) == 1
+
+    planned_session = exported["plannedSessions"][0]
+    program_instance = exported["programInstances"][0]
+    assert planned_session["id"] in program_instance["generatedSessionIds"]
+    assert planned_session["phaseInstanceId"] == program_instance["id"]
+    assert exported["programTemplates"][0]["id"] == program_instance["templateId"]
+    assert exported["workouts"][0]["trainingSpaceId"] == space.id
+    assert exported["trainingGoals"][0]["target"]

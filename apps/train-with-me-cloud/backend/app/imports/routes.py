@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.routes import get_current_user
-from app.db.models import ImportedV1Metadata, PlannedSession, TrainingSpaceRole, User, Workout
+from app.db.models import ImportedV1Metadata, PlannedSession, ProgramInstance, ProgramTemplate, TrainingGoal, TrainingSpaceRole, User, Workout
 from app.db.session import get_db_session
 from app.imports.schemas import (
     ImportedV1MetadataResponse,
@@ -208,6 +208,57 @@ def export_v1_backup(
     }
 
 
+@router.get("/v2/export/{training_space_id}")
+def export_v2_cloud_data(
+    training_space_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+) -> dict[str, Any]:
+    membership = get_membership(db, training_space_id, current_user.id)
+    if not membership:
+        raise imports_error("training_space_not_found", "Training space was not found.", status.HTTP_404_NOT_FOUND)
+
+    workouts = db.scalars(
+        select(Workout)
+        .where(Workout.training_space_id == training_space_id)
+        .order_by(Workout.date, Workout.created_at, Workout.id),
+    ).all()
+    planned_sessions = db.scalars(
+        select(PlannedSession)
+        .where(PlannedSession.training_space_id == training_space_id)
+        .order_by(PlannedSession.date, PlannedSession.created_at, PlannedSession.id),
+    ).all()
+    training_goals = db.scalars(
+        select(TrainingGoal)
+        .where(TrainingGoal.training_space_id == training_space_id)
+        .order_by(TrainingGoal.activity, TrainingGoal.created_at, TrainingGoal.id),
+    ).all()
+    program_templates = db.scalars(
+        select(ProgramTemplate)
+        .where(ProgramTemplate.training_space_id == training_space_id)
+        .order_by(ProgramTemplate.created_at, ProgramTemplate.id),
+    ).all()
+    program_instances = db.scalars(
+        select(ProgramInstance)
+        .where(ProgramInstance.training_space_id == training_space_id)
+        .order_by(ProgramInstance.created_at, ProgramInstance.id),
+    ).all()
+
+    return {
+        "version": 2,
+        "exportFormat": "train-with-me-cloud-v2-native",
+        "appVersion": "v2",
+        "sourceApp": "train-with-me-cloud",
+        "exportedAt": utc_iso_now(),
+        "trainingSpace": {"id": training_space_id, "role": membership.role},
+        "workouts": [export_v2_workout(workout) for workout in workouts],
+        "plannedSessions": [export_v2_planned_session(session) for session in planned_sessions],
+        "trainingGoals": [export_v2_training_goal(goal) for goal in training_goals],
+        "programTemplates": [export_v2_program_template(template) for template in program_templates],
+        "programInstances": [export_v2_program_instance(instance) for instance in program_instances],
+    }
+
+
 def utc_iso_now() -> str:
     from datetime import datetime
 
@@ -250,6 +301,20 @@ def export_workout(workout: Workout) -> dict[str, Any]:
     return exported
 
 
+def export_v2_workout(workout: Workout) -> dict[str, Any]:
+    exported = export_workout(workout)
+    exported.update(
+        {
+            "id": workout.id,
+            "trainingSpaceId": workout.training_space_id,
+            "source": workout.source,
+            "coachEditable": workout.coach_editable,
+            "originalV1Id": workout.original_v1_id,
+        },
+    )
+    return exported
+
+
 def export_planned_session(session: PlannedSession, workouts: list[Workout]) -> dict[str, Any]:
     linked_workout_original_id = ""
     if session.linked_workout_id:
@@ -275,6 +340,71 @@ def export_planned_session(session: PlannedSession, workouts: list[Workout]) -> 
         "createdAt": int(session.created_at.timestamp() * 1000),
     }
     return exported
+
+
+def export_v2_planned_session(session: PlannedSession) -> dict[str, Any]:
+    return {
+        "id": session.id,
+        "trainingSpaceId": session.training_space_id,
+        "date": session.date.isoformat(),
+        "type": session.type,
+        "title": session.title,
+        "phaseTemplateId": session.phase_template_id,
+        "phaseInstanceId": session.phase_instance_id,
+        "phaseSlotId": session.phase_slot_id,
+        "phaseWeekIndex": session.phase_week_index,
+        "generatedDate": session.generated_date.isoformat() if session.generated_date else None,
+        "dateMovedManually": session.date_moved_manually,
+        "modificationNote": session.modification_note,
+        "actual": session.actual_json,
+        "details": session.details_json,
+        "linkedWorkoutId": session.linked_workout_id,
+        "status": session.status,
+        "source": session.source,
+        "coachEditable": session.coach_editable,
+        "originalV1Id": session.original_v1_id,
+        "createdAt": session.created_at.isoformat(),
+    }
+
+
+def export_v2_training_goal(goal: TrainingGoal) -> dict[str, Any]:
+    return {
+        "id": goal.id,
+        "trainingSpaceId": goal.training_space_id,
+        "activity": goal.activity,
+        "target": goal.target_json,
+        "notes": goal.notes,
+        "createdAt": goal.created_at.isoformat(),
+        "updatedAt": goal.updated_at.isoformat(),
+    }
+
+
+def export_v2_program_template(template: ProgramTemplate) -> dict[str, Any]:
+    return {
+        "id": template.id,
+        "trainingSpaceId": template.training_space_id,
+        "name": template.name,
+        "durationWeeks": template.duration_weeks,
+        "template": template.template_json,
+        "notes": template.notes,
+        "originalV1Id": template.original_v1_id,
+        "createdAt": template.created_at.isoformat(),
+        "updatedAt": template.updated_at.isoformat(),
+    }
+
+
+def export_v2_program_instance(instance: ProgramInstance) -> dict[str, Any]:
+    return {
+        "id": instance.id,
+        "trainingSpaceId": instance.training_space_id,
+        "templateId": instance.template_id,
+        "templateName": instance.template_name,
+        "startDate": instance.start_date.isoformat(),
+        "durationWeeks": instance.duration_weeks,
+        "generatedSessionIds": instance.generated_session_ids,
+        "originalV1Id": instance.original_v1_id,
+        "createdAt": instance.created_at.isoformat(),
+    }
 
 
 def imports_error(code: str, message: str, status_code: int) -> HTTPException:
