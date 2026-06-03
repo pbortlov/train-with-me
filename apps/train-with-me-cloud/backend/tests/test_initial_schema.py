@@ -38,6 +38,7 @@ def test_initial_migration_applies_cleanly(tmp_path: Path) -> None:
         "coach_suggestions",
         "audit_events",
         "imported_v1_metadata",
+        "imported_v2_identities",
         "training_goals",
         "program_templates",
     }

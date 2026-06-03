@@ -15,11 +15,14 @@ from app.imports.schemas import (
     V1ImportCommitRequest,
     V1ImportCommitResponse,
     V1ImportPreviewResponse,
+    V2ImportCommitRequest,
+    V2ImportCommitResponse,
 )
 from app.imports.v1_metadata_importer import import_v1_metadata
 from app.imports.v1_planned_session_importer import consolidate_v1_planned_sessions_with_workouts, import_v1_planned_sessions
 from app.imports.v1_parser import V1BackupParseError, parse_v1_backup_summary
 from app.imports.v1_workout_importer import import_v1_workouts
+from app.imports.v2_importer import import_v2_cloud_data
 from app.spaces.routes import get_membership
 
 router = APIRouter()
@@ -163,6 +166,38 @@ def backfill_v1_import(
 
     linked_count = consolidate_v1_planned_sessions_with_workouts(db, training_space_id)
     return V1BackfillResponse(linked_planned_session_count=linked_count)
+
+
+@router.post("/v2/commit", response_model=V2ImportCommitResponse, response_model_by_alias=True)
+def commit_v2_cloud_data(
+    payload: V2ImportCommitRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+) -> V2ImportCommitResponse:
+    membership = get_membership(db, payload.training_space_id, current_user.id)
+    if not membership:
+        raise imports_error("training_space_not_found", "Training space was not found.", status.HTTP_404_NOT_FOUND)
+    if membership.role == TrainingSpaceRole.coach.value:
+        raise imports_error("import_forbidden", "Coach members cannot import athlete history.", status.HTTP_403_FORBIDDEN)
+
+    try:
+        counts = import_v2_cloud_data(db, payload.training_space_id, payload.export_data)
+    except ValueError as exc:
+        raise imports_error("invalid_v2_export", str(exc), status.HTTP_400_BAD_REQUEST) from exc
+
+    return V2ImportCommitResponse(
+        imported_workout_count=counts.imported_workouts,
+        existing_workout_count=counts.existing_workouts,
+        imported_planned_session_count=counts.imported_planned_sessions,
+        existing_planned_session_count=counts.existing_planned_sessions,
+        imported_training_goal_count=counts.imported_training_goals,
+        existing_training_goal_count=counts.existing_training_goals,
+        imported_program_template_count=counts.imported_program_templates,
+        existing_program_template_count=counts.existing_program_templates,
+        imported_program_instance_count=counts.imported_program_instances,
+        existing_program_instance_count=counts.existing_program_instances,
+        warnings=counts.warnings,
+    )
 
 
 @router.get("/v1/export/{training_space_id}")

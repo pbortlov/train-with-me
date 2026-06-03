@@ -55,6 +55,29 @@ class V1BackfillResponse(BaseModel):
     linked_planned_session_count: int = Field(alias="linkedPlannedSessionCount")
 
 
+class V2ImportCommitRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    training_space_id: str = Field(alias="trainingSpaceId")
+    export_data: dict[str, Any] = Field(alias="exportData")
+
+
+class V2ImportCommitResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    imported_workout_count: int = Field(alias="importedWorkoutCount")
+    existing_workout_count: int = Field(alias="existingWorkoutCount")
+    imported_planned_session_count: int = Field(alias="importedPlannedSessionCount")
+    existing_planned_session_count: int = Field(alias="existingPlannedSessionCount")
+    imported_training_goal_count: int = Field(alias="importedTrainingGoalCount")
+    existing_training_goal_count: int = Field(alias="existingTrainingGoalCount")
+    imported_program_template_count: int = Field(alias="importedProgramTemplateCount")
+    existing_program_template_count: int = Field(alias="existingProgramTemplateCount")
+    imported_program_instance_count: int = Field(alias="importedProgramInstanceCount")
+    existing_program_instance_count: int = Field(alias="existingProgramInstanceCount")
+    warnings: list[str]
+
+
 class ImportedV1MetadataResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 

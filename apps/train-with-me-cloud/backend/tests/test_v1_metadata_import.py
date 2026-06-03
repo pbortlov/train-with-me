@@ -5,11 +5,11 @@ from sqlalchemy.orm import Session
 from app.auth.routes import register_user
 from app.auth.schemas import RegisterRequest
 from app.db.base import Base
-from app.db.models import ImportedV1Metadata, PlannedSession, ProgramInstance, ProgramTemplate, User
+from app.db.models import ImportedV1Metadata, PlannedSession, ProgramInstance, ProgramTemplate, TrainingGoal, User, Workout
 from app.goals.routes import upsert_training_goal
 from app.goals.schemas import TrainingGoalUpsertRequest
-from app.imports.routes import commit_v1_backup, export_v1_backup, export_v2_cloud_data, list_v1_metadata
-from app.imports.schemas import V1ImportCommitRequest
+from app.imports.routes import commit_v1_backup, commit_v2_cloud_data, export_v1_backup, export_v2_cloud_data, list_v1_metadata
+from app.imports.schemas import V1ImportCommitRequest, V2ImportCommitRequest
 from app.spaces.routes import create_training_space
 from app.spaces.schemas import TrainingSpaceCreateRequest
 from tests.test_v1_parser import load_sample_backup
@@ -202,3 +202,42 @@ def test_export_v2_cloud_data_returns_native_shape(db_session: Session) -> None:
     assert exported["programTemplates"][0]["id"] == program_instance["templateId"]
     assert exported["workouts"][0]["trainingSpaceId"] == space.id
     assert exported["trainingGoals"][0]["target"]
+
+
+def test_commit_v2_cloud_data_imports_native_export_idempotently(db_session: Session) -> None:
+    owner = create_user(db_session, "athlete@example.com")
+    source_space = create_space(db_session, owner)
+    target_space = create_training_space(TrainingSpaceCreateRequest(name="Imported Season"), owner, db_session)
+    commit_v1_backup(commit_payload(source_space.id), owner, db_session)
+    upsert_training_goal(
+        source_space.id,
+        "run",
+        TrainingGoalUpsertRequest(target_json={"distance": 10, "time": "45:00"}, notes="Cloud goal"),
+        owner,
+        db_session,
+    )
+    exported = export_v2_cloud_data(source_space.id, owner, db_session)
+
+    first = commit_v2_cloud_data(V2ImportCommitRequest(trainingSpaceId=target_space.id, exportData=exported), owner, db_session)
+    second = commit_v2_cloud_data(V2ImportCommitRequest(trainingSpaceId=target_space.id, exportData=exported), owner, db_session)
+
+    assert first.imported_workout_count == 2
+    assert first.imported_planned_session_count == 1
+    assert first.imported_training_goal_count == 1
+    assert first.imported_program_template_count == 1
+    assert first.imported_program_instance_count == 1
+    assert second.imported_workout_count == 0
+    assert second.existing_workout_count == 2
+    assert second.existing_planned_session_count == 1
+    assert second.existing_training_goal_count == 1
+    assert second.existing_program_template_count == 1
+    assert second.existing_program_instance_count == 1
+
+    target_program_instance = db_session.scalar(select(ProgramInstance).where(ProgramInstance.training_space_id == target_space.id))
+    target_planned_session = db_session.scalar(select(PlannedSession).where(PlannedSession.training_space_id == target_space.id))
+    assert target_program_instance is not None
+    assert target_planned_session is not None
+    assert target_planned_session.id in target_program_instance.generated_session_ids
+    assert target_planned_session.phase_instance_id == target_program_instance.id
+    assert db_session.query(Workout).filter(Workout.training_space_id == target_space.id).count() == 2
+    assert db_session.query(TrainingGoal).filter(TrainingGoal.training_space_id == target_space.id).count() == 1

@@ -220,6 +220,20 @@ type V1Backfill = {
   linkedPlannedSessionCount: number;
 };
 
+type V2ImportCommit = {
+  importedWorkoutCount: number;
+  existingWorkoutCount: number;
+  importedPlannedSessionCount: number;
+  existingPlannedSessionCount: number;
+  importedTrainingGoalCount: number;
+  existingTrainingGoalCount: number;
+  importedProgramTemplateCount: number;
+  existingProgramTemplateCount: number;
+  importedProgramInstanceCount: number;
+  existingProgramInstanceCount: number;
+  warnings: string[];
+};
+
 type ImportedV1Metadata = {
   id: string;
   entityType: string;
@@ -775,6 +789,8 @@ export function App() {
   const [importBackup, setImportBackup] = useState<Record<string, unknown> | null>(null);
   const [importCommit, setImportCommit] = useState<V1ImportCommit | null>(null);
   const [backfillResult, setBackfillResult] = useState<V1Backfill | null>(null);
+  const [v2ImportData, setV2ImportData] = useState<Record<string, unknown> | null>(null);
+  const [v2ImportCommit, setV2ImportCommit] = useState<V2ImportCommit | null>(null);
   const [inviteStatus, setInviteStatus] = useState("");
   const [suggestionStatus, setSuggestionStatus] = useState("");
   const [isLoadingSession, setIsLoadingSession] = useState(Boolean(token));
@@ -795,6 +811,7 @@ export function App() {
   const [isPreviewingImport, setIsPreviewingImport] = useState(false);
   const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [isBackfillingImport, setIsBackfillingImport] = useState(false);
+  const [isCommittingV2Import, setIsCommittingV2Import] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
@@ -1719,6 +1736,67 @@ export function App() {
       setImportStatus(error instanceof Error ? error.message : "Could not import backup.");
     } finally {
       setIsCommittingImport(false);
+    }
+  }
+
+  async function handleV2ImportFileChange(event: FormEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setImportStatus("");
+    setV2ImportData(null);
+    setV2ImportCommit(null);
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("V2 export file must contain a JSON object.");
+      }
+      const exportData = parsed as Record<string, unknown>;
+      if (exportData.exportFormat !== "train-with-me-cloud-v2-native") {
+        throw new Error("Choose a native V2 cloud export.");
+      }
+      setV2ImportData(exportData);
+      setImportStatus("V2 cloud export is ready to import.");
+    } catch (error) {
+      setImportStatus(error instanceof Error ? error.message : "Could not read V2 export.");
+    }
+  }
+
+  async function handleCommitV2Import() {
+    if (!token || !selectedSpace || !v2ImportData) {
+      return;
+    }
+
+    setIsCommittingV2Import(true);
+    setImportStatus("");
+    setV2ImportCommit(null);
+    try {
+      const result = await apiRequest<V2ImportCommit>(
+        "/api/imports/v2/commit",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            trainingSpaceId: selectedSpace.id,
+            exportData: v2ImportData,
+          }),
+        },
+        token,
+      );
+      setV2ImportCommit(result);
+      setImportStatus("V2 cloud export imported.");
+      await Promise.all([
+        loadTrainingHistory(token, selectedSpace.id),
+        loadTrainingGoals(token, selectedSpace.id),
+        loadProgramTemplates(token, selectedSpace.id),
+        loadProgramInstances(token, selectedSpace.id),
+      ]);
+      setActiveView("calendar");
+    } catch (error) {
+      setImportStatus(error instanceof Error ? error.message : "Could not import V2 export.");
+    } finally {
+      setIsCommittingV2Import(false);
     }
   }
 
@@ -4347,6 +4425,36 @@ export function App() {
                 </button>
                 {exportStatus && <p className="form-status neutral-status" role="status">{exportStatus}</p>}
               </div>
+
+              <label>
+                V2 cloud export JSON
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={(event) => void handleV2ImportFileChange(event)}
+                  disabled={isCommittingV2Import}
+                />
+              </label>
+
+              {v2ImportCommit && (
+                <div className="import-messages">
+                  <strong>Last V2 import</strong>
+                  <p>
+                    Imported {v2ImportCommit.importedWorkoutCount} workout(s), {v2ImportCommit.importedPlannedSessionCount} planned session(s),
+                    {` ${v2ImportCommit.importedProgramTemplateCount}`} template(s), and {v2ImportCommit.importedProgramInstanceCount} scheduled program(s).
+                    Existing: {v2ImportCommit.existingWorkoutCount + v2ImportCommit.existingPlannedSessionCount + v2ImportCommit.existingProgramTemplateCount + v2ImportCommit.existingProgramInstanceCount}.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="primary-action"
+                onClick={() => void handleCommitV2Import()}
+                disabled={!v2ImportData || !selectedSpace || isCommittingV2Import}
+              >
+                {isCommittingV2Import ? "Importing" : "Import V2 cloud JSON"}
+              </button>
 
               <label>
                 V1 backup JSON

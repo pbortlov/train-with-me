@@ -89,6 +89,7 @@ class TrainingSpace(Base):
     coach_suggestions: Mapped[list["CoachSuggestion"]] = relationship(back_populates="training_space")
     audit_events: Mapped[list["AuditEvent"]] = relationship(back_populates="training_space")
     imported_v1_metadata: Mapped[list["ImportedV1Metadata"]] = relationship(back_populates="training_space")
+    imported_v2_identities: Mapped[list["ImportedV2Identity"]] = relationship(back_populates="training_space")
     training_goals: Mapped[list["TrainingGoal"]] = relationship(back_populates="training_space")
     program_templates: Mapped[list["ProgramTemplate"]] = relationship(back_populates="training_space")
     program_instances: Mapped[list["ProgramInstance"]] = relationship(back_populates="training_space")
@@ -280,6 +281,27 @@ class ImportedV1Metadata(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
 
     training_space: Mapped[TrainingSpace] = relationship(back_populates="imported_v1_metadata")
+
+
+class ImportedV2Identity(Base):
+    __tablename__ = "imported_v2_identities"
+    __table_args__ = (
+        UniqueConstraint(
+            "training_space_id",
+            "entity_type",
+            "source_id",
+            name="uq_imported_v2_identities_space_type_source",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    training_space_id: Mapped[str] = mapped_column(ForeignKey("training_spaces.id"), nullable=False, index=True)
+    entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    target_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    training_space: Mapped[TrainingSpace] = relationship(back_populates="imported_v2_identities")
 
 
 class TrainingGoal(Base):
