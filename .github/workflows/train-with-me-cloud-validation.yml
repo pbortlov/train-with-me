@@ -1,0 +1,76 @@
+name: Train With Me Cloud Validation
+
+on:
+  pull_request:
+    paths:
+      - "apps/train-with-me-cloud/**"
+      - ".github/workflows/train-with-me-cloud-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/train-with-me-cloud/**"
+      - ".github/workflows/train-with-me-cloud-validation.yml"
+
+jobs:
+  backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/train-with-me-cloud/backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: apps/train-with-me-cloud/backend/pyproject.toml
+
+      - name: Install backend dependencies
+        run: python -m pip install --upgrade pip && python -m pip install ".[dev]"
+
+      - name: Run backend tests
+        run: python -m pytest -q
+
+  frontend:
+    name: Frontend Validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/train-with-me-cloud/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/train-with-me-cloud/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Typecheck frontend
+        run: npm run typecheck
+
+      - name: Build frontend
+        run: npm run build
+
+  containers:
+    name: Container Build Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t train-with-me-cloud-api:ci apps/train-with-me-cloud/backend
+
+      - name: Build frontend image
+        run: docker build -t train-with-me-cloud-web:ci apps/train-with-me-cloud/frontend
