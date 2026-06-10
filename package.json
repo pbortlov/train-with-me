@@ -1,0 +1,25 @@
+{
+  "name": "train-with-me-v1",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/check-build.mjs",
+    "check": "npm run test && npm run build && npm run smoke"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3",
+    "vite": "^6.1.0",
+    "vite-plugin-pwa": "^0.21.2",
+    "vitest": "^3.1.2"
+  }
+}

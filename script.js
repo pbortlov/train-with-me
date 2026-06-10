@@ -1,10 +1,26 @@
-const STORAGE_KEY_WORKOUTS = "twm_workouts_v1";
-const STORAGE_KEY_GOALS = "twm_goals_v1";
-const STORAGE_KEY_EXERCISES = "twm_exercise_library_v1";
-const STORAGE_KEY_PLANNED_SESSIONS = "twm_planned_sessions_v2";
-const STORAGE_KEY_PHASE_TEMPLATES = "twm_phase_templates_v2";
-const STORAGE_KEY_PHASE_INSTANCES = "twm_phase_instances_v2";
-const STORAGE_KEY_UI_SETTINGS = "twm_ui_settings_v2";
+import Chart from "chart.js/auto";
+import { createBackupPayload, parseBackupPayload } from "./src/domain/backup";
+import {
+  calculateRunPace as calculateRunPaceCore,
+  formatSecondsAsRunDuration as formatSecondsAsRunDurationCore,
+  normalizeRunDuration as normalizeRunDurationCore,
+  normalizeStoredRunDuration as normalizeStoredRunDurationCore,
+  parseRunDuration as parseRunDurationCore,
+} from "./src/domain/run";
+import {
+  normalizeSprintSets as normalizeSprintSetsCore,
+  normalizeStrengthExercises as normalizeStrengthExercisesCore,
+} from "./src/domain/normalization";
+import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
+import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
+
+const STORAGE_KEY_WORKOUTS = STORAGE_KEYS.workouts;
+const STORAGE_KEY_GOALS = STORAGE_KEYS.goals;
+const STORAGE_KEY_EXERCISES = STORAGE_KEYS.exercises;
+const STORAGE_KEY_PLANNED_SESSIONS = STORAGE_KEYS.plannedSessions;
+const STORAGE_KEY_PHASE_TEMPLATES = STORAGE_KEYS.phaseTemplates;
+const STORAGE_KEY_PHASE_INSTANCES = STORAGE_KEYS.phaseInstances;
+const STORAGE_KEY_UI_SETTINGS = STORAGE_KEYS.uiSettings;
 const ACTIVITY_CHART_DATE_COLORS = ["#4DA3FF", "#FF7A00", "#6DFF5C", "#E879F9", "#FACC15", "#38BDF8", "#FB7185", "#A3E635"];
 
 const workoutForm = document.getElementById("workout-form");
@@ -196,11 +212,7 @@ const dateInput = document.getElementById("date");
 
 dateInput.valueAsDate = new Date();
 
-const storedWorkouts = load(STORAGE_KEY_WORKOUTS, []);
-let workouts = storedWorkouts.map((workout) => normalizeImportedWorkout(workout));
-if (JSON.stringify(workouts) !== JSON.stringify(storedWorkouts)) {
-  save(STORAGE_KEY_WORKOUTS, workouts);
-}
+let workouts = loadNormalizedList(localStorage, STORAGE_KEY_WORKOUTS, normalizeImportedWorkout);
 let goals = normalizeGoals(load(STORAGE_KEY_GOALS, defaultGoals()));
 let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
 let plannedSessions = load(STORAGE_KEY_PLANNED_SESSIONS, []).map((session) => normalizePlannedSession(session));
@@ -1255,33 +1267,7 @@ function isNumber(value) {
 }
 
 function parseRunDuration(value) {
-  if (typeof value !== "string") {
-    return { seconds: null, error: "Enter time as mm:ss or hh:mm:ss." };
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return { seconds: null, error: "" };
-  }
-
-  const parts = trimmed.split(":");
-  if ((parts.length !== 2 && parts.length !== 3) || parts.some((part) => !/^\d+$/.test(part))) {
-    return { seconds: null, error: "Enter time as mm:ss or hh:mm:ss." };
-  }
-
-  const numbers = parts.map(Number);
-  const [hours, minutes, seconds] = parts.length === 3 ? numbers : [0, numbers[0], numbers[1]];
-  if (seconds > 59) {
-    return { seconds: null, error: "Seconds must be 00-59." };
-  }
-  if (parts.length === 2 && minutes > 59) {
-    return { seconds: null, error: "Use hh:mm:ss for runs 1 hour or longer, for example 01:05:30." };
-  }
-  if (parts.length === 3 && minutes > 59) {
-    return { seconds: null, error: "Minutes must be 00-59 in hh:mm:ss." };
-  }
-
-  return { seconds: (hours * 3600) + (minutes * 60) + seconds, error: "" };
+  return parseRunDurationCore(value);
 }
 
 function parseRunDurationToSeconds(value) {
@@ -1293,20 +1279,11 @@ function parseFlexibleRunDurationToSeconds(value) {
 }
 
 function formatSecondsAsRunDuration(totalSeconds) {
-  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
-    return null;
-  }
-
-  const rounded = Math.round(totalSeconds);
-  const hours = Math.floor(rounded / 3600);
-  const minutes = Math.floor((rounded % 3600) / 60);
-  const seconds = rounded % 60;
-  return [hours, minutes, seconds].map((part) => String(part).padStart(2, "0")).join(":");
+  return formatSecondsAsRunDurationCore(totalSeconds);
 }
 
 function normalizeRunDurationInput(value) {
-  const totalSeconds = parseRunDurationToSeconds(value);
-  return totalSeconds == null ? "" : formatSecondsAsRunDuration(totalSeconds);
+  return normalizeRunDurationCore(value);
 }
 
 function normalizeFlexibleRunDurationInput(value) {
@@ -1314,24 +1291,7 @@ function normalizeFlexibleRunDurationInput(value) {
 }
 
 function normalizeStoredRunDurationInput(value) {
-  if (typeof value !== "string") {
-    return "";
-  }
-  const normalized = normalizeRunDurationInput(value);
-  if (normalized) {
-    return normalized;
-  }
-
-  const trimmed = value.trim();
-  const parts = trimmed.split(":");
-  if (parts.length === 2 && parts.every((part) => /^\d+$/.test(part))) {
-    const [minutes, seconds] = parts.map(Number);
-    if (minutes > 59 && seconds <= 59) {
-      return formatSecondsAsRunDuration((minutes * 60) + seconds) || "";
-    }
-  }
-
-  return "";
+  return normalizeStoredRunDurationCore(value);
 }
 
 function legacyRunMinutesToDuration(value) {
@@ -1355,11 +1315,7 @@ function formatRunDuration(value) {
 }
 
 function calculateRunPace(distanceKm, totalSeconds) {
-  if (!isNumber(distanceKm) || distanceKm <= 0 || !Number.isFinite(totalSeconds) || totalSeconds <= 0) {
-    return null;
-  }
-
-  return totalSeconds / 60 / distanceKm;
+  return calculateRunPaceCore(distanceKm, totalSeconds);
 }
 
 function formatRunPace(value) {
@@ -1456,19 +1412,11 @@ function normalizeEditRunTimeField() {
 }
 
 function save(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  saveJson(localStorage, key, value);
 }
 
 function load(key, fallback) {
-  const raw = localStorage.getItem(key);
-  if (!raw) {
-    return fallback;
-  }
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
+  return loadJson(localStorage, key, fallback);
 }
 
 function capitalize(text) {
@@ -2161,16 +2109,14 @@ function toggleChartCardVisibility(card, isVisible) {
 }
 
 function exportBackupData() {
-  const backupPayload = {
-    version: 2,
-    exportedAt: new Date().toISOString(),
+  const backupPayload = createBackupPayload({
     workouts,
     goals,
     plannedSessions,
     phaseTemplates,
     phaseInstances,
     uiSettings,
-  };
+  });
 
   const fileBlob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: "application/json" });
   const downloadUrl = URL.createObjectURL(fileBlob);
@@ -2191,11 +2137,7 @@ function importBackupData(event) {
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      const parsed = JSON.parse(String(reader.result || "{}"));
-      if (!parsed || !Array.isArray(parsed.workouts) || typeof parsed.goals !== "object") {
-        backupStatusEl.textContent = "Invalid backup file format.";
-        return;
-      }
+      const parsed = parseBackupPayload(JSON.parse(String(reader.result || "{}")));
 
       workouts = parsed.workouts.map((workout) => normalizeImportedWorkout(workout));
       syncExerciseLibraryFromWorkouts();
@@ -2228,8 +2170,11 @@ function importBackupData(event) {
       hydrateGoalInputs();
       render();
       backupStatusEl.textContent = `Imported ${workouts.length} workout(s) successfully.`;
-    } catch {
-      backupStatusEl.textContent = "Could not read JSON backup file.";
+    } catch (error) {
+      backupStatusEl.textContent =
+        error instanceof Error && error.message === "Invalid backup file format."
+          ? error.message
+          : "Could not read JSON backup file.";
     } finally {
       importDataFileInput.value = "";
     }
@@ -2248,12 +2193,6 @@ async function installPwaApp() {
   await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
   installAppButton.style.display = "none";
-}
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js");
-  });
 }
 
 function setWorkoutFormStatus(message) {
@@ -2531,17 +2470,7 @@ function renderSprintSets() {
 }
 
 function normalizeSprintSets(sprintSets) {
-  if (!Array.isArray(sprintSets)) {
-    return [];
-  }
-
-  return sprintSets
-    .filter((set) => isNumber(set?.time) && isNumber(set?.distance))
-    .map((set, index) => ({
-      order: index + 1,
-      time: Number(set.time),
-      distance: Number(set.distance),
-    }));
+  return normalizeSprintSetsCore(sprintSets);
 }
 
 function formatSprintFeeling(value) {
@@ -2583,25 +2512,7 @@ function formatSprintSpeedSource(workout) {
 }
 
 function normalizeStrengthExercises(exercises) {
-  if (!Array.isArray(exercises)) {
-    return [];
-  }
-
-  return exercises
-    .filter((exercise) => typeof exercise?.name === "string" && exercise.name.trim() && Array.isArray(exercise.sets))
-    .map((exercise) => ({
-      name: exercise.name.trim(),
-      sets: exercise.sets
-        .filter((set) => isNumber(set?.reps))
-        .map((set, index) => ({
-          order: index + 1,
-          reps: Number(set.reps),
-          weight: set.loadType === "kg" && isNumber(set.weight) ? Number(set.weight) : null,
-          loadType: set.loadType === "band" || set.loadType === "bodyweight" ? set.loadType : "kg",
-          bandColor: typeof set.bandColor === "string" ? set.bandColor : "",
-        })),
-    }))
-    .filter((exercise) => exercise.sets.length > 0);
+  return normalizeStrengthExercisesCore(exercises);
 }
 
 function normalizeImportedWorkout(workout) {
@@ -5759,28 +5670,7 @@ function formatActualProgressSnapshot(snapshot) {
 }
 
 function evaluatePlanStatus(planned, actual) {
-  const setsMeetPlan = !planned.setsBase || actual.totalSets >= planned.setsBase;
-  const repsMeetPlan = !planned.repsBase || actual.maxReps >= planned.repsBase;
-  const weightMeetPlan = !isNumber(planned.weight) || (isNumber(actual.maxWeight) && actual.maxWeight >= planned.weight);
-  const weightExceededPlan = isNumber(planned.weight) && isNumber(actual.maxWeight) && actual.maxWeight > planned.weight;
-
-  if (
-    setsMeetPlan &&
-    repsMeetPlan &&
-    weightMeetPlan &&
-    actual.totalSets === planned.setsBase &&
-    actual.maxReps === planned.repsBase &&
-    (!isNumber(planned.weight) || actual.maxWeight === planned.weight)
-  ) {
-    return { label: "Matched plan", explanation: "Actual sets, reps, and top weight matched the plan." };
-  }
-  if (setsMeetPlan && repsMeetPlan && weightMeetPlan && (actual.totalSets > planned.setsBase || actual.maxReps > planned.repsBase || weightExceededPlan)) {
-    return { label: "Exceeded plan", explanation: "Actual execution met or exceeded the planned prescription." };
-  }
-  if (!setsMeetPlan || !repsMeetPlan || !weightMeetPlan) {
-    return { label: "Below plan", explanation: "Actual execution landed below the planned prescription." };
-  }
-  return { label: "Matched plan", explanation: "Actual execution met the minimum planned prescription." };
+  return evaluatePlanStatusCore(planned, actual);
 }
 
 function evaluateImprovementStatus(previous, current) {

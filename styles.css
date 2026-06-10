@@ -27,6 +27,35 @@ body {
   color: var(--text);
 }
 
+.pwa-update,
+.pwa-status {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 1000;
+  max-width: min(28rem, calc(100vw - 2rem));
+  border: 1px solid #b8c8e8;
+  border-radius: 0.8rem;
+  background: #ffffff;
+  box-shadow: 0 0.8rem 2rem rgb(24 45 84 / 18%);
+  color: #17233c;
+  padding: 0.8rem 1rem;
+}
+
+.pwa-update {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.pwa-update button {
+  flex: 0 0 auto;
+}
+
+.pwa-status {
+  pointer-events: none;
+}
+
 .app {
   max-width: 1180px;
   margin: 0 auto;

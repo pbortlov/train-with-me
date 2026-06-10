@@ -1,13 +1,13 @@
 # Train With Me
 
-Train With Me V2 is a calendar-first training planner and workout tracker for:
+Train With Me V1 is a local-first, calendar-first training planner and workout tracker for:
 - strength training
 - running
 - sprinting
 
 The app is designed to stay approachable for non-technical users by default, while advanced planning features live behind a `Geek / coach mode` toggle.
 
-## V2 Features
+## V1 Features
 - Calendar-first weekly planning view
 - Manual planned sessions for:
   - run
@@ -69,7 +69,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - `Data`: backup, exercise library, and workout history management
 
 ## Strength Phase Import
-V2 import focuses on `strength phases` only.
+V1 import focuses on `strength phases` only.
 
 Each imported file should describe one reusable phase using ordered rows such as:
 
@@ -89,7 +89,7 @@ See [docs/strength-phase-import.md](docs/strength-phase-import.md) for the exact
 Slot notes can also include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`. The Calendar uses that together with block durations and planned rests to show total strength-session time on the card.
 
 ## Documentation
-V2 keeps decision and planning history in the repo:
+V1 keeps decision and planning history in the repo:
 - [docs/product-principles.md](docs/product-principles.md)
 - [docs/agents.md](docs/agents.md)
 - [docs/planner-overview.md](docs/planner-overview.md)
@@ -99,10 +99,64 @@ V2 keeps decision and planning history in the repo:
 - [docs/decisions/0002-calendar-only-workout-logging.md](docs/decisions/0002-calendar-only-workout-logging.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 
-## Run Locally
-1. Open `index.html` in your browser.
-2. Use the top navigation to move between Calendar, Programs, Review, Stats, and Data.
-3. If UI changes do not appear, hard refresh (`Ctrl+Shift+R`) and clear site storage/service worker cache.
+The Vite/PWA migration and repository separation are documented in:
+
+- [Vite and GitLab Pages ADR](docs/decisions/0005-v1-vite-gitlab-pages-compatibility.md)
+- [repository separation ADR](docs/decisions/0006-v1-v2-repository-separation.md)
+- [repository ownership inventory](docs/migration/repository-ownership-inventory.md)
+- [repository split runbook](docs/migration/v1-v2-repository-split-runbook.md)
+- [V1 backup compatibility contract](docs/compatibility/v1-backup-contract.md)
+
+The independent cloud application is maintained at
+[`pbortlov/train-with-me-cloud`](https://github.com/pbortlov/train-with-me-cloud).
+It has its own dependencies, CI/CD, deployment configuration, and release
+lifecycle.
+
+## Local Development
+
+The root PWA uses Vite, vanilla TypeScript domain modules, and the existing browser UI controller.
+
+Prerequisites:
+
+- Node.js 22 or newer
+- npm
+
+Install and run:
+
+```bash
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite. Opening `index.html` directly is no longer supported because the app now uses bundled modules.
+
+Useful checks:
+
+```bash
+npm run test
+npm run typecheck
+npm run build
+npm run smoke
+npm run check
+```
+
+Preview the production build with:
+
+```bash
+npm run build
+npm run preview
+```
+
+## Offline And Updates
+
+- After one successful production load, the app shell and Chart.js bundle are available offline.
+- Workout data remains in this browser's `localStorage`; the service worker does not copy or synchronize user data.
+- A deployed update downloads in the background. When ready, the app shows `Update now`; reload occurs only after that button is selected so unfinished form input is not discarded automatically.
+- Existing installations using the historical `service-worker.js` are migrated through a compatibility worker that removes the obsolete cache before the generated worker takes control.
+- Development mode does not register the production service worker.
+- Browser storage clearing, private browsing cleanup, device loss, or changing the Pages origin can permanently remove local data.
+
+Export a JSON backup from Data after important training changes and store it outside the browser. Test restoring backups periodically before relying on them.
 
 ## Manual Test Checklists
 
@@ -187,11 +241,18 @@ V2 keeps decision and planning history in the repo:
 - Confirm date separators do not consume a full column-width gap.
 - Confirm Run Pace and Strength layout and behavior are unchanged.
 
-## Publish With GitHub Pages
-1. Push this repo to GitHub.
-2. In GitHub, go to **Settings** → **Pages**.
-3. Under **Build and deployment**:
-   - Source: **Deploy from a branch**
-   - Branch: `main` (or your branch) and `/ (root)`
-4. Click **Save**.
-5. Wait about 1 minute, then open your Pages URL.
+## GitLab Pages Deployment
+
+The root `.gitlab-ci.yml`:
+
+1. Installs exactly the dependencies in `package-lock.json` with `npm ci`.
+2. Runs unit tests, TypeScript validation, a production build, and relative-path/offline smoke checks.
+3. Publishes the production output as the `public/` artifact from the repository's default branch.
+
+Vite uses relative asset paths, manifest scope, and start URL so the app works at nested project URLs such as:
+
+```text
+https://username.gitlab.io/train-with-me/
+```
+
+Do not rename the existing `localStorage` keys or deploy the same app under a different origin without first exporting a backup. Browser storage is isolated by origin, so another hostname or protocol appears to have an empty data set.
