@@ -99,13 +99,9 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0002-calendar-only-workout-logging.md](docs/decisions/0002-calendar-only-workout-logging.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 
-The Vite/PWA migration and repository separation are documented in:
+The Vite/PWA architecture and compatibility contracts are documented in:
 
-- [Vite and GitLab Pages ADR](docs/decisions/0005-v1-vite-gitlab-pages-compatibility.md)
-- [repository separation ADR](docs/decisions/0006-v1-v2-repository-separation.md)
-- [repository ownership inventory](docs/migration/repository-ownership-inventory.md)
-- [repository split runbook](docs/migration/v1-v2-repository-split-runbook.md)
-- [repository split completion record](docs/migration/repository-split-completion.md)
+- [Vite and GitHub Pages ADR](docs/decisions/0005-v1-vite-github-pages-compatibility.md)
 - [V1 backup compatibility contract](docs/compatibility/v1-backup-contract.md)
 
 The independent cloud application is maintained at
@@ -242,18 +238,33 @@ Export a JSON backup from Data after important training changes and store it out
 - Confirm date separators do not consume a full column-width gap.
 - Confirm Run Pace and Strength layout and behavior are unchanged.
 
-## GitLab Pages Deployment
+## GitHub Pages Deployment
 
-The root `.gitlab-ci.yml`:
+The repository workflow `.github/workflows/deploy-pages.yml`:
 
 1. Installs exactly the dependencies in `package-lock.json` with `npm ci`.
 2. Runs unit tests, TypeScript validation, a production build, and relative-path/offline smoke checks.
-3. Publishes the production output as the `public/` artifact from the repository's default branch.
+3. Validates pull requests without deploying them.
+4. Publishes `dist/` with the official GitHub Pages actions only after a successful push to `main`.
 
 Vite uses relative asset paths, manifest scope, and start URL so the app works at nested project URLs such as:
 
 ```text
-https://username.gitlab.io/train-with-me/
+https://pbortlov.github.io/train-with-me/
 ```
 
-Do not rename the existing `localStorage` keys or deploy the same app under a different origin without first exporting a backup. Browser storage is isolated by origin, so another hostname or protocol appears to have an empty data set.
+Repository setup:
+
+1. Open **Settings**, then **Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+3. Merge the validated change to `main`.
+4. Confirm the `Validate and deploy V1 Pages` workflow completes and reports the deployed URL.
+
+GitHub Pages is the sole production origin for V1. Do not advertise a second
+Pages deployment as interchangeable: browser storage is isolated by origin, so
+another hostname or protocol appears to have an empty data set.
+
+Before moving from any previous deployment origin, export a JSON backup there
+and restore it at the GitHub Pages URL. To roll back a faulty deployment,
+revert the responsible commit on `main`; the workflow will validate and publish
+the reverted build without changing browser storage.

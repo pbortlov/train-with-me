@@ -12,6 +12,9 @@ const assetReferences = [...index.matchAll(/(?:src|href)="([^"]+)"/g)].map((matc
 if (index.includes("cdn.jsdelivr.net") || index.includes("https://cdn.")) {
   failures.push("Production HTML still references a CDN.");
 }
+if (index.includes("gitlab.io")) {
+  failures.push("Production HTML still references a GitLab Pages URL.");
+}
 if (assetReferences.some((reference) => reference.startsWith("/"))) {
   failures.push("Production HTML contains root-absolute asset paths.");
 }
@@ -36,6 +39,14 @@ if (!files.some((file) => /^workbox-.*\.js$/.test(file))) {
 }
 if (!files.some((file) => /^assets\/script-.*\.js$/.test(file))) {
   failures.push("Missing bundled legacy application controller.");
+}
+
+const scriptFiles = files.filter((file) => /^assets\/.*\.js$/.test(file));
+const scripts = await Promise.all(
+  scriptFiles.map((file) => readFile(path.join(dist, file), "utf8")),
+);
+if (!scripts.some((script) => script.includes("Chart"))) {
+  failures.push("The production bundle does not contain locally bundled Chart.js.");
 }
 
 if (failures.length) {
