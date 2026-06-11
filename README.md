@@ -105,6 +105,7 @@ The Vite/PWA migration and repository separation are documented in:
 - [repository separation ADR](docs/decisions/0006-v1-v2-repository-separation.md)
 - [repository ownership inventory](docs/migration/repository-ownership-inventory.md)
 - [repository split runbook](docs/migration/v1-v2-repository-split-runbook.md)
+- [repository split completion record](docs/migration/repository-split-completion.md)
 - [V1 backup compatibility contract](docs/compatibility/v1-backup-contract.md)
 
 The independent cloud application is maintained at

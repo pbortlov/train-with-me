@@ -6,7 +6,9 @@
 - Mixed source checkpoint: `aa5de4a`
 - Clean V1 boundary: `22f649e`
 - Latest V2 checkpoint: `093de15`
+- Verified V1 destination checkpoint: `319b924`
 - Verified V2 destination checkpoint: `bda0ef7`
+- Completion date: 2026-06-11
 
 ## Working Tree Safety
 
@@ -178,10 +180,9 @@ V2 import:
 - Confirm whether V1 remains on GitHub, moves to GitLab, or deploys to both.
 - Inventory actual CI variables, Pages settings, registry permissions, routes,
   and secrets in their hosting systems without recording values.
-- Manually verify V1 installability, offline startup, service-worker migration,
-  all storage keys, and old/current backup restoration before default-branch
-  replacement.
 - A hosting-origin change makes existing browser storage appear empty; users
   need a backup export before any such cutover.
-- Default-branch replacement and source V2 deletion require separate explicit
-  approvals.
+- Repository-hosting configuration remains external state and was not copied
+  by Git history extraction.
+- Archive refs, bundles, stashes, migration branches, and worktrees remain
+  retained until a separate cleanup approval.

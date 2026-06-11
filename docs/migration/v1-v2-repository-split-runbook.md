@@ -1,7 +1,8 @@
 # V1 And V2 Repository Split Runbook
 
-This runbook defines commands for later migration MVPs. Do not execute a later
-MVP until the preceding MVP has been manually verified and explicitly approved.
+This runbook records the commands used for the migration MVPs. The repository
+separation and default-branch cutover completed on 2026-06-11. Destructive
+cleanup remains deferred until separately approved.
 
 ## Fixed Names And Checkpoints
 
@@ -11,6 +12,8 @@ Assumed V2 destination:   pbortlov/train-with-me-cloud
 V1 clean boundary:        22f649e0ed60c5abffa6754b6d57962752509915
 Mixed main checkpoint:    aa5de4acfe03784ed3a53a37318abf9d4cf2b2f1
 Latest V2 checkpoint:     093de150c2a42b3511052d03c23028b3ce26886f
+Verified V1 main:         319b924ee2982512c5aa8ff8cc8971815dbed551
+Verified V2 main:         bda0ef7e8a68f89ba24881f45f3e5408e82487ba
 V1 migration branch:      migration/v1-clean
 V2 source branch:         migration/v2-extraction-source
 Temporary V2 remote:      v2-destination
@@ -236,9 +239,24 @@ the archive branches and bundle after cutover.
 
 ## MVP 9: Final Cleanup
 
-- Confirm V1 and V2 complete test suites pass from clean clones.
-- Confirm no duplicate code, CI, deployment, or release ownership remains.
-- Retain backup fixtures, ADRs, compatibility documentation, archive refs,
-  filter-repo metadata, and verified bundles.
-- Remove temporary remotes and worktrees only after final approval.
-- Never delete archive refs or bundles as part of routine cleanup.
+Completed validation on 2026-06-11:
+
+- V1 remote `main` clean clone: 15 tests, TypeScript, production PWA build,
+  relative-path/offline smoke check, and ownership-boundary checks passed.
+- V2 remote `main` clean clone: 94 backend tests, frontend typecheck and build,
+  Compose configuration, backend container build, frontend container build,
+  and ownership-boundary checks passed.
+- V1 `main` resolved to `319b924`.
+- V2 `main` and the peeled verification tag resolved to `bda0ef7`.
+- All three migration bundles verified as complete histories.
+- No duplicate application, CI, container, database, or deployment ownership
+  remains in the two default-branch trees.
+
+Retained checkpoints:
+
+- Backup fixtures, ADRs, compatibility documentation, archive refs,
+  filter-repo metadata, stashes, and verified bundles.
+- Migration branches, extraction clone, and worktrees until separate cleanup
+  approval.
+
+Never delete archive refs or bundles as part of routine cleanup.

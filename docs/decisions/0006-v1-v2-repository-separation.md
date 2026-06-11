@@ -3,10 +3,13 @@
 - Date: 2026-06-10
 - Status: accepted
 
+The repository separation was completed and validated on 2026-06-11. See the
+[completion record](../migration/repository-split-completion.md).
+
 ## Context
 
-The repository currently contains two products with different architecture and
-release requirements:
+Before separation, the source repository contained two products with different
+architecture and release requirements:
 
 - V1 is the root single-user, local-first PWA.
 - V2 is the cloud application under `apps/train-with-me-cloud/`.
@@ -16,10 +19,10 @@ authentication, or cloud synchronization. V2 owns its React frontend, FastAPI
 backend, PostgreSQL database, authentication, synchronization, collaboration,
 containers, and OpenShift infrastructure.
 
-The current `main` commit is `aa5de4a`. The last committed V1 application
-checkpoint before cloud development is `22f649e`. The latest V2 branch is
-`v2-UI-alike-V1` at `093de15`, which includes 41 V2 commits after current
-`main`.
+At the start of the migration, `main` was `aa5de4a`. The last committed V1
+application checkpoint before cloud development was `22f649e`. The latest V2
+source checkpoint was `093de15`, which included 41 V2 commits after the mixed
+source `main`.
 
 ## Decision
 
@@ -42,7 +45,7 @@ Separate the products through small, reversible migration MVPs.
 
 ## Migration Checkpoint
 
-As of 2026-06-10:
+As of 2026-06-11:
 
 - The extracted V2 repository is published and independently verified at
   commit `bda0ef7`.
@@ -50,9 +53,12 @@ As of 2026-06-10:
   checkpoint.
 - Bundle `/home/pb/train-with-me-cloud-verified-2026-06-10.bundle` provides an
   external V2 backup.
-- Branch `migration/v1-clean` rebuilds the V1-only lineage from `22f649e`.
-- The original repository and archive refs remain unchanged until the V1
-  branch completes automated and manual verification.
+- V1 `main` is the verified standalone PWA commit `319b924`, rebuilt from
+  `22f649e`.
+- The previous mixed `main` remains at `archive/pre-split-main-aa5de4a`.
+- The latest V2 source remains at `archive/pre-split-v2-093de15`.
+- Both default branches pass clean-clone application, ownership, and build
+  validation.
 
 ## Ownership And Compatibility
 
@@ -96,12 +102,12 @@ lifecycles.
 - Mixed main archive: `archive/pre-split-main-aa5de4a`
 - Latest V2 archive: `archive/pre-split-v2-093de15`
 - MVP 1 branch: `migration/repository-split-mvp1`
-- Planned V1 branch: `migration/v1-clean`
-- Planned V2 source branch: `migration/v2-extraction-source`
-- Planned temporary destination remote: `v2-destination`
+- V1 migration branch: `migration/v1-clean`
+- V2 extraction branch: `migration/v2-extraction-source`
+- V2 destination remote: `v2-destination`
 
-Each migration MVP produces one reviewable commit and stops for manual
-confirmation. Rollback uses the archive refs or bundle; migration work must not
+Each migration MVP produced one reviewable commit and stopped for manual
+confirmation. Rollback uses the archive refs or bundle; migration work did not
 force-update or delete those checkpoints.
 
 ## Consequences
@@ -109,7 +115,7 @@ force-update or delete those checkpoints.
 - Rewritten V2 commit hashes are expected because paths and parent
   relationships change. Authors, dates, messages, and logical history remain.
 - The V1 clean lineage intentionally excludes cloud-only and mixed merge
-  commits after `22f649e`; retained V1 documentation is reapplied explicitly.
+  commits after `22f649e`; retained V1 documentation was reapplied explicitly.
 - CI secrets and hosting settings must be recreated in the destination because
   Git history does not transfer repository settings or secret values.
 - Cross-repository backup compatibility becomes a documented, versioned
