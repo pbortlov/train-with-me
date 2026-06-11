@@ -256,7 +256,12 @@ Retained checkpoints:
 
 - Backup fixtures, ADRs, compatibility documentation, archive refs,
   filter-repo metadata, stashes, and verified bundles.
-- Migration branches, extraction clone, and worktrees until separate cleanup
-  approval.
+
+Cleanup completed after explicit approval:
+
+- Removed local and remote `migration/v1-clean`.
+- Removed local and remote `migration/repository-split-mvp1`.
+- Removed the redundant V1 worktree.
+- Removed temporary extraction and clean-clone verification directories.
 
 Never delete archive refs or bundles as part of routine cleanup.

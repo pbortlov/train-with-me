@@ -184,5 +184,6 @@ V2 import:
   need a backup export before any such cutover.
 - Repository-hosting configuration remains external state and was not copied
   by Git history extraction.
-- Archive refs, bundles, stashes, migration branches, and worktrees remain
-  retained until a separate cleanup approval.
+- Archive refs, bundles, stashes, and filter-repo evidence remain retained.
+- Redundant migration branches, worktrees, extraction clones, and verification
+  clones were removed after final validation.

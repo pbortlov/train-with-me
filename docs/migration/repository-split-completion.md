@@ -59,9 +59,24 @@ duplicate-safe V1 import, and frontend/API operation.
 
 All three bundles were verified after the default-branch cutover.
 
-## Deferred Cleanup
+## Cleanup
 
-Migration branches, worktrees, the extraction clone, filter-repo metadata,
-stashes, archive refs, and bundles remain retained. Removing temporary
-resources requires separate explicit approval and must not remove recovery
-checkpoints or compatibility records.
+Final cleanup removed:
+
+- Local and remote `migration/v1-clean`.
+- Local and remote `migration/repository-split-mvp1`.
+- The redundant V1 worktree.
+- Temporary V1 and V2 verification clones.
+- The temporary V2 extraction clone.
+
+Recovery assets remain retained:
+
+- Both archive refs.
+- All three verified bundles.
+- Original stashes.
+- Filter-repo metadata and commit mapping evidence.
+- V1 and V2 compatibility and migration documentation.
+- The V2 verification tag.
+
+The independent repositories remain available from their remote `main`
+branches and can be restored from their verified bundles.
