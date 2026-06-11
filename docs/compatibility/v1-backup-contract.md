@@ -3,9 +3,10 @@
 - Contract owner: `pbortlov/train-with-me`
 - Consumer: [`pbortlov/train-with-me-cloud`](https://github.com/pbortlov/train-with-me-cloud)
 - Current export version: `2`
-- V1 application checkpoint: `22f649e0ed60c5abffa6754b6d57962752509915`
-- Repository split documentation checkpoint:
-  `b410439adc6602320cd5f15c7d8e2571fa947f30`
+- Historical V1 behavior boundary:
+  `22f649e0ed60c5abffa6754b6d57962752509915`
+- Current tested V1 producer foundation:
+  `319b924ee2982512c5aa8ff8cc8971815dbed551`
 - Verified V2 importer checkpoint:
   `f426cb3f14c022128a36d1b4b1ea5457662bf17e`
 - Verification date: 2026-06-10
@@ -117,6 +118,8 @@ canonical V1 implementation. When V1 intentionally changes the contract:
 
 For the checkpoints above:
 
+- V1 backup, storage, normalization, typecheck, production build, and
+  relative-path/offline-shell tests passed.
 - V2 backend import suite: 94 tests passed.
 - V2 frontend typecheck and production build passed.
 - V2 Compose configuration and backend/frontend container builds passed.
