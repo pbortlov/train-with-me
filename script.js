@@ -13,6 +13,7 @@ import {
 } from "./src/domain/normalization";
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
+import { buildTodayModel } from "./src/domain/today";
 
 const STORAGE_KEY_WORKOUTS = STORAGE_KEYS.workouts;
 const STORAGE_KEY_GOALS = STORAGE_KEYS.goals;
@@ -105,6 +106,11 @@ const exerciseLibraryListEl = document.getElementById("exercise-library-list");
 const coachModeToggle = document.getElementById("coach-mode-toggle");
 const viewNavButtons = document.querySelectorAll("[data-view-target]");
 const viewPanels = document.querySelectorAll(".view-panel");
+const todayViewPanel = document.querySelector('[data-view="today"]');
+const todayDateHeadingEl = document.getElementById("today-date-heading");
+const todayStatusEl = document.getElementById("today-status");
+const todaySummaryEl = document.getElementById("today-summary");
+const todayTrainingListEl = document.getElementById("today-training-list");
 const addTrainingModeButtons = document.querySelectorAll("[data-add-training-mode]");
 const addTrainingPanels = document.querySelectorAll("[data-add-training-panel]");
 const plannerSummaryEl = document.getElementById("planner-summary");
@@ -219,7 +225,7 @@ let plannedSessions = load(STORAGE_KEY_PLANNED_SESSIONS, []).map((session) => no
 let phaseTemplates = load(STORAGE_KEY_PHASE_TEMPLATES, []).map((template) => normalizePhaseTemplate(template));
 let phaseInstances = load(STORAGE_KEY_PHASE_INSTANCES, []).map((instance) => normalizePhaseInstance(instance));
 let uiSettings = load(STORAGE_KEY_UI_SETTINGS, {
-  currentView: "calendar",
+  currentView: "today",
   coachMode: false,
   currentWeekStart: formatDateInput(startOfWeek(new Date())),
 });
@@ -551,6 +557,7 @@ historyBody.addEventListener("click", (event) => {
 });
 
 function render() {
+  renderToday();
   renderSummary();
   renderCharts();
   renderHistory();
@@ -564,6 +571,72 @@ function render() {
   renderAdherenceStats();
   renderProgramProgress();
   syncViewState();
+}
+
+function renderToday() {
+  if (!todayDateHeadingEl || !todayStatusEl || !todaySummaryEl || !todayTrainingListEl) {
+    return;
+  }
+
+  const today = formatDateInput(new Date());
+  const model = buildTodayModel(today, plannedSessions, workouts);
+  const displayDate = new Date(`${today}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+  const totalTraining = model.sessions.length + model.standaloneWorkouts.length;
+
+  todayDateHeadingEl.textContent = displayDate;
+  todayStatusEl.textContent = totalTraining
+    ? `${totalTraining} ${totalTraining === 1 ? "training item" : "training items"} for today.`
+    : "No training is planned or logged today.";
+  todaySummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Planned</span>
+      <span class="value">${model.plannedCount}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Completed</span>
+      <span class="value">${model.completedCount}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Unplanned logs</span>
+      <span class="value">${model.standaloneWorkouts.length}</span>
+    </article>
+  `;
+
+  const plannedMarkup = model.sessions.map((session) => renderTodaySessionCard(session)).join("");
+  const workoutMarkup = model.standaloneWorkouts.map((workout) => renderWorkoutCalendarCard(workout)).join("");
+  todayTrainingListEl.innerHTML =
+    `${plannedMarkup}${workoutMarkup}` ||
+    `<p class="today-empty">Your day is clear. Use Quick log for an unplanned session or open the week to plan ahead.</p>`;
+}
+
+function renderTodaySessionCard(session) {
+  const primaryMeta =
+    session.type === "strength"
+      ? formatStrengthSessionTotalDuration(session)
+      : `${capitalize(session.type)} • ${formatPlannedSessionSummary(session)}`;
+  const canComplete = session.status === "planned";
+
+  return `
+    <article class="planned-session-card today-session-card">
+      <div class="planned-session-title">${escapeHtml(session.title)}</div>
+      <div class="planned-session-time">${escapeHtml(primaryMeta)}</div>
+      <div class="planned-session-footer">
+        <span class="planned-session-status-inline status-${session.status}">${escapeHtml(session.status)}</span>
+      </div>
+      <div class="today-session-actions">
+        <button type="button" class="ghost-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">Details</button>
+        ${
+          canComplete
+            ? `<button type="button" class="planned-session-button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>`
+            : ""
+        }
+      </div>
+    </article>
+  `;
 }
 
 function renderSummary() {
@@ -2154,7 +2227,7 @@ function importBackupData(event) {
         ? parsed.phaseInstances.map((instance) => normalizePhaseInstance(instance))
         : [];
       uiSettings = {
-        currentView: typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "calendar",
+        currentView: typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "today",
         coachMode: Boolean(parsed.uiSettings?.coachMode),
         currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
@@ -2667,7 +2740,7 @@ function initializeV2() {
 function bindV2Events() {
   viewNavButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      setCurrentView(button.dataset.viewTarget || "calendar");
+      setCurrentView(button.dataset.viewTarget || "today");
     });
   });
 
@@ -2687,6 +2760,8 @@ function bindV2Events() {
   addSafeEventListener(addPlannedSprintBlockButton, "click", addPlannedSprintBlock);
   addSafeEventListener(plannedSprintBlocksListEl, "click", handlePlannedSprintBlockAction);
   addSafeEventListener(calendarGridEl, "click", handleCalendarAction);
+  addSafeEventListener(todayTrainingListEl, "click", handleCalendarAction);
+  addSafeEventListener(todayViewPanel, "click", handleTodayAction);
   addSafeEventListener(calendarSessionDetailEl, "click", handleCalendarAction);
   addSafeEventListener(calendarSessionDialog, "click", handleCalendarSessionDialogClick);
   addSafeEventListener(calendarSessionDialog, "close", () => {
@@ -2738,7 +2813,7 @@ function savePlannerCollections() {
 }
 
 function setCurrentView(view) {
-  uiSettings.currentView = ["calendar", "phases", "review", "stats", "data"].includes(view) ? view : "calendar";
+  uiSettings.currentView = ["today", "calendar", "phases", "review", "stats", "data"].includes(view) ? view : "today";
   savePlannerCollections();
   syncViewState();
 }
@@ -2757,8 +2832,47 @@ function syncViewState() {
     panel.classList.toggle("is-hidden", panel.dataset.view !== uiSettings.currentView);
   });
   viewNavButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.viewTarget === uiSettings.currentView);
+    const isActive = button.dataset.viewTarget === uiSettings.currentView;
+    button.classList.toggle("is-active", isActive);
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
   });
+}
+
+function handleTodayAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const actionButton = target.closest("[data-today-action]");
+  if (!(actionButton instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  if (actionButton.dataset.todayAction === "open-calendar") {
+    uiSettings.currentWeekStart = formatDateInput(startOfWeek(new Date()));
+    setCurrentView("calendar");
+    render();
+    return;
+  }
+
+  if (actionButton.dataset.todayAction !== "quick-log") {
+    return;
+  }
+  const activity = actionButton.dataset.activity;
+  if (!["strength", "run", "sprint"].includes(activity)) {
+    return;
+  }
+
+  setCurrentView("calendar");
+  setAddTrainingMode("log");
+  dateInput.value = formatDateInput(new Date());
+  activityInput.value = activity;
+  activityInput.dispatchEvent(new Event("change", { bubbles: true }));
+  requestAnimationFrame(() => workoutForm.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
 function startOfWeek(value) {

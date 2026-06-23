@@ -106,6 +106,59 @@ body {
   display: none;
 }
 
+.today-hero,
+.today-quick-log {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.today-eyebrow {
+  margin-bottom: 0.35rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.today-calendar-button {
+  flex: 0 0 auto;
+}
+
+.today-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.today-training-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.today-empty {
+  margin: 0;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  color: var(--muted);
+}
+
+.today-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.today-session-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.4rem;
+}
+
 .is-hidden {
   display: none !important;
 }
@@ -185,6 +238,14 @@ button {
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 0 0.6rem #00e5ff44;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
 }
 
 .hint {
@@ -1420,5 +1481,66 @@ textarea {
 
   .session-detail-modal-header {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 720px) {
+  body {
+    padding-bottom: calc(4.9rem + env(safe-area-inset-bottom));
+  }
+
+  .app {
+    padding: 0.75rem;
+  }
+
+  .app-header {
+    position: static;
+  }
+
+  .view-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.2rem;
+    margin: 0;
+    padding: 0.45rem 0.35rem max(0.45rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: #08101eef;
+    backdrop-filter: blur(14px);
+  }
+
+  .nav-button {
+    min-height: 44px;
+    padding: 0.5rem 0.15rem;
+    font-size: 0.68rem;
+    box-shadow: none;
+  }
+
+  .today-hero,
+  .today-quick-log {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .today-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .today-summary .badge {
+    padding: 0.55rem 0.4rem;
+  }
+
+  .today-quick-actions button {
+    min-height: 48px;
+    padding-inline: 0.35rem;
+  }
+
+  .pwa-update,
+  .pwa-status {
+    bottom: calc(4.9rem + env(safe-area-inset-bottom));
   }
 }

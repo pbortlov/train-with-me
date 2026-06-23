@@ -15,8 +15,13 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 - `workout`: the actual logged workout record
 
 ## Main Pages
+- `Today`
+  - default landing page for new installations
+  - exact-date view of today's planned sessions and standalone workout logs
+  - direct access to planned-session details and `Log & Complete`
+  - strength, run, and sprint quick logging through the existing Calendar form
+  - does not duplicate or change workout, plan, adherence, or backup data
 - `Calendar`
-  - default landing page
   - week-first layout
   - one `Add Training` surface with `Log actual` and `Plan session` modes
   - manual run/sprint planning through `Plan session`
