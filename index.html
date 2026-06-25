@@ -101,10 +101,19 @@
           <section class="add-training-panel" data-add-training-panel="log">
             <p class="hint">Use this for actual-only strength, run, or sprint workouts. Planned sessions should use Log &amp; Complete from their training view.</p>
             <form id="workout-form">
+            <div class="logging-shortcuts" aria-label="Fast workout logging">
+              <button type="button" class="ghost-button" data-log-activity="strength">Strength</button>
+              <button type="button" class="ghost-button" data-log-activity="run">Run</button>
+              <button type="button" class="ghost-button" data-log-activity="sprint">Sprint</button>
+            </div>
             <div class="grid">
               <label>
                 Date
                 <input type="date" id="date" required />
+                <span class="date-shortcuts" aria-label="Quick date selection">
+                  <button type="button" class="ghost-button" data-log-date="today">Today</button>
+                  <button type="button" class="ghost-button" data-log-date="yesterday">Yesterday</button>
+                </span>
               </label>
 
               <label>

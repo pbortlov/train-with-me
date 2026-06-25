@@ -12,6 +12,7 @@ import {
   normalizeStrengthExercises as normalizeStrengthExercisesCore,
 } from "./src/domain/normalization";
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
+import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
 
@@ -38,6 +39,8 @@ const goalCelebrationNewGoalButton = document.getElementById("goal-celebration-n
 const goalCelebrationCloseButton = document.getElementById("goal-celebration-close");
 const workoutSubmitButton = workoutForm.querySelector('button[type="submit"]');
 const activityInput = document.getElementById("activity");
+const logActivityButtons = document.querySelectorAll("[data-log-activity]");
+const logDateButtons = document.querySelectorAll("[data-log-date]");
 const activityFieldGroups = document.querySelectorAll(".activity-fields");
 const addSprintSetButton = document.getElementById("add-sprint-set");
 const sprintSetsList = document.getElementById("sprint-sets-list");
@@ -268,6 +271,8 @@ renderPlannedSprintBlocks();
 renderCurrentStrengthSets();
 renderStrengthExercises();
 setAddTrainingMode("log");
+syncLoggingActivityButtons();
+syncLogDateButtons();
 render();
 
 workoutForm.addEventListener("submit", (event) => {
@@ -335,7 +340,21 @@ workoutForm.addEventListener("submit", (event) => {
   render();
 });
 
-activityInput.addEventListener("change", updateVisibleFields);
+activityInput.addEventListener("change", () => {
+  updateVisibleFields();
+  syncLoggingActivityButtons();
+});
+dateInput.addEventListener("change", syncLogDateButtons);
+logActivityButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    selectLoggingActivity(button.dataset.logActivity, { focus: true });
+  });
+});
+logDateButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setLogDateShortcut(button.dataset.logDate);
+  });
+});
 addSafeEventListener(runDistanceInput, "input", () => {
   if (toNumberOrNull(runDistanceInput.value) > 0) {
     clearFieldError(runDistanceInput);
@@ -1704,6 +1723,7 @@ function resetWorkoutForm() {
   renderStrengthExercises();
   renderSprintSets();
   updateVisibleFields();
+  syncLogDateButtons();
   clearFieldError(runDistanceInput);
   clearFieldError(runTimeInput);
   syncRunPaceFromInputs();
@@ -1720,6 +1740,57 @@ function updateVisibleFields() {
   if (selectedActivity === "run") {
     syncRunPaceFromInputs();
   }
+  syncLoggingActivityButtons();
+}
+
+function selectLoggingActivity(activity, options = {}) {
+  const selectedActivity = normalizeLogActivity(activity, "strength");
+  setAddTrainingMode("log");
+  activityInput.value = selectedActivity;
+  activityInput.dispatchEvent(new Event("change", { bubbles: true }));
+  if (options.focus) {
+    requestAnimationFrame(() => focusFirstLoggingField(selectedActivity));
+  }
+}
+
+function focusFirstLoggingField(activity) {
+  const focusTarget = {
+    strength: document.getElementById("exercise-name"),
+    run: runDistanceInput,
+    sprint: document.getElementById("sprint-time-sec"),
+  }[normalizeLogActivity(activity, "strength")];
+
+  if (focusTarget instanceof HTMLElement) {
+    focusTarget.focus({ preventScroll: true });
+  }
+}
+
+function syncLoggingActivityButtons() {
+  const selectedActivity = normalizeLogActivity(activityInput.value, "strength");
+  logActivityButtons.forEach((button) => {
+    const isActive = button.dataset.logActivity === selectedActivity;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function setLogDateShortcut(shortcut) {
+  const normalizedShortcut = shortcut === "yesterday" ? "yesterday" : "today";
+  dateInput.value = resolveDateShortcut(normalizedShortcut, formatDateInput(new Date()));
+  syncLogDateButtons();
+}
+
+function syncLogDateButtons() {
+  const today = formatDateInput(new Date());
+  const quickDates = {
+    today,
+    yesterday: resolveDateShortcut("yesterday", today),
+  };
+  logDateButtons.forEach((button) => {
+    const isActive = quickDates[button.dataset.logDate] === dateInput.value;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
 }
 
 function onFilterChange() {
@@ -2862,16 +2933,16 @@ function handleTodayAction(event) {
   if (actionButton.dataset.todayAction !== "quick-log") {
     return;
   }
-  const activity = actionButton.dataset.activity;
-  if (!["strength", "run", "sprint"].includes(activity)) {
+  const requestedActivity = actionButton.dataset.activity;
+  if (!LOG_ACTIVITIES.includes(requestedActivity)) {
     return;
   }
+  const activity = normalizeLogActivity(requestedActivity, "strength");
 
   setCurrentView("calendar");
-  setAddTrainingMode("log");
   dateInput.value = formatDateInput(new Date());
-  activityInput.value = activity;
-  activityInput.dispatchEvent(new Event("change", { bubbles: true }));
+  syncLogDateButtons();
+  selectLoggingActivity(activity, { focus: true });
   requestAnimationFrame(() => workoutForm.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 

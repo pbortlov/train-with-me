@@ -10,6 +10,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 ## V1 Features
 - Mobile-first Today dashboard for planned sessions, completed training, and quick logging
 - Persistent bottom navigation on phone-sized screens
+- Fast activity-specific actual logging for strength, run, and sprint, with Today/Yesterday date shortcuts
 - Calendar-first weekly planning view
 - Manual planned sessions for:
   - run
@@ -65,7 +66,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 
 ## Main Pages
 - `Today`: daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
-- `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, compact session cards, popup training detail, and `Log & Complete` execution logging
+- `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Programs`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions
 - `Stats`: goals, adherence summaries, program strength progress, and per-entry activity charts
