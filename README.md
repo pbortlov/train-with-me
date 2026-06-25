@@ -1,6 +1,6 @@
 # Train With Me
 
-Train With Me V1 is a local-first, calendar-first training planner and workout tracker for:
+Train With Me V1 is a local-first training planner and workout tracker for:
 - strength training
 - running
 - sprinting
@@ -8,6 +8,8 @@ Train With Me V1 is a local-first, calendar-first training planner and workout t
 The app is designed to stay approachable for non-technical users by default, while advanced planning features live behind a `Geek / coach mode` toggle.
 
 ## V1 Features
+- Mobile-first Today dashboard for planned sessions, completed training, and quick logging
+- Persistent bottom navigation on phone-sized screens
 - Calendar-first weekly planning view
 - Manual planned sessions for:
   - run
@@ -62,6 +64,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - PWA install support
 
 ## Main Pages
+- `Today`: daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
 - `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Programs`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions
@@ -97,6 +100,7 @@ V1 keeps decision and planning history in the repo:
 - [docs/strength-phase-import.md](docs/strength-phase-import.md)
 - [docs/decisions/0001-v2-calendar-first-planner.md](docs/decisions/0001-v2-calendar-first-planner.md)
 - [docs/decisions/0002-calendar-only-workout-logging.md](docs/decisions/0002-calendar-only-workout-logging.md)
+- [docs/decisions/0006-mobile-today-dashboard.md](docs/decisions/0006-mobile-today-dashboard.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 
 The Vite/PWA architecture and compatibility contracts are documented in:
@@ -147,6 +151,8 @@ npm run preview
 ## Offline And Updates
 
 - After one successful production load, the app shell and Chart.js bundle are available offline.
+- New installations open on Today. Existing installations keep their last selected page.
+- On phone-sized screens, the main pages remain available from the fixed bottom navigation.
 - Workout data remains in this browser's `localStorage`; the service worker does not copy or synchronize user data.
 - A deployed update downloads in the background. When ready, the app shows `Update now`; reload occurs only after that button is selected so unfinished form input is not discarded automatically.
 - Existing installations using the historical `service-worker.js` are migrated through a compatibility worker that removes the obsolete cache before the generated worker takes control.

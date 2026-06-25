@@ -13,7 +13,7 @@
         <div class="app-header-top">
           <div>
             <h1>Train With Me</h1>
-            <p>V2 planner: calendar-first training, adherence review, and reusable strength phases.</p>
+            <p>Local-first training planning, logging, and progress.</p>
           </div>
           <div class="header-actions">
             <label class="checkbox-label coach-toggle">
@@ -24,6 +24,7 @@
           </div>
         </div>
         <nav class="view-nav" aria-label="Main navigation">
+          <button type="button" class="ghost-button nav-button" data-view-target="today">Today</button>
           <button type="button" class="ghost-button nav-button" data-view-target="calendar">Calendar</button>
           <button type="button" class="ghost-button nav-button" data-view-target="phases">Programs</button>
           <button type="button" class="ghost-button nav-button" data-view-target="review">Review</button>
@@ -31,6 +32,39 @@
           <button type="button" class="ghost-button nav-button" data-view-target="data">Data</button>
         </nav>
       </header>
+
+      <section class="view-panel" data-view="today">
+        <article class="card today-hero">
+          <div>
+            <p class="today-eyebrow">Today</p>
+            <h2 id="today-date-heading">Your training day</h2>
+            <p id="today-status" class="hint" aria-live="polite"></p>
+          </div>
+          <button type="button" class="ghost-button today-calendar-button" data-today-action="open-calendar">
+            Open week
+          </button>
+        </article>
+
+        <div id="today-summary" class="today-summary" aria-label="Today's training summary"></div>
+
+        <article class="card">
+          <h3>Today's training</h3>
+          <p class="hint">Review the plan, complete a session, or open an existing workout.</p>
+          <div id="today-training-list" class="today-training-list"></div>
+        </article>
+
+        <article class="card today-quick-log">
+          <div>
+            <h3>Quick log</h3>
+            <p class="hint">Start an unplanned workout with today's date already selected.</p>
+          </div>
+          <div class="today-quick-actions" aria-label="Quick workout logging">
+            <button type="button" data-today-action="quick-log" data-activity="strength">Strength</button>
+            <button type="button" data-today-action="quick-log" data-activity="run">Run</button>
+            <button type="button" data-today-action="quick-log" data-activity="sprint">Sprint</button>
+          </div>
+        </article>
+      </section>
 
       <section class="view-panel" data-view="calendar">
         <article class="card">

@@ -21,6 +21,9 @@ if (assetReferences.some((reference) => reference.startsWith("/"))) {
 if (!assetReferences.some((reference) => reference.startsWith("./assets/"))) {
   failures.push("Production HTML does not contain relative bundled assets.");
 }
+if (!index.includes('data-view="today"') || !index.includes('data-view-target="today"')) {
+  failures.push("Production HTML does not contain the Today dashboard and navigation target.");
+}
 if (manifest.start_url !== "./" || manifest.scope !== "./") {
   failures.push("Manifest start_url and scope must remain relative for nested Pages paths.");
 }
