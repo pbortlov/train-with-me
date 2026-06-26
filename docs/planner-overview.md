@@ -56,6 +56,8 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - sprint review includes planned sprint blocks, actual sprint rows, and session feeling
   - strength review includes actual per-set execution with load type, reps, and load details
 - `Stats`
+  - Progress Hub summarizes total workouts, plan completion, active goals, achieved goals, training mix, and planned-session completion
+  - Progress Hub shortcuts scroll to goals, adherence, and activity chart details without changing metric semantics
   - adherence summaries
   - goals
   - goal setup uses compact Run, Sprint, and Strength buttons and only shows fields for the selected activity

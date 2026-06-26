@@ -186,6 +186,51 @@ body {
   font-size: 0.82rem;
 }
 
+.progress-hub {
+  display: grid;
+  gap: 1rem;
+}
+
+.progress-hub-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.progress-hub-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  min-width: min(100%, 28rem);
+}
+
+.progress-hub-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.progress-hub-breakdown {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.progress-hub-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0a1326;
+  padding: 0.7rem;
+}
+
+.progress-hub-row span {
+  color: var(--muted);
+  text-align: right;
+}
+
 .is-hidden {
   display: none !important;
 }
@@ -1548,7 +1593,8 @@ textarea {
   }
 
   .today-hero,
-  .today-quick-log {
+  .today-quick-log,
+  .progress-hub-header {
     align-items: stretch;
     flex-direction: column;
   }
@@ -1569,6 +1615,20 @@ textarea {
   .logging-shortcuts button,
   .date-shortcuts button {
     min-height: 46px;
+  }
+
+  .progress-hub-actions,
+  .progress-hub-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .progress-hub-row {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .progress-hub-row span {
+    text-align: left;
   }
 
   .pwa-update,
