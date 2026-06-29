@@ -27,6 +27,26 @@ body {
   color: var(--text);
 }
 
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2000;
+  transform: translateY(-150%);
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #061021;
+  padding: 0.55rem 0.8rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 120ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .pwa-update,
 .pwa-status {
   position: fixed;
@@ -184,6 +204,39 @@ body {
   min-height: 38px;
   padding: 0.45rem 0.55rem;
   font-size: 0.82rem;
+}
+
+.onboarding-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.onboarding-steps,
+.backup-safety-panel ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.onboarding-steps {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.backup-safety-panel {
+  border: 1px solid #facc1588;
+  border-radius: 12px;
+  background: #2a2108;
+  color: #fff8d6;
+  margin-bottom: 0.85rem;
+  padding: 0.85rem;
+}
+
+.backup-safety-panel h4 {
+  margin: 0 0 0.45rem;
+}
+
+.backup-safety-panel li + li {
+  margin-top: 0.35rem;
 }
 
 .progress-hub {
