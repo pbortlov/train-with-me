@@ -363,6 +363,7 @@
             <div class="progress-hub-actions" aria-label="Progress shortcuts">
               <button type="button" class="ghost-button" data-progress-jump="goals">Goals</button>
               <button type="button" class="ghost-button" data-progress-jump="adherence">Adherence</button>
+              <button type="button" class="ghost-button" data-progress-jump="strength">Strength</button>
               <button type="button" class="ghost-button" data-progress-jump="activity">Activity charts</button>
             </div>
           </div>
@@ -450,6 +451,27 @@
             </label>
           </div>
           <div id="program-exercise-progress" class="program-progress-table-wrap"></div>
+        </article>
+
+        <article class="card strength-insights-card" id="strength-insights-section">
+          <h3>Strength Insights</h3>
+          <p class="hint">Strength-only summary that keeps kg, bodyweight, and band sets separate.</p>
+          <div id="strength-insights-summary" class="summary"></div>
+          <div id="strength-insights-details" class="strength-insights-details"></div>
+          <div class="strength-table-viewport">
+            <table class="strength-highest-table">
+              <thead>
+                <tr>
+                  <th>Exercise</th>
+                  <th>Sets</th>
+                  <th>Workouts</th>
+                  <th>Best kg</th>
+                  <th>Load types</th>
+                </tr>
+              </thead>
+              <tbody id="strength-insights-body"></tbody>
+            </table>
+          </div>
         </article>
 
         <article class="card" id="activity-charts-section">

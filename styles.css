@@ -200,7 +200,7 @@ body {
 
 .progress-hub-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
   gap: 0.5rem;
   min-width: min(100%, 28rem);
 }
@@ -229,6 +229,16 @@ body {
 .progress-hub-row span {
   color: var(--muted);
   text-align: right;
+}
+
+.strength-insights-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.strength-insights-details {
+  display: grid;
+  gap: 0.5rem;
 }
 
 .is-hidden {

@@ -14,6 +14,7 @@ import {
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
 import { buildProgressHubModel } from "./src/domain/progress";
+import { buildStrengthInsights } from "./src/domain/strength-insights";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
 
@@ -61,6 +62,9 @@ const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
 const filterStrengthLoadInput = document.getElementById("filter-strength-load");
 const chartsStatusEl = document.getElementById("charts-status");
+const strengthInsightsSummaryEl = document.getElementById("strength-insights-summary");
+const strengthInsightsDetailsEl = document.getElementById("strength-insights-details");
+const strengthInsightsBodyEl = document.getElementById("strength-insights-body");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
 const runPaceInput = document.getElementById("pace");
@@ -592,6 +596,7 @@ function render() {
   renderHistory();
   renderGoals();
   renderProgressHub();
+  renderStrengthInsights();
   renderPlannerSummary();
   renderCalendar();
   renderCalendarSessionDetail();
@@ -980,6 +985,7 @@ function scrollToProgressSection(target) {
   const sectionByTarget = {
     adherence: document.getElementById("adherence-section"),
     goals: document.getElementById("goals-section"),
+    strength: document.getElementById("strength-insights-section"),
     activity: document.getElementById("activity-charts-section"),
   };
   const section = sectionByTarget[target];
@@ -1974,6 +1980,85 @@ function renderStrengthHighestWeights(rows) {
       `,
     )
     .join("");
+}
+
+function renderStrengthInsights() {
+  if (!strengthInsightsSummaryEl || !strengthInsightsDetailsEl || !strengthInsightsBodyEl) {
+    return;
+  }
+
+  const insights = buildStrengthInsights(workouts);
+  strengthInsightsSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Strength workouts</span>
+      <span class="value">${insights.workoutCount}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Exercises</span>
+      <span class="value">${insights.uniqueExerciseCount}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Total sets</span>
+      <span class="value">${insights.totalSets}</span>
+    </article>
+  `;
+  strengthInsightsDetailsEl.innerHTML = insights.workoutCount
+    ? `
+      <div class="progress-hub-row">
+        <strong>Latest strength</strong>
+        <span>${insights.latestWorkoutDate ? formatHumanDate(insights.latestWorkoutDate) : "-"}</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Top kg lift</strong>
+        <span>${
+          insights.topKgLift
+            ? `${escapeHtml(insights.topKgLift.exercise)} ${formatNumber(insights.topKgLift.weight)} kg x ${formatNumber(insights.topKgLift.reps)}`
+            : "No kg sets yet"
+        }</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Most trained</strong>
+        <span>${
+          insights.mostTrainedExercise
+            ? `${escapeHtml(insights.mostTrainedExercise.exercise)} · ${insights.mostTrainedExercise.setCount} sets`
+            : "-"
+        }</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Load mix</strong>
+        <span>${insights.kgSetCount} kg · ${insights.bodyweightSetCount} bodyweight · ${insights.bandSetCount} band</span>
+      </div>
+    `
+    : "<p class=\"planner-empty\">Log a strength workout to see strength insights.</p>";
+  strengthInsightsBodyEl.innerHTML = insights.exerciseRows.length
+    ? insights.exerciseRows
+        .map(
+          (row) => `
+            <tr>
+              <td>${escapeHtml(row.exercise)}</td>
+              <td>${row.setCount}</td>
+              <td>${row.workoutCount}</td>
+              <td>${row.bestKg == null ? "-" : `${formatNumber(row.bestKg)} kg${row.bestKgDate ? ` · ${escapeHtml(row.bestKgDate)}` : ""}`}</td>
+              <td>${escapeHtml(formatStrengthInsightLoadTypes(row.loadTypes))}</td>
+            </tr>
+          `,
+        )
+        .join("")
+    : "";
+}
+
+function formatStrengthInsightLoadTypes(loadTypes) {
+  if (!loadTypes.length) {
+    return "-";
+  }
+  return loadTypes
+    .map((loadType) => {
+      if (loadType === "bodyweight") {
+        return "bodyweight";
+      }
+      return loadType;
+    })
+    .join(", ");
 }
 
 function buildStrengthHighestWeightRows(filteredWorkouts) {
