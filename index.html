@@ -353,13 +353,30 @@
       </section>
 
       <section class="view-panel" data-view="stats">
-        <article class="card">
+        <article class="card progress-hub" aria-labelledby="progress-hub-heading">
+          <div class="progress-hub-header">
+            <div>
+              <p class="today-eyebrow">Progress</p>
+              <h2 id="progress-hub-heading">Progress Hub</h2>
+              <p id="progress-hub-status" class="hint"></p>
+            </div>
+            <div class="progress-hub-actions" aria-label="Progress shortcuts">
+              <button type="button" class="ghost-button" data-progress-jump="goals">Goals</button>
+              <button type="button" class="ghost-button" data-progress-jump="adherence">Adherence</button>
+              <button type="button" class="ghost-button" data-progress-jump="activity">Activity charts</button>
+            </div>
+          </div>
+          <div id="progress-hub-summary" class="progress-hub-summary"></div>
+          <div id="progress-hub-breakdown" class="progress-hub-breakdown"></div>
+        </article>
+
+        <article class="card" id="adherence-section">
           <h2>Stats</h2>
           <div id="adherence-summary" class="summary"></div>
           <div id="adherence-breakdown" class="goal-progress"></div>
         </article>
 
-        <article class="card">
+        <article class="card" id="goals-section">
           <h3>Goals</h3>
           <form id="goals-form" class="grid">
             <div class="goal-activity-toggle" aria-label="Goal activity">
@@ -435,7 +452,7 @@
           <div id="program-exercise-progress" class="program-progress-table-wrap"></div>
         </article>
 
-        <article class="card">
+        <article class="card" id="activity-charts-section">
           <h3>Activity Charts</h3>
           <div class="grid" id="progress-filters">
             <label>

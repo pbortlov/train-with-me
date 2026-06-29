@@ -13,6 +13,7 @@ import {
 } from "./src/domain/normalization";
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
+import { buildProgressHubModel } from "./src/domain/progress";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
 
@@ -174,6 +175,10 @@ const reviewSummaryEl = document.getElementById("review-summary");
 const reviewSessionListEl = document.getElementById("review-session-list");
 const adherenceSummaryEl = document.getElementById("adherence-summary");
 const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
+const progressHubStatusEl = document.getElementById("progress-hub-status");
+const progressHubSummaryEl = document.getElementById("progress-hub-summary");
+const progressHubBreakdownEl = document.getElementById("progress-hub-breakdown");
+const progressHubActions = document.querySelectorAll("[data-progress-jump]");
 const programProgressSelect = document.getElementById("program-progress-select");
 const programExerciseSortInput = document.getElementById("program-exercise-sort");
 const programProgressSummaryEl = document.getElementById("program-progress-summary");
@@ -353,6 +358,11 @@ logActivityButtons.forEach((button) => {
 logDateButtons.forEach((button) => {
   button.addEventListener("click", () => {
     setLogDateShortcut(button.dataset.logDate);
+  });
+});
+progressHubActions.forEach((button) => {
+  button.addEventListener("click", () => {
+    scrollToProgressSection(button.dataset.progressJump || "");
   });
 });
 addSafeEventListener(runDistanceInput, "input", () => {
@@ -581,6 +591,7 @@ function render() {
   renderCharts();
   renderHistory();
   renderGoals();
+  renderProgressHub();
   renderPlannerSummary();
   renderCalendar();
   renderCalendarSessionDetail();
@@ -923,6 +934,57 @@ function renderGoals() {
     goalHistoryEl.innerHTML = achievedGoals.length
       ? `<h4>Achieved goals</h4>${achievedGoals.map((goal) => `<div class="goal-item"><strong>${formatGoalLabel(goal)}:</strong> achieved ${formatHumanDate(goal.achievedAt)} in ${daysBetween(goal.setAt, goal.achievedAt)} day(s)</div>`).join("")}`
       : "<div class=\"goal-item\"><strong>Achieved goals:</strong> No achieved run or sprint goals yet.</div>";
+  }
+}
+
+function renderProgressHub() {
+  if (!progressHubStatusEl || !progressHubSummaryEl || !progressHubBreakdownEl) {
+    return;
+  }
+
+  const model = buildProgressHubModel(workouts, plannedSessions, goals);
+  progressHubStatusEl.textContent = model.lastWorkoutDate
+    ? `Last workout logged ${formatHumanDate(model.lastWorkoutDate)}.`
+    : "Log your first workout to start building progress history.";
+  progressHubSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Workouts</span>
+      <span class="value">${model.totalWorkouts}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Plan completion</span>
+      <span class="value">${model.completionRate}%</span>
+    </article>
+    <article class="badge">
+      <span class="label">Active goals</span>
+      <span class="value">${model.activeGoals}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Achieved goals</span>
+      <span class="value">${model.achievedGoals}</span>
+    </article>
+  `;
+  progressHubBreakdownEl.innerHTML = `
+    <div class="progress-hub-row">
+      <strong>Training mix</strong>
+      <span>${model.workoutCounts.strength} strength · ${model.workoutCounts.run} run · ${model.workoutCounts.sprint} sprint</span>
+    </div>
+    <div class="progress-hub-row">
+      <strong>Planned sessions</strong>
+      <span>${model.completedSessions}/${model.plannedSessions || 0} completed or modified</span>
+    </div>
+  `;
+}
+
+function scrollToProgressSection(target) {
+  const sectionByTarget = {
+    adherence: document.getElementById("adherence-section"),
+    goals: document.getElementById("goals-section"),
+    activity: document.getElementById("activity-charts-section"),
+  };
+  const section = sectionByTarget[target];
+  if (section instanceof HTMLElement) {
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 

@@ -11,6 +11,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Mobile-first Today dashboard for planned sessions, completed training, and quick logging
 - Persistent bottom navigation on phone-sized screens
 - Fast activity-specific actual logging for strength, run, and sprint, with Today/Yesterday date shortcuts
+- Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix
 - Calendar-first weekly planning view
 - Manual planned sessions for:
   - run
@@ -69,7 +70,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Programs`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions
-- `Stats`: goals, adherence summaries, program strength progress, and per-entry activity charts
+- `Stats`: Progress Hub, goals, adherence summaries, program strength progress, and per-entry activity charts
 - `Data`: backup, exercise library, and workout history management
 
 ## Strength Phase Import
@@ -102,6 +103,7 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0001-v2-calendar-first-planner.md](docs/decisions/0001-v2-calendar-first-planner.md)
 - [docs/decisions/0002-calendar-only-workout-logging.md](docs/decisions/0002-calendar-only-workout-logging.md)
 - [docs/decisions/0006-mobile-today-dashboard.md](docs/decisions/0006-mobile-today-dashboard.md)
+- [docs/decisions/0007-progress-hub-over-existing-metrics.md](docs/decisions/0007-progress-hub-over-existing-metrics.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 
 The Vite/PWA architecture and compatibility contracts are documented in:
