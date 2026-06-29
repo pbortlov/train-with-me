@@ -8,7 +8,8 @@
     <title>Train With Me</title>
   </head>
   <body>
-    <main class="app">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <main class="app" id="main-content" tabindex="-1">
       <header class="card app-header">
         <div class="app-header-top">
           <div>
@@ -63,6 +64,19 @@
             <button type="button" data-today-action="quick-log" data-activity="run">Run</button>
             <button type="button" data-today-action="quick-log" data-activity="sprint">Sprint</button>
           </div>
+        </article>
+
+        <article class="card onboarding-card" aria-labelledby="onboarding-heading">
+          <div>
+            <p class="today-eyebrow">Start Here</p>
+            <h3 id="onboarding-heading">Train locally, protect your history</h3>
+            <p class="hint">This app stores training on this device. A quick routine keeps the local-first workflow safe.</p>
+          </div>
+          <ol class="onboarding-steps">
+            <li><strong>Plan or log today:</strong> use Today for quick actions and Calendar for the weekly plan.</li>
+            <li><strong>Review progress:</strong> use Stats for progress, strength, running, and sprint summaries.</li>
+            <li><strong>Back up often:</strong> export JSON from Data after important training changes.</li>
+          </ol>
         </article>
       </section>
 
@@ -589,6 +603,15 @@
         <article class="card">
           <h3>Backup</h3>
           <p class="hint">Export your data to a JSON file, or import a backup file.</p>
+          <div class="backup-safety-panel" role="note" aria-label="Backup safety checklist">
+            <h4>Backup safety checklist</h4>
+            <ul>
+              <li>Export after important training changes.</li>
+              <li>Store the JSON file outside this browser or device.</li>
+              <li>Import replaces the local training data after the file is accepted.</li>
+              <li>Private browsing cleanup, storage clearing, or a new Pages origin can remove local data.</li>
+            </ul>
+          </div>
           <div class="grid">
             <button type="button" id="export-data">Export Data (JSON)</button>
             <label>

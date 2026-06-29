@@ -15,6 +15,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength Insights for strength workout count, exercise coverage, load mix, top kg lift, and most trained exercises
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
 - Sprint Insights for sprint workouts, rep volume, distance-specific bests, fastest rep, and feeling mix
+- Local-first onboarding, keyboard skip link, and backup safety guidance
 - Calendar-first weekly planning view
 - Manual planned sessions for:
   - run
@@ -110,6 +111,7 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0008-strength-insights-summary-metrics.md](docs/decisions/0008-strength-insights-summary-metrics.md)
 - [docs/decisions/0009-running-insights-summary-metrics.md](docs/decisions/0009-running-insights-summary-metrics.md)
 - [docs/decisions/0010-sprint-insights-summary-metrics.md](docs/decisions/0010-sprint-insights-summary-metrics.md)
+- [docs/decisions/0011-local-first-onboarding-and-backup-ux.md](docs/decisions/0011-local-first-onboarding-and-backup-ux.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 
 The Vite/PWA architecture and compatibility contracts are documented in:
@@ -167,6 +169,7 @@ npm run preview
 - Existing installations using the historical `service-worker.js` are migrated through a compatibility worker that removes the obsolete cache before the generated worker takes control.
 - Development mode does not register the production service worker.
 - Browser storage clearing, private browsing cleanup, device loss, or changing the Pages origin can permanently remove local data.
+- The Today page includes a local-first onboarding reminder, and Data includes a backup safety checklist.
 
 Export a JSON backup from Data after important training changes and store it outside the browser. Test restoring backups periodically before relying on them.
 

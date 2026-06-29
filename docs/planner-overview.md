@@ -20,6 +20,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - exact-date view of today's planned sessions and standalone workout logs
   - direct access to planned-session details and `Log & Complete`
   - strength, run, and sprint quick logging through the existing Calendar form
+  - local-first onboarding that reminds athletes to plan/log, review progress, and export backups
   - does not duplicate or change workout, plan, adherence, or backup data
 - `Calendar`
   - week-first layout
@@ -73,6 +74,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - per-entry strength, run, and sprint charts separate from strength phases
 - `Data`
   - backup export/import
+  - backup safety checklist before export/import controls
   - exercise library management
   - workout history management
 
