@@ -14,6 +14,7 @@ import {
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
 import { buildProgressHubModel } from "./src/domain/progress";
+import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
@@ -65,6 +66,9 @@ const chartsStatusEl = document.getElementById("charts-status");
 const strengthInsightsSummaryEl = document.getElementById("strength-insights-summary");
 const strengthInsightsDetailsEl = document.getElementById("strength-insights-details");
 const strengthInsightsBodyEl = document.getElementById("strength-insights-body");
+const runningInsightsSummaryEl = document.getElementById("running-insights-summary");
+const runningInsightsDetailsEl = document.getElementById("running-insights-details");
+const runningInsightsBodyEl = document.getElementById("running-insights-body");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
 const runPaceInput = document.getElementById("pace");
@@ -597,6 +601,7 @@ function render() {
   renderGoals();
   renderProgressHub();
   renderStrengthInsights();
+  renderRunningInsights();
   renderPlannerSummary();
   renderCalendar();
   renderCalendarSessionDetail();
@@ -986,6 +991,7 @@ function scrollToProgressSection(target) {
     adherence: document.getElementById("adherence-section"),
     goals: document.getElementById("goals-section"),
     strength: document.getElementById("strength-insights-section"),
+    running: document.getElementById("running-insights-section"),
     activity: document.getElementById("activity-charts-section"),
   };
   const section = sectionByTarget[target];
@@ -2059,6 +2065,71 @@ function formatStrengthInsightLoadTypes(loadTypes) {
       return loadType;
     })
     .join(", ");
+}
+
+function renderRunningInsights() {
+  if (!runningInsightsSummaryEl || !runningInsightsDetailsEl || !runningInsightsBodyEl) {
+    return;
+  }
+
+  const insights = buildRunningInsights(workouts);
+  runningInsightsSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Runs</span>
+      <span class="value">${insights.runCount}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Total distance</span>
+      <span class="value">${insights.totalDistance ? `${formatNumber(insights.totalDistance)} km` : "-"}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Average pace</span>
+      <span class="value">${isNumber(insights.averagePace) ? `${formatRunPace(insights.averagePace)} /km` : "-"}</span>
+    </article>
+  `;
+  runningInsightsDetailsEl.innerHTML = insights.runCount
+    ? `
+      <div class="progress-hub-row">
+        <strong>Latest run</strong>
+        <span>${insights.latestRunDate ? formatHumanDate(insights.latestRunDate) : "-"}</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Longest run</strong>
+        <span>${
+          insights.longestRun
+            ? `${formatNumber(insights.longestRun.distance)} km · ${escapeHtml(insights.longestRun.date)}`
+            : "-"
+        }</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Best pace</strong>
+        <span>${
+          insights.bestPace
+            ? `${formatRunPace(insights.bestPace.pace)} /km · ${formatNumber(insights.bestPace.distance)} km · ${escapeHtml(insights.bestPace.date)}`
+            : "No valid pace yet"
+        }</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Total time</strong>
+        <span>${insights.totalDurationSeconds ? formatSecondsAsRunDuration(insights.totalDurationSeconds) : "-"}</span>
+      </div>
+    `
+    : "<p class=\"planner-empty\">Log a run to see running insights.</p>";
+  runningInsightsBodyEl.innerHTML = insights.rows.length
+    ? insights.rows
+        .slice(0, 8)
+        .map(
+          (row) => `
+            <tr>
+              <td>${escapeHtml(row.date || "-")}</td>
+              <td>${formatNumber(row.distance)} km</td>
+              <td>${row.durationSeconds ? formatSecondsAsRunDuration(row.durationSeconds) : "-"}</td>
+              <td>${isNumber(row.pace) ? `${formatRunPace(row.pace)} /km` : "-"}</td>
+            </tr>
+          `,
+        )
+        .join("")
+    : "";
 }
 
 function buildStrengthHighestWeightRows(filteredWorkouts) {

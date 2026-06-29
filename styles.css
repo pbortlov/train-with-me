@@ -231,7 +231,8 @@ body {
   text-align: right;
 }
 
-.strength-insights-card {
+.strength-insights-card,
+.running-insights-card {
   display: grid;
   gap: 0.75rem;
 }

@@ -364,6 +364,7 @@
               <button type="button" class="ghost-button" data-progress-jump="goals">Goals</button>
               <button type="button" class="ghost-button" data-progress-jump="adherence">Adherence</button>
               <button type="button" class="ghost-button" data-progress-jump="strength">Strength</button>
+              <button type="button" class="ghost-button" data-progress-jump="running">Running</button>
               <button type="button" class="ghost-button" data-progress-jump="activity">Activity charts</button>
             </div>
           </div>
@@ -470,6 +471,26 @@
                 </tr>
               </thead>
               <tbody id="strength-insights-body"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card running-insights-card" id="running-insights-section">
+          <h3>Running Insights</h3>
+          <p class="hint">Run-only summary using valid distance, duration, and pace data.</p>
+          <div id="running-insights-summary" class="summary"></div>
+          <div id="running-insights-details" class="strength-insights-details"></div>
+          <div class="strength-table-viewport">
+            <table class="strength-highest-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Distance</th>
+                  <th>Duration</th>
+                  <th>Pace</th>
+                </tr>
+              </thead>
+              <tbody id="running-insights-body"></tbody>
             </table>
           </div>
         </article>
