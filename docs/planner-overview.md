@@ -68,6 +68,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - program completion doughnut for the selected strength phase instance
   - program-duration strength progress for scheduled phase instances
   - Strength Insights summarize strength workouts, unique exercises, total sets, kg/bodyweight/band load mix, top kg lift, and most-trained exercise
+  - Running Insights summarize run count, total distance, weighted average pace, latest run, longest run, best pace, total time, and recent valid-distance runs
   - per-entry strength, run, and sprint charts separate from strength phases
 - `Data`
   - backup export/import
