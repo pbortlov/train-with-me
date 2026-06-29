@@ -14,6 +14,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix
 - Strength Insights for strength workout count, exercise coverage, load mix, top kg lift, and most trained exercises
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
+- Sprint Insights for sprint workouts, rep volume, distance-specific bests, fastest rep, and feeling mix
 - Calendar-first weekly planning view
 - Manual planned sessions for:
   - run
@@ -72,7 +73,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Programs`: import, edit, inspect, and schedule reusable strength phase templates
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions
-- `Stats`: Progress Hub, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, and per-entry activity charts
+- `Stats`: Progress Hub, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts
 - `Data`: backup, exercise library, and workout history management
 
 ## Strength Phase Import
@@ -108,6 +109,7 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0007-progress-hub-over-existing-metrics.md](docs/decisions/0007-progress-hub-over-existing-metrics.md)
 - [docs/decisions/0008-strength-insights-summary-metrics.md](docs/decisions/0008-strength-insights-summary-metrics.md)
 - [docs/decisions/0009-running-insights-summary-metrics.md](docs/decisions/0009-running-insights-summary-metrics.md)
+- [docs/decisions/0010-sprint-insights-summary-metrics.md](docs/decisions/0010-sprint-insights-summary-metrics.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 
 The Vite/PWA architecture and compatibility contracts are documented in:
