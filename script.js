@@ -15,6 +15,7 @@ import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metri
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
 import { buildProgressHubModel } from "./src/domain/progress";
 import { buildRunningInsights } from "./src/domain/running-insights";
+import { buildSprintInsights } from "./src/domain/sprint-insights";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
@@ -69,6 +70,9 @@ const strengthInsightsBodyEl = document.getElementById("strength-insights-body")
 const runningInsightsSummaryEl = document.getElementById("running-insights-summary");
 const runningInsightsDetailsEl = document.getElementById("running-insights-details");
 const runningInsightsBodyEl = document.getElementById("running-insights-body");
+const sprintInsightsSummaryEl = document.getElementById("sprint-insights-summary");
+const sprintInsightsDetailsEl = document.getElementById("sprint-insights-details");
+const sprintInsightsBodyEl = document.getElementById("sprint-insights-body");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
 const runPaceInput = document.getElementById("pace");
@@ -602,6 +606,7 @@ function render() {
   renderProgressHub();
   renderStrengthInsights();
   renderRunningInsights();
+  renderSprintInsights();
   renderPlannerSummary();
   renderCalendar();
   renderCalendarSessionDetail();
@@ -992,6 +997,7 @@ function scrollToProgressSection(target) {
     goals: document.getElementById("goals-section"),
     strength: document.getElementById("strength-insights-section"),
     running: document.getElementById("running-insights-section"),
+    sprint: document.getElementById("sprint-insights-section"),
     activity: document.getElementById("activity-charts-section"),
   };
   const section = sectionByTarget[target];
@@ -2130,6 +2136,88 @@ function renderRunningInsights() {
         )
         .join("")
     : "";
+}
+
+function renderSprintInsights() {
+  if (!sprintInsightsSummaryEl || !sprintInsightsDetailsEl || !sprintInsightsBodyEl) {
+    return;
+  }
+
+  const insights = buildSprintInsights(workouts);
+  sprintInsightsSummaryEl.innerHTML = `
+    <article class="badge">
+      <span class="label">Sprint workouts</span>
+      <span class="value">${insights.workoutCount}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Total reps</span>
+      <span class="value">${insights.totalReps}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Distances</span>
+      <span class="value">${insights.uniqueDistanceCount}</span>
+    </article>
+  `;
+  sprintInsightsDetailsEl.innerHTML = insights.workoutCount
+    ? `
+      <div class="progress-hub-row">
+        <strong>Latest sprint</strong>
+        <span>${insights.latestSprintDate ? formatHumanDate(insights.latestSprintDate) : "-"}</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Fastest rep</strong>
+        <span>${
+          insights.fastestRep
+            ? `${formatNumber(insights.fastestRep.distance)} m in ${formatNumber(insights.fastestRep.time)} s · ${escapeHtml(insights.fastestRep.date)}`
+            : "No valid sprint reps yet"
+        }</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Feeling mix</strong>
+        <span>${formatSprintFeelingCounts(insights.feelingCounts)}</span>
+      </div>
+      <div class="progress-hub-row">
+        <strong>Recent sessions</strong>
+        <span>${formatRecentSprintSessions(insights.rows)}</span>
+      </div>
+    `
+    : "<p class=\"planner-empty\">Log a sprint workout to see sprint insights.</p>";
+  sprintInsightsBodyEl.innerHTML = insights.bestByDistance.length
+    ? insights.bestByDistance
+        .map(
+          (row) => `
+            <tr>
+              <td>${formatNumber(row.distance)} m</td>
+              <td>${formatNumber(row.time)} s</td>
+              <td>${escapeHtml(row.date || "-")}</td>
+            </tr>
+          `,
+        )
+        .join("")
+    : "";
+}
+
+function formatSprintFeelingCounts(counts) {
+  if (!counts.length) {
+    return "-";
+  }
+  return counts
+    .map((entry) => `${escapeHtml(formatSprintFeeling(entry.feeling) || entry.feeling)}: ${entry.count}`)
+    .join(" · ");
+}
+
+function formatRecentSprintSessions(rows) {
+  const recentRows = rows.filter((row) => row.repCount > 0).slice(0, 3);
+  if (!recentRows.length) {
+    return "-";
+  }
+  return recentRows
+    .map((row) => {
+      const distances = row.distances.map((distance) => `${formatNumber(distance)}m`).join("/");
+      const best = row.bestTime == null ? "" : ` best ${formatNumber(row.bestTime)}s`;
+      return `${escapeHtml(row.date || "-")}: ${row.repCount} reps${distances ? ` · ${distances}` : ""}${best}`;
+    })
+    .join(" | ");
 }
 
 function buildStrengthHighestWeightRows(filteredWorkouts) {

@@ -232,7 +232,8 @@ body {
 }
 
 .strength-insights-card,
-.running-insights-card {
+.running-insights-card,
+.sprint-insights-card {
   display: grid;
   gap: 0.75rem;
 }

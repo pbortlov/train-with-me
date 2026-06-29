@@ -365,6 +365,7 @@
               <button type="button" class="ghost-button" data-progress-jump="adherence">Adherence</button>
               <button type="button" class="ghost-button" data-progress-jump="strength">Strength</button>
               <button type="button" class="ghost-button" data-progress-jump="running">Running</button>
+              <button type="button" class="ghost-button" data-progress-jump="sprint">Sprint</button>
               <button type="button" class="ghost-button" data-progress-jump="activity">Activity charts</button>
             </div>
           </div>
@@ -491,6 +492,25 @@
                 </tr>
               </thead>
               <tbody id="running-insights-body"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card sprint-insights-card" id="sprint-insights-section">
+          <h3>Sprint Insights</h3>
+          <p class="hint">Sprint-only summary with distance-specific bests and session feeling counts.</p>
+          <div id="sprint-insights-summary" class="summary"></div>
+          <div id="sprint-insights-details" class="strength-insights-details"></div>
+          <div class="strength-table-viewport">
+            <table class="strength-highest-table">
+              <thead>
+                <tr>
+                  <th>Distance</th>
+                  <th>Best time</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="sprint-insights-body"></tbody>
             </table>
           </div>
         </article>
