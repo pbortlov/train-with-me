@@ -15,4 +15,22 @@ describe("local-first UX guidance", () => {
     expect(index).toContain("Backup safety checklist");
     expect(index).toContain("Import replaces the local training data");
   });
+
+  it("keeps colon-formatted run time and pace fields usable on mobile keyboards", () => {
+    const colonEntryFieldIds = [
+      "time",
+      "planned-run-pace",
+      "goal-run-combined-time",
+      "completion-run-time",
+      "planned-run-edit-pace",
+      "edit-time",
+    ];
+
+    colonEntryFieldIds.forEach((id) => {
+      const inputMatch = index.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`));
+      expect(inputMatch?.[0], `${id} input should exist`).toBeTruthy();
+      expect(inputMatch?.[0], `${id} should stay a text field`).toContain('type="text"');
+      expect(inputMatch?.[0], `${id} must allow ":" entry on phones`).not.toContain('inputmode="numeric"');
+    });
+  });
 });
