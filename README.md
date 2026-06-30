@@ -167,6 +167,8 @@ npm run preview
 - Workout data remains in this browser's `localStorage`; the service worker does not copy or synchronize user data.
 - A deployed update downloads in the background. When ready, the app shows `Update now`; reload occurs only after that button is selected so unfinished form input is not discarded automatically.
 - Existing installations using the historical `service-worker.js` are migrated through a compatibility worker that removes the obsolete cache before the generated worker takes control.
+- Android Chromium browsers use the native install prompt when available.
+- iOS browsers do not expose that prompt; install from Safari with Share, then Add to Home Screen.
 - Development mode does not register the production service worker.
 - Browser storage clearing, private browsing cleanup, device loss, or changing the Pages origin can permanently remove local data.
 - The Today page includes a local-first onboarding reminder, and Data includes a backup safety checklist.

@@ -34,8 +34,10 @@ for (const required of ["index.html", "manifest.webmanifest", "sw.js", "service-
     failures.push(`Missing production file: ${required}`);
   }
 }
-if (!files.includes("icon.svg")) {
-  failures.push("Missing installable app icon.");
+for (const icon of ["icon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png"]) {
+  if (!files.includes(icon)) {
+    failures.push(`Missing installable app icon: ${icon}`);
+  }
 }
 if (!files.some((file) => /^workbox-.*\.js$/.test(file))) {
   failures.push("Missing generated Workbox runtime.");
