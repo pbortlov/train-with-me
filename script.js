@@ -88,6 +88,7 @@ const importDataFileInput = document.getElementById("import-data-file");
 const backupStatusEl = document.getElementById("backup-status");
 const workoutFormStatusEl = document.getElementById("workout-form-status");
 const installAppButton = document.getElementById("install-app");
+const installHelpEl = document.getElementById("install-help");
 const deleteConfirmDialog = document.getElementById("delete-confirm-dialog");
 const confirmDeleteWorkoutButton = document.getElementById("confirm-delete-workout");
 const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout");
@@ -275,6 +276,48 @@ let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
 let editDraftCurrentStrengthSets = [];
 let editDraftStrengthExercises = [];
+
+const IOS_INSTALL_MESSAGE = "On iPhone or iPad, tap Share, then Add to Home Screen.";
+
+function isIosDevice() {
+  const userAgent = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  return /iPad|iPhone|iPod/i.test(userAgent) || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandaloneDisplay() {
+  return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+}
+
+function updateInstallHelp(message) {
+  if (!installHelpEl) {
+    return;
+  }
+  installHelpEl.textContent = message;
+  installHelpEl.hidden = !message;
+}
+
+function showInstallButton(message = "") {
+  if (!installAppButton || isStandaloneDisplay()) {
+    return;
+  }
+  installAppButton.style.display = "inline-block";
+  updateInstallHelp(message);
+}
+
+function initializeInstallPrompt() {
+  if (!installAppButton) {
+    return;
+  }
+  if (isStandaloneDisplay()) {
+    installAppButton.style.display = "none";
+    updateInstallHelp("");
+    return;
+  }
+  if (isIosDevice()) {
+    showInstallButton(IOS_INSTALL_MESSAGE);
+  }
+}
 
 hydrateGoalInputs();
 syncGoalFormVisibility();
@@ -476,8 +519,10 @@ strengthSetLoadTypeInput.addEventListener("change", () => {
 window.addEventListener("beforeinstallprompt", (event) => {
   event.preventDefault();
   deferredInstallPrompt = event;
-  installAppButton.style.display = "inline-block";
+  showInstallButton("");
 });
+
+initializeInstallPrompt();
 
 strengthSetLoadTypeInput.dispatchEvent(new Event("change"));
 if (editStrengthLoadTypeInput) {
@@ -2635,7 +2680,13 @@ function importBackupData(event) {
 
 async function installPwaApp() {
   if (!deferredInstallPrompt) {
-    workoutFormStatusEl.textContent = "Install prompt is not available on this device/browser yet.";
+    const message = isIosDevice()
+      ? IOS_INSTALL_MESSAGE
+      : "Use your browser menu to install this app or add it to the home screen.";
+    updateInstallHelp(message);
+    if (workoutFormStatusEl) {
+      workoutFormStatusEl.textContent = message;
+    }
     return;
   }
 
@@ -2643,6 +2694,7 @@ async function installPwaApp() {
   await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
   installAppButton.style.display = "none";
+  updateInstallHelp("");
 }
 
 function setWorkoutFormStatus(message) {

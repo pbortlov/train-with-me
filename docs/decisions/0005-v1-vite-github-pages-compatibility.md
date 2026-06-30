@@ -2,7 +2,7 @@
 
 - Date: 2026-06-10
 - Status: accepted
-- Amended: 2026-06-11
+- Amended: 2026-06-30
 
 ## Context
 
@@ -24,6 +24,7 @@ application.
 - Keep the current UI controller during incremental modularization rather than redesigning behavior in the foundation MVP.
 - Bundle Chart.js locally.
 - Generate the manifest and service worker with Workbox through `vite-plugin-pwa`.
+- Ship PNG install icons and Apple web app metadata so Android and iOS can both install the static PWA from the browser.
 - Keep a compatibility worker at the historical `service-worker.js` URL so existing cache-first installations delete the obsolete cache and can load the new generated worker.
 - Precache the production application shell and use a network-first navigation fallback to the cached app.
 - Download updates in the background but require the user to select `Update now` before activation and reload.
@@ -41,6 +42,7 @@ application.
 - Local development requires Node.js and Vite instead of opening the HTML file directly.
 - Charts and the application shell work after the first successful online load without a CDN.
 - Deployments work below the nested GitHub Pages project path.
+- Android Chromium browsers use the native install prompt; iOS users install through Safari's Share menu and Add to Home Screen.
 - Browser data remains local and origin-bound; users still need external JSON backups.
 - Moving users from another hostname or protocol requires a backup export from
   the old origin and restore at the GitHub Pages origin.

@@ -4,7 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#2f6fed" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Train With Me" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>Train With Me</title>
   </head>
   <body>
@@ -21,7 +25,8 @@
               <input type="checkbox" id="coach-mode-toggle" />
               Geek / coach mode
             </label>
-            <button type="button" id="install-app">Install App</button>
+            <button type="button" id="install-app" aria-describedby="install-help">Install App</button>
+            <p id="install-help" class="install-help" hidden></p>
           </div>
         </div>
         <nav class="view-nav" aria-label="Main navigation">
