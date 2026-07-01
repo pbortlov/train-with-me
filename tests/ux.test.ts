@@ -50,4 +50,9 @@ describe("local-first UX guidance", () => {
     expect(importDetailsIndex).toBeLessThan(importFormIndex);
     expect(index).toContain("<summary>Create or import program</summary>");
   });
+
+  it("keeps a readable program preview in the import flow", () => {
+    expect(index).toContain('id="phase-import-preview"');
+    expect(index).toContain("Paste or import a program to preview its training days, blocks, and exercises.");
+  });
 });

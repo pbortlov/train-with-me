@@ -47,6 +47,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - inspect the workout structure inside each saved template
   - schedule a template onto real dates
   - keep create/import tools in a collapsible section after scheduled programs and saved templates
+  - preview imported program text as readable program basics, training days, blocks, and exercises before saving
   - anchor each program week to the chosen start date instead of calendar Monday
   - refresh planned generated sessions for already scheduled instances when a template is updated
   - preserve manually moved generated strength-session dates during template refresh

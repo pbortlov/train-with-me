@@ -789,6 +789,35 @@ textarea:focus-visible {
   margin-top: 0.85rem;
 }
 
+.phase-import-preview {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.35rem 0 0.85rem;
+}
+
+.program-preview-heading {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #081121;
+  padding: 0.75rem;
+}
+
+.program-preview-heading h4,
+.program-preview-block h6 {
+  margin: 0;
+}
+
+.program-preview-days,
+.program-preview-blocks {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.program-preview-block {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.65rem;
+}
+
 .phase-template-workouts {
   display: grid;
   gap: 0.75rem;

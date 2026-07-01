@@ -1,0 +1,57 @@
+import { describe, expect, it } from "vitest";
+
+import { buildProgramPreview } from "../src/domain/program-preview";
+
+const sampleProgram = [
+  "PHASE,Phase 1,5",
+  "SLOT,Tuesday,Strength A,Main lower-body day",
+  "BLOCK,A,15-20 mins,90-120s,3-4",
+  "EXERCISE,A1,Back squat,2x8-10,Heavy,100",
+  "EXERCISE,A2,Barbell row,8-10,Control the eccentric,",
+].join("\n");
+
+describe("program import preview", () => {
+  it("builds a human-readable program preview from import rows", () => {
+    const result = buildProgramPreview(sampleProgram);
+
+    expect(result.error).toBe("");
+    expect(result.model).toMatchObject({
+      name: "Phase 1",
+      durationWeeks: "5",
+      days: [
+        {
+          weekday: "Tuesday",
+          title: "Strength A",
+          notes: "Main lower-body day",
+          blocks: [
+            {
+              label: "A",
+              duration: "15-20 mins",
+              rest: "90-120s",
+              sets: "3-4",
+              exercises: [
+                { code: "A1", name: "Back squat", reps: "2x8-10", notes: "Heavy", weight: "100" },
+                { code: "A2", name: "Barbell row", reps: "8-10", notes: "Control the eccentric", weight: "" },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("uses the name override in preview without changing import text", () => {
+    const result = buildProgramPreview(sampleProgram, "Winter strength");
+
+    expect(result.model?.name).toBe("Winter strength");
+  });
+
+  it("returns friendly validation messages for malformed structure", () => {
+    expect(buildProgramPreview("BLOCK,A,15 mins,60s,3").error).toBe(
+      "Line 1: add a training day before adding blocks.",
+    );
+    expect(buildProgramPreview("PHASE,Phase 1,5\nEXERCISE,A1,Squat,10").error).toBe(
+      "Line 2: add a block before adding exercises.",
+    );
+  });
+});

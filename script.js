@@ -14,6 +14,7 @@ import {
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
 import { buildProgressHubModel } from "./src/domain/progress";
+import { buildProgramPreview } from "./src/domain/program-preview";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
@@ -180,6 +181,7 @@ const phaseEditIdInput = document.getElementById("phase-edit-id");
 const phaseNameOverrideInput = document.getElementById("phase-name-override");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
+const phaseImportPreviewEl = document.getElementById("phase-import-preview");
 const savePhaseButton = document.getElementById("save-phase-button");
 const cancelPhaseEditButton = document.getElementById("cancel-phase-edit");
 const phaseImportStatusEl = document.getElementById("phase-import-status");
@@ -3202,6 +3204,8 @@ function bindV2Events() {
     }
   });
   addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
+  addSafeEventListener(phaseImportTextInput, "input", updatePhaseImportPreview);
+  addSafeEventListener(phaseNameOverrideInput, "input", updatePhaseImportPreview);
   addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
   addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
   addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
@@ -4278,6 +4282,7 @@ function loadPhaseImportFile(event) {
   const reader = new FileReader();
   reader.onload = () => {
     phaseImportTextInput.value = String(reader.result || "");
+    updatePhaseImportPreview();
   };
   reader.readAsText(file);
 }
@@ -4346,6 +4351,7 @@ function resetPhaseImportForm() {
     phaseImportStatusEl.textContent = "";
   }
   syncPhaseImportDisclosure();
+  updatePhaseImportPreview();
 }
 
 function syncPhaseImportDisclosure() {
@@ -4353,6 +4359,78 @@ function syncPhaseImportDisclosure() {
     return;
   }
   phaseImportDetails.open = Boolean(editingPhaseTemplateId) || phaseTemplates.length === 0;
+}
+
+function updatePhaseImportPreview() {
+  if (!phaseImportPreviewEl || !phaseImportTextInput) {
+    return;
+  }
+  const result = buildProgramPreview(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
+  if (result.error) {
+    phaseImportPreviewEl.innerHTML = `<p class="planner-empty">${escapeHtml(result.error)}</p>`;
+    return;
+  }
+  phaseImportPreviewEl.innerHTML = renderProgramPreview(result.model);
+}
+
+function renderProgramPreview(model) {
+  if (!model) {
+    return `<p class="planner-empty">Paste or import a program to preview its training days, blocks, and exercises.</p>`;
+  }
+  return `
+    <div class="program-preview-heading">
+      <div>
+        <h4>${escapeHtml(model.name)}</h4>
+        <p class="phase-meta">${escapeHtml(model.durationWeeks)} weeks • ${model.days.length} training ${model.days.length === 1 ? "day" : "days"}</p>
+      </div>
+    </div>
+    <div class="program-preview-days">
+      ${model.days.map(renderProgramPreviewDay).join("")}
+    </div>
+  `;
+}
+
+function renderProgramPreviewDay(day) {
+  return `
+    <article class="phase-training-card">
+      <h5>${escapeHtml(day.weekday)} • ${escapeHtml(day.title)}</h5>
+      ${day.notes ? `<div class="phase-meta">${escapeHtml(day.notes)}</div>` : ""}
+      <div class="program-preview-blocks">
+        ${day.blocks.length ? day.blocks.map(renderProgramPreviewBlock).join("") : `<p class="planner-empty">No blocks yet.</p>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderProgramPreviewBlock(block) {
+  const meta = [
+    block.duration ? `${block.duration}` : "",
+    block.rest ? `${block.rest} rest` : "",
+    block.sets ? `${block.sets} sets` : "",
+  ].filter(Boolean).join(" • ");
+  return `
+    <section class="program-preview-block">
+      <h6>${escapeHtml(block.label)}</h6>
+      ${meta ? `<div class="phase-meta">${escapeHtml(meta)}</div>` : ""}
+      <ul class="detail-list">
+        ${block.exercises.length ? block.exercises.map(renderProgramPreviewExercise).join("") : "<li>No exercises yet.</li>"}
+      </ul>
+    </section>
+  `;
+}
+
+function renderProgramPreviewExercise(exercise) {
+  const details = [
+    exercise.reps,
+    exercise.notes,
+    exercise.weight ? `${exercise.weight} kg` : "",
+  ].filter(Boolean).join(" • ");
+  return `
+    <li>
+      <strong>${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)}</strong>
+      ${details ? `<span>${escapeHtml(details)}</span>` : ""}
+    </li>
+  `;
 }
 
 function startPhaseTemplateEdit(templateId) {
@@ -4366,6 +4444,7 @@ function startPhaseTemplateEdit(templateId) {
   }
   phaseNameOverrideInput.value = template.name;
   phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
+  updatePhaseImportPreview();
   if (savePhaseButton) {
     savePhaseButton.textContent = "Save phase changes";
   }
