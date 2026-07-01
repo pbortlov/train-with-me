@@ -4,9 +4,11 @@ import {
   buildProgramPreview,
   readProgramBasics,
   readProgramDayBlocks,
+  readProgramDayExercises,
   readProgramTrainingDays,
   updateProgramBasics,
   updateProgramDayBlocks,
+  updateProgramDayExercises,
   updateProgramTrainingDays,
 } from "../src/domain/program-preview";
 
@@ -153,6 +155,66 @@ describe("program import preview", () => {
     ]);
     expect(removed).not.toContain("BLOCK,B");
     expect(removed).not.toContain("Lunge");
+  });
+
+  it("reads exercises for each block", () => {
+    expect(readProgramDayExercises(sampleProgram)).toEqual([
+      {
+        blocks: [
+          {
+            exercises: [
+              { code: "A1", name: "Back squat", reps: "2x8-10", notes: "Heavy", weight: "100" },
+              { code: "A2", name: "Barbell row", reps: "8-10", notes: "Control the eccentric", weight: "" },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("updates exercise rows inside a block", () => {
+    const updated = updateProgramDayExercises(sampleProgram, [
+      {
+        blocks: [
+          {
+            exercises: [
+              { code: "A1", name: "Front squat", reps: "3x8", notes: "Smooth", weight: "90" },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(updated).toContain("EXERCISE,A1,Front squat,3x8,Smooth,90");
+    expect(updated).not.toContain("Back squat");
+  });
+
+  it("adds and removes exercise rows within a block", () => {
+    const added = updateProgramDayExercises(sampleProgram, [
+      {
+        blocks: [
+          {
+            exercises: [
+              { code: "A1", name: "Back squat", reps: "2x8-10", notes: "Heavy", weight: "100" },
+              { code: "A3", name: "Split squat", reps: "10 each", notes: "", weight: "" },
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(added).toContain("EXERCISE,A3,Split squat,10 each,,");
+    const removed = updateProgramDayExercises(sampleProgram, [
+      {
+        blocks: [
+          {
+            exercises: [
+              { code: "A1", name: "Back squat", reps: "2x8-10", notes: "Heavy", weight: "100" },
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(removed).not.toContain("Barbell row");
   });
 
   it("returns friendly validation messages for malformed structure", () => {

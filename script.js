@@ -17,9 +17,11 @@ import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
   readProgramDayBlocks,
+  readProgramDayExercises,
   readProgramBasics,
   readProgramTrainingDays,
   updateProgramDayBlocks,
+  updateProgramDayExercises,
   updateProgramBasics,
   updateProgramTrainingDays,
 } from "./src/domain/program-preview";
@@ -4419,6 +4421,7 @@ function syncProgramTrainingDaysFromText() {
   renderProgramDayEditor(
     readProgramTrainingDays(phaseImportTextInput?.value || ""),
     readProgramDayBlocks(phaseImportTextInput?.value || ""),
+    readProgramDayExercises(phaseImportTextInput?.value || ""),
   );
 }
 
@@ -4434,6 +4437,10 @@ function syncProgramTrainingDaysToText() {
     phaseImportTextInput.value,
     collectProgramDayBlocksFromEditor(),
   );
+  phaseImportTextInput.value = updateProgramDayExercises(
+    phaseImportTextInput.value,
+    collectProgramDayExercisesFromEditor(),
+  );
   updatePhaseImportPreview();
 }
 
@@ -4445,6 +4452,21 @@ function syncProgramDayBlocksToText() {
     phaseImportTextInput.value,
     collectProgramDayBlocksFromEditor(),
   );
+  phaseImportTextInput.value = updateProgramDayExercises(
+    phaseImportTextInput.value,
+    collectProgramDayExercisesFromEditor(),
+  );
+  updatePhaseImportPreview();
+}
+
+function syncProgramDayExercisesToText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = updateProgramDayExercises(
+    phaseImportTextInput.value,
+    collectProgramDayExercisesFromEditor(),
+  );
   updatePhaseImportPreview();
 }
 
@@ -4454,6 +4476,10 @@ function handleProgramEditorInput(event) {
     return;
   }
   const role = target.dataset.role || "";
+  if (role.startsWith("program-exercise-")) {
+    syncProgramDayExercisesToText();
+    return;
+  }
   if (role.startsWith("program-block-")) {
     syncProgramDayBlocksToText();
     return;
@@ -4473,7 +4499,11 @@ function addProgramTrainingDay() {
   if (phaseImportTextInput) {
     phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
   }
-  renderProgramDayEditor(days, readProgramDayBlocks(phaseImportTextInput?.value || ""));
+  renderProgramDayEditor(
+    days,
+    readProgramDayBlocks(phaseImportTextInput?.value || ""),
+    readProgramDayExercises(phaseImportTextInput?.value || ""),
+  );
   updatePhaseImportPreview();
 }
 
@@ -4486,11 +4516,13 @@ function handleProgramEditorAction(event) {
     const index = Number(target.dataset.index);
     const days = collectProgramTrainingDaysFromEditor().filter((_, dayIndex) => dayIndex !== index);
     const dayBlocks = collectProgramDayBlocksFromEditor().filter((_, dayIndex) => dayIndex !== index);
+    const dayExercises = collectProgramDayExercisesFromEditor().filter((_, dayIndex) => dayIndex !== index);
     if (phaseImportTextInput) {
       phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
       phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
     }
-    renderProgramDayEditor(days, dayBlocks);
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
     updatePhaseImportPreview();
     return;
   }
@@ -4498,13 +4530,18 @@ function handleProgramEditorAction(event) {
     const dayIndex = Number(target.dataset.dayIndex);
     const days = collectProgramTrainingDaysFromEditor();
     const dayBlocks = collectProgramDayBlocksFromEditor();
+    const dayExercises = collectProgramDayExercisesFromEditor();
     const blocks = dayBlocks[dayIndex]?.blocks || [];
     blocks.push({ label: `Block ${blocks.length + 1}`, duration: "", rest: "", sets: "" });
     dayBlocks[dayIndex] = { blocks };
+    const exerciseBlocks = dayExercises[dayIndex]?.blocks || [];
+    exerciseBlocks.push({ exercises: [] });
+    dayExercises[dayIndex] = { blocks: exerciseBlocks };
     if (phaseImportTextInput) {
       phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
     }
-    renderProgramDayEditor(days, dayBlocks);
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
     updatePhaseImportPreview();
     return;
   }
@@ -4513,17 +4550,57 @@ function handleProgramEditorAction(event) {
     const blockIndex = Number(target.dataset.blockIndex);
     const days = collectProgramTrainingDaysFromEditor();
     const dayBlocks = collectProgramDayBlocksFromEditor();
+    const dayExercises = collectProgramDayExercisesFromEditor();
     const blocks = (dayBlocks[dayIndex]?.blocks || []).filter((_, index) => index !== blockIndex);
     dayBlocks[dayIndex] = { blocks };
+    const exerciseBlocks = (dayExercises[dayIndex]?.blocks || []).filter((_, index) => index !== blockIndex);
+    dayExercises[dayIndex] = { blocks: exerciseBlocks };
     if (phaseImportTextInput) {
       phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
     }
-    renderProgramDayEditor(days, dayBlocks);
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
+    updatePhaseImportPreview();
+    return;
+  }
+  if (target.dataset.role === "add-program-exercise") {
+    const dayIndex = Number(target.dataset.dayIndex);
+    const blockIndex = Number(target.dataset.blockIndex);
+    const days = collectProgramTrainingDaysFromEditor();
+    const dayBlocks = collectProgramDayBlocksFromEditor();
+    const dayExercises = collectProgramDayExercisesFromEditor();
+    const blockExercises = dayExercises[dayIndex]?.blocks?.[blockIndex]?.exercises || [];
+    blockExercises.push({ code: `E${blockExercises.length + 1}`, name: "", reps: "", notes: "", weight: "" });
+    const blocks = dayExercises[dayIndex]?.blocks || [];
+    blocks[blockIndex] = { exercises: blockExercises };
+    dayExercises[dayIndex] = { blocks };
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
+    }
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
+    updatePhaseImportPreview();
+    return;
+  }
+  if (target.dataset.role === "remove-program-exercise") {
+    const dayIndex = Number(target.dataset.dayIndex);
+    const blockIndex = Number(target.dataset.blockIndex);
+    const exerciseIndex = Number(target.dataset.exerciseIndex);
+    const days = collectProgramTrainingDaysFromEditor();
+    const dayBlocks = collectProgramDayBlocksFromEditor();
+    const dayExercises = collectProgramDayExercisesFromEditor();
+    const blockExercises = (dayExercises[dayIndex]?.blocks?.[blockIndex]?.exercises || []).filter((_, index) => index !== exerciseIndex);
+    const blocks = dayExercises[dayIndex]?.blocks || [];
+    blocks[blockIndex] = { exercises: blockExercises };
+    dayExercises[dayIndex] = { blocks };
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
+    }
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
     updatePhaseImportPreview();
   }
 }
 
-function renderProgramDayEditor(days, dayBlocks = []) {
+function renderProgramDayEditor(days, dayBlocks = [], dayExercises = []) {
   if (!programDayListEl) {
     return;
   }
@@ -4531,10 +4608,12 @@ function renderProgramDayEditor(days, dayBlocks = []) {
     programDayListEl.innerHTML = "<p class=\"planner-empty\">No training days yet. Add a day or paste program text.</p>";
     return;
   }
-  programDayListEl.innerHTML = days.map((day, index) => renderProgramDayEditorRow(day, index, dayBlocks[index]?.blocks || [])).join("");
+  programDayListEl.innerHTML = days
+    .map((day, index) => renderProgramDayEditorRow(day, index, dayBlocks[index]?.blocks || [], dayExercises[index]?.blocks || []))
+    .join("");
 }
 
-function renderProgramDayEditorRow(day, index, blocks) {
+function renderProgramDayEditorRow(day, index, blocks, blockExercises) {
   return `
     <div class="program-day-row" data-index="${index}">
       <label>
@@ -4558,14 +4637,14 @@ function renderProgramDayEditorRow(day, index, blocks) {
           <button type="button" class="ghost-button" data-role="add-program-block" data-day-index="${index}">Add block</button>
         </div>
         <div class="program-block-list">
-          ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex)).join("") : "<p class=\"planner-empty\">No blocks yet. Add a block or edit the import text.</p>"}
+          ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex, blockExercises[blockIndex]?.exercises || [])).join("") : "<p class=\"planner-empty\">No blocks yet. Add a block or edit the import text.</p>"}
         </div>
       </div>
     </div>
   `;
 }
 
-function renderProgramBlockEditorRow(block, dayIndex, blockIndex) {
+function renderProgramBlockEditorRow(block, dayIndex, blockIndex, exercises) {
   return `
     <div class="program-block-row" data-day-index="${dayIndex}" data-block-index="${blockIndex}">
       <label>
@@ -4585,6 +4664,43 @@ function renderProgramBlockEditorRow(block, dayIndex, blockIndex) {
         <input type="text" data-role="program-block-sets" value="${escapeHtml(block.sets)}" placeholder="3-4" />
       </label>
       <button type="button" class="ghost-button danger-button" data-role="remove-program-block" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Remove block</button>
+      <div class="program-exercise-editor">
+        <div class="program-editor-header">
+          <h6>Exercises</h6>
+          <button type="button" class="ghost-button" data-role="add-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Add exercise</button>
+        </div>
+        <div class="program-exercise-list">
+          ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : "<p class=\"planner-empty\">No exercises yet.</p>"}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex) {
+  return `
+    <div class="program-exercise-row" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">
+      <label>
+        Code
+        <input type="text" data-role="program-exercise-code" value="${escapeHtml(exercise.code)}" placeholder="A1" />
+      </label>
+      <label>
+        Exercise
+        <input type="text" data-role="program-exercise-name" value="${escapeHtml(exercise.name)}" placeholder="Back squat" />
+      </label>
+      <label>
+        Reps
+        <input type="text" data-role="program-exercise-reps" value="${escapeHtml(exercise.reps)}" placeholder="2x8-10" />
+      </label>
+      <label>
+        Notes
+        <input type="text" data-role="program-exercise-notes" value="${escapeHtml(exercise.notes)}" placeholder="Heavy" />
+      </label>
+      <label>
+        Weight
+        <input type="text" data-role="program-exercise-weight" value="${escapeHtml(exercise.weight)}" placeholder="100" />
+      </label>
+      <button type="button" class="ghost-button danger-button" data-role="remove-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">Remove exercise</button>
     </div>
   `;
 }
@@ -4617,6 +4733,23 @@ function collectProgramDayBlocksFromEditor() {
       duration: blockRow.querySelector('[data-role="program-block-duration"]')?.value || "",
       rest: blockRow.querySelector('[data-role="program-block-rest"]')?.value || "",
       sets: blockRow.querySelector('[data-role="program-block-sets"]')?.value || "",
+    })),
+  }));
+}
+
+function collectProgramDayExercisesFromEditor() {
+  if (!programDayListEl) {
+    return [];
+  }
+  return Array.from(programDayListEl.querySelectorAll(".program-day-row")).map((dayRow) => ({
+    blocks: Array.from(dayRow.querySelectorAll(".program-block-row")).map((blockRow) => ({
+      exercises: Array.from(blockRow.querySelectorAll(".program-exercise-row")).map((exerciseRow) => ({
+        code: exerciseRow.querySelector('[data-role="program-exercise-code"]')?.value || "",
+        name: exerciseRow.querySelector('[data-role="program-exercise-name"]')?.value || "",
+        reps: exerciseRow.querySelector('[data-role="program-exercise-reps"]')?.value || "",
+        notes: exerciseRow.querySelector('[data-role="program-exercise-notes"]')?.value || "",
+        weight: exerciseRow.querySelector('[data-role="program-exercise-weight"]')?.value || "",
+      })),
     })),
   }));
 }

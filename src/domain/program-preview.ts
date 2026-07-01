@@ -54,6 +54,22 @@ export interface ProgramDayBlocks {
   blocks: ProgramBlockEditor[];
 }
 
+export interface ProgramExerciseEditor {
+  code: string;
+  name: string;
+  reps: string;
+  notes: string;
+  weight: string;
+}
+
+export interface ProgramBlockExercises {
+  exercises: ProgramExerciseEditor[];
+}
+
+export interface ProgramDayExercises {
+  blocks: ProgramBlockExercises[];
+}
+
 export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPreviewResult {
   const lines = String(text || "")
     .split("\n")
@@ -229,6 +245,48 @@ export function updateProgramDayBlocks(text: unknown, dayBlocks: ProgramDayBlock
   return [...prefix, ...nextSegments.flat()].filter((line) => line.length > 0).join("\n");
 }
 
+export function readProgramDayExercises(text: unknown): ProgramDayExercises[] {
+  return splitSlotSegmentsFromText(text).map((daySegment) => ({
+    blocks: splitBlockSegments(daySegment.slice(1)).map((blockSegment) => ({
+      exercises: blockSegment
+        .filter(isExerciseLine)
+        .map((line) => {
+          const columns = line.split(",").map((column) => column.trim());
+          return {
+            code: columns[1] || "",
+            name: columns[2] || "",
+            reps: columns[3] || "",
+            notes: columns[4] || "",
+            weight: columns[5] || "",
+          };
+        }),
+    })),
+  }));
+}
+
+export function updateProgramDayExercises(text: unknown, dayExercises: ProgramDayExercises[]): string {
+  const lines = String(text || "").split("\n");
+  const firstSlotIndex = lines.findIndex(isSlotLine);
+  if (firstSlotIndex < 0) {
+    return lines.filter((line) => line.length > 0).join("\n");
+  }
+
+  const prefix = lines.slice(0, firstSlotIndex);
+  const existingSegments = splitSlotSegments(lines.slice(firstSlotIndex));
+  const nextSegments = existingSegments.map((daySegment, dayIndex) => {
+    const slotRow = daySegment[0];
+    const blockSegments = splitBlockSegments(daySegment.slice(1));
+    const nextBlocks = blockSegments.map((blockSegment, blockIndex) => {
+      const blockRow = blockSegment[0];
+      const nextExercises = dayExercises[dayIndex]?.blocks?.[blockIndex]?.exercises || [];
+      return [blockRow, ...nextExercises.map(formatExerciseRow)];
+    });
+    return [slotRow, ...nextBlocks.flat()];
+  });
+
+  return [...prefix, ...nextSegments.flat()].filter((line) => line.length > 0).join("\n");
+}
+
 function splitSlotSegments(lines: string[]): string[][] {
   const segments: string[][] = [];
   lines.forEach((line) => {
@@ -277,6 +335,16 @@ function formatBlockRow(block: ProgramBlockEditor, index: number): string {
 
 function isBlockLine(line: string): boolean {
   return line.trim().split(",")[0]?.trim().toUpperCase() === "BLOCK";
+}
+
+function formatExerciseRow(exercise: ProgramExerciseEditor, index: number): string {
+  const code = exercise.code.trim() || `E${index + 1}`;
+  const name = exercise.name.trim() || "Exercise";
+  return `EXERCISE,${code},${name},${exercise.reps.trim()},${exercise.notes.trim()},${exercise.weight.trim()}`;
+}
+
+function isExerciseLine(line: string): boolean {
+  return line.trim().split(",")[0]?.trim().toUpperCase() === "EXERCISE";
 }
 
 function findPhaseColumns(text: unknown): string[] | null {

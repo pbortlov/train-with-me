@@ -16,6 +16,8 @@ Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.
 Block fields update `BLOCK` rows while preserving the exercise rows that belong
 to each block.
+Exercise fields update `EXERCISE` rows for code, name, reps, notes, and
+optional weight.
 
 The parser is order-based. It expects rows in a logical sequence:
 - `PHASE`

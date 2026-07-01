@@ -874,6 +874,30 @@ textarea:focus-visible {
   align-items: end;
 }
 
+.program-exercise-editor {
+  display: grid;
+  gap: 0.45rem;
+  grid-column: 1 / -1;
+  border-left: 3px solid var(--border);
+  padding-left: 0.55rem;
+}
+
+.program-exercise-editor h6 {
+  margin: 0;
+}
+
+.program-exercise-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.program-exercise-row {
+  display: grid;
+  grid-template-columns: minmax(4rem, 0.55fr) minmax(0, 1fr) minmax(6rem, 0.8fr) minmax(0, 1fr) minmax(5rem, 0.65fr) auto;
+  gap: 0.4rem;
+  align-items: end;
+}
+
 .phase-template-workouts {
   display: grid;
   gap: 0.75rem;
@@ -1726,6 +1750,10 @@ textarea {
   }
 
   .program-block-row {
+    grid-template-columns: 1fr;
+  }
+
+  .program-exercise-row {
     grid-template-columns: 1fr;
   }
 
