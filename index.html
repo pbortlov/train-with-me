@@ -358,6 +358,16 @@
                   <input type="file" id="phase-import-file" accept=".csv,text/csv,.txt,text/plain" />
                 </label>
               </div>
+              <section class="program-day-editor" aria-labelledby="program-day-editor-heading">
+                <div class="program-editor-header">
+                  <div>
+                    <h4 id="program-day-editor-heading">Training days</h4>
+                    <p class="hint">Edit the weekly training days. Blocks and exercises remain in the import text for now.</p>
+                  </div>
+                  <button type="button" class="ghost-button" id="add-program-day">Add day</button>
+                </div>
+                <div id="program-day-list" class="program-day-list"></div>
+              </section>
               <label>
                 Phase import content
                 <textarea

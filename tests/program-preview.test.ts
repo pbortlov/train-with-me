@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildProgramPreview, readProgramBasics, updateProgramBasics } from "../src/domain/program-preview";
+import {
+  buildProgramPreview,
+  readProgramBasics,
+  readProgramTrainingDays,
+  updateProgramBasics,
+  updateProgramTrainingDays,
+} from "../src/domain/program-preview";
 
 const sampleProgram = [
   "PHASE,Phase 1,5",
@@ -61,6 +67,41 @@ describe("program import preview", () => {
     expect(updateProgramBasics("SLOT,Tuesday,Strength A,", { name: "New program", durationWeeks: "4" })).toBe(
       "PHASE,New program,4\nSLOT,Tuesday,Strength A,",
     );
+  });
+
+  it("reads training days from SLOT rows", () => {
+    expect(readProgramTrainingDays(sampleProgram)).toEqual([
+      { weekday: "Tuesday", title: "Strength A", notes: "Main lower-body day" },
+    ]);
+  });
+
+  it("updates training day rows while preserving their block and exercise rows", () => {
+    const updated = updateProgramTrainingDays(sampleProgram, [
+      { weekday: "Wednesday", title: "Strength A revised", notes: "Lower focus" },
+    ]);
+
+    expect(updated).toContain("SLOT,Wednesday,Strength A revised,Lower focus");
+    expect(updated).toContain("BLOCK,A,15-20 mins,90-120s,3-4");
+    expect(updated).toContain("EXERCISE,A1,Back squat,2x8-10,Heavy,100");
+  });
+
+  it("adds and removes full training day segments", () => {
+    const twoDayProgram = [
+      sampleProgram,
+      "SLOT,Friday,Strength B,Upper day",
+      "BLOCK,A,12 mins,60s,3",
+      "EXERCISE,A1,Front squat,2x10,,80",
+    ].join("\n");
+
+    expect(updateProgramTrainingDays(sampleProgram, [
+      { weekday: "Tuesday", title: "Strength A", notes: "Main lower-body day" },
+      { weekday: "Friday", title: "Strength B", notes: "Upper day" },
+    ])).toContain("SLOT,Friday,Strength B,Upper day");
+    const removed = updateProgramTrainingDays(twoDayProgram, [
+      { weekday: "Tuesday", title: "Strength A", notes: "Main lower-body day" },
+    ]);
+    expect(removed).not.toContain("Strength B");
+    expect(removed).not.toContain("Front squat");
   });
 
   it("returns friendly validation messages for malformed structure", () => {

@@ -37,6 +37,12 @@ export interface ProgramBasics {
   durationWeeks: string;
 }
 
+export interface ProgramTrainingDay {
+  weekday: string;
+  title: string;
+  notes: string;
+}
+
 export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPreviewResult {
   const lines = String(text || "")
     .split("\n")
@@ -144,6 +150,56 @@ export function updateProgramBasics(text: unknown, basics: ProgramBasics): strin
   }
 
   return [phaseRow, ...lines.filter((line) => line.length > 0)].join("\n");
+}
+
+export function readProgramTrainingDays(text: unknown): ProgramTrainingDay[] {
+  return String(text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.split(",")[0]?.trim().toUpperCase() === "SLOT")
+    .map((line) => {
+      const columns = line.split(",").map((column) => column.trim());
+      return {
+        weekday: columns[1] || "",
+        title: columns[2] || "",
+        notes: columns[3] || "",
+      };
+    });
+}
+
+export function updateProgramTrainingDays(text: unknown, days: ProgramTrainingDay[]): string {
+  const lines = String(text || "").split("\n");
+  const firstSlotIndex = lines.findIndex(isSlotLine);
+  const prefix = firstSlotIndex >= 0 ? lines.slice(0, firstSlotIndex) : lines;
+  const existingSegments = splitSlotSegments(firstSlotIndex >= 0 ? lines.slice(firstSlotIndex) : []);
+  const nextSegments = days.map((day, index) => {
+    const existingRest = existingSegments[index]?.slice(1) || [];
+    return [formatSlotRow(day, index), ...existingRest];
+  });
+  return [...prefix, ...nextSegments.flat()].filter((line) => line.length > 0).join("\n");
+}
+
+function splitSlotSegments(lines: string[]): string[][] {
+  const segments: string[][] = [];
+  lines.forEach((line) => {
+    if (isSlotLine(line) || segments.length === 0) {
+      segments.push([line]);
+      return;
+    }
+    segments[segments.length - 1].push(line);
+  });
+  return segments.filter((segment) => segment.some((line) => isSlotLine(line)));
+}
+
+function formatSlotRow(day: ProgramTrainingDay, index: number): string {
+  const weekday = day.weekday.trim();
+  const title = day.title.trim() || `Strength session ${index + 1}`;
+  const notes = day.notes.trim();
+  return `SLOT,${weekday},${title},${notes}`;
+}
+
+function isSlotLine(line: string): boolean {
+  return line.trim().split(",")[0]?.trim().toUpperCase() === "SLOT";
 }
 
 function findPhaseColumns(text: unknown): string[] | null {

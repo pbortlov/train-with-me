@@ -14,7 +14,13 @@ import {
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
 import { buildProgressHubModel } from "./src/domain/progress";
-import { buildProgramPreview, readProgramBasics, updateProgramBasics } from "./src/domain/program-preview";
+import {
+  buildProgramPreview,
+  readProgramBasics,
+  readProgramTrainingDays,
+  updateProgramBasics,
+  updateProgramTrainingDays,
+} from "./src/domain/program-preview";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
@@ -180,6 +186,8 @@ const phaseImportForm = document.getElementById("phase-import-form");
 const phaseEditIdInput = document.getElementById("phase-edit-id");
 const phaseNameOverrideInput = document.getElementById("phase-name-override");
 const phaseDurationWeeksInput = document.getElementById("phase-duration-weeks");
+const programDayListEl = document.getElementById("program-day-list");
+const addProgramDayButton = document.getElementById("add-program-day");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
 const phaseImportPreviewEl = document.getElementById("phase-import-preview");
@@ -662,6 +670,9 @@ function render() {
   renderPhaseTemplates();
   renderPhaseInstances();
   syncPhaseImportDisclosure();
+  syncProgramBasicsFromText();
+  syncProgramTrainingDaysFromText();
+  updatePhaseImportPreview();
   renderReview();
   renderAdherenceStats();
   renderProgramProgress();
@@ -3207,10 +3218,15 @@ function bindV2Events() {
   addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
   addSafeEventListener(phaseImportTextInput, "input", () => {
     syncProgramBasicsFromText();
+    syncProgramTrainingDaysFromText();
     updatePhaseImportPreview();
   });
   addSafeEventListener(phaseNameOverrideInput, "input", syncProgramBasicsToText);
   addSafeEventListener(phaseDurationWeeksInput, "input", syncProgramBasicsToText);
+  addSafeEventListener(addProgramDayButton, "click", addProgramTrainingDay);
+  addSafeEventListener(programDayListEl, "input", syncProgramTrainingDaysToText);
+  addSafeEventListener(programDayListEl, "change", syncProgramTrainingDaysToText);
+  addSafeEventListener(programDayListEl, "click", handleProgramDayAction);
   addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
   addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
   addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
@@ -4288,6 +4304,7 @@ function loadPhaseImportFile(event) {
   reader.onload = () => {
     phaseImportTextInput.value = String(reader.result || "");
     syncProgramBasicsFromText();
+    syncProgramTrainingDaysFromText();
     updatePhaseImportPreview();
   };
   reader.readAsText(file);
@@ -4361,6 +4378,7 @@ function resetPhaseImportForm() {
   }
   syncPhaseImportDisclosure();
   syncProgramBasicsFromText();
+  syncProgramTrainingDaysFromText();
   updatePhaseImportPreview();
 }
 
@@ -4393,6 +4411,100 @@ function syncProgramBasicsToText() {
     durationWeeks: phaseDurationWeeksInput?.value || "",
   });
   updatePhaseImportPreview();
+}
+
+function syncProgramTrainingDaysFromText() {
+  renderProgramDayEditor(readProgramTrainingDays(phaseImportTextInput?.value || ""));
+}
+
+function syncProgramTrainingDaysToText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = updateProgramTrainingDays(
+    phaseImportTextInput.value,
+    collectProgramTrainingDaysFromEditor(),
+  );
+  updatePhaseImportPreview();
+}
+
+function addProgramTrainingDay() {
+  const days = readProgramTrainingDays(phaseImportTextInput?.value || "");
+  days.push({
+    weekday: "Monday",
+    title: `Strength ${String.fromCharCode(65 + Math.min(days.length, 25))}`,
+    notes: "",
+  });
+  if (phaseImportTextInput) {
+    phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
+  }
+  renderProgramDayEditor(days);
+  updatePhaseImportPreview();
+}
+
+function handleProgramDayAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || target.dataset.role !== "remove-program-day") {
+    return;
+  }
+  const index = Number(target.dataset.index);
+  const days = collectProgramTrainingDaysFromEditor().filter((_, dayIndex) => dayIndex !== index);
+  if (phaseImportTextInput) {
+    phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
+  }
+  renderProgramDayEditor(days);
+  updatePhaseImportPreview();
+}
+
+function renderProgramDayEditor(days) {
+  if (!programDayListEl) {
+    return;
+  }
+  if (!days.length) {
+    programDayListEl.innerHTML = "<p class=\"planner-empty\">No training days yet. Add a day or paste program text.</p>";
+    return;
+  }
+  programDayListEl.innerHTML = days.map(renderProgramDayEditorRow).join("");
+}
+
+function renderProgramDayEditorRow(day, index) {
+  return `
+    <div class="program-day-row" data-index="${index}">
+      <label>
+        Weekday
+        <select data-role="program-day-weekday" data-index="${index}">
+          ${renderProgramWeekdayOptions(day.weekday)}
+        </select>
+      </label>
+      <label>
+        Day title
+        <input type="text" data-role="program-day-title" data-index="${index}" value="${escapeHtml(day.title)}" placeholder="e.g. Strength A" />
+      </label>
+      <label>
+        Notes
+        <input type="text" data-role="program-day-notes" data-index="${index}" value="${escapeHtml(day.notes)}" placeholder="e.g. Main lower-body day" />
+      </label>
+      <button type="button" class="ghost-button danger-button" data-role="remove-program-day" data-index="${index}">Remove day</button>
+    </div>
+  `;
+}
+
+function renderProgramWeekdayOptions(selectedWeekday) {
+  const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  return weekdays
+    .map((weekday) => `<option value="${weekday}"${weekday.toLowerCase() === String(selectedWeekday).toLowerCase() ? " selected" : ""}>${weekday}</option>`)
+    .join("");
+}
+
+function collectProgramTrainingDaysFromEditor() {
+  if (!programDayListEl) {
+    return [];
+  }
+  return Array.from(programDayListEl.querySelectorAll(".program-day-row")).map((row) => ({
+    weekday: row.querySelector('[data-role="program-day-weekday"]')?.value || "",
+    title: row.querySelector('[data-role="program-day-title"]')?.value || "",
+    notes: row.querySelector('[data-role="program-day-notes"]')?.value || "",
+  }));
 }
 
 function updatePhaseImportPreview() {
@@ -4479,6 +4591,7 @@ function startPhaseTemplateEdit(templateId) {
   phaseNameOverrideInput.value = template.name;
   phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
   syncProgramBasicsFromText();
+  syncProgramTrainingDaysFromText();
   updatePhaseImportPreview();
   if (savePhaseButton) {
     savePhaseButton.textContent = "Save phase changes";
