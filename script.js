@@ -174,6 +174,7 @@ const addPlannedSprintBlockButton = document.getElementById("add-planned-sprint-
 const plannedSprintBlocksListEl = document.getElementById("planned-sprint-blocks-list");
 const plannedSessionStatusEl = document.getElementById("planned-session-status");
 const cancelPlannedSessionButton = document.getElementById("cancel-planned-session");
+const phaseImportDetails = document.getElementById("phase-import-details");
 const phaseImportForm = document.getElementById("phase-import-form");
 const phaseEditIdInput = document.getElementById("phase-edit-id");
 const phaseNameOverrideInput = document.getElementById("phase-name-override");
@@ -657,6 +658,7 @@ function render() {
   renderCalendarSessionDetail();
   renderPhaseTemplates();
   renderPhaseInstances();
+  syncPhaseImportDisclosure();
   renderReview();
   renderAdherenceStats();
   renderProgramProgress();
@@ -4343,6 +4345,14 @@ function resetPhaseImportForm() {
   if (phaseImportStatusEl) {
     phaseImportStatusEl.textContent = "";
   }
+  syncPhaseImportDisclosure();
+}
+
+function syncPhaseImportDisclosure() {
+  if (!phaseImportDetails) {
+    return;
+  }
+  phaseImportDetails.open = Boolean(editingPhaseTemplateId) || phaseTemplates.length === 0;
 }
 
 function startPhaseTemplateEdit(templateId) {
@@ -4360,8 +4370,9 @@ function startPhaseTemplateEdit(templateId) {
     savePhaseButton.textContent = "Save phase changes";
   }
   cancelPhaseEditButton?.classList.remove("is-hidden");
+  syncPhaseImportDisclosure();
   phaseImportStatusEl.textContent = `Editing "${template.name}". Saving will refresh already planned generated sessions from this template.`;
-  phaseImportForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+  phaseImportDetails?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function regenerateScheduledPhaseInstances(template) {

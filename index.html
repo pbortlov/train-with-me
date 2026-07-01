@@ -318,47 +318,57 @@
 
       <section class="view-panel" data-view="phases">
         <article class="card">
-          <h2>Phases</h2>
+          <h2>Programs</h2>
           <p class="hint">
-            Import one strength phase per file or paste. Saved templates can also be loaded back here for editing, and
-            scheduled planned sessions will refresh from the updated template. Program weeks start from the chosen start date.
+            Manage scheduled strength programs first, then inspect or schedule saved templates. Create or import a new
+            program when you need to change the reusable structure.
           </p>
-          <form id="phase-import-form">
-            <input type="hidden" id="phase-edit-id" />
-            <div class="grid">
-              <label>
-                Phase name override
-                <input type="text" id="phase-name-override" placeholder="Optional; import can define the name" />
-              </label>
-              <label>
-                Import CSV file
-                <input type="file" id="phase-import-file" accept=".csv,text/csv,.txt,text/plain" />
-              </label>
-            </div>
-            <label>
-              Phase import content
-              <textarea
-                id="phase-import-text"
-                rows="10"
-                placeholder="PHASE,Phase 1,5&#10;SLOT,Tuesday,Strength A,Main lower-body day&#10;BLOCK,A,15-20 mins,90-120s,3-4&#10;EXERCISE,A1,Back squat,2x8-10,Heavy,100"
-              ></textarea>
-            </label>
-            <div class="dialog-actions">
-              <button type="submit" id="save-phase-button">Import strength phase</button>
-              <button type="button" id="cancel-phase-edit" class="ghost-button is-hidden">Cancel edit</button>
-            </div>
-            <p id="phase-import-status" class="hint"></p>
-          </form>
         </article>
 
         <article class="card">
-          <h3>Saved phase templates</h3>
+          <h3>Scheduled programs</h3>
+          <div id="phase-instance-list" class="phase-list"></div>
+        </article>
+
+        <article class="card">
+          <h3>Saved program templates</h3>
           <div id="phase-template-list" class="phase-list"></div>
         </article>
 
         <article class="card">
-          <h3>Scheduled phase instances</h3>
-          <div id="phase-instance-list" class="phase-list"></div>
+          <details id="phase-import-details" class="phase-import-details">
+            <summary>Create or import program</summary>
+            <p class="hint">
+              Import one strength phase per file or paste. Saved templates can also be loaded here for editing, and
+              scheduled planned sessions will refresh from the updated template. Program weeks start from the chosen start date.
+            </p>
+            <form id="phase-import-form">
+              <input type="hidden" id="phase-edit-id" />
+              <div class="grid">
+                <label>
+                  Phase name override
+                  <input type="text" id="phase-name-override" placeholder="Optional; import can define the name" />
+                </label>
+                <label>
+                  Import CSV file
+                  <input type="file" id="phase-import-file" accept=".csv,text/csv,.txt,text/plain" />
+                </label>
+              </div>
+              <label>
+                Phase import content
+                <textarea
+                  id="phase-import-text"
+                  rows="10"
+                  placeholder="PHASE,Phase 1,5&#10;SLOT,Tuesday,Strength A,Main lower-body day&#10;BLOCK,A,15-20 mins,90-120s,3-4&#10;EXERCISE,A1,Back squat,2x8-10,Heavy,100"
+                ></textarea>
+              </label>
+              <div class="dialog-actions">
+                <button type="submit" id="save-phase-button">Import strength phase</button>
+                <button type="button" id="cancel-phase-edit" class="ghost-button is-hidden">Cancel edit</button>
+              </div>
+              <p id="phase-import-status" class="hint"></p>
+            </form>
+          </details>
         </article>
       </section>
 
