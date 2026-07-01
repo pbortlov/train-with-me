@@ -169,6 +169,7 @@ npm run preview
 - Existing installations using the historical `service-worker.js` are migrated through a compatibility worker that removes the obsolete cache before the generated worker takes control.
 - Android Chromium browsers use the native install prompt when available.
 - iOS browsers do not expose that prompt; install from Safari with Share, then Add to Home Screen.
+- Installed iOS web apps opt into safe-area handling so content and bottom navigation avoid the status bar, screen edges, and home indicator.
 - Development mode does not register the production service worker.
 - Browser storage clearing, private browsing cleanup, device loss, or changing the Pages origin can permanently remove local data.
 - The Today page includes a local-first onboarding reminder, and Data includes a backup safety checklist.
@@ -176,6 +177,18 @@ npm run preview
 Export a JSON backup from Data after important training changes and store it outside the browser. Test restoring backups periodically before relying on them.
 
 ## Manual Test Checklists
+
+### Commit: Polish iOS standalone layout
+
+- Run `npm run build` and `npm run preview`.
+- Open the preview URL on an iPhone in Safari.
+- Use Share, then Add to Home Screen, if the app is not already installed.
+- Launch Train With Me from the home screen.
+- Confirm top content starts below the iOS status area and is not clipped.
+- Confirm the fixed bottom navigation sits above the home indicator.
+- Confirm the bottom navigation remains usable after switching pages.
+- Rotate to landscape and confirm content and navigation avoid the side safe areas.
+- Confirm existing local workout data remains visible.
 
 ### Commit: Show every run pace in activity chart
 
