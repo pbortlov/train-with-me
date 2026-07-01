@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   buildProgramPreview,
   readProgramBasics,
+  readProgramDayBlocks,
   readProgramTrainingDays,
   updateProgramBasics,
+  updateProgramDayBlocks,
   updateProgramTrainingDays,
 } from "../src/domain/program-preview";
 
@@ -102,6 +104,55 @@ describe("program import preview", () => {
     ]);
     expect(removed).not.toContain("Strength B");
     expect(removed).not.toContain("Front squat");
+  });
+
+  it("reads blocks for each training day", () => {
+    expect(readProgramDayBlocks(sampleProgram)).toEqual([
+      {
+        blocks: [
+          { label: "A", duration: "15-20 mins", rest: "90-120s", sets: "3-4" },
+        ],
+      },
+    ]);
+  });
+
+  it("updates block rows while preserving exercise rows", () => {
+    const updated = updateProgramDayBlocks(sampleProgram, [
+      {
+        blocks: [
+          { label: "Main", duration: "20 mins", rest: "120s", sets: "4" },
+        ],
+      },
+    ]);
+
+    expect(updated).toContain("BLOCK,Main,20 mins,120s,4");
+    expect(updated).toContain("EXERCISE,A1,Back squat,2x8-10,Heavy,100");
+  });
+
+  it("adds and removes block segments within a training day", () => {
+    const twoBlockProgram = [
+      sampleProgram,
+      "BLOCK,B,10 mins,45s,2",
+      "EXERCISE,B1,Lunge,10 each leg,,",
+    ].join("\n");
+
+    expect(updateProgramDayBlocks(sampleProgram, [
+      {
+        blocks: [
+          { label: "A", duration: "15-20 mins", rest: "90-120s", sets: "3-4" },
+          { label: "B", duration: "10 mins", rest: "45s", sets: "2" },
+        ],
+      },
+    ])).toContain("BLOCK,B,10 mins,45s,2");
+    const removed = updateProgramDayBlocks(twoBlockProgram, [
+      {
+        blocks: [
+          { label: "A", duration: "15-20 mins", rest: "90-120s", sets: "3-4" },
+        ],
+      },
+    ]);
+    expect(removed).not.toContain("BLOCK,B");
+    expect(removed).not.toContain("Lunge");
   });
 
   it("returns friendly validation messages for malformed structure", () => {

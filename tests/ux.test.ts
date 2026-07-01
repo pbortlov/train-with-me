@@ -55,6 +55,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="phase-duration-weeks"');
     expect(index).toContain('id="add-program-day"');
     expect(index).toContain('id="program-day-list"');
+    expect(index).toContain("Edit weekly training days and blocks. Exercises remain in the import text for now.");
     expect(index).toContain('id="phase-import-preview"');
     expect(index).toContain("Paste or import a program to preview its training days, blocks, and exercises.");
   });

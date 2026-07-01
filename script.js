@@ -16,8 +16,10 @@ import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src
 import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
+  readProgramDayBlocks,
   readProgramBasics,
   readProgramTrainingDays,
+  updateProgramDayBlocks,
   updateProgramBasics,
   updateProgramTrainingDays,
 } from "./src/domain/program-preview";
@@ -3224,9 +3226,9 @@ function bindV2Events() {
   addSafeEventListener(phaseNameOverrideInput, "input", syncProgramBasicsToText);
   addSafeEventListener(phaseDurationWeeksInput, "input", syncProgramBasicsToText);
   addSafeEventListener(addProgramDayButton, "click", addProgramTrainingDay);
-  addSafeEventListener(programDayListEl, "input", syncProgramTrainingDaysToText);
-  addSafeEventListener(programDayListEl, "change", syncProgramTrainingDaysToText);
-  addSafeEventListener(programDayListEl, "click", handleProgramDayAction);
+  addSafeEventListener(programDayListEl, "input", handleProgramEditorInput);
+  addSafeEventListener(programDayListEl, "change", handleProgramEditorInput);
+  addSafeEventListener(programDayListEl, "click", handleProgramEditorAction);
   addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
   addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
   addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
@@ -4414,7 +4416,10 @@ function syncProgramBasicsToText() {
 }
 
 function syncProgramTrainingDaysFromText() {
-  renderProgramDayEditor(readProgramTrainingDays(phaseImportTextInput?.value || ""));
+  renderProgramDayEditor(
+    readProgramTrainingDays(phaseImportTextInput?.value || ""),
+    readProgramDayBlocks(phaseImportTextInput?.value || ""),
+  );
 }
 
 function syncProgramTrainingDaysToText() {
@@ -4425,7 +4430,37 @@ function syncProgramTrainingDaysToText() {
     phaseImportTextInput.value,
     collectProgramTrainingDaysFromEditor(),
   );
+  phaseImportTextInput.value = updateProgramDayBlocks(
+    phaseImportTextInput.value,
+    collectProgramDayBlocksFromEditor(),
+  );
   updatePhaseImportPreview();
+}
+
+function syncProgramDayBlocksToText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = updateProgramDayBlocks(
+    phaseImportTextInput.value,
+    collectProgramDayBlocksFromEditor(),
+  );
+  updatePhaseImportPreview();
+}
+
+function handleProgramEditorInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const role = target.dataset.role || "";
+  if (role.startsWith("program-block-")) {
+    syncProgramDayBlocksToText();
+    return;
+  }
+  if (role.startsWith("program-day-")) {
+    syncProgramTrainingDaysToText();
+  }
 }
 
 function addProgramTrainingDay() {
@@ -4438,25 +4473,57 @@ function addProgramTrainingDay() {
   if (phaseImportTextInput) {
     phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
   }
-  renderProgramDayEditor(days);
+  renderProgramDayEditor(days, readProgramDayBlocks(phaseImportTextInput?.value || ""));
   updatePhaseImportPreview();
 }
 
-function handleProgramDayAction(event) {
+function handleProgramEditorAction(event) {
   const target = event.target;
-  if (!(target instanceof HTMLElement) || target.dataset.role !== "remove-program-day") {
+  if (!(target instanceof HTMLElement)) {
     return;
   }
-  const index = Number(target.dataset.index);
-  const days = collectProgramTrainingDaysFromEditor().filter((_, dayIndex) => dayIndex !== index);
-  if (phaseImportTextInput) {
-    phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
+  if (target.dataset.role === "remove-program-day") {
+    const index = Number(target.dataset.index);
+    const days = collectProgramTrainingDaysFromEditor().filter((_, dayIndex) => dayIndex !== index);
+    const dayBlocks = collectProgramDayBlocksFromEditor().filter((_, dayIndex) => dayIndex !== index);
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
+      phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+    }
+    renderProgramDayEditor(days, dayBlocks);
+    updatePhaseImportPreview();
+    return;
   }
-  renderProgramDayEditor(days);
-  updatePhaseImportPreview();
+  if (target.dataset.role === "add-program-block") {
+    const dayIndex = Number(target.dataset.dayIndex);
+    const days = collectProgramTrainingDaysFromEditor();
+    const dayBlocks = collectProgramDayBlocksFromEditor();
+    const blocks = dayBlocks[dayIndex]?.blocks || [];
+    blocks.push({ label: `Block ${blocks.length + 1}`, duration: "", rest: "", sets: "" });
+    dayBlocks[dayIndex] = { blocks };
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+    }
+    renderProgramDayEditor(days, dayBlocks);
+    updatePhaseImportPreview();
+    return;
+  }
+  if (target.dataset.role === "remove-program-block") {
+    const dayIndex = Number(target.dataset.dayIndex);
+    const blockIndex = Number(target.dataset.blockIndex);
+    const days = collectProgramTrainingDaysFromEditor();
+    const dayBlocks = collectProgramDayBlocksFromEditor();
+    const blocks = (dayBlocks[dayIndex]?.blocks || []).filter((_, index) => index !== blockIndex);
+    dayBlocks[dayIndex] = { blocks };
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+    }
+    renderProgramDayEditor(days, dayBlocks);
+    updatePhaseImportPreview();
+  }
 }
 
-function renderProgramDayEditor(days) {
+function renderProgramDayEditor(days, dayBlocks = []) {
   if (!programDayListEl) {
     return;
   }
@@ -4464,10 +4531,10 @@ function renderProgramDayEditor(days) {
     programDayListEl.innerHTML = "<p class=\"planner-empty\">No training days yet. Add a day or paste program text.</p>";
     return;
   }
-  programDayListEl.innerHTML = days.map(renderProgramDayEditorRow).join("");
+  programDayListEl.innerHTML = days.map((day, index) => renderProgramDayEditorRow(day, index, dayBlocks[index]?.blocks || [])).join("");
 }
 
-function renderProgramDayEditorRow(day, index) {
+function renderProgramDayEditorRow(day, index, blocks) {
   return `
     <div class="program-day-row" data-index="${index}">
       <label>
@@ -4485,6 +4552,39 @@ function renderProgramDayEditorRow(day, index) {
         <input type="text" data-role="program-day-notes" data-index="${index}" value="${escapeHtml(day.notes)}" placeholder="e.g. Main lower-body day" />
       </label>
       <button type="button" class="ghost-button danger-button" data-role="remove-program-day" data-index="${index}">Remove day</button>
+      <div class="program-block-editor">
+        <div class="program-editor-header">
+          <h5>Blocks</h5>
+          <button type="button" class="ghost-button" data-role="add-program-block" data-day-index="${index}">Add block</button>
+        </div>
+        <div class="program-block-list">
+          ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex)).join("") : "<p class=\"planner-empty\">No blocks yet. Add a block or edit the import text.</p>"}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderProgramBlockEditorRow(block, dayIndex, blockIndex) {
+  return `
+    <div class="program-block-row" data-day-index="${dayIndex}" data-block-index="${blockIndex}">
+      <label>
+        Label
+        <input type="text" data-role="program-block-label" value="${escapeHtml(block.label)}" placeholder="A" />
+      </label>
+      <label>
+        Duration
+        <input type="text" data-role="program-block-duration" value="${escapeHtml(block.duration)}" placeholder="15-20 mins" />
+      </label>
+      <label>
+        Rest
+        <input type="text" data-role="program-block-rest" value="${escapeHtml(block.rest)}" placeholder="90-120s" />
+      </label>
+      <label>
+        Sets
+        <input type="text" data-role="program-block-sets" value="${escapeHtml(block.sets)}" placeholder="3-4" />
+      </label>
+      <button type="button" class="ghost-button danger-button" data-role="remove-program-block" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Remove block</button>
     </div>
   `;
 }
@@ -4504,6 +4604,20 @@ function collectProgramTrainingDaysFromEditor() {
     weekday: row.querySelector('[data-role="program-day-weekday"]')?.value || "",
     title: row.querySelector('[data-role="program-day-title"]')?.value || "",
     notes: row.querySelector('[data-role="program-day-notes"]')?.value || "",
+  }));
+}
+
+function collectProgramDayBlocksFromEditor() {
+  if (!programDayListEl) {
+    return [];
+  }
+  return Array.from(programDayListEl.querySelectorAll(".program-day-row")).map((dayRow) => ({
+    blocks: Array.from(dayRow.querySelectorAll(".program-block-row")).map((blockRow) => ({
+      label: blockRow.querySelector('[data-role="program-block-label"]')?.value || "",
+      duration: blockRow.querySelector('[data-role="program-block-duration"]')?.value || "",
+      rest: blockRow.querySelector('[data-role="program-block-rest"]')?.value || "",
+      sets: blockRow.querySelector('[data-role="program-block-sets"]')?.value || "",
+    })),
   }));
 }
 

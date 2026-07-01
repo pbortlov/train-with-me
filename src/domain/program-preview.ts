@@ -43,6 +43,17 @@ export interface ProgramTrainingDay {
   notes: string;
 }
 
+export interface ProgramBlockEditor {
+  label: string;
+  duration: string;
+  rest: string;
+  sets: string;
+}
+
+export interface ProgramDayBlocks {
+  blocks: ProgramBlockEditor[];
+}
+
 export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPreviewResult {
   const lines = String(text || "")
     .split("\n")
@@ -179,6 +190,45 @@ export function updateProgramTrainingDays(text: unknown, days: ProgramTrainingDa
   return [...prefix, ...nextSegments.flat()].filter((line) => line.length > 0).join("\n");
 }
 
+export function readProgramDayBlocks(text: unknown): ProgramDayBlocks[] {
+  return splitSlotSegmentsFromText(text).map((segment) => ({
+    blocks: segment
+      .filter(isBlockLine)
+      .map((line) => {
+        const columns = line.split(",").map((column) => column.trim());
+        return {
+          label: columns[1] || "",
+          duration: columns[2] || "",
+          rest: columns[3] || "",
+          sets: columns[4] || "",
+        };
+      }),
+  }));
+}
+
+export function updateProgramDayBlocks(text: unknown, dayBlocks: ProgramDayBlocks[]): string {
+  const lines = String(text || "").split("\n");
+  const firstSlotIndex = lines.findIndex(isSlotLine);
+  if (firstSlotIndex < 0) {
+    return lines.filter((line) => line.length > 0).join("\n");
+  }
+
+  const prefix = lines.slice(0, firstSlotIndex);
+  const existingSegments = splitSlotSegments(lines.slice(firstSlotIndex));
+  const nextSegments = existingSegments.map((segment, dayIndex) => {
+    const slotRow = segment[0];
+    const blockSegments = splitBlockSegments(segment.slice(1));
+    const nextBlocks = dayBlocks[dayIndex]?.blocks || [];
+    const nextBlockRows = nextBlocks.map((block, blockIndex) => {
+      const existingExercises = blockSegments[blockIndex]?.slice(1) || [];
+      return [formatBlockRow(block, blockIndex), ...existingExercises];
+    });
+    return [slotRow, ...nextBlockRows.flat()];
+  });
+
+  return [...prefix, ...nextSegments.flat()].filter((line) => line.length > 0).join("\n");
+}
+
 function splitSlotSegments(lines: string[]): string[][] {
   const segments: string[][] = [];
   lines.forEach((line) => {
@@ -191,6 +241,24 @@ function splitSlotSegments(lines: string[]): string[][] {
   return segments.filter((segment) => segment.some((line) => isSlotLine(line)));
 }
 
+function splitSlotSegmentsFromText(text: unknown): string[][] {
+  const lines = String(text || "").split("\n");
+  const firstSlotIndex = lines.findIndex(isSlotLine);
+  return firstSlotIndex >= 0 ? splitSlotSegments(lines.slice(firstSlotIndex)) : [];
+}
+
+function splitBlockSegments(lines: string[]): string[][] {
+  const segments: string[][] = [];
+  lines.forEach((line) => {
+    if (isBlockLine(line) || segments.length === 0) {
+      segments.push([line]);
+      return;
+    }
+    segments[segments.length - 1].push(line);
+  });
+  return segments.filter((segment) => segment.some((line) => isBlockLine(line)));
+}
+
 function formatSlotRow(day: ProgramTrainingDay, index: number): string {
   const weekday = day.weekday.trim();
   const title = day.title.trim() || `Strength session ${index + 1}`;
@@ -200,6 +268,15 @@ function formatSlotRow(day: ProgramTrainingDay, index: number): string {
 
 function isSlotLine(line: string): boolean {
   return line.trim().split(",")[0]?.trim().toUpperCase() === "SLOT";
+}
+
+function formatBlockRow(block: ProgramBlockEditor, index: number): string {
+  const label = block.label.trim() || `Block ${index + 1}`;
+  return `BLOCK,${label},${block.duration.trim()},${block.rest.trim()},${block.sets.trim()}`;
+}
+
+function isBlockLine(line: string): boolean {
+  return line.trim().split(",")[0]?.trim().toUpperCase() === "BLOCK";
 }
 
 function findPhaseColumns(text: unknown): string[] | null {

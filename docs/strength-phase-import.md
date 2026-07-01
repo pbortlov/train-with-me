@@ -14,6 +14,8 @@ import format; saving still uses the same row contract below.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.
+Block fields update `BLOCK` rows while preserving the exercise rows that belong
+to each block.
 
 The parser is order-based. It expects rows in a logical sequence:
 - `PHASE`
