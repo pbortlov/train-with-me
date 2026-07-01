@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildProgramPreview } from "../src/domain/program-preview";
+import { buildProgramPreview, readProgramBasics, updateProgramBasics } from "../src/domain/program-preview";
 
 const sampleProgram = [
   "PHASE,Phase 1,5",
@@ -44,6 +44,23 @@ describe("program import preview", () => {
     const result = buildProgramPreview(sampleProgram, "Winter strength");
 
     expect(result.model?.name).toBe("Winter strength");
+  });
+
+  it("reads program basics from import text", () => {
+    expect(readProgramBasics(sampleProgram)).toEqual({ name: "Phase 1", durationWeeks: "5" });
+    expect(readProgramBasics(sampleProgram, "Winter strength")).toEqual({
+      name: "Winter strength",
+      durationWeeks: "5",
+    });
+  });
+
+  it("updates the PHASE row from program basics fields", () => {
+    expect(updateProgramBasics(sampleProgram, { name: "Winter strength", durationWeeks: "6" }).split("\n")[0]).toBe(
+      "PHASE,Winter strength,6",
+    );
+    expect(updateProgramBasics("SLOT,Tuesday,Strength A,", { name: "New program", durationWeeks: "4" })).toBe(
+      "PHASE,New program,4\nSLOT,Tuesday,Strength A,",
+    );
   });
 
   it("returns friendly validation messages for malformed structure", () => {

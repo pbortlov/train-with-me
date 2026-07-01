@@ -32,6 +32,11 @@ export interface ProgramPreviewResult {
   error: string;
 }
 
+export interface ProgramBasics {
+  name: string;
+  durationWeeks: string;
+}
+
 export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPreviewResult {
   const lines = String(text || "")
     .split("\n")
@@ -115,4 +120,36 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
   }
 
   return { model, error: "" };
+}
+
+export function readProgramBasics(text: unknown, overrideName = ""): ProgramBasics {
+  const phaseColumns = findPhaseColumns(text);
+  return {
+    name: overrideName.trim() || phaseColumns?.[1] || "",
+    durationWeeks: phaseColumns?.[2] || "",
+  };
+}
+
+export function updateProgramBasics(text: unknown, basics: ProgramBasics): string {
+  const lines = String(text || "").split("\n");
+  const normalizedName = basics.name.trim();
+  const normalizedDuration = basics.durationWeeks.trim();
+  const phaseRow = `PHASE,${normalizedName},${normalizedDuration}`;
+  const phaseIndex = lines.findIndex((line) => line.trim().split(",")[0]?.trim().toUpperCase() === "PHASE");
+
+  if (phaseIndex >= 0) {
+    const nextLines = [...lines];
+    nextLines[phaseIndex] = phaseRow;
+    return nextLines.join("\n");
+  }
+
+  return [phaseRow, ...lines.filter((line) => line.length > 0)].join("\n");
+}
+
+function findPhaseColumns(text: unknown): string[] | null {
+  const phaseLine = String(text || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.split(",")[0]?.trim().toUpperCase() === "PHASE");
+  return phaseLine ? phaseLine.split(",").map((column) => column.trim()) : null;
 }

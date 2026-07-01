@@ -11,6 +11,7 @@ One imported file should describe one reusable strength phase.
 The Programs page previews pasted or imported rows as program basics, training
 days, blocks, and exercises before saving. The preview does not change the
 import format; saving still uses the same row contract below.
+The program name and duration fields update the `PHASE` row for easier editing.
 
 The parser is order-based. It expects rows in a logical sequence:
 - `PHASE`

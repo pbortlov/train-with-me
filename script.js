@@ -14,7 +14,7 @@ import {
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
 import { buildProgressHubModel } from "./src/domain/progress";
-import { buildProgramPreview } from "./src/domain/program-preview";
+import { buildProgramPreview, readProgramBasics, updateProgramBasics } from "./src/domain/program-preview";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
@@ -179,6 +179,7 @@ const phaseImportDetails = document.getElementById("phase-import-details");
 const phaseImportForm = document.getElementById("phase-import-form");
 const phaseEditIdInput = document.getElementById("phase-edit-id");
 const phaseNameOverrideInput = document.getElementById("phase-name-override");
+const phaseDurationWeeksInput = document.getElementById("phase-duration-weeks");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
 const phaseImportPreviewEl = document.getElementById("phase-import-preview");
@@ -3204,8 +3205,12 @@ function bindV2Events() {
     }
   });
   addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
-  addSafeEventListener(phaseImportTextInput, "input", updatePhaseImportPreview);
-  addSafeEventListener(phaseNameOverrideInput, "input", updatePhaseImportPreview);
+  addSafeEventListener(phaseImportTextInput, "input", () => {
+    syncProgramBasicsFromText();
+    updatePhaseImportPreview();
+  });
+  addSafeEventListener(phaseNameOverrideInput, "input", syncProgramBasicsToText);
+  addSafeEventListener(phaseDurationWeeksInput, "input", syncProgramBasicsToText);
   addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
   addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
   addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
@@ -4282,6 +4287,7 @@ function loadPhaseImportFile(event) {
   const reader = new FileReader();
   reader.onload = () => {
     phaseImportTextInput.value = String(reader.result || "");
+    syncProgramBasicsFromText();
     updatePhaseImportPreview();
   };
   reader.readAsText(file);
@@ -4343,6 +4349,9 @@ function resetPhaseImportForm() {
   if (phaseEditIdInput) {
     phaseEditIdInput.value = "";
   }
+  if (phaseDurationWeeksInput) {
+    phaseDurationWeeksInput.value = "";
+  }
   if (savePhaseButton) {
     savePhaseButton.textContent = "Import strength phase";
   }
@@ -4351,6 +4360,7 @@ function resetPhaseImportForm() {
     phaseImportStatusEl.textContent = "";
   }
   syncPhaseImportDisclosure();
+  syncProgramBasicsFromText();
   updatePhaseImportPreview();
 }
 
@@ -4359,6 +4369,30 @@ function syncPhaseImportDisclosure() {
     return;
   }
   phaseImportDetails.open = Boolean(editingPhaseTemplateId) || phaseTemplates.length === 0;
+}
+
+function syncProgramBasicsFromText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  const basics = readProgramBasics(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
+  if (phaseNameOverrideInput && phaseNameOverrideInput.value !== basics.name) {
+    phaseNameOverrideInput.value = basics.name;
+  }
+  if (phaseDurationWeeksInput && phaseDurationWeeksInput.value !== basics.durationWeeks) {
+    phaseDurationWeeksInput.value = basics.durationWeeks;
+  }
+}
+
+function syncProgramBasicsToText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = updateProgramBasics(phaseImportTextInput.value, {
+    name: phaseNameOverrideInput?.value || "",
+    durationWeeks: phaseDurationWeeksInput?.value || "",
+  });
+  updatePhaseImportPreview();
 }
 
 function updatePhaseImportPreview() {
@@ -4444,6 +4478,7 @@ function startPhaseTemplateEdit(templateId) {
   }
   phaseNameOverrideInput.value = template.name;
   phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
+  syncProgramBasicsFromText();
   updatePhaseImportPreview();
   if (savePhaseButton) {
     savePhaseButton.textContent = "Save phase changes";
