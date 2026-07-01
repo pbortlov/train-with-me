@@ -25,6 +25,7 @@ application.
 - Bundle Chart.js locally.
 - Generate the manifest and service worker with Workbox through `vite-plugin-pwa`.
 - Ship PNG install icons and Apple web app metadata so Android and iOS can both install the static PWA from the browser.
+- Opt into `viewport-fit=cover` and apply CSS safe-area insets so installed iOS web apps do not overlap the status area, screen edges, or home indicator.
 - Keep a compatibility worker at the historical `service-worker.js` URL so existing cache-first installations delete the obsolete cache and can load the new generated worker.
 - Precache the production application shell and use a network-first navigation fallback to the cached app.
 - Download updates in the background but require the user to select `Update now` before activation and reload.
@@ -43,6 +44,7 @@ application.
 - Charts and the application shell work after the first successful online load without a CDN.
 - Deployments work below the nested GitHub Pages project path.
 - Android Chromium browsers use the native install prompt; iOS users install through Safari's Share menu and Add to Home Screen.
+- The installed iOS layout uses safe-area padding, so browser and standalone views can have slightly different edge spacing.
 - Browser data remains local and origin-bound; users still need external JSON backups.
 - Moving users from another hostname or protocol requires a backup export from
   the old origin and restore at the GitHub Pages origin.
