@@ -72,7 +72,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 ## Main Pages
 - `Today`: daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
 - `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, and `Log & Complete` execution logging
-- `Programs`: import, edit, inspect, and schedule reusable strength phase templates
+- `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions
 - `Stats`: Progress Hub, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts
 - `Data`: backup, exercise library, and workout history management

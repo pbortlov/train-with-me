@@ -779,6 +779,16 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
+.phase-import-details summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.phase-import-details form {
+  margin-top: 0.85rem;
+}
+
 .phase-template-workouts {
   display: grid;
   gap: 0.75rem;

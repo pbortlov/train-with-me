@@ -33,4 +33,21 @@ describe("local-first UX guidance", () => {
       expect(inputMatch?.[0], `${id} must allow ":" entry on phones`).not.toContain('inputmode="numeric"');
     });
   });
+
+  it("orders Programs around scheduled programs, templates, then create/import", () => {
+    const scheduledIndex = index.indexOf('id="phase-instance-list"');
+    const templatesIndex = index.indexOf('id="phase-template-list"');
+    const importDetailsIndex = index.indexOf('id="phase-import-details"');
+    const importFormIndex = index.indexOf('id="phase-import-form"');
+
+    expect(index).toContain("<h2>Programs</h2>");
+    expect(scheduledIndex).toBeGreaterThan(-1);
+    expect(templatesIndex).toBeGreaterThan(-1);
+    expect(importDetailsIndex).toBeGreaterThan(-1);
+    expect(importFormIndex).toBeGreaterThan(-1);
+    expect(scheduledIndex).toBeLessThan(templatesIndex);
+    expect(templatesIndex).toBeLessThan(importDetailsIndex);
+    expect(importDetailsIndex).toBeLessThan(importFormIndex);
+    expect(index).toContain("<summary>Create or import program</summary>");
+  });
 });
