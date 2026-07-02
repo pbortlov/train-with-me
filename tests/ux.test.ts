@@ -72,8 +72,19 @@ describe("local-first UX guidance", () => {
 
   it("offers a duplicate action for saved program templates", () => {
     expect(script).toContain('data-role="duplicate-phase-template"');
-    expect(script).toContain("Duplicate");
+    expect(script).toContain("Load copy");
     expect(script).toContain("Loaded a copy of");
+  });
+
+  it("opens the import builder before focusing the copied program name", () => {
+    const openIndex = script.indexOf("phaseImportDetails.open = true;");
+    const focusIndex = script.indexOf("phaseNameOverrideInput.focus({ preventScroll: true });");
+
+    expect(openIndex).toBeGreaterThan(-1);
+    expect(focusIndex).toBeGreaterThan(-1);
+    expect(openIndex).toBeLessThan(focusIndex);
+    expect(script).toContain("requestAnimationFrame(() => {");
+    expect(script).toContain("setSelectionRange(end, end);");
   });
 
   it("offers a copy action for the current import text", () => {

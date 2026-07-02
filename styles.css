@@ -348,6 +348,7 @@ textarea {
   padding: 0.6rem 0.7rem;
   background: #0b1120;
   color: var(--text);
+  caret-color: var(--accent);
 }
 
 input.field-invalid,

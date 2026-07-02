@@ -15,8 +15,8 @@ The builder also includes a starter example so new templates can begin from a
 clear, editable structure.
 The builder panel now shows a short checklist to help people start from the
 starter example, edit the structure, and save the reusable template.
-Saved templates can also be duplicated into a new draft before editing, which
-keeps reuse fast without overwriting the original template.
+Saved templates can also be loaded as a copy into a new draft before editing,
+which keeps reuse fast without overwriting the original template.
 The builder also includes a copy action so the current import text can be
 saved elsewhere or reused in another draft.
 There is also a reset action that clears the builder back to a blank draft

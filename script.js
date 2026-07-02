@@ -4960,6 +4960,16 @@ function startPhaseTemplateDuplicate(templateId) {
     phaseImportDetails.open = true;
     phaseImportDetails.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+  if (phaseNameOverrideInput) {
+    // Wait until the details panel is open before moving focus, otherwise mobile browsers can drop the caret.
+    requestAnimationFrame(() => {
+      phaseNameOverrideInput.focus({ preventScroll: true });
+      if (typeof phaseNameOverrideInput.setSelectionRange === "function") {
+        const end = phaseNameOverrideInput.value.length;
+        phaseNameOverrideInput.setSelectionRange(end, end);
+      }
+    });
+  }
 }
 
 function regenerateScheduledPhaseInstances(template) {
@@ -5305,7 +5315,7 @@ function renderPhaseTemplates() {
             </label>
             <div class="phase-actions">
               <button type="button" class="ghost-button" data-role="edit-phase-template" data-id="${template.id}">Edit</button>
-              <button type="button" class="ghost-button" data-role="duplicate-phase-template" data-id="${template.id}">Duplicate</button>
+              <button type="button" class="ghost-button" data-role="duplicate-phase-template" data-id="${template.id}">Load copy</button>
               <button type="button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
               <button type="button" class="ghost-button danger-button" data-role="delete-phase-template" data-id="${template.id}">Delete</button>
             </div>
