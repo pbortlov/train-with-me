@@ -21,6 +21,8 @@ The builder also includes a copy action so the current import text can be
 saved elsewhere or reused in another draft.
 There is also a reset action that clears the builder back to a blank draft
 without touching saved templates.
+The builder includes a saved-template picker so an existing template can be
+loaded for editing from the same screen.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.

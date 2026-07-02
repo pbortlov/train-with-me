@@ -797,6 +797,22 @@ textarea:focus-visible {
   flex-wrap: wrap;
 }
 
+.program-template-loader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: end;
+  margin-bottom: 0.85rem;
+}
+
+.program-template-loader label {
+  margin: 0;
+}
+
+.program-template-loader select {
+  width: 100%;
+}
+
 .program-builder-guide {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -926,6 +942,12 @@ textarea:focus-visible {
   grid-template-columns: minmax(4rem, 0.55fr) minmax(0, 1fr) minmax(6rem, 0.8fr) minmax(0, 1fr) minmax(5rem, 0.65fr) auto;
   gap: 0.4rem;
   align-items: end;
+}
+
+@media (max-width: 760px) {
+  .program-template-loader {
+    grid-template-columns: 1fr;
+  }
 }
 
 .phase-template-workouts {

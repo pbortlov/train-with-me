@@ -199,6 +199,8 @@ const addProgramDayButton = document.getElementById("add-program-day");
 const loadProgramExampleButton = document.getElementById("load-program-example");
 const copyProgramTextButton = document.getElementById("copy-program-text");
 const resetProgramBuilderButton = document.getElementById("reset-program-builder");
+const programTemplatePicker = document.getElementById("program-template-picker");
+const loadProgramTemplateButton = document.getElementById("load-program-template");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
 const phaseImportPreviewEl = document.getElementById("phase-import-preview");
@@ -679,6 +681,7 @@ function render() {
   renderCalendar();
   renderCalendarSessionDetail();
   renderPhaseTemplates();
+  renderProgramTemplatePicker();
   renderPhaseInstances();
   syncPhaseImportDisclosure();
   syncProgramBasicsFromText();
@@ -3238,6 +3241,7 @@ function bindV2Events() {
   addSafeEventListener(loadProgramExampleButton, "click", loadProgramStarterExample);
   addSafeEventListener(copyProgramTextButton, "click", copyProgramImportText);
   addSafeEventListener(resetProgramBuilderButton, "click", resetProgramBuilder);
+  addSafeEventListener(loadProgramTemplateButton, "click", loadSelectedProgramTemplate);
   addSafeEventListener(programDayListEl, "input", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "change", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "click", handleProgramEditorAction);
@@ -5270,6 +5274,36 @@ function renderPhaseTemplates() {
       `;
     })
     .join("");
+}
+
+function renderProgramTemplatePicker() {
+  if (!programTemplatePicker) {
+    return;
+  }
+  if (!phaseTemplates.length) {
+    programTemplatePicker.innerHTML = '<option value="">No saved templates</option>';
+    programTemplatePicker.disabled = true;
+    return;
+  }
+  const currentValue = programTemplatePicker.value;
+  programTemplatePicker.disabled = false;
+  programTemplatePicker.innerHTML = [
+    '<option value="">Select a saved template</option>',
+    ...phaseTemplates.map((template) => `<option value="${template.id}">${escapeHtml(template.name)}</option>`),
+  ].join("");
+  if (phaseTemplates.some((template) => template.id === currentValue)) {
+    programTemplatePicker.value = currentValue;
+  }
+}
+
+function loadSelectedProgramTemplate() {
+  if (!programTemplatePicker || !programTemplatePicker.value) {
+    if (phaseImportStatusEl) {
+      phaseImportStatusEl.textContent = "Select a saved template to load.";
+    }
+    return;
+  }
+  startPhaseTemplateEdit(programTemplatePicker.value);
 }
 
 function renderPhaseTemplateWorkouts(template) {

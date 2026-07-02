@@ -57,6 +57,8 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="load-program-example"');
     expect(index).toContain('id="copy-program-text"');
     expect(index).toContain('id="reset-program-builder"');
+    expect(index).toContain('id="program-template-picker"');
+    expect(index).toContain('id="load-program-template"');
     expect(index).toContain('id="program-builder-guide-heading"');
     expect(index).toContain('id="add-program-day"');
     expect(index).toContain('id="program-day-list"');
@@ -81,5 +83,11 @@ describe("local-first UX guidance", () => {
   it("offers a reset action for the builder", () => {
     expect(script).toContain('reset-program-builder');
     expect(script).toContain("Builder reset to a blank program.");
+  });
+
+  it("offers a saved-template picker in the builder", () => {
+    expect(script).toContain('program-template-picker');
+    expect(script).toContain('load-program-template');
+    expect(script).toContain("Select a saved template to load.");
   });
 });
