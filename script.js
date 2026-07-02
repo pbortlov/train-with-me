@@ -17,6 +17,7 @@ import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
   buildProgramPreviewSummary,
+  buildProgramPreviewSummaryFromText,
   buildStarterProgramText,
   readProgramDayBlocks,
   readProgramDayExercises,
@@ -5171,12 +5172,14 @@ function renderPhaseTemplates() {
       const slotSummary = template.weekdaySlots
         .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}${slot.notes ? ` (${slot.notes})` : ""}`)
         .join(" • ");
+      const structureSummary = buildProgramPreviewSummaryFromText(serializeStrengthPhaseDefinition(template), template.name);
       return `
         <article class="phase-card">
           <header>
             <div>
               <h4>${escapeHtml(template.name)}</h4>
-              <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(slotSummary)}</div>
+              <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(structureSummary)}</div>
+              <div class="phase-meta">${escapeHtml(slotSummary)}</div>
             </div>
           </header>
           <details class="phase-template-details">

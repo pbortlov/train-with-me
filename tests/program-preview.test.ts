@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildProgramPreview,
   buildProgramPreviewSummary,
+  buildProgramPreviewSummaryFromText,
   buildStarterProgramText,
   readProgramBasics,
   readProgramDayBlocks,
@@ -67,6 +68,11 @@ describe("program import preview", () => {
     expect(buildProgramPreviewSummary(buildProgramPreview(buildStarterProgramText()).model)).toBe(
       "2 training days • 3 blocks • 5 exercises",
     );
+  });
+
+  it("summarizes program structure directly from text for template cards", () => {
+    expect(buildProgramPreviewSummaryFromText(sampleProgram)).toBe("1 training day • 1 block • 2 exercises");
+    expect(buildProgramPreviewSummaryFromText(buildStarterProgramText())).toBe("2 training days • 3 blocks • 5 exercises");
   });
 
   it("uses the name override in preview without changing import text", () => {

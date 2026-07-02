@@ -51,6 +51,10 @@ export function buildProgramPreviewSummary(model: ProgramPreviewModel | null): s
   ].join(" • ");
 }
 
+export function buildProgramPreviewSummaryFromText(text: unknown, overrideName = ""): string {
+  return buildProgramPreviewSummary(buildProgramPreview(text, overrideName).model);
+}
+
 export interface ProgramBasics {
   name: string;
   durationWeeks: string;
