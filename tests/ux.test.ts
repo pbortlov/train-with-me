@@ -56,6 +56,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="phase-duration-weeks"');
     expect(index).toContain('id="load-program-example"');
     expect(index).toContain('id="copy-program-text"');
+    expect(index).toContain('id="reset-program-builder"');
     expect(index).toContain('id="program-builder-guide-heading"');
     expect(index).toContain('id="add-program-day"');
     expect(index).toContain('id="program-day-list"');
@@ -75,5 +76,10 @@ describe("local-first UX guidance", () => {
   it("offers a copy action for the current import text", () => {
     expect(script).toContain('copy-program-text');
     expect(script).toContain("Program import text copied to clipboard.");
+  });
+
+  it("offers a reset action for the builder", () => {
+    expect(script).toContain('reset-program-builder');
+    expect(script).toContain("Builder reset to a blank program.");
   });
 });

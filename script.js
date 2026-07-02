@@ -198,6 +198,7 @@ const programDayListEl = document.getElementById("program-day-list");
 const addProgramDayButton = document.getElementById("add-program-day");
 const loadProgramExampleButton = document.getElementById("load-program-example");
 const copyProgramTextButton = document.getElementById("copy-program-text");
+const resetProgramBuilderButton = document.getElementById("reset-program-builder");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
 const phaseImportPreviewEl = document.getElementById("phase-import-preview");
@@ -3236,6 +3237,7 @@ function bindV2Events() {
   addSafeEventListener(addProgramDayButton, "click", addProgramTrainingDay);
   addSafeEventListener(loadProgramExampleButton, "click", loadProgramStarterExample);
   addSafeEventListener(copyProgramTextButton, "click", copyProgramImportText);
+  addSafeEventListener(resetProgramBuilderButton, "click", resetProgramBuilder);
   addSafeEventListener(programDayListEl, "input", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "change", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "click", handleProgramEditorAction);
@@ -4556,6 +4558,16 @@ async function copyProgramImportText() {
     if (phaseImportStatusEl) {
       phaseImportStatusEl.textContent = error instanceof Error ? error.message : "Could not copy program text.";
     }
+  }
+}
+
+function resetProgramBuilder() {
+  resetPhaseImportForm();
+  if (phaseImportDetails) {
+    phaseImportDetails.open = true;
+  }
+  if (phaseImportStatusEl) {
+    phaseImportStatusEl.textContent = "Builder reset to a blank program.";
   }
 }
 
