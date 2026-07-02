@@ -32,6 +32,25 @@ export interface ProgramPreviewResult {
   error: string;
 }
 
+export function buildProgramPreviewSummary(model: ProgramPreviewModel | null): string {
+  if (!model) {
+    return "";
+  }
+  const dayCount = model.days.length;
+  const blockCount = model.days.reduce((total, day) => total + day.blocks.length, 0);
+  const exerciseCount = model.days.reduce(
+    (total, day) =>
+      total + day.blocks.reduce((blockTotal, block) => blockTotal + block.exercises.length, 0),
+    0,
+  );
+
+  return [
+    `${dayCount} training ${dayCount === 1 ? "day" : "days"}`,
+    `${blockCount} ${blockCount === 1 ? "block" : "blocks"}`,
+    `${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`,
+  ].join(" • ");
+}
+
 export interface ProgramBasics {
   name: string;
   durationWeeks: string;

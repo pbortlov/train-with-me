@@ -16,6 +16,7 @@ import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src
 import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
+  buildProgramPreviewSummary,
   buildStarterProgramText,
   readProgramDayBlocks,
   readProgramDayExercises,
@@ -4790,11 +4791,12 @@ function renderProgramPreview(model) {
   if (!model) {
     return `<p class="planner-empty">Paste or import a program to preview its training days, blocks, and exercises.</p>`;
   }
+  const summary = buildProgramPreviewSummary(model);
   return `
     <div class="program-preview-heading">
       <div>
         <h4>${escapeHtml(model.name)}</h4>
-        <p class="phase-meta">${escapeHtml(model.durationWeeks)} weeks • ${model.days.length} training ${model.days.length === 1 ? "day" : "days"}</p>
+        <p class="phase-meta">${escapeHtml(model.durationWeeks)} weeks • ${escapeHtml(summary)}</p>
       </div>
     </div>
     <div class="program-preview-days">

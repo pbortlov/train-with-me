@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildProgramPreview,
+  buildProgramPreviewSummary,
   buildStarterProgramText,
   readProgramBasics,
   readProgramDayBlocks,
@@ -59,6 +60,13 @@ describe("program import preview", () => {
     expect(starterProgram).toContain("SLOT,Tuesday,Strength A,Lower focus and main lift");
     expect(result.error).toBe("");
     expect(result.model?.days).toHaveLength(2);
+  });
+
+  it("summarizes program structure for the preview header", () => {
+    expect(buildProgramPreviewSummary(buildProgramPreview(sampleProgram).model)).toBe("1 training day • 1 block • 2 exercises");
+    expect(buildProgramPreviewSummary(buildProgramPreview(buildStarterProgramText()).model)).toBe(
+      "2 training days • 3 blocks • 5 exercises",
+    );
   });
 
   it("uses the name override in preview without changing import text", () => {
