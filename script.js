@@ -197,6 +197,7 @@ const phaseDurationWeeksInput = document.getElementById("phase-duration-weeks");
 const programDayListEl = document.getElementById("program-day-list");
 const addProgramDayButton = document.getElementById("add-program-day");
 const loadProgramExampleButton = document.getElementById("load-program-example");
+const copyProgramTextButton = document.getElementById("copy-program-text");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
 const phaseImportPreviewEl = document.getElementById("phase-import-preview");
@@ -3234,6 +3235,7 @@ function bindV2Events() {
   addSafeEventListener(phaseDurationWeeksInput, "input", syncProgramBasicsToText);
   addSafeEventListener(addProgramDayButton, "click", addProgramTrainingDay);
   addSafeEventListener(loadProgramExampleButton, "click", loadProgramStarterExample);
+  addSafeEventListener(copyProgramTextButton, "click", copyProgramImportText);
   addSafeEventListener(programDayListEl, "input", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "change", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "click", handleProgramEditorAction);
@@ -4527,6 +4529,33 @@ function loadProgramStarterExample() {
   }
   if (phaseImportStatusEl) {
     phaseImportStatusEl.textContent = "Loaded a starter program example you can edit.";
+  }
+}
+
+async function copyProgramImportText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  const text = phaseImportTextInput.value.trim();
+  if (!text) {
+    if (phaseImportStatusEl) {
+      phaseImportStatusEl.textContent = "Add or load program content first.";
+    }
+    return;
+  }
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      if (phaseImportStatusEl) {
+        phaseImportStatusEl.textContent = "Program import text copied to clipboard.";
+      }
+      return;
+    }
+    throw new Error("Clipboard access is not available.");
+  } catch (error) {
+    if (phaseImportStatusEl) {
+      phaseImportStatusEl.textContent = error instanceof Error ? error.message : "Could not copy program text.";
+    }
   }
 }
 

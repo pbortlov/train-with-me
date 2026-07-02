@@ -17,6 +17,8 @@ The builder panel now shows a short checklist to help people start from the
 starter example, edit the structure, and save the reusable template.
 Saved templates can also be duplicated into a new draft before editing, which
 keeps reuse fast without overwriting the original template.
+The builder also includes a copy action so the current import text can be
+saved elsewhere or reused in another draft.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.
