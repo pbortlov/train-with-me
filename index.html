@@ -342,6 +342,9 @@
               Import one strength phase per file or paste. Saved templates can also be loaded here for editing, and
               scheduled planned sessions will refresh from the updated template. Program weeks start from the chosen start date.
             </p>
+            <div class="program-editor-actions">
+              <button type="button" id="load-program-example" class="ghost-button">Load starter example</button>
+            </div>
             <form id="phase-import-form">
               <input type="hidden" id="phase-edit-id" />
               <div class="grid">
@@ -362,7 +365,7 @@
                 <div class="program-editor-header">
                   <div>
                     <h4 id="program-day-editor-heading">Training days</h4>
-                    <p class="hint">Edit weekly training days, blocks, and exercises. The import text stays synced for compatibility.</p>
+                    <p class="hint">Edit weekly training days, blocks, and exercises, or load the starter example. The import text stays synced for compatibility.</p>
                   </div>
                   <button type="button" class="ghost-button" id="add-program-day">Add day</button>
                 </div>

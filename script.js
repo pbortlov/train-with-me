@@ -16,6 +16,7 @@ import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src
 import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
+  buildStarterProgramText,
   readProgramDayBlocks,
   readProgramDayExercises,
   readProgramBasics,
@@ -192,6 +193,7 @@ const phaseNameOverrideInput = document.getElementById("phase-name-override");
 const phaseDurationWeeksInput = document.getElementById("phase-duration-weeks");
 const programDayListEl = document.getElementById("program-day-list");
 const addProgramDayButton = document.getElementById("add-program-day");
+const loadProgramExampleButton = document.getElementById("load-program-example");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
 const phaseImportPreviewEl = document.getElementById("phase-import-preview");
@@ -3228,6 +3230,7 @@ function bindV2Events() {
   addSafeEventListener(phaseNameOverrideInput, "input", syncProgramBasicsToText);
   addSafeEventListener(phaseDurationWeeksInput, "input", syncProgramBasicsToText);
   addSafeEventListener(addProgramDayButton, "click", addProgramTrainingDay);
+  addSafeEventListener(loadProgramExampleButton, "click", loadProgramStarterExample);
   addSafeEventListener(programDayListEl, "input", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "change", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "click", handleProgramEditorAction);
@@ -4505,6 +4508,23 @@ function addProgramTrainingDay() {
     readProgramDayExercises(phaseImportTextInput?.value || ""),
   );
   updatePhaseImportPreview();
+}
+
+function loadProgramStarterExample() {
+  resetPhaseImportForm();
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = buildStarterProgramText();
+  syncProgramBasicsFromText();
+  syncProgramTrainingDaysFromText();
+  updatePhaseImportPreview();
+  if (phaseImportDetails) {
+    phaseImportDetails.open = true;
+  }
+  if (phaseImportStatusEl) {
+    phaseImportStatusEl.textContent = "Loaded a starter program example you can edit.";
+  }
 }
 
 function handleProgramEditorAction(event) {

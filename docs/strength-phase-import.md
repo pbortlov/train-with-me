@@ -11,6 +11,8 @@ One imported file should describe one reusable strength phase.
 The Programs page previews pasted or imported rows as program basics, training
 days, blocks, and exercises before saving. The preview does not change the
 import format; saving still uses the same row contract below.
+The builder also includes a starter example so new templates can begin from a
+clear, editable structure.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.

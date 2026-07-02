@@ -155,6 +155,22 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
   return { model, error: "" };
 }
 
+export function buildStarterProgramText(): string {
+  return [
+    "PHASE,Starter strength phase,4",
+    "SLOT,Tuesday,Strength A,Lower focus and main lift",
+    "BLOCK,A,15-20 mins,90-120s,3-4",
+    "EXERCISE,A1,Back squat,2x8-10,Heavy,",
+    "EXERCISE,A2,Romanian deadlift,8-10,Controlled tempo,",
+    "BLOCK,B,10-12 mins,60-90s,2-3",
+    "EXERCISE,B1,Bulgarian split squat,8 each leg,,Bodyweight",
+    "SLOT,Friday,Strength B,Upper focus and pull",
+    "BLOCK,A,12-15 mins,60-90s,3",
+    "EXERCISE,A1,Bench press,3x5,Strong,",
+    "EXERCISE,A2,Barbell row,8-10,,",
+  ].join("\n");
+}
+
 export function readProgramBasics(text: unknown, overrideName = ""): ProgramBasics {
   const phaseColumns = findPhaseColumns(text);
   return {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildProgramPreview,
+  buildStarterProgramText,
   readProgramBasics,
   readProgramDayBlocks,
   readProgramDayExercises,
@@ -48,6 +49,16 @@ describe("program import preview", () => {
         },
       ],
     });
+  });
+
+  it("provides a starter program example that previews cleanly", () => {
+    const starterProgram = buildStarterProgramText();
+    const result = buildProgramPreview(starterProgram);
+
+    expect(starterProgram).toContain("PHASE,Starter strength phase,4");
+    expect(starterProgram).toContain("SLOT,Tuesday,Strength A,Lower focus and main lift");
+    expect(result.error).toBe("");
+    expect(result.model?.days).toHaveLength(2);
   });
 
   it("uses the name override in preview without changing import text", () => {
