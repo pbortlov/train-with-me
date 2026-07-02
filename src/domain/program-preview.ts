@@ -55,6 +55,14 @@ export function buildProgramPreviewSummaryFromText(text: unknown, overrideName =
   return buildProgramPreviewSummary(buildProgramPreview(text, overrideName).model);
 }
 
+export function buildCopiedProgramName(name: unknown): string {
+  const normalizedName = String(name || "").trim();
+  if (!normalizedName) {
+    return "Copy of Strength phase";
+  }
+  return normalizedName.toLowerCase().startsWith("copy of ") ? normalizedName : `Copy of ${normalizedName}`;
+}
+
 export interface ProgramBasics {
   name: string;
   durationWeeks: string;

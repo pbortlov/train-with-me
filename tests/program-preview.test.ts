@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildProgramPreview,
+  buildCopiedProgramName,
   buildProgramPreviewSummary,
   buildProgramPreviewSummaryFromText,
   buildStarterProgramText,
@@ -73,6 +74,12 @@ describe("program import preview", () => {
   it("summarizes program structure directly from text for template cards", () => {
     expect(buildProgramPreviewSummaryFromText(sampleProgram)).toBe("1 training day • 1 block • 2 exercises");
     expect(buildProgramPreviewSummaryFromText(buildStarterProgramText())).toBe("2 training days • 3 blocks • 5 exercises");
+  });
+
+  it("creates a friendly duplicate name for copied templates", () => {
+    expect(buildCopiedProgramName("Phase 1")).toBe("Copy of Phase 1");
+    expect(buildCopiedProgramName("Copy of Phase 1")).toBe("Copy of Phase 1");
+    expect(buildCopiedProgramName("")).toBe("Copy of Strength phase");
   });
 
   it("uses the name override in preview without changing import text", () => {

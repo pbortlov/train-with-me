@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const index = readFileSync("index.html", "utf8");
+const script = readFileSync("script.js", "utf8");
 
 describe("local-first UX guidance", () => {
   it("keeps keyboard users a skip link to the app content", () => {
@@ -62,5 +63,11 @@ describe("local-first UX guidance", () => {
     expect(index).toContain("Edit weekly training days, blocks, and exercises, or load the starter example. The import text stays synced for compatibility.");
     expect(index).toContain('id="phase-import-preview"');
     expect(index).toContain("Paste or import a program to preview its training days, blocks, and exercises.");
+  });
+
+  it("offers a duplicate action for saved program templates", () => {
+    expect(script).toContain('data-role="duplicate-phase-template"');
+    expect(script).toContain("Duplicate");
+    expect(script).toContain("Loaded a copy of");
   });
 });

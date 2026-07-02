@@ -17,6 +17,7 @@ import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
   buildProgramPreviewSummary,
+  buildCopiedProgramName,
   buildProgramPreviewSummaryFromText,
   buildStarterProgramText,
   readProgramDayBlocks,
@@ -4872,6 +4873,32 @@ function startPhaseTemplateEdit(templateId) {
   phaseImportDetails?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function startPhaseTemplateDuplicate(templateId) {
+  const template = phaseTemplates.find((item) => item.id === templateId);
+  if (!template || !phaseImportTextInput) {
+    return;
+  }
+  resetPhaseImportForm();
+  phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
+  syncProgramBasicsFromText();
+  if (phaseNameOverrideInput) {
+    phaseNameOverrideInput.value = buildCopiedProgramName(template.name);
+  }
+  syncProgramBasicsToText();
+  syncProgramTrainingDaysFromText();
+  updatePhaseImportPreview();
+  if (phaseEditIdInput) {
+    phaseEditIdInput.value = "";
+  }
+  if (phaseImportStatusEl) {
+    phaseImportStatusEl.textContent = `Loaded a copy of "${template.name}" as a new draft.`;
+  }
+  if (phaseImportDetails) {
+    phaseImportDetails.open = true;
+    phaseImportDetails.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
 function regenerateScheduledPhaseInstances(template) {
   let refreshedInstances = 0;
   phaseInstances = phaseInstances.map((instance) => {
@@ -5193,6 +5220,7 @@ function renderPhaseTemplates() {
             </label>
             <div class="phase-actions">
               <button type="button" class="ghost-button" data-role="edit-phase-template" data-id="${template.id}">Edit</button>
+              <button type="button" class="ghost-button" data-role="duplicate-phase-template" data-id="${template.id}">Duplicate</button>
               <button type="button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
               <button type="button" class="ghost-button danger-button" data-role="delete-phase-template" data-id="${template.id}">Delete</button>
             </div>
@@ -5249,6 +5277,11 @@ function handlePhaseTemplateAction(event) {
 
   if (role === "edit-phase-template") {
     startPhaseTemplateEdit(id);
+    return;
+  }
+
+  if (role === "duplicate-phase-template") {
+    startPhaseTemplateDuplicate(id);
     return;
   }
 
