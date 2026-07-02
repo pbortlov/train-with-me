@@ -60,6 +60,8 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - copy the current import text to the clipboard for reuse or backup
   - reset the builder to a blank draft when starting over
   - load a saved template directly from the builder without scrolling back to the list
+  - show row-specific import hints when the structured text is missing PHASE, SLOT, BLOCK, or EXERCISE rows
+  - reject empty blocks so every imported block has at least one exercise
   - anchor each program week to the chosen start date instead of calendar Monday
   - refresh planned generated sessions for already scheduled instances when a template is updated
   - preserve manually moved generated strength-session dates during template refresh

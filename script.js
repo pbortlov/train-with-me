@@ -16,6 +16,7 @@ import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src
 import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
+  buildProgramImportHints,
   buildProgramPreviewSummary,
   buildCopiedProgramName,
   buildProgramPreviewSummaryFromText,
@@ -4828,7 +4829,20 @@ function updatePhaseImportPreview() {
   }
   const result = buildProgramPreview(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
   if (result.error) {
-    phaseImportPreviewEl.innerHTML = `<p class="planner-empty">${escapeHtml(result.error)}</p>`;
+    const hints = buildProgramImportHints(result.error);
+    phaseImportPreviewEl.innerHTML = `
+      <div class="program-preview-error">
+        <p class="planner-empty">${escapeHtml(result.error)}</p>
+        ${hints.length ? `
+          <div class="program-preview-hints">
+            <h4>Fix this import</h4>
+            <ul class="detail-list">
+              ${hints.map((hint) => `<li>${escapeHtml(hint)}</li>`).join("")}
+            </ul>
+          </div>
+        ` : ""}
+      </div>
+    `;
     return;
   }
   phaseImportPreviewEl.innerHTML = renderProgramPreview(result.model);
@@ -5139,6 +5153,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
 
   let currentSlot = null;
   let currentBlock = null;
+  let currentBlockLine = 0;
 
   lines.forEach((line, index) => {
     const columns = line.split(",").map((column) => column.trim());
@@ -5152,6 +5167,9 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       return;
     }
     if (rowType === "SLOT") {
+      if (currentBlock && !currentBlock.exercises.length) {
+        throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
+      }
       const weekday = parseWeekday(columns[1]);
       currentSlot = {
         id: crypto.randomUUID(),
@@ -5168,6 +5186,9 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       if (!currentSlot) {
         throw new Error(`BLOCK row before SLOT at line ${index + 1}.`);
       }
+      if (currentBlock && !currentBlock.exercises.length) {
+        throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
+      }
       const duration = parseBlockDurationRange(columns[2]);
       const rest = parseBlockRestRange(columns[3]);
       currentBlock = {
@@ -5179,6 +5200,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
         sets: normalizeSetPrescription(columns[4]),
         exercises: [],
       };
+      currentBlockLine = index + 1;
       currentSlot.blocks.push(currentBlock);
       return;
     }
@@ -5200,6 +5222,9 @@ function parseStrengthPhaseDefinition(text, overrideName) {
 
   if (!template.name || !template.durationWeeks || !template.weekdaySlots.length) {
     throw new Error("A phase import needs PHASE metadata and at least one SLOT.");
+  }
+  if (currentBlock && !currentBlock.exercises.length) {
+    throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
   }
   return template;
 }

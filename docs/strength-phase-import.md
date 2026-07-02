@@ -23,6 +23,8 @@ There is also a reset action that clears the builder back to a blank draft
 without touching saved templates.
 The builder includes a saved-template picker so an existing template can be
 loaded for editing from the same screen.
+When the import text is incomplete, the preview shows row-specific hints for
+the missing `PHASE`, `SLOT`, `BLOCK`, or `EXERCISE` structure.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.
@@ -93,6 +95,7 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 ## Rules
 - `BLOCK` must come after a `SLOT`
 - `EXERCISE` must come after a `BLOCK`
+- every `BLOCK` must include at least one `EXERCISE`
 - weekdays should be written as common names like `Tuesday`, `Fri`, `Sunday`
 - block duration should be written like `15 mins` or `15-20 mins`
 - block rest should be written like `30s` or `90-120s`

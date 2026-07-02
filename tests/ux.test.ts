@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const index = readFileSync("index.html", "utf8");
 const script = readFileSync("script.js", "utf8");
+const previewDomain = readFileSync("src/domain/program-preview.ts", "utf8");
 
 describe("local-first UX guidance", () => {
   it("keeps keyboard users a skip link to the app content", () => {
@@ -89,5 +90,11 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('program-template-picker');
     expect(script).toContain('load-program-template');
     expect(script).toContain("Select a saved template to load.");
+  });
+
+  it("shows import hints when the builder text is incomplete", () => {
+    expect(script).toContain('program-preview-hints');
+    expect(script).toContain('Fix this import');
+    expect(previewDomain).toContain('Add a `SLOT` row before any `BLOCK` rows.');
   });
 });

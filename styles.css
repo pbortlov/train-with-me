@@ -841,6 +841,24 @@ textarea:focus-visible {
   margin: 0.35rem 0 0.85rem;
 }
 
+.program-preview-error {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.program-preview-hints {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #081121;
+  padding: 0.7rem 0.8rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.program-preview-hints h4 {
+  margin: 0;
+}
+
 .program-preview-heading {
   border: 1px solid var(--border);
   border-radius: 10px;

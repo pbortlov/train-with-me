@@ -55,6 +55,35 @@ export function buildProgramPreviewSummaryFromText(text: unknown, overrideName =
   return buildProgramPreviewSummary(buildProgramPreview(text, overrideName).model);
 }
 
+export function buildProgramImportHints(error: unknown): string[] {
+  const message = String(error || "");
+  if (!message) {
+    return [];
+  }
+  if (message.includes("Paste or import a program")) {
+    return ["Start with a PHASE row, then add at least one SLOT row."];
+  }
+  if (message.includes("add a program name and duration")) {
+    return ["Use a PHASE row like `PHASE,Phase 1,5`."];
+  }
+  if (message.includes("add a training day before adding blocks")) {
+    return ["Add a `SLOT` row before any `BLOCK` rows."];
+  }
+  if (message.includes("add a block before adding exercises")) {
+    return ["Add a `BLOCK` row before any `EXERCISE` rows."];
+  }
+  if (message.includes("must include at least one EXERCISE row")) {
+    return ["Add at least one `EXERCISE` row before starting the next `BLOCK` or `SLOT`."];
+  }
+  if (message.includes("not a supported row type")) {
+    return ["Use only `PHASE`, `SLOT`, `BLOCK`, and `EXERCISE` rows."];
+  }
+  if (message.includes("Add a PHASE row and at least one training day")) {
+    return ["Include a `PHASE` row and at least one `SLOT` row.", "A minimal example is `PHASE,Phase 1,5` then `SLOT,Tuesday,Strength A,Notes`."];
+  }
+  return [];
+}
+
 export function buildCopiedProgramName(name: unknown): string {
   const normalizedName = String(name || "").trim();
   if (!normalizedName) {
@@ -118,6 +147,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
   };
   let currentDay: ProgramPreviewDay | null = null;
   let currentBlock: ProgramPreviewBlock | null = null;
+  let currentBlockLine = 0;
 
   for (let index = 0; index < lines.length; index += 1) {
     const columns = lines[index].split(",").map((column) => column.trim());
@@ -133,6 +163,9 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
     }
 
     if (rowType === "SLOT") {
+      if (currentBlock && !currentBlock.exercises.length) {
+        return { model: null, error: `Line ${currentBlockLine}: add at least one exercise inside this block.` };
+      }
       if (!columns[1]) {
         return { model: null, error: `Line ${index + 1}: add a weekday for this training day.` };
       }
@@ -151,6 +184,9 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
       if (!currentDay) {
         return { model: null, error: `Line ${index + 1}: add a training day before adding blocks.` };
       }
+      if (currentBlock && !currentBlock.exercises.length) {
+        return { model: null, error: `Line ${currentBlockLine}: add at least one exercise inside this block.` };
+      }
       currentBlock = {
         label: columns[1] || `Block ${currentDay.blocks.length + 1}`,
         duration: columns[2] || "",
@@ -158,6 +194,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
         sets: columns[4] || "",
         exercises: [],
       };
+      currentBlockLine = index + 1;
       currentDay.blocks.push(currentBlock);
       continue;
     }
@@ -181,6 +218,10 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
 
   if (!model.name || !model.durationWeeks || !model.days.length) {
     return { model: null, error: "Add a PHASE row and at least one training day to preview this program." };
+  }
+
+  if (currentBlock && !currentBlock.exercises.length) {
+    return { model: null, error: `Line ${currentBlockLine}: add at least one exercise inside this block.` };
   }
 
   return { model, error: "" };

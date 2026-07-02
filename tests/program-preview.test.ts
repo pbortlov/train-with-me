@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildProgramPreview,
   buildCopiedProgramName,
+  buildProgramImportHints,
   buildProgramPreviewSummary,
   buildProgramPreviewSummaryFromText,
   buildStarterProgramText,
@@ -80,6 +81,22 @@ describe("program import preview", () => {
     expect(buildCopiedProgramName("Phase 1")).toBe("Copy of Phase 1");
     expect(buildCopiedProgramName("Copy of Phase 1")).toBe("Copy of Phase 1");
     expect(buildCopiedProgramName("")).toBe("Copy of Strength phase");
+  });
+
+  it("builds row-specific import hints for malformed program text", () => {
+    expect(buildProgramImportHints("Add a PHASE row and at least one training day to preview this program.")).toEqual([
+      "Include a `PHASE` row and at least one `SLOT` row.",
+      "A minimal example is `PHASE,Phase 1,5` then `SLOT,Tuesday,Strength A,Notes`.",
+    ]);
+    expect(buildProgramImportHints("Line 2: add a training day before adding blocks.")).toEqual([
+      "Add a `SLOT` row before any `BLOCK` rows.",
+    ]);
+    expect(buildProgramImportHints("Line 3: add a block before adding exercises.")).toEqual([
+      "Add a `BLOCK` row before any `EXERCISE` rows.",
+    ]);
+    expect(buildProgramImportHints("Line 3: BLOCK row at line 3 must include at least one EXERCISE row.")).toEqual([
+      "Add at least one `EXERCISE` row before starting the next `BLOCK` or `SLOT`.",
+    ]);
   });
 
   it("uses the name override in preview without changing import text", () => {
@@ -256,5 +273,13 @@ describe("program import preview", () => {
     expect(buildProgramPreview("PHASE,Phase 1,5\nEXERCISE,A1,Squat,10").error).toBe(
       "Line 2: add a block before adding exercises.",
     );
+    expect(
+      buildProgramPreview([
+        "PHASE,Phase 1,5",
+        "SLOT,Tuesday,Strength A,Main lower-body day",
+        "BLOCK,A,15 mins,60s,3",
+        "SLOT,Friday,Strength B,Upper day",
+      ].join("\n")).error,
+    ).toBe("Line 3: add at least one exercise inside this block.");
   });
 });
