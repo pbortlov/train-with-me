@@ -55,6 +55,51 @@ export function buildProgramPreviewSummaryFromText(text: unknown, overrideName =
   return buildProgramPreviewSummary(buildProgramPreview(text, overrideName).model);
 }
 
+export function buildProgramTemplateSummary(template: unknown): { summary: string; detail: string } {
+  const normalizedTemplate = template as {
+    durationWeeks?: unknown;
+    weekdaySlots?: Array<{
+      weekday?: unknown;
+      title?: unknown;
+      blocks?: Array<{
+        exercises?: unknown[];
+      }>;
+    }>;
+  } | null;
+
+  if (!normalizedTemplate) {
+    return { summary: "", detail: "" };
+  }
+
+  const weekdaySlots = Array.isArray(normalizedTemplate.weekdaySlots) ? normalizedTemplate.weekdaySlots : [];
+  const dayCount = weekdaySlots.length;
+  const blockCount = weekdaySlots.reduce((total, slot) => total + (Array.isArray(slot.blocks) ? slot.blocks.length : 0), 0);
+  const exerciseCount = weekdaySlots.reduce(
+    (total, slot) =>
+      total +
+      (Array.isArray(slot.blocks)
+        ? slot.blocks.reduce(
+            (blockTotal, block) => blockTotal + (Array.isArray(block.exercises) ? block.exercises.length : 0),
+            0,
+          )
+        : 0),
+    0,
+  );
+  const durationWeeks = Number(normalizedTemplate.durationWeeks) || 0;
+  const summary = [
+    `${durationWeeks} weeks`,
+    `${dayCount} training ${dayCount === 1 ? "day" : "days"}`,
+    `${blockCount} ${blockCount === 1 ? "block" : "blocks"}`,
+    `${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`,
+  ].join(" • ");
+  const detailSlots = weekdaySlots.slice(0, 2).map((slot) => `${formatWeekdayLabel(slot.weekday)}: ${String(slot.title || "Strength session")}`);
+  const detail = detailSlots.length
+    ? `${detailSlots.join(" • ")}${weekdaySlots.length > detailSlots.length ? ` • +${weekdaySlots.length - detailSlots.length} more` : ""}`
+    : "No training days";
+
+  return { summary, detail };
+}
+
 export function buildProgramImportHints(error: unknown): string[] {
   const message = String(error || "");
   if (!message) {
@@ -90,6 +135,12 @@ export function buildCopiedProgramName(name: unknown): string {
     return "Copy of Strength phase";
   }
   return normalizedName.toLowerCase().startsWith("copy of ") ? normalizedName : `Copy of ${normalizedName}`;
+}
+
+function formatWeekdayLabel(value: unknown): string {
+  const weekday = Number(value) || 0;
+  const labels = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  return labels[weekday] || "Day";
 }
 
 export interface ProgramBasics {

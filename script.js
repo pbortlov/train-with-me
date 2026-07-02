@@ -17,6 +17,7 @@ import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
   buildProgramImportHints,
+  buildProgramTemplateSummary,
   buildProgramPreviewSummary,
   buildCopiedProgramName,
   buildProgramPreviewSummaryFromText,
@@ -5289,18 +5290,15 @@ function renderPhaseTemplates() {
   }
   phaseTemplateListEl.innerHTML = phaseTemplates
     .map((template) => {
-      const slotSummary = template.weekdaySlots
-        .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}${slot.notes ? ` (${slot.notes})` : ""}`)
-        .join(" • ");
-      const structureSummary = buildProgramPreviewSummaryFromText(serializeStrengthPhaseDefinition(template), template.name);
+      const templateSummary = buildProgramTemplateSummary(template);
       const badgeLabel = getTemplateBadgeLabel(template);
       return `
         <article class="phase-card">
           <header>
             <div>
               <h4>${escapeHtml(template.name)}</h4>
-              <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(structureSummary)}</div>
-              <div class="phase-meta">${escapeHtml(slotSummary)}</div>
+              <div class="phase-meta">${escapeHtml(templateSummary.summary)}</div>
+              <div class="phase-meta">${escapeHtml(templateSummary.detail)}</div>
               ${badgeLabel ? `<div class="phase-badge ${badgeLabel.className}">${escapeHtml(badgeLabel.label)}</div>` : ""}
             </div>
           </header>

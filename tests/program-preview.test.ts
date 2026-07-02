@@ -6,6 +6,7 @@ import {
   buildProgramImportHints,
   buildProgramPreviewSummary,
   buildProgramPreviewSummaryFromText,
+  buildProgramTemplateSummary,
   buildStarterProgramText,
   readProgramBasics,
   readProgramDayBlocks,
@@ -75,6 +76,22 @@ describe("program import preview", () => {
   it("summarizes program structure directly from text for template cards", () => {
     expect(buildProgramPreviewSummaryFromText(sampleProgram)).toBe("1 training day • 1 block • 2 exercises");
     expect(buildProgramPreviewSummaryFromText(buildStarterProgramText())).toBe("2 training days • 3 blocks • 5 exercises");
+  });
+
+  it("summarizes saved templates with counts and the most useful session labels", () => {
+    expect(
+      buildProgramTemplateSummary({
+        durationWeeks: 5,
+        weekdaySlots: [
+          { weekday: 2, title: "Strength A", blocks: [{ exercises: [{}, {}] }, { exercises: [{}] }] },
+          { weekday: 5, title: "Strength B", blocks: [{ exercises: [{}] }] },
+          { weekday: 7, title: "Optional", blocks: [] },
+        ],
+      }),
+    ).toEqual({
+      summary: "5 weeks • 3 training days • 3 blocks • 4 exercises",
+      detail: "Tuesday: Strength A • Friday: Strength B • +1 more",
+    });
   });
 
   it("creates a friendly duplicate name for copied templates", () => {
