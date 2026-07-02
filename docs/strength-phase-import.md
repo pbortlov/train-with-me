@@ -13,6 +13,8 @@ days, blocks, and exercises before saving. The preview does not change the
 import format; saving still uses the same row contract below.
 The builder also includes a starter example so new templates can begin from a
 clear, editable structure.
+The builder panel now shows a short checklist to help people start from the
+starter example, edit the structure, and save the reusable template.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.

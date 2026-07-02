@@ -54,8 +54,11 @@ describe("local-first UX guidance", () => {
   it("keeps a readable program preview in the import flow", () => {
     expect(index).toContain('id="phase-duration-weeks"');
     expect(index).toContain('id="load-program-example"');
+    expect(index).toContain('id="program-builder-guide-heading"');
     expect(index).toContain('id="add-program-day"');
     expect(index).toContain('id="program-day-list"');
+    expect(index).toContain("How to build a program");
+    expect(index).toContain("Load the starter example or paste your own rows.");
     expect(index).toContain("Edit weekly training days, blocks, and exercises, or load the starter example. The import text stays synced for compatibility.");
     expect(index).toContain('id="phase-import-preview"');
     expect(index).toContain("Paste or import a program to preview its training days, blocks, and exercises.");

@@ -54,6 +54,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - edit blocks through fields that stay synced with `BLOCK` rows
   - edit exercises through fields that stay synced with `EXERCISE` rows
   - load a starter example to begin from a human-friendly template structure
+  - show a short guided checklist before the builder so the flow is easier to start
   - anchor each program week to the chosen start date instead of calendar Monday
   - refresh planned generated sessions for already scheduled instances when a template is updated
   - preserve manually moved generated strength-session dates during template refresh

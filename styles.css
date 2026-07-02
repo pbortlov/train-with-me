@@ -797,6 +797,28 @@ textarea:focus-visible {
   flex-wrap: wrap;
 }
 
+.program-builder-guide {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #081121;
+  padding: 0.7rem 0.8rem;
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.program-builder-guide h4 {
+  margin: 0;
+}
+
+.program-builder-guide-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+}
+
 .phase-import-preview {
   display: grid;
   gap: 0.75rem;
