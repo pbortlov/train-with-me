@@ -92,6 +92,11 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("Select a saved template to load.");
   });
 
+  it("marks recently edited saved templates in the list", () => {
+    expect(script).toContain('phase-badge-recent');
+    expect(script).toContain("Recently edited");
+  });
+
   it("shows import hints when the builder text is incomplete", () => {
     expect(script).toContain('program-preview-hints');
     expect(script).toContain('Fix this import');

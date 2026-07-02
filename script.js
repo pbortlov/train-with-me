@@ -5110,6 +5110,7 @@ function importStrengthPhase(event) {
             ...imported,
             id: editingPhaseTemplateId,
             importedAt: phaseTemplates.find((template) => template.id === editingPhaseTemplateId)?.importedAt || Date.now(),
+            updatedAt: Date.now(),
           }
         : imported,
     );
@@ -5123,7 +5124,7 @@ function importStrengthPhase(event) {
         ? `Updated "${normalized.name}" and refreshed ${refreshedInstances} scheduled phase ${refreshedInstances === 1 ? "instance" : "instances"}.`
         : `Updated "${normalized.name}".`;
     } else {
-      phaseTemplates.unshift(normalizePhaseTemplate(imported));
+      phaseTemplates.unshift(normalizePhaseTemplate({ ...imported, updatedAt: Date.now() }));
       savePlannerCollections();
       resetPhaseImportForm();
       phaseImportStatusEl.textContent = `Imported phase template "${imported.name}".`;
@@ -5270,6 +5271,7 @@ function renderPhaseTemplates() {
         .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}${slot.notes ? ` (${slot.notes})` : ""}`)
         .join(" • ");
       const structureSummary = buildProgramPreviewSummaryFromText(serializeStrengthPhaseDefinition(template), template.name);
+      const isRecentlyEdited = isRecentlyEditedTemplate(template);
       return `
         <article class="phase-card">
           <header>
@@ -5277,6 +5279,7 @@ function renderPhaseTemplates() {
               <h4>${escapeHtml(template.name)}</h4>
               <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(structureSummary)}</div>
               <div class="phase-meta">${escapeHtml(slotSummary)}</div>
+              ${isRecentlyEdited ? '<div class="phase-badge phase-badge-recent">Recently edited</div>' : ""}
             </div>
           </header>
           <details class="phase-template-details">
@@ -5319,6 +5322,14 @@ function renderProgramTemplatePicker() {
   if (phaseTemplates.some((template) => template.id === currentValue)) {
     programTemplatePicker.value = currentValue;
   }
+}
+
+function isRecentlyEditedTemplate(template) {
+  const updatedAt = isNumber(template?.updatedAt) ? Number(template.updatedAt) : null;
+  if (!updatedAt) {
+    return false;
+  }
+  return Date.now() - updatedAt < 3 * 24 * 60 * 60 * 1000;
 }
 
 function loadSelectedProgramTemplate() {
@@ -7117,6 +7128,11 @@ function normalizePhaseTemplate(template) {
         }))
       : [],
     importedAt: isNumber(template.importedAt) ? template.importedAt : Date.now(),
+    updatedAt: isNumber(template.updatedAt)
+      ? template.updatedAt
+      : isNumber(template.importedAt)
+        ? template.importedAt
+        : Date.now(),
   };
 }
 

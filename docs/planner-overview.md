@@ -51,6 +51,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - show a plain-language summary of days, blocks, and exercises above the preview
   - show template list summaries so saved programs are easier to scan
   - duplicate a saved template into a new draft before making changes
+  - mark recently edited saved templates with a visible badge
   - edit program name and duration through fields that stay synced with the import text
   - edit training days through fields that stay synced with `SLOT` rows
   - edit blocks through fields that stay synced with `BLOCK` rows
@@ -65,6 +66,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - anchor each program week to the chosen start date instead of calendar Monday
   - refresh planned generated sessions for already scheduled instances when a template is updated
   - preserve manually moved generated strength-session dates during template refresh
+  - revisit the recently edited badge so copied templates can be distinguished from templates the user changed directly
   - support slot notes, including `Warm Up: 10 mins` or `Warm Up: 10-15 mins` for calendar time calculation, block timing like `15 mins`, `15-20 mins`, `30s`, `90-120s`, set prescriptions like `3` or `3-4`, and optional exercise weight targets inside imported strength plans
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
