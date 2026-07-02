@@ -195,6 +195,7 @@ const phaseImportForm = document.getElementById("phase-import-form");
 const phaseEditIdInput = document.getElementById("phase-edit-id");
 const phaseNameOverrideInput = document.getElementById("phase-name-override");
 const phaseDurationWeeksInput = document.getElementById("phase-duration-weeks");
+let phaseCopiedFromTemplateId = "";
 const programDayListEl = document.getElementById("program-day-list");
 const addProgramDayButton = document.getElementById("add-program-day");
 const loadProgramExampleButton = document.getElementById("load-program-example");
@@ -4382,6 +4383,7 @@ function resetPhaseImportForm() {
     phaseImportForm.reset();
   }
   editingPhaseTemplateId = "";
+  phaseCopiedFromTemplateId = "";
   if (phaseEditIdInput) {
     phaseEditIdInput.value = "";
   }
@@ -4915,6 +4917,7 @@ function startPhaseTemplateEdit(templateId) {
     return;
   }
   editingPhaseTemplateId = template.id;
+  phaseCopiedFromTemplateId = template.copiedFromTemplateId || "";
   if (phaseEditIdInput) {
     phaseEditIdInput.value = template.id;
   }
@@ -4938,6 +4941,7 @@ function startPhaseTemplateDuplicate(templateId) {
     return;
   }
   resetPhaseImportForm();
+  phaseCopiedFromTemplateId = template.id;
   phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
   syncProgramBasicsFromText();
   if (phaseNameOverrideInput) {
@@ -5111,8 +5115,12 @@ function importStrengthPhase(event) {
             id: editingPhaseTemplateId,
             importedAt: phaseTemplates.find((template) => template.id === editingPhaseTemplateId)?.importedAt || Date.now(),
             updatedAt: Date.now(),
+            copiedFromTemplateId: phaseTemplates.find((template) => template.id === editingPhaseTemplateId)?.copiedFromTemplateId || null,
           }
-        : imported,
+        : {
+            ...imported,
+            copiedFromTemplateId: phaseCopiedFromTemplateId || null,
+          },
     );
 
     if (editingPhaseTemplateId) {
@@ -5124,7 +5132,11 @@ function importStrengthPhase(event) {
         ? `Updated "${normalized.name}" and refreshed ${refreshedInstances} scheduled phase ${refreshedInstances === 1 ? "instance" : "instances"}.`
         : `Updated "${normalized.name}".`;
     } else {
-      phaseTemplates.unshift(normalizePhaseTemplate({ ...imported, updatedAt: Date.now() }));
+      phaseTemplates.unshift(normalizePhaseTemplate({
+        ...imported,
+        updatedAt: Date.now(),
+        copiedFromTemplateId: phaseCopiedFromTemplateId || null,
+      }));
       savePlannerCollections();
       resetPhaseImportForm();
       phaseImportStatusEl.textContent = `Imported phase template "${imported.name}".`;
@@ -5271,7 +5283,7 @@ function renderPhaseTemplates() {
         .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}${slot.notes ? ` (${slot.notes})` : ""}`)
         .join(" • ");
       const structureSummary = buildProgramPreviewSummaryFromText(serializeStrengthPhaseDefinition(template), template.name);
-      const isRecentlyEdited = isRecentlyEditedTemplate(template);
+      const badgeLabel = getTemplateBadgeLabel(template);
       return `
         <article class="phase-card">
           <header>
@@ -5279,7 +5291,7 @@ function renderPhaseTemplates() {
               <h4>${escapeHtml(template.name)}</h4>
               <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(structureSummary)}</div>
               <div class="phase-meta">${escapeHtml(slotSummary)}</div>
-              ${isRecentlyEdited ? '<div class="phase-badge phase-badge-recent">Recently edited</div>' : ""}
+              ${badgeLabel ? `<div class="phase-badge ${badgeLabel.className}">${escapeHtml(badgeLabel.label)}</div>` : ""}
             </div>
           </header>
           <details class="phase-template-details">
@@ -5302,6 +5314,16 @@ function renderPhaseTemplates() {
       `;
     })
     .join("");
+}
+
+function getTemplateBadgeLabel(template) {
+  if (template?.copiedFromTemplateId) {
+    return { label: "Copied", className: "phase-badge-copied" };
+  }
+  if (isRecentlyEditedTemplate(template)) {
+    return { label: "Recently edited", className: "phase-badge-recent" };
+  }
+  return null;
 }
 
 function renderProgramTemplatePicker() {
@@ -7133,6 +7155,7 @@ function normalizePhaseTemplate(template) {
       : isNumber(template.importedAt)
         ? template.importedAt
         : Date.now(),
+    copiedFromTemplateId: typeof template.copiedFromTemplateId === "string" ? template.copiedFromTemplateId : "",
   };
 }
 

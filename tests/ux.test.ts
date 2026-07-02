@@ -97,6 +97,12 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("Recently edited");
   });
 
+  it("marks copied saved templates separately from edited ones", () => {
+    expect(script).toContain('phase-badge-copied');
+    expect(script).toContain("Copied");
+    expect(script).toContain("copiedFromTemplateId");
+  });
+
   it("shows import hints when the builder text is incomplete", () => {
     expect(script).toContain('program-preview-hints');
     expect(script).toContain('Fix this import');
