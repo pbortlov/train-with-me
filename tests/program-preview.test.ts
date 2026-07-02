@@ -83,14 +83,14 @@ describe("program import preview", () => {
       buildProgramTemplateSummary({
         durationWeeks: 5,
         weekdaySlots: [
-          { weekday: 2, title: "Strength A", blocks: [{ exercises: [{}, {}] }, { exercises: [{}] }] },
-          { weekday: 5, title: "Strength B", blocks: [{ exercises: [{}] }] },
+          { weekday: 2, title: "Strength A", notes: "Main lower-body day", blocks: [{ exercises: [{}, {}] }, { exercises: [{}] }] },
+          { weekday: 5, title: "Strength B", notes: "Upper/lower mixed", blocks: [{ exercises: [{}] }] },
           { weekday: 7, title: "Optional", blocks: [] },
         ],
       }),
     ).toEqual({
       summary: "5 weeks • 3 training days • 3 blocks • 4 exercises",
-      detail: "Tuesday: Strength A • Friday: Strength B • +1 more",
+      detail: "Tuesday: Strength A (Main lower-body day) • Friday: Strength B (Upper/lower mixed) • +1 more",
     });
   });
 

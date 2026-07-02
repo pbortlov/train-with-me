@@ -92,7 +92,11 @@ export function buildProgramTemplateSummary(template: unknown): { summary: strin
     `${blockCount} ${blockCount === 1 ? "block" : "blocks"}`,
     `${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`,
   ].join(" • ");
-  const detailSlots = weekdaySlots.slice(0, 2).map((slot) => `${formatWeekdayLabel(slot.weekday)}: ${String(slot.title || "Strength session")}`);
+  const detailSlots = weekdaySlots.slice(0, 2).map((slot) => {
+    const title = String(slot.title || "Strength session");
+    const notes = String((slot as { notes?: unknown }).notes || "").trim();
+    return `${formatWeekdayLabel(slot.weekday)}: ${title}${notes ? ` (${notes})` : ""}`;
+  });
   const detail = detailSlots.length
     ? `${detailSlots.join(" • ")}${weekdaySlots.length > detailSlots.length ? ` • +${weekdaySlots.length - detailSlots.length} more` : ""}`
     : "No training days";

@@ -30,6 +30,8 @@ the missing `PHASE`, `SLOT`, `BLOCK`, or `EXERCISE` structure.
 Saved template cards now lead with the phase duration, training-day count, block
 count, exercise count, and the first couple of scheduled days so the list is
 faster to scan.
+When present, the slot notes also show up in that card summary so the day is
+easier to recognize at a glance.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.
