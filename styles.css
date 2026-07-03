@@ -1085,6 +1085,20 @@ textarea:focus-visible {
   padding: 0.1rem 0 0;
 }
 
+.phase-import-details .dialog-actions {
+  border: 1px solid #ffd84d33;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(255 216 77 / 5%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.phase-import-details .dialog-actions #save-phase-button {
+  min-width: 12rem;
+}
+
 .program-preview-error {
   display: grid;
   gap: 0.6rem;
