@@ -893,6 +893,17 @@ textarea:focus-visible {
   font-weight: 800;
 }
 
+.phase-import-details .program-import-lead {
+  border: 1px solid #00e5ff33;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 5%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.75rem;
+  margin: 0.65rem 0 0.85rem;
+  color: #d7f8ff;
+}
+
 .phase-import-details form {
   margin-top: 0.85rem;
 }

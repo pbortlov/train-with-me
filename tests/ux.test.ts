@@ -72,6 +72,14 @@ describe("local-first UX guidance", () => {
     expect(index).toContain("Paste or import a program to preview its training days, blocks, and exercises.");
   });
 
+  it("styles the program import lead-in as a visible panel", () => {
+    expect(index).toContain('class="hint program-import-lead"');
+    expect(styles).toContain('.phase-import-details .program-import-lead');
+    expect(styles).toContain('border: 1px solid #00e5ff33');
+    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 5%)');
+    expect(styles).toContain('color: #d7f8ff');
+  });
+
   it("offers a duplicate action for saved program templates", () => {
     expect(script).toContain('data-role="duplicate-phase-template"');
     expect(script).toContain("Load copy");
