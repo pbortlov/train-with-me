@@ -1110,6 +1110,17 @@ textarea:focus-visible {
   min-width: 12rem;
 }
 
+#phase-import-status:not(:empty) {
+  border: 1px solid #6dff5c44;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(109 255 92 / 6%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.7rem 0.8rem;
+  color: #dfffe1;
+  min-height: 2.75rem;
+}
+
 .program-preview-error {
   display: grid;
   gap: 0.6rem;
