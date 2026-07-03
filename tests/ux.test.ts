@@ -142,6 +142,17 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('rgb(52 211 153 / 10%)');
   });
 
+  it("aligns the program editor rows so fields read top-to-bottom cleanly", () => {
+    expect(styles).toContain('.program-day-row');
+    expect(styles).toContain('align-items: start');
+    expect(styles).toContain('.program-block-row');
+    expect(styles).toContain('.program-exercise-row');
+    expect(styles).toContain('.program-day-row > button');
+    expect(styles).toContain('align-self: end');
+    expect(styles).toContain('.program-day-row > label');
+    expect(styles).toContain('min-width: 0');
+  });
+
   it("gives the add buttons stronger palette-based emphasis", () => {
     expect(index).toContain('class="ghost-button program-add-day-button"');
     expect(script).toContain('class="ghost-button program-add-block-button"');

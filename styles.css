@@ -1041,7 +1041,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(8rem, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 0.55rem;
-  align-items: end;
+  align-items: start;
   border: 1px solid #00e5ff55;
   border-radius: 10px;
   background:
@@ -1076,7 +1076,7 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(5rem, 0.65fr) minmax(0, 1fr) minmax(0, 1fr) minmax(5rem, 0.65fr) auto;
   gap: 0.45rem;
-  align-items: end;
+  align-items: start;
   border: 1px solid #9b5cff66;
   border-radius: 10px;
   background:
@@ -1112,13 +1112,25 @@ textarea:focus-visible {
   display: grid;
   grid-template-columns: minmax(4rem, 0.55fr) minmax(0, 1fr) minmax(6rem, 0.8fr) minmax(0, 1fr) minmax(5rem, 0.65fr) auto;
   gap: 0.4rem;
-  align-items: end;
+  align-items: start;
   border: 1px solid #38bdf866;
   border-radius: 10px;
   background:
     linear-gradient(180deg, rgb(56 189 248 / 11%), rgb(8 17 33 / 94%)),
     #081121;
   padding: 0.55rem;
+}
+
+.program-day-row > button,
+.program-block-row > button,
+.program-exercise-row > button {
+  align-self: end;
+}
+
+.program-day-row > label,
+.program-block-row > label,
+.program-exercise-row > label {
+  min-width: 0;
 }
 
 @media (max-width: 760px) {
