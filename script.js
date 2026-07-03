@@ -4403,10 +4403,22 @@ function resetPhaseImportForm() {
   if (phaseImportStatusEl) {
     phaseImportStatusEl.textContent = "";
   }
+  syncPhaseImportMode();
   syncPhaseImportDisclosure();
   syncProgramBasicsFromText();
   syncProgramTrainingDaysFromText();
   updatePhaseImportPreview();
+}
+
+function syncPhaseImportMode() {
+  if (!phaseImportDetails) {
+    return;
+  }
+  if (editingPhaseTemplateId) {
+    phaseImportDetails.dataset.programImportMode = "edit";
+    return;
+  }
+  delete phaseImportDetails.dataset.programImportMode;
 }
 
 function syncPhaseImportDisclosure() {
@@ -4936,6 +4948,7 @@ function startPhaseTemplateEdit(templateId) {
     savePhaseButton.textContent = "Save phase changes";
   }
   cancelPhaseEditButton?.classList.remove("is-hidden");
+  syncPhaseImportMode();
   syncPhaseImportDisclosure();
   phaseImportStatusEl.textContent = `Editing "${template.name}". Saving will refresh already planned generated sessions from this template.`;
   phaseImportDetails?.scrollIntoView({ behavior: "smooth", block: "start" });

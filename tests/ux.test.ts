@@ -104,6 +104,15 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("Program import text copied to clipboard.");
   });
 
+  it("marks the program import form as edit mode only while editing an existing template", () => {
+    expect(script).toContain('phaseImportDetails.dataset.programImportMode = "edit"');
+    expect(script).toContain('delete phaseImportDetails.dataset.programImportMode');
+    expect(styles).toContain('.phase-import-details[data-program-import-mode="edit"]');
+    expect(styles).toContain('linear-gradient(180deg, rgb(255 216 77 / 7%)');
+    expect(styles).toContain('.phase-import-details[data-program-import-mode="edit"] .dialog-actions #save-phase-button');
+    expect(styles).toContain('.phase-import-details[data-program-import-mode="edit"] .dialog-actions #cancel-phase-edit');
+  });
+
   it("offers a reset action for the builder", () => {
     expect(script).toContain('reset-program-builder');
     expect(script).toContain("Builder reset to a blank program.");
