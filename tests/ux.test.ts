@@ -231,6 +231,15 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('counter(program-builder-step)');
   });
 
+  it("groups the program import metadata fields into one control strip", () => {
+    expect(index).toContain('program-import-metadata');
+    expect(styles).toContain('.program-import-metadata');
+    expect(styles).toContain('border: 1px solid #38bdf844');
+    expect(styles).toContain('linear-gradient(180deg, rgb(56 189 248 / 6%)');
+    expect(styles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
+    expect(styles).toContain('.program-import-metadata label');
+  });
+
   it("renders saved templates and scheduled phases as distinct card types", () => {
     expect(styles).toContain('#phase-template-list .phase-card');
     expect(styles).toContain('linear-gradient(180deg, rgb(155 92 255 / 8%)');
