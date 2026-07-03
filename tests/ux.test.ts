@@ -144,6 +144,25 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('brightness(1.06) saturate(1.04)');
   });
 
+  it("adds depth to the non-add program buttons without changing the add buttons", () => {
+    expect(styles).toContain('.view-panel[data-view="phases"] .ghost-button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button)');
+    expect(styles).toContain('linear-gradient(180deg, #13233a, #0a1326)');
+    expect(styles).toContain('#dff5ff');
+    expect(styles).toContain('.view-panel[data-view="phases"] button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button)');
+    expect(styles).toContain('inset 0 1px 0 rgb(255 255 255 / 11%)');
+    expect(styles).toContain('0 0.75rem 1.2rem rgb(0 0 0 / 20%)');
+    expect(styles).toContain('.view-panel[data-view="phases"] .danger-button');
+    expect(styles).toContain('linear-gradient(180deg, #ff5d7b, #d73b5c)');
+    expect(styles).toContain('.view-panel[data-view="phases"] button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button):hover');
+    expect(styles).toContain('inset 0 1px 0 rgb(255 255 255 / 14%)');
+    expect(styles).toContain('0 0.9rem 1.45rem rgb(0 0 0 / 24%)');
+  });
+
+  it("keeps the program schedule button on the shared ghost-button base", () => {
+    expect(script).toContain('data-role="schedule-phase"');
+    expect(script).toContain('class="ghost-button" data-role="schedule-phase"');
+  });
+
   it("offers a saved-template picker in the builder", () => {
     expect(script).toContain('program-template-picker');
     expect(script).toContain('load-program-template');

@@ -1870,6 +1870,43 @@ button.program-add-exercise-button:hover {
   filter: brightness(1.05) saturate(1.02);
 }
 
+.view-panel[data-view="phases"] .ghost-button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button) {
+  background: linear-gradient(180deg, #13233a, #0a1326);
+  border-color: #4fa7d766;
+  color: #dff5ff;
+}
+
+.view-panel[data-view="phases"] .ghost-button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button):hover {
+  background: linear-gradient(180deg, #19304d, #0f1b31);
+  color: #f2fbff;
+}
+
+.view-panel[data-view="phases"] button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button) {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 11%),
+    0 0.75rem 1.2rem rgb(0 0 0 / 20%);
+}
+
+.view-panel[data-view="phases"] button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button):hover {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 14%),
+    0 0.9rem 1.45rem rgb(0 0 0 / 24%);
+}
+
+.view-panel[data-view="phases"] .danger-button {
+  background: linear-gradient(180deg, #ff5d7b, #d73b5c);
+  border-color: #ff95ab88;
+  color: #22000a;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 14%),
+    0 0.8rem 1.3rem rgb(255 77 109 / 24%);
+}
+
+.view-panel[data-view="phases"] .danger-button:hover {
+  background: linear-gradient(180deg, #ff7b94, #c82d4f);
+  color: #1c0007;
+}
+
 .danger-button {
   color: #22000a;
   border-color: #ff4d6d88;

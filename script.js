@@ -5333,7 +5333,7 @@ function renderPhaseTemplates() {
             <div class="phase-actions">
               <button type="button" class="ghost-button" data-role="edit-phase-template" data-id="${template.id}">Edit</button>
               <button type="button" class="ghost-button" data-role="duplicate-phase-template" data-id="${template.id}">Load copy</button>
-              <button type="button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
+              <button type="button" class="ghost-button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
               <button type="button" class="ghost-button danger-button" data-role="delete-phase-template" data-id="${template.id}">Delete</button>
             </div>
           </div>
