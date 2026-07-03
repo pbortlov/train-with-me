@@ -141,10 +141,33 @@ export function buildCopiedProgramName(name: unknown): string {
   return normalizedName.toLowerCase().startsWith("copy of ") ? normalizedName : `Copy of ${normalizedName}`;
 }
 
+export function sortPhaseTemplatesForDisplay<
+  T extends { updatedAt?: unknown; importedAt?: unknown; name?: unknown },
+>(templates: T[]): T[] {
+  return [...templates].sort((left, right) => {
+    const rightUpdatedAt = toTimestamp(right.updatedAt);
+    const leftUpdatedAt = toTimestamp(left.updatedAt);
+    if (rightUpdatedAt !== leftUpdatedAt) {
+      return rightUpdatedAt - leftUpdatedAt;
+    }
+    const rightImportedAt = toTimestamp(right.importedAt);
+    const leftImportedAt = toTimestamp(left.importedAt);
+    if (rightImportedAt !== leftImportedAt) {
+      return rightImportedAt - leftImportedAt;
+    }
+    return String(left.name || "").localeCompare(String(right.name || ""));
+  });
+}
+
 function formatWeekdayLabel(value: unknown): string {
   const weekday = Number(value) || 0;
   const labels = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   return labels[weekday] || "Day";
+}
+
+function toTimestamp(value: unknown): number {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
 export interface ProgramBasics {

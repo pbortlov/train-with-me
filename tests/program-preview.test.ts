@@ -12,6 +12,7 @@ import {
   readProgramDayBlocks,
   readProgramDayExercises,
   readProgramTrainingDays,
+  sortPhaseTemplatesForDisplay,
   updateProgramBasics,
   updateProgramDayBlocks,
   updateProgramDayExercises,
@@ -92,6 +93,17 @@ describe("program import preview", () => {
       summary: "5 weeks • 3 training days • 3 blocks • 4 exercises",
       detail: "Tuesday: Strength A (Main lower-body day) • Friday: Strength B (Upper/lower mixed) • +1 more",
     });
+  });
+
+  it("sorts saved templates by recent edits before older imports", () => {
+    expect(
+      sortPhaseTemplatesForDisplay([
+        { id: "older", name: "Older", importedAt: 100, updatedAt: 100 },
+        { id: "edited", name: "Edited", importedAt: 100, updatedAt: 200 },
+        { id: "same", name: "Alpha", importedAt: 100, updatedAt: 100 },
+        { id: "same-b", name: "Beta", importedAt: 150, updatedAt: 100 },
+      ]).map((template) => template.id),
+    ).toEqual(["edited", "same-b", "same", "older"]);
   });
 
   it("creates a friendly duplicate name for copied templates", () => {

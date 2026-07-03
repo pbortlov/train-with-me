@@ -20,12 +20,12 @@ import {
   buildProgramTemplateSummary,
   buildProgramPreviewSummary,
   buildCopiedProgramName,
-  buildProgramPreviewSummaryFromText,
   buildStarterProgramText,
   readProgramDayBlocks,
   readProgramDayExercises,
   readProgramBasics,
   readProgramTrainingDays,
+  sortPhaseTemplatesForDisplay,
   updateProgramDayBlocks,
   updateProgramDayExercises,
   updateProgramBasics,
@@ -5294,7 +5294,8 @@ function renderPhaseTemplates() {
     phaseTemplateListEl.innerHTML = "<p class=\"planner-empty\">No saved phase templates yet.</p>";
     return;
   }
-  phaseTemplateListEl.innerHTML = phaseTemplates
+  const sortedTemplates = sortPhaseTemplatesForDisplay(phaseTemplates);
+  phaseTemplateListEl.innerHTML = sortedTemplates
     .map((template) => {
       const templateSummary = buildProgramTemplateSummary(template);
       const badgeLabel = getTemplateBadgeLabel(template);
@@ -5351,11 +5352,12 @@ function renderProgramTemplatePicker() {
   }
   const currentValue = programTemplatePicker.value;
   programTemplatePicker.disabled = false;
+  const sortedTemplates = sortPhaseTemplatesForDisplay(phaseTemplates);
   programTemplatePicker.innerHTML = [
     '<option value="">Select a saved template</option>',
-    ...phaseTemplates.map((template) => `<option value="${template.id}">${escapeHtml(template.name)}</option>`),
+    ...sortedTemplates.map((template) => `<option value="${template.id}">${escapeHtml(template.name)}</option>`),
   ].join("");
-  if (phaseTemplates.some((template) => template.id === currentValue)) {
+  if (sortedTemplates.some((template) => template.id === currentValue)) {
     programTemplatePicker.value = currentValue;
   }
 }
