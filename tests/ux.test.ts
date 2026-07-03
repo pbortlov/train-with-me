@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const index = readFileSync("index.html", "utf8");
 const script = readFileSync("script.js", "utf8");
+const styles = readFileSync("styles.css", "utf8");
 const previewDomain = readFileSync("src/domain/program-preview.ts", "utf8");
 
 describe("local-first UX guidance", () => {
@@ -106,6 +107,16 @@ describe("local-first UX guidance", () => {
   it("offers a reset action for the builder", () => {
     expect(script).toContain('reset-program-builder');
     expect(script).toContain("Builder reset to a blank program.");
+  });
+
+  it("visually separates program days blocks and exercises", () => {
+    expect(styles).toContain(".program-day-row");
+    expect(styles).toContain("linear-gradient(180deg, rgb(0 229 255 / 8%)");
+    expect(styles).toContain(".program-block-editor");
+    expect(styles).toContain("rgb(155 92 255 / 6%)");
+    expect(styles).toContain(".program-exercise-editor");
+    expect(styles).toContain("var(--band-green)");
+    expect(styles).toContain(".program-exercise-row");
   });
 
   it("offers a saved-template picker in the builder", () => {

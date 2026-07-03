@@ -930,18 +930,23 @@ textarea:focus-visible {
   grid-template-columns: minmax(8rem, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 0.55rem;
   align-items: end;
-  border: 1px solid var(--border);
+  border: 1px solid #00e5ff55;
   border-radius: 10px;
-  background: #081121;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 8%), rgb(8 17 33 / 96%)),
+    #081121;
   padding: 0.65rem;
+  box-shadow: 0 0 0 1px rgb(0 229 255 / 6%) inset;
 }
 
 .program-block-editor {
   display: grid;
   gap: 0.55rem;
   grid-column: 1 / -1;
-  border-top: 1px solid var(--border);
-  padding-top: 0.65rem;
+  border: 1px solid #9b5cff3d;
+  border-radius: 10px;
+  background: rgb(155 92 255 / 6%);
+  padding: 0.7rem;
 }
 
 .program-block-editor h5 {
@@ -958,14 +963,22 @@ textarea:focus-visible {
   grid-template-columns: minmax(5rem, 0.65fr) minmax(0, 1fr) minmax(0, 1fr) minmax(5rem, 0.65fr) auto;
   gap: 0.45rem;
   align-items: end;
+  border: 1px solid #9b5cff55;
+  border-radius: 10px;
+  background: rgb(155 92 255 / 10%);
+  padding: 0.6rem;
+  box-shadow: 0 0 0 1px rgb(155 92 255 / 6%) inset;
 }
 
 .program-exercise-editor {
   display: grid;
   gap: 0.45rem;
   grid-column: 1 / -1;
-  border-left: 3px solid var(--border);
-  padding-left: 0.55rem;
+  border: 1px solid #34d39933;
+  border-left: 3px solid var(--band-green);
+  border-radius: 10px;
+  background: rgb(52 211 153 / 6%);
+  padding: 0.65rem;
 }
 
 .program-exercise-editor h6 {
@@ -982,6 +995,10 @@ textarea:focus-visible {
   grid-template-columns: minmax(4rem, 0.55fr) minmax(0, 1fr) minmax(6rem, 0.8fr) minmax(0, 1fr) minmax(5rem, 0.65fr) auto;
   gap: 0.4rem;
   align-items: end;
+  border: 1px solid #38bdf844;
+  border-radius: 10px;
+  background: rgb(56 189 248 / 7%);
+  padding: 0.55rem;
 }
 
 @media (max-width: 760px) {

@@ -39,6 +39,8 @@ The saved-template cards also show a human-readable edit age such as `Edited
 today` or `Edited 3 days ago`.
 The saved-template list can also be filtered by template name, slot notes, or
 exercise text so the builder stays usable as the saved library grows.
+The builder now uses nested colored surfaces to separate training days, blocks,
+and exercises so the structure is readable at a glance.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.
