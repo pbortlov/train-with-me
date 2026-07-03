@@ -797,6 +797,10 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
+.phase-template-filter {
+  margin-bottom: 0.75rem;
+}
+
 .phase-import-details summary {
   cursor: pointer;
   color: var(--accent);

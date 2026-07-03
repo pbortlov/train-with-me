@@ -19,6 +19,7 @@ import {
   buildProgramImportHints,
   buildProgramTemplateSummary,
   buildTemplateRecencyLabel,
+  filterPhaseTemplatesForDisplay,
   buildProgramPreviewSummary,
   buildCopiedProgramName,
   buildStarterProgramText,
@@ -205,6 +206,7 @@ const copyProgramTextButton = document.getElementById("copy-program-text");
 const resetProgramBuilderButton = document.getElementById("reset-program-builder");
 const programTemplatePicker = document.getElementById("program-template-picker");
 const loadProgramTemplateButton = document.getElementById("load-program-template");
+const phaseTemplateFilterInput = document.getElementById("phase-template-filter");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
 const phaseImportPreviewEl = document.getElementById("phase-import-preview");
@@ -297,6 +299,7 @@ let programCompletionChart = null;
 let selectedProgramProgressInstanceId = "";
 let programExerciseSortMode = "program-order";
 let editingPhaseTemplateId = "";
+let phaseTemplateFilterQuery = "";
 let completionStrengthDraft = [];
 let completionSprintDraft = [];
 let selectedCalendarSessionId = "";
@@ -3246,6 +3249,7 @@ function bindV2Events() {
   addSafeEventListener(copyProgramTextButton, "click", copyProgramImportText);
   addSafeEventListener(resetProgramBuilderButton, "click", resetProgramBuilder);
   addSafeEventListener(loadProgramTemplateButton, "click", loadSelectedProgramTemplate);
+  addSafeEventListener(phaseTemplateFilterInput, "input", handlePhaseTemplateFilterInput);
   addSafeEventListener(programDayListEl, "input", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "change", handleProgramEditorInput);
   addSafeEventListener(programDayListEl, "click", handleProgramEditorAction);
@@ -5291,11 +5295,16 @@ function renderPhaseTemplates() {
   if (!phaseTemplateListEl) {
     return;
   }
+  const visibleTemplates = getVisiblePhaseTemplates();
   if (!phaseTemplates.length) {
     phaseTemplateListEl.innerHTML = "<p class=\"planner-empty\">No saved phase templates yet.</p>";
     return;
   }
-  const sortedTemplates = sortPhaseTemplatesForDisplay(phaseTemplates);
+  if (!visibleTemplates.length) {
+    phaseTemplateListEl.innerHTML = "<p class=\"planner-empty\">No saved templates match this filter.</p>";
+    return;
+  }
+  const sortedTemplates = sortPhaseTemplatesForDisplay(visibleTemplates);
   phaseTemplateListEl.innerHTML = sortedTemplates
     .map((template) => {
       const templateSummary = buildProgramTemplateSummary(template);
@@ -5348,14 +5357,20 @@ function renderProgramTemplatePicker() {
   if (!programTemplatePicker) {
     return;
   }
+  const visibleTemplates = getVisiblePhaseTemplates();
   if (!phaseTemplates.length) {
     programTemplatePicker.innerHTML = '<option value="">No saved templates</option>';
     programTemplatePicker.disabled = true;
     return;
   }
+  if (!visibleTemplates.length) {
+    programTemplatePicker.innerHTML = '<option value="">No matching templates</option>';
+    programTemplatePicker.disabled = true;
+    return;
+  }
   const currentValue = programTemplatePicker.value;
   programTemplatePicker.disabled = false;
-  const sortedTemplates = sortPhaseTemplatesForDisplay(phaseTemplates);
+  const sortedTemplates = sortPhaseTemplatesForDisplay(visibleTemplates);
   programTemplatePicker.innerHTML = [
     '<option value="">Select a saved template</option>',
     ...sortedTemplates.map((template) => `<option value="${template.id}">${escapeHtml(template.name)}</option>`),
@@ -5363,6 +5378,20 @@ function renderProgramTemplatePicker() {
   if (sortedTemplates.some((template) => template.id === currentValue)) {
     programTemplatePicker.value = currentValue;
   }
+}
+
+function handlePhaseTemplateFilterInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) {
+    return;
+  }
+  phaseTemplateFilterQuery = target.value;
+  renderPhaseTemplates();
+  renderProgramTemplatePicker();
+}
+
+function getVisiblePhaseTemplates() {
+  return filterPhaseTemplatesForDisplay(phaseTemplates, phaseTemplateFilterQuery);
 }
 
 function isRecentlyEditedTemplate(template) {

@@ -9,6 +9,7 @@ import {
   buildProgramTemplateSummary,
   buildStarterProgramText,
   buildTemplateRecencyLabel,
+  filterPhaseTemplatesForDisplay,
   readProgramBasics,
   readProgramDayBlocks,
   readProgramDayExercises,
@@ -111,6 +112,42 @@ describe("program import preview", () => {
     expect(buildTemplateRecencyLabel({ updatedAt: 1_700_000_000_000 }, 1_700_000_000_000)).toBe("Edited today");
     expect(buildTemplateRecencyLabel({ updatedAt: 1_699_913_600_000 }, 1_700_000_000_000)).toBe("Edited yesterday");
     expect(buildTemplateRecencyLabel({ updatedAt: 1_699_740_800_000 }, 1_700_000_000_000)).toBe("Edited 3 days ago");
+  });
+
+  it("filters saved templates by name and structured content", () => {
+    const templates = [
+      {
+        id: "alpha",
+        name: "Alpha phase",
+        durationWeeks: 5,
+        weekdaySlots: [
+          {
+            weekday: 2,
+            title: "Strength A",
+            notes: "Main lower-body day",
+            blocks: [{ label: "A", duration: "", rest: "", sets: "", exercises: [{ code: "A1", name: "Back squat" }] }],
+          },
+        ],
+      },
+      {
+        id: "beta",
+        name: "Recovery",
+        durationWeeks: 3,
+        weekdaySlots: [
+          {
+            weekday: 5,
+            title: "Recovery day",
+            notes: "Mobility and light work",
+            blocks: [{ label: "B", duration: "", rest: "", sets: "", exercises: [{ code: "B1", name: "Bike" }] }],
+          },
+        ],
+      },
+    ];
+
+    expect(filterPhaseTemplatesForDisplay(templates, "alpha")).toHaveLength(1);
+    expect(filterPhaseTemplatesForDisplay(templates, "back squat")).toHaveLength(1);
+    expect(filterPhaseTemplatesForDisplay(templates, "mobility light")).toHaveLength(1);
+    expect(filterPhaseTemplatesForDisplay(templates, "deadlift")).toHaveLength(0);
   });
 
   it("creates a friendly duplicate name for copied templates", () => {

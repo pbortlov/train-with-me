@@ -104,6 +104,42 @@ export function buildProgramTemplateSummary(template: unknown): { summary: strin
   return { summary, detail };
 }
 
+export function filterPhaseTemplatesForDisplay<
+  T extends {
+    name?: unknown;
+    durationWeeks?: unknown;
+    weekdaySlots?: Array<{
+      weekday?: unknown;
+      title?: unknown;
+      notes?: unknown;
+      blocks?: Array<{
+        label?: unknown;
+        duration?: unknown;
+        rest?: unknown;
+        sets?: unknown;
+        exercises?: Array<{
+          code?: unknown;
+          name?: unknown;
+          reps?: unknown;
+          notes?: unknown;
+          weight?: unknown;
+        }>;
+      }>;
+    }>;
+  },
+>(templates: T[], query: unknown): T[] {
+  const normalizedQuery = String(query || "").trim().toLowerCase();
+  if (!normalizedQuery) {
+    return [...templates];
+  }
+
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  return templates.filter((template) => {
+    const haystack = buildTemplateSearchText(template);
+    return tokens.every((token) => haystack.includes(token));
+  });
+}
+
 export function buildProgramImportHints(error: unknown): string[] {
   const message = String(error || "");
   if (!message) {
@@ -188,6 +224,57 @@ function formatWeekdayLabel(value: unknown): string {
   const weekday = Number(value) || 0;
   const labels = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   return labels[weekday] || "Day";
+}
+
+function buildTemplateSearchText(template: {
+  name?: unknown;
+  durationWeeks?: unknown;
+  weekdaySlots?: Array<{
+    weekday?: unknown;
+    title?: unknown;
+    notes?: unknown;
+    blocks?: Array<{
+      label?: unknown;
+      duration?: unknown;
+      rest?: unknown;
+      sets?: unknown;
+      exercises?: Array<{
+        code?: unknown;
+        name?: unknown;
+        reps?: unknown;
+        notes?: unknown;
+        weight?: unknown;
+      }>;
+    }>;
+  }>;
+}): string {
+  const parts = [
+    template.name,
+    template.durationWeeks,
+    ...(template.weekdaySlots || []).flatMap((slot) => [
+      formatWeekdayLabel(slot.weekday),
+      slot.title,
+      slot.notes,
+      ...(slot.blocks || []).flatMap((block) => [
+        block.label,
+        block.duration,
+        block.rest,
+        block.sets,
+        ...(block.exercises || []).flatMap((exercise) => [
+          exercise.code,
+          exercise.name,
+          exercise.reps,
+          exercise.notes,
+          exercise.weight,
+        ]),
+      ]),
+    ]),
+  ];
+
+  return parts
+    .map((value) => String(value || "").toLowerCase())
+    .join(" ")
+    .replace(/\s+/g, " ");
 }
 
 function toTimestamp(value: unknown): number {

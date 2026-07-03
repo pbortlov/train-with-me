@@ -58,6 +58,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="load-program-example"');
     expect(index).toContain('id="copy-program-text"');
     expect(index).toContain('id="reset-program-builder"');
+    expect(index).toContain('id="phase-template-filter"');
     expect(index).toContain('id="program-template-picker"');
     expect(index).toContain('id="load-program-template"');
     expect(index).toContain('id="program-builder-guide-heading"');
@@ -111,6 +112,13 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('program-template-picker');
     expect(script).toContain('load-program-template');
     expect(script).toContain("Select a saved template to load.");
+  });
+
+  it("filters saved templates from the list and builder picker", () => {
+    expect(script).toContain('phase-template-filter');
+    expect(script).toContain('No saved templates match this filter.');
+    expect(script).toContain('No matching templates');
+    expect(script).toContain('filterPhaseTemplatesForDisplay');
   });
 
   it("marks recently edited saved templates in the list", () => {
