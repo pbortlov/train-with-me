@@ -4694,7 +4694,7 @@ function renderProgramDayEditor(days, dayBlocks = [], dayExercises = []) {
     return;
   }
   if (!days.length) {
-    programDayListEl.innerHTML = "<p class=\"planner-empty\">No training days yet. Add a day or paste program text.</p>";
+    programDayListEl.innerHTML = "<p class=\"planner-empty program-empty-state program-empty-days\">No training days yet. Add a day or paste program text.</p>";
     return;
   }
   programDayListEl.innerHTML = days
@@ -4726,7 +4726,7 @@ function renderProgramDayEditorRow(day, index, blocks, blockExercises) {
           <button type="button" class="ghost-button program-add-block-button" data-role="add-program-block" data-day-index="${index}">Add block</button>
         </div>
         <div class="program-block-list">
-          ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex, blockExercises[blockIndex]?.exercises || [])).join("") : "<p class=\"planner-empty\">No blocks yet. Add a block or edit the import text.</p>"}
+          ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex, blockExercises[blockIndex]?.exercises || [])).join("") : "<p class=\"planner-empty program-empty-state program-empty-blocks\">No blocks yet. Add a block or edit the import text.</p>"}
         </div>
       </div>
     </div>
@@ -4759,7 +4759,7 @@ function renderProgramBlockEditorRow(block, dayIndex, blockIndex, exercises) {
           <button type="button" class="ghost-button program-add-exercise-button" data-role="add-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Add exercise</button>
         </div>
         <div class="program-exercise-list">
-          ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : "<p class=\"planner-empty\">No exercises yet.</p>"}
+          ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : "<p class=\"planner-empty program-empty-state program-empty-exercises\">No exercises yet.</p>"}
         </div>
       </div>
     </div>
@@ -4892,7 +4892,7 @@ function renderProgramPreviewDay(day) {
       <h5>${escapeHtml(day.weekday)} • ${escapeHtml(day.title)}</h5>
       ${day.notes ? `<div class="phase-meta">${escapeHtml(day.notes)}</div>` : ""}
       <div class="program-preview-blocks">
-        ${day.blocks.length ? day.blocks.map(renderProgramPreviewBlock).join("") : `<p class="planner-empty">No blocks yet.</p>`}
+        ${day.blocks.length ? day.blocks.map(renderProgramPreviewBlock).join("") : `<p class="planner-empty program-preview-empty program-preview-empty-blocks">No blocks yet.</p>`}
       </div>
     </article>
   `;
@@ -4909,7 +4909,7 @@ function renderProgramPreviewBlock(block) {
       <h6>${escapeHtml(block.label)}</h6>
       ${meta ? `<div class="phase-meta">${escapeHtml(meta)}</div>` : ""}
       <ul class="detail-list">
-        ${block.exercises.length ? block.exercises.map(renderProgramPreviewExercise).join("") : "<li>No exercises yet.</li>"}
+        ${block.exercises.length ? block.exercises.map(renderProgramPreviewExercise).join("") : "<li class=\"program-preview-empty program-preview-empty-exercises\">No exercises yet.</li>"}
       </ul>
     </section>
   `;

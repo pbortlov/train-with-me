@@ -128,6 +128,20 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".program-exercise-row");
   });
 
+  it("gives the empty program states distinct visual callouts", () => {
+    expect(script).toContain('program-empty-state program-empty-days');
+    expect(script).toContain('program-empty-state program-empty-blocks');
+    expect(script).toContain('program-empty-state program-empty-exercises');
+    expect(script).toContain('program-preview-empty program-preview-empty-blocks');
+    expect(script).toContain('program-preview-empty program-preview-empty-exercises');
+    expect(styles).toContain('.view-panel[data-view="phases"] .program-empty-state');
+    expect(styles).toContain('border: 1px dashed #76e4ff55');
+    expect(styles).toContain('.view-panel[data-view="phases"] .program-empty-blocks');
+    expect(styles).toContain('rgb(155 92 255 / 10%)');
+    expect(styles).toContain('.view-panel[data-view="phases"] .program-empty-exercises');
+    expect(styles).toContain('rgb(52 211 153 / 10%)');
+  });
+
   it("gives the add buttons stronger palette-based emphasis", () => {
     expect(index).toContain('class="ghost-button program-add-day-button"');
     expect(script).toContain('class="ghost-button program-add-block-button"');

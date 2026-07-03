@@ -596,6 +596,41 @@ textarea:focus-visible {
   font-size: 0.85rem;
 }
 
+.view-panel[data-view="phases"] .program-empty-state,
+.view-panel[data-view="phases"] .program-preview-empty {
+  border: 1px dashed #76e4ff55;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(118 228 255 / 8%), rgb(8 17 33 / 92%)),
+    #081121;
+  color: #d7f8ff;
+  padding: 0.7rem 0.8rem;
+  box-shadow: inset 0 0 0 1px rgb(118 228 255 / 6%);
+}
+
+.view-panel[data-view="phases"] .program-empty-days {
+  border-color: #00e5ff66;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 10%), rgb(8 17 33 / 92%)),
+    #081121;
+}
+
+.view-panel[data-view="phases"] .program-empty-blocks,
+.view-panel[data-view="phases"] .program-preview-empty-blocks {
+  border-color: #9b5cff66;
+  background:
+    linear-gradient(180deg, rgb(155 92 255 / 10%), rgb(8 17 33 / 92%)),
+    #081121;
+}
+
+.view-panel[data-view="phases"] .program-empty-exercises,
+.view-panel[data-view="phases"] .program-preview-empty-exercises {
+  border-color: #34d39966;
+  background:
+    linear-gradient(180deg, rgb(52 211 153 / 10%), rgb(8 17 33 / 92%)),
+    #081121;
+}
+
 .planned-session-card,
 .review-card,
 .phase-card {
