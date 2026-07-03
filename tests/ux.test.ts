@@ -111,11 +111,11 @@ describe("local-first UX guidance", () => {
 
   it("visually separates program days blocks and exercises", () => {
     expect(styles).toContain(".program-day-row");
-    expect(styles).toContain("linear-gradient(180deg, rgb(0 229 255 / 8%)");
+    expect(styles).toContain("linear-gradient(180deg, rgb(0 229 255 / 12%)");
     expect(styles).toContain(".program-block-editor");
-    expect(styles).toContain("rgb(155 92 255 / 6%)");
+    expect(styles).toContain("linear-gradient(180deg, rgb(155 92 255 / 10%)");
     expect(styles).toContain(".program-exercise-editor");
-    expect(styles).toContain("var(--band-green)");
+    expect(styles).toContain("linear-gradient(180deg, rgb(52 211 153 / 10%)");
     expect(styles).toContain(".program-exercise-row");
   });
 
@@ -161,6 +161,15 @@ describe("local-first UX guidance", () => {
   it("keeps the program schedule button on the shared ghost-button base", () => {
     expect(script).toContain('data-role="schedule-phase"');
     expect(script).toContain('class="ghost-button" data-role="schedule-phase"');
+  });
+
+  it("makes the program preview cards use the same day block exercise hierarchy cues", () => {
+    expect(styles).toContain('.program-preview-heading');
+    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 12%)');
+    expect(styles).toContain('.program-preview-block');
+    expect(styles).toContain('border-left: 3px solid var(--band-purple)');
+    expect(styles).toContain('.phase-training-card');
+    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 7%)');
   });
 
   it("offers a saved-template picker in the builder", () => {

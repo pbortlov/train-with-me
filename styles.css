@@ -877,6 +877,7 @@ textarea:focus-visible {
   display: grid;
   gap: 0.75rem;
   margin: 0.35rem 0 0.85rem;
+  padding: 0.1rem 0 0;
 }
 
 .program-preview-error {
@@ -898,9 +899,11 @@ textarea:focus-visible {
 }
 
 .program-preview-heading {
-  border: 1px solid var(--border);
+  border: 1px solid #00e5ff44;
   border-radius: 10px;
-  background: #081121;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 12%), rgb(8 17 33 / 96%)),
+    #081121;
   padding: 0.75rem;
 }
 
@@ -916,8 +919,11 @@ textarea:focus-visible {
 }
 
 .program-preview-block {
-  border-left: 3px solid var(--accent);
-  padding-left: 0.65rem;
+  border: 1px solid #9b5cff40;
+  border-left: 3px solid var(--band-purple);
+  border-radius: 10px;
+  background: rgb(155 92 255 / 8%);
+  padding: 0.7rem;
 }
 
 .program-day-editor {
@@ -949,19 +955,21 @@ textarea:focus-visible {
   border: 1px solid #00e5ff55;
   border-radius: 10px;
   background:
-    linear-gradient(180deg, rgb(0 229 255 / 8%), rgb(8 17 33 / 96%)),
+    linear-gradient(180deg, rgb(0 229 255 / 12%), rgb(8 17 33 / 96%)),
     #081121;
   padding: 0.65rem;
-  box-shadow: 0 0 0 1px rgb(0 229 255 / 6%) inset;
+  box-shadow: 0 0 0 1px rgb(0 229 255 / 10%) inset;
 }
 
 .program-block-editor {
   display: grid;
   gap: 0.55rem;
   grid-column: 1 / -1;
-  border: 1px solid #9b5cff3d;
+  border: 1px solid #9b5cff55;
   border-radius: 10px;
-  background: rgb(155 92 255 / 6%);
+  background:
+    linear-gradient(180deg, rgb(155 92 255 / 10%), rgb(9 15 30 / 94%)),
+    #081121;
   padding: 0.7rem;
 }
 
@@ -979,21 +987,25 @@ textarea:focus-visible {
   grid-template-columns: minmax(5rem, 0.65fr) minmax(0, 1fr) minmax(0, 1fr) minmax(5rem, 0.65fr) auto;
   gap: 0.45rem;
   align-items: end;
-  border: 1px solid #9b5cff55;
+  border: 1px solid #9b5cff66;
   border-radius: 10px;
-  background: rgb(155 92 255 / 10%);
+  background:
+    linear-gradient(180deg, rgb(155 92 255 / 16%), rgb(10 17 33 / 94%)),
+    #081121;
   padding: 0.6rem;
-  box-shadow: 0 0 0 1px rgb(155 92 255 / 6%) inset;
+  box-shadow: 0 0 0 1px rgb(155 92 255 / 10%) inset;
 }
 
 .program-exercise-editor {
   display: grid;
   gap: 0.45rem;
   grid-column: 1 / -1;
-  border: 1px solid #34d39933;
+  border: 1px solid #34d39955;
   border-left: 3px solid var(--band-green);
   border-radius: 10px;
-  background: rgb(52 211 153 / 6%);
+  background:
+    linear-gradient(180deg, rgb(52 211 153 / 10%), rgb(8 17 33 / 94%)),
+    #081121;
   padding: 0.65rem;
 }
 
@@ -1011,9 +1023,11 @@ textarea:focus-visible {
   grid-template-columns: minmax(4rem, 0.55fr) minmax(0, 1fr) minmax(6rem, 0.8fr) minmax(0, 1fr) minmax(5rem, 0.65fr) auto;
   gap: 0.4rem;
   align-items: end;
-  border: 1px solid #38bdf844;
+  border: 1px solid #38bdf866;
   border-radius: 10px;
-  background: rgb(56 189 248 / 7%);
+  background:
+    linear-gradient(180deg, rgb(56 189 248 / 11%), rgb(8 17 33 / 94%)),
+    #081121;
   padding: 0.55rem;
 }
 
@@ -1030,9 +1044,11 @@ textarea:focus-visible {
 }
 
 .phase-training-card {
-  border: 1px solid var(--border);
+  border: 1px solid #00e5ff33;
   border-radius: 10px;
-  background: #081121;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 7%), rgb(8 17 33 / 95%)),
+    #081121;
   padding: 0.7rem;
   display: grid;
   gap: 0.45rem;
