@@ -119,6 +119,18 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".program-exercise-row");
   });
 
+  it("gives the add buttons stronger palette-based emphasis", () => {
+    expect(index).toContain('class="ghost-button program-add-day-button"');
+    expect(script).toContain('class="ghost-button program-add-block-button"');
+    expect(script).toContain('class="ghost-button program-add-exercise-button"');
+    expect(styles).toContain(".program-add-day-button");
+    expect(styles).toContain("linear-gradient(180deg, #00f0ff, #00b6d4)");
+    expect(styles).toContain(".program-add-block-button");
+    expect(styles).toContain("linear-gradient(180deg, #6dff5c, #2fca65)");
+    expect(styles).toContain(".program-add-exercise-button");
+    expect(styles).toContain("linear-gradient(180deg, #ffd84d, #d6a800)");
+  });
+
   it("offers a saved-template picker in the builder", () => {
     expect(script).toContain('program-template-picker');
     expect(script).toContain('load-program-template');

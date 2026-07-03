@@ -1802,6 +1802,39 @@ td {
   box-shadow: none;
 }
 
+button.program-add-day-button {
+  background: linear-gradient(180deg, #00f0ff, #00b6d4);
+  border-color: #6ef8ff;
+  color: #001018;
+  box-shadow: 0 0.65rem 1.2rem rgb(0 229 255 / 24%);
+}
+
+button.program-add-day-button:hover {
+  background: linear-gradient(180deg, #5af6ff, #00a4c3);
+}
+
+button.program-add-block-button {
+  background: linear-gradient(180deg, #6dff5c, #2fca65);
+  border-color: #a9ff9c;
+  color: #00120b;
+  box-shadow: 0 0.65rem 1.2rem rgb(109 255 92 / 22%);
+}
+
+button.program-add-block-button:hover {
+  background: linear-gradient(180deg, #8dff7f, #27b75c);
+}
+
+button.program-add-exercise-button {
+  background: linear-gradient(180deg, #ffd84d, #d6a800);
+  border-color: #ffe27d;
+  color: #241900;
+  box-shadow: 0 0.65rem 1.2rem rgb(255 216 77 / 20%);
+}
+
+button.program-add-exercise-button:hover {
+  background: linear-gradient(180deg, #ffe27b, #c99600);
+}
+
 .danger-button {
   color: #22000a;
   border-color: #ff4d6d88;

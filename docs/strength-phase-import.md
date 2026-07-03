@@ -41,6 +41,8 @@ The saved-template list can also be filtered by template name, slot notes, or
 exercise text so the builder stays usable as the saved library grows.
 The builder now uses nested colored surfaces to separate training days, blocks,
 and exercises so the structure is readable at a glance.
+The add controls also use stronger palette accents so `Add day`, `Add block`,
+and `Add exercise` feel distinct at the level they affect.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.

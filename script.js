@@ -4711,7 +4711,7 @@ function renderProgramDayEditorRow(day, index, blocks, blockExercises) {
       <div class="program-block-editor">
         <div class="program-editor-header">
           <h5>Blocks</h5>
-          <button type="button" class="ghost-button" data-role="add-program-block" data-day-index="${index}">Add block</button>
+          <button type="button" class="ghost-button program-add-block-button" data-role="add-program-block" data-day-index="${index}">Add block</button>
         </div>
         <div class="program-block-list">
           ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex, blockExercises[blockIndex]?.exercises || [])).join("") : "<p class=\"planner-empty\">No blocks yet. Add a block or edit the import text.</p>"}
@@ -4744,7 +4744,7 @@ function renderProgramBlockEditorRow(block, dayIndex, blockIndex, exercises) {
       <div class="program-exercise-editor">
         <div class="program-editor-header">
           <h6>Exercises</h6>
-          <button type="button" class="ghost-button" data-role="add-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Add exercise</button>
+          <button type="button" class="ghost-button program-add-exercise-button" data-role="add-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Add exercise</button>
         </div>
         <div class="program-exercise-list">
           ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : "<p class=\"planner-empty\">No exercises yet.</p>"}
