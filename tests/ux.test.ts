@@ -221,6 +221,16 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('min-width: 8.5rem');
   });
 
+  it("turns the program builder guide into a clearer step strip", () => {
+    expect(index).toContain('program-builder-guide');
+    expect(styles).toContain('.program-builder-guide');
+    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 6%)');
+    expect(styles).toContain('.program-builder-guide-list li');
+    expect(styles).toContain('grid-template-columns: auto minmax(0, 1fr)');
+    expect(styles).toContain('.program-builder-guide-list li::before');
+    expect(styles).toContain('counter(program-builder-step)');
+  });
+
   it("renders saved templates and scheduled phases as distinct card types", () => {
     expect(styles).toContain('#phase-template-list .phase-card');
     expect(styles).toContain('linear-gradient(180deg, rgb(155 92 255 / 8%)');
