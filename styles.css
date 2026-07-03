@@ -912,6 +912,25 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+.program-import-content {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid #ffd84d44;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(255 216 77 / 6%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: #fff0b7;
+  font-weight: 700;
+}
+
+.program-import-content textarea {
+  min-height: 13rem;
+  resize: vertical;
+}
+
 .view-panel[data-view="phases"] button {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 9%),

@@ -240,6 +240,15 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.program-import-metadata label');
   });
 
+  it("styles the phase import content textarea as its own panel", () => {
+    expect(index).toContain('class="program-import-content"');
+    expect(styles).toContain('.program-import-content');
+    expect(styles).toContain('border: 1px solid #ffd84d44');
+    expect(styles).toContain('linear-gradient(180deg, rgb(255 216 77 / 6%)');
+    expect(styles).toContain('.program-import-content textarea');
+    expect(styles).toContain('min-height: 13rem');
+  });
+
   it("renders saved templates and scheduled phases as distinct card types", () => {
     expect(styles).toContain('#phase-template-list .phase-card');
     expect(styles).toContain('linear-gradient(180deg, rgb(155 92 255 / 8%)');
