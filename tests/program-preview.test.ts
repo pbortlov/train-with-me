@@ -8,6 +8,7 @@ import {
   buildProgramPreviewSummaryFromText,
   buildProgramTemplateSummary,
   buildStarterProgramText,
+  buildTemplateRecencyLabel,
   readProgramBasics,
   readProgramDayBlocks,
   readProgramDayExercises,
@@ -104,6 +105,12 @@ describe("program import preview", () => {
         { id: "same-b", name: "Beta", importedAt: 150, updatedAt: 100 },
       ]).map((template) => template.id),
     ).toEqual(["edited", "same-b", "same", "older"]);
+  });
+
+  it("describes template recency with a readable age label", () => {
+    expect(buildTemplateRecencyLabel({ updatedAt: 1_700_000_000_000 }, 1_700_000_000_000)).toBe("Edited today");
+    expect(buildTemplateRecencyLabel({ updatedAt: 1_699_913_600_000 }, 1_700_000_000_000)).toBe("Edited yesterday");
+    expect(buildTemplateRecencyLabel({ updatedAt: 1_699_740_800_000 }, 1_700_000_000_000)).toBe("Edited 3 days ago");
   });
 
   it("creates a friendly duplicate name for copied templates", () => {

@@ -159,6 +159,31 @@ export function sortPhaseTemplatesForDisplay<
   });
 }
 
+export function buildTemplateRecencyLabel(template: { updatedAt?: unknown; importedAt?: unknown }, now = Date.now()): string {
+  const timestamp = toTimestamp(template?.updatedAt) || toTimestamp(template?.importedAt);
+  if (!timestamp) {
+    return "";
+  }
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  const ageDays = Math.floor(Math.max(0, now - timestamp) / dayMs);
+
+  if (ageDays <= 0) {
+    return "Edited today";
+  }
+  if (ageDays === 1) {
+    return "Edited yesterday";
+  }
+  if (ageDays < 7) {
+    return `Edited ${ageDays} days ago`;
+  }
+  return `Edited on ${new Date(timestamp).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+}
+
 function formatWeekdayLabel(value: unknown): string {
   const weekday = Number(value) || 0;
   const labels = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];

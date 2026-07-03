@@ -18,6 +18,7 @@ import {
   buildProgramPreview,
   buildProgramImportHints,
   buildProgramTemplateSummary,
+  buildTemplateRecencyLabel,
   buildProgramPreviewSummary,
   buildCopiedProgramName,
   buildStarterProgramText,
@@ -5298,6 +5299,7 @@ function renderPhaseTemplates() {
   phaseTemplateListEl.innerHTML = sortedTemplates
     .map((template) => {
       const templateSummary = buildProgramTemplateSummary(template);
+      const templateRecency = buildTemplateRecencyLabel(template);
       const badgeLabel = getTemplateBadgeLabel(template);
       return `
         <article class="phase-card">
@@ -5306,6 +5308,7 @@ function renderPhaseTemplates() {
               <h4>${escapeHtml(template.name)}</h4>
               <div class="phase-meta">${escapeHtml(templateSummary.summary)}</div>
               <div class="phase-meta">${escapeHtml(templateSummary.detail)}</div>
+              ${templateRecency ? `<div class="phase-meta">${escapeHtml(templateRecency)}</div>` : ""}
               ${badgeLabel ? `<div class="phase-badge ${badgeLabel.className}">${escapeHtml(badgeLabel.label)}</div>` : ""}
             </div>
           </header>

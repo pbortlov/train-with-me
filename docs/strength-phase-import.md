@@ -35,6 +35,8 @@ When present, the slot notes also show up in that card summary so the day is
 easier to recognize at a glance.
 Saved templates are shown in most-recently-edited order in both the list and
 the builder picker, so the templates people touch most often stay near the top.
+The saved-template cards also show a human-readable edit age such as `Edited
+today` or `Edited 3 days ago`.
 The program name and duration fields update the `PHASE` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.

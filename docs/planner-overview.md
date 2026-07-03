@@ -51,6 +51,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - show a plain-language summary of days, blocks, and exercises above the preview
   - show template list summaries that lead with counts, the first training days, and any slot notes so saved programs are easier to scan
   - sort saved templates by the most recently edited templates first so the most useful ones stay near the top
+  - show when a template was last edited so the list reads more like a working queue than a raw storage dump
   - load a copy of a saved template into a new draft before making changes
   - mark copied templates with a copied badge and recently edited templates with a recent badge
   - edit program name and duration through fields that stay synced with the import text
