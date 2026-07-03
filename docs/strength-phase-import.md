@@ -22,7 +22,8 @@ saved elsewhere or reused in another draft.
 There is also a reset action that clears the builder back to a blank draft
 without touching saved templates.
 The builder includes a saved-template picker so an existing template can be
-loaded for editing from the same screen.
+loaded for editing from the same screen, and loading an existing template puts
+the cursor in the program name field so editing can begin immediately.
 Copied templates are marked with a `Copied` badge, while recently edited
 templates keep the `Recently edited` badge.
 When the import text is incomplete, the preview shows row-specific hints for

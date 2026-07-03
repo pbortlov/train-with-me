@@ -78,13 +78,23 @@ describe("local-first UX guidance", () => {
 
   it("opens the import builder before focusing the copied program name", () => {
     const openIndex = script.indexOf("phaseImportDetails.open = true;");
-    const focusIndex = script.indexOf("phaseNameOverrideInput.focus({ preventScroll: true });");
+    const focusIndex = script.indexOf("focusPhaseNameOverrideInput();");
 
     expect(openIndex).toBeGreaterThan(-1);
     expect(focusIndex).toBeGreaterThan(-1);
     expect(openIndex).toBeLessThan(focusIndex);
+    expect(script).toContain("function focusPhaseNameOverrideInput()");
     expect(script).toContain("requestAnimationFrame(() => {");
     expect(script).toContain("setSelectionRange(end, end);");
+  });
+
+  it("focuses the program name field when editing an existing template too", () => {
+    const editIndex = script.indexOf('phaseImportStatusEl.textContent = `Editing "');
+    const focusIndex = script.indexOf("focusPhaseNameOverrideInput();");
+
+    expect(editIndex).toBeGreaterThan(-1);
+    expect(focusIndex).toBeGreaterThan(-1);
+    expect(editIndex).toBeLessThan(focusIndex);
   });
 
   it("offers a copy action for the current import text", () => {

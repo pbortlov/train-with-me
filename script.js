@@ -4934,6 +4934,7 @@ function startPhaseTemplateEdit(templateId) {
   syncPhaseImportDisclosure();
   phaseImportStatusEl.textContent = `Editing "${template.name}". Saving will refresh already planned generated sessions from this template.`;
   phaseImportDetails?.scrollIntoView({ behavior: "smooth", block: "start" });
+  focusPhaseNameOverrideInput();
 }
 
 function startPhaseTemplateDuplicate(templateId) {
@@ -4961,16 +4962,21 @@ function startPhaseTemplateDuplicate(templateId) {
     phaseImportDetails.open = true;
     phaseImportDetails.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-  if (phaseNameOverrideInput) {
-    // Wait until the details panel is open before moving focus, otherwise mobile browsers can drop the caret.
-    requestAnimationFrame(() => {
-      phaseNameOverrideInput.focus({ preventScroll: true });
-      if (typeof phaseNameOverrideInput.setSelectionRange === "function") {
-        const end = phaseNameOverrideInput.value.length;
-        phaseNameOverrideInput.setSelectionRange(end, end);
-      }
-    });
+  focusPhaseNameOverrideInput();
+}
+
+function focusPhaseNameOverrideInput() {
+  if (!phaseNameOverrideInput) {
+    return;
   }
+  // Wait until the details panel is open before moving focus, otherwise mobile browsers can drop the caret.
+  requestAnimationFrame(() => {
+    phaseNameOverrideInput.focus({ preventScroll: true });
+    if (typeof phaseNameOverrideInput.setSelectionRange === "function") {
+      const end = phaseNameOverrideInput.value.length;
+      phaseNameOverrideInput.setSelectionRange(end, end);
+    }
+  });
 }
 
 function regenerateScheduledPhaseInstances(template) {
