@@ -841,14 +841,28 @@ textarea:focus-visible {
   gap: 0.55rem;
   align-items: end;
   margin-bottom: 0.85rem;
+  border: 1px solid #00e5ff44;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 8%), rgb(8 17 33 / 94%)),
+    #081121;
+  padding: 0.7rem;
 }
 
 .program-template-loader label {
   margin: 0;
+  display: grid;
+  gap: 0.3rem;
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .program-template-loader select {
   width: 100%;
+}
+
+.program-template-loader button {
+  min-width: 8.5rem;
 }
 
 .program-builder-guide {

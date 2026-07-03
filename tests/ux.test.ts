@@ -172,6 +172,17 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 7%)');
   });
 
+  it("groups the program template loader into one readable control strip", () => {
+    expect(styles).toContain('.program-template-loader');
+    expect(styles).toContain('border: 1px solid #00e5ff44');
+    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 8%)');
+    expect(styles).toContain('.program-template-loader label');
+    expect(styles).toContain('color: var(--accent)');
+    expect(styles).toContain('font-weight: 700');
+    expect(styles).toContain('.program-template-loader button');
+    expect(styles).toContain('min-width: 8.5rem');
+  });
+
   it("offers a saved-template picker in the builder", () => {
     expect(script).toContain('program-template-picker');
     expect(script).toContain('load-program-template');
