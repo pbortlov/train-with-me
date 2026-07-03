@@ -4888,8 +4888,11 @@ function renderProgramPreview(model) {
 
 function renderProgramPreviewDay(day) {
   return `
-    <article class="phase-training-card">
-      <h5>${escapeHtml(day.weekday)} • ${escapeHtml(day.title)}</h5>
+    <article class="phase-training-card program-preview-day">
+      <div class="program-preview-day-heading">
+        <h5>${escapeHtml(day.weekday)} • ${escapeHtml(day.title)}</h5>
+        <div class="phase-meta">Day</div>
+      </div>
       ${day.notes ? `<div class="phase-meta">${escapeHtml(day.notes)}</div>` : ""}
       <div class="program-preview-blocks">
         ${day.blocks.length ? day.blocks.map(renderProgramPreviewBlock).join("") : `<p class="planner-empty program-preview-empty program-preview-empty-blocks">No blocks yet.</p>`}
@@ -4906,9 +4909,12 @@ function renderProgramPreviewBlock(block) {
   ].filter(Boolean).join(" • ");
   return `
     <section class="program-preview-block">
-      <h6>${escapeHtml(block.label)}</h6>
+      <div class="program-preview-block-heading">
+        <h6>${escapeHtml(block.label)}</h6>
+        <div class="phase-meta">Block</div>
+      </div>
       ${meta ? `<div class="phase-meta">${escapeHtml(meta)}</div>` : ""}
-      <ul class="detail-list">
+      <ul class="detail-list program-preview-exercise-list">
         ${block.exercises.length ? block.exercises.map(renderProgramPreviewExercise).join("") : "<li class=\"program-preview-empty program-preview-empty-exercises\">No exercises yet.</li>"}
       </ul>
     </section>
@@ -4922,7 +4928,7 @@ function renderProgramPreviewExercise(exercise) {
     exercise.weight ? `${exercise.weight} kg` : "",
   ].filter(Boolean).join(" • ");
   return `
-    <li>
+    <li class="program-preview-exercise">
       <strong>${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)}</strong>
       ${details ? `<span>${escapeHtml(details)}</span>` : ""}
     </li>

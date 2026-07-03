@@ -200,8 +200,12 @@ describe("local-first UX guidance", () => {
   it("makes the program preview cards use the same day block exercise hierarchy cues", () => {
     expect(styles).toContain('.program-preview-heading');
     expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 12%)');
+    expect(script).toContain('program-preview-day-heading');
     expect(styles).toContain('.program-preview-block');
     expect(styles).toContain('border-left: 3px solid var(--band-purple)');
+    expect(script).toContain('program-preview-block-heading');
+    expect(styles).toContain('.program-preview-exercise-list');
+    expect(styles).toContain('.program-preview-exercise');
     expect(styles).toContain('.phase-training-card');
     expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 7%)');
   });
