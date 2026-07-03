@@ -240,6 +240,14 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('#phase-instance-list .phase-card header');
   });
 
+  it("makes the saved-template filter read like a control strip", () => {
+    expect(index).toContain('class="phase-template-filter"');
+    expect(styles).toContain('.phase-template-filter');
+    expect(styles).toContain('border: 1px solid #9b5cff44');
+    expect(styles).toContain('linear-gradient(180deg, rgb(155 92 255 / 7%)');
+    expect(styles).toContain('.phase-template-filter input');
+  });
+
   it("offers a saved-template picker in the builder", () => {
     expect(script).toContain('program-template-picker');
     expect(script).toContain('load-program-template');

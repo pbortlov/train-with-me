@@ -870,7 +870,21 @@ textarea:focus-visible {
 }
 
 .phase-template-filter {
+  display: grid;
+  gap: 0.3rem;
+  border: 1px solid #9b5cff44;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(155 92 255 / 7%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.75rem;
   margin-bottom: 0.75rem;
+  color: #d9ccff;
+  font-weight: 700;
+}
+
+.phase-template-filter input {
+  width: 100%;
 }
 
 .phase-import-details summary {
