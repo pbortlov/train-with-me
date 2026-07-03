@@ -217,6 +217,15 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('min-width: 8.5rem');
   });
 
+  it("renders saved templates and scheduled phases as distinct card types", () => {
+    expect(styles).toContain('#phase-template-list .phase-card');
+    expect(styles).toContain('linear-gradient(180deg, rgb(155 92 255 / 8%)');
+    expect(styles).toContain('#phase-template-list .phase-template-details');
+    expect(styles).toContain('#phase-instance-list .phase-card');
+    expect(styles).toContain('linear-gradient(180deg, rgb(255 216 77 / 8%)');
+    expect(styles).toContain('#phase-instance-list .phase-card header');
+  });
+
   it("offers a saved-template picker in the builder", () => {
     expect(script).toContain('program-template-picker');
     expect(script).toContain('load-program-template');
