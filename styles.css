@@ -811,6 +811,19 @@ textarea:focus-visible {
   margin-top: 0.85rem;
 }
 
+.view-panel[data-view="phases"] button {
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.view-panel[data-view="phases"] button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06) saturate(1.04);
+  box-shadow: 0 0.8rem 1.35rem rgb(0 0 0 / 20%);
+}
+
 .program-editor-actions {
   display: flex;
   justify-content: flex-start;
@@ -1833,6 +1846,10 @@ button.program-add-exercise-button {
 
 button.program-add-exercise-button:hover {
   background: linear-gradient(180deg, #ffe27b, #c99600);
+}
+
+.view-panel[data-view="phases"] button.danger-button:hover {
+  filter: brightness(1.05) saturate(1.02);
 }
 
 .danger-button {

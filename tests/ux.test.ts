@@ -131,6 +131,15 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain("linear-gradient(180deg, #ffd84d, #d6a800)");
   });
 
+  it("applies the same hover lift to program section buttons", () => {
+    expect(styles).toContain('.view-panel[data-view="phases"] button');
+    expect(styles).toContain('transform 120ms ease');
+    expect(styles).toContain('filter 120ms ease');
+    expect(styles).toContain('.view-panel[data-view="phases"] button:hover');
+    expect(styles).toContain('translateY(-1px)');
+    expect(styles).toContain('brightness(1.06) saturate(1.04)');
+  });
+
   it("offers a saved-template picker in the builder", () => {
     expect(script).toContain('program-template-picker');
     expect(script).toContain('load-program-template');
