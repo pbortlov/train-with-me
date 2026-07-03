@@ -125,14 +125,18 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('class="ghost-button program-add-exercise-button"');
     expect(styles).toContain(".program-add-day-button");
     expect(styles).toContain("linear-gradient(180deg, #00f0ff, #00b6d4)");
+    expect(styles).toContain("inset 0 1px 0 rgb(255 255 255 / 18%)");
     expect(styles).toContain(".program-add-block-button");
     expect(styles).toContain("linear-gradient(180deg, #6dff5c, #2fca65)");
+    expect(styles).toContain("inset 0 1px 0 rgb(255 255 255 / 16%)");
     expect(styles).toContain(".program-add-exercise-button");
     expect(styles).toContain("linear-gradient(180deg, #ffd84d, #d6a800)");
+    expect(styles).toContain("inset 0 1px 0 rgb(255 255 255 / 14%)");
   });
 
   it("applies the same hover lift to program section buttons", () => {
     expect(styles).toContain('.view-panel[data-view="phases"] button');
+    expect(styles).toContain('inset 0 1px 0 rgb(255 255 255 / 9%)');
     expect(styles).toContain('transform 120ms ease');
     expect(styles).toContain('filter 120ms ease');
     expect(styles).toContain('.view-panel[data-view="phases"] button:hover');
