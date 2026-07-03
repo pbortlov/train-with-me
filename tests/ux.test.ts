@@ -74,6 +74,11 @@ describe("local-first UX guidance", () => {
 
   it("styles the program import lead-in as a visible panel", () => {
     expect(index).toContain('class="hint program-import-lead"');
+    expect(index).toContain("<summary>Create or import program</summary>");
+    expect(styles).toContain('.phase-import-details summary');
+    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 7%)');
+    expect(styles).toContain('.phase-import-details summary::after');
+    expect(styles).toContain('content: "Open"');
     expect(styles).toContain('.phase-import-details .program-import-lead');
     expect(styles).toContain('border: 1px solid #00e5ff33');
     expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 5%)');

@@ -888,9 +888,33 @@ textarea:focus-visible {
 }
 
 .phase-import-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #00e5ff33;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 7%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 0.75rem;
   cursor: pointer;
   color: var(--accent);
   font-weight: 800;
+}
+
+.phase-import-details summary::after {
+  content: "Open";
+  color: #d7f8ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.phase-import-details[open] summary::after {
+  content: "Close";
 }
 
 .phase-import-details .program-import-lead {
