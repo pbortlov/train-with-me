@@ -87,6 +87,13 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('color: #d7f8ff');
   });
 
+  it("gives the Program section cards a shared panel surface", () => {
+    expect(styles).toContain('.view-panel[data-view="phases"] > .card');
+    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 4%)');
+    expect(styles).toContain('.view-panel[data-view="phases"] > .card h2');
+    expect(styles).toContain('.view-panel[data-view="phases"] > .card .hint');
+  });
+
   it("offers a duplicate action for saved program templates", () => {
     expect(script).toContain('data-role="duplicate-phase-template"');
     expect(script).toContain("Load copy");

@@ -857,6 +857,22 @@ textarea:focus-visible {
   color: #ffe59c;
 }
 
+.view-panel[data-view="phases"] > .card {
+  border-color: #00e5ff33;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 4%), rgb(8 17 33 / 96%)),
+    #081121;
+}
+
+.view-panel[data-view="phases"] > .card h2,
+.view-panel[data-view="phases"] > .card h3 {
+  color: #e9fcff;
+}
+
+.view-panel[data-view="phases"] > .card .hint {
+  color: #b4cde8;
+}
+
 .phase-template-details {
   border: 1px solid var(--border);
   border-radius: 10px;
