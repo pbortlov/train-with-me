@@ -1125,7 +1125,12 @@ textarea:focus-visible {
   display: grid;
   gap: 0.75rem;
   margin: 0.35rem 0 0.85rem;
-  padding: 0.1rem 0 0;
+  border: 1px solid #00e5ff33;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 4%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.75rem;
 }
 
 .phase-import-details .dialog-actions {

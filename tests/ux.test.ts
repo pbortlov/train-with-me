@@ -264,6 +264,14 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('min-height: 13rem');
   });
 
+  it("frames the import preview as a visible panel", () => {
+    expect(index).toContain('id="phase-import-preview"');
+    expect(styles).toContain('.phase-import-preview');
+    expect(styles).toContain('border: 1px solid #00e5ff33');
+    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 4%)');
+    expect(styles).toContain('padding: 0.75rem');
+  });
+
   it("styles the import action row as a closing footer band", () => {
     expect(styles).toContain('.phase-import-details .dialog-actions');
     expect(styles).toContain('border: 1px solid #ffd84d33');
