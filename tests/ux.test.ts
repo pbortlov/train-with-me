@@ -94,6 +94,11 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.view-panel[data-view="phases"] > .card .hint');
   });
 
+  it("explains the two program list sections with short helper copy", () => {
+    expect(index).toContain('Programs already placed on the calendar for upcoming work.');
+    expect(index).toContain('Reusable templates you can duplicate, edit, or load into the builder.');
+  });
+
   it("offers a duplicate action for saved program templates", () => {
     expect(script).toContain('data-role="duplicate-phase-template"');
     expect(script).toContain("Load copy");
