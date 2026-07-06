@@ -31,6 +31,8 @@ the missing `PHASE`, `SLOT`, `BLOCK`, or `EXERCISE` structure.
 The preview also rejects any `BLOCK` that has no `EXERCISE` rows so empty
 blocks are caught before saving, and the inline preview renders the failure as
 an alert panel instead of a plain paragraph.
+The block editor also highlights empty blocks directly with an inline warning
+so the missing exercise is visible before preview or save time.
 Saved template cards now lead with the phase duration, training-day count, block
 count, exercise count, and the first couple of scheduled days so the list is
 faster to scan.

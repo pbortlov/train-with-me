@@ -166,18 +166,28 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".program-exercise-row");
   });
 
+  it("surfaces empty program blocks with an inline warning and stronger block treatment", () => {
+    expect(script).toContain('program-block-row${isEmpty ? " is-empty-exercises" : ""}');
+    expect(script).toContain("program-block-empty-warning");
+    expect(script).toContain("No exercises yet.");
+    expect(script).toContain("Add one now so this block stays valid when you save.");
+    expect(styles).toContain('.program-block-row.is-empty-exercises');
+    expect(styles).toContain('border-color: #ff708a66');
+    expect(styles).toContain('.program-block-row.is-empty-exercises .program-exercise-editor');
+    expect(styles).toContain('.program-block-empty-warning');
+  });
+
   it("gives the empty program states distinct visual callouts", () => {
     expect(script).toContain('program-empty-state program-empty-days');
     expect(script).toContain('program-empty-state program-empty-blocks');
-    expect(script).toContain('program-empty-state program-empty-exercises');
     expect(script).toContain('program-preview-empty program-preview-empty-blocks');
     expect(script).toContain('program-preview-empty program-preview-empty-exercises');
     expect(styles).toContain('.view-panel[data-view="phases"] .program-empty-state');
     expect(styles).toContain('border: 1px dashed #76e4ff55');
     expect(styles).toContain('.view-panel[data-view="phases"] .program-empty-blocks');
     expect(styles).toContain('rgb(155 92 255 / 10%)');
-    expect(styles).toContain('.view-panel[data-view="phases"] .program-empty-exercises');
-    expect(styles).toContain('rgb(52 211 153 / 10%)');
+    expect(script).toContain('program-block-empty-warning');
+    expect(styles).toContain('.program-block-empty-warning');
   });
 
   it("aligns the program editor rows so fields read top-to-bottom cleanly", () => {

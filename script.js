@@ -4734,8 +4734,9 @@ function renderProgramDayEditorRow(day, index, blocks, blockExercises) {
 }
 
 function renderProgramBlockEditorRow(block, dayIndex, blockIndex, exercises) {
+  const isEmpty = !exercises.length;
   return `
-    <div class="program-block-row" data-day-index="${dayIndex}" data-block-index="${blockIndex}">
+    <div class="program-block-row${isEmpty ? " is-empty-exercises" : ""}" data-day-index="${dayIndex}" data-block-index="${blockIndex}">
       <label>
         Label
         <input type="text" data-role="program-block-label" value="${escapeHtml(block.label)}" placeholder="A" />
@@ -4759,7 +4760,7 @@ function renderProgramBlockEditorRow(block, dayIndex, blockIndex, exercises) {
           <button type="button" class="ghost-button program-add-exercise-button" data-role="add-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Add exercise</button>
         </div>
         <div class="program-exercise-list">
-          ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : "<p class=\"planner-empty program-empty-state program-empty-exercises\">No exercises yet.</p>"}
+          ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : "<div class=\"program-block-empty-warning\" role=\"status\"><strong>No exercises yet.</strong><span>Add one now so this block stays valid when you save.</span></div>"}
         </div>
       </div>
     </div>

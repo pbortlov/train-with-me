@@ -1356,6 +1356,14 @@ textarea:focus-visible {
   box-shadow: 0 0 0 1px rgb(155 92 255 / 10%) inset;
 }
 
+.program-block-row.is-empty-exercises {
+  border-color: #ff708a66;
+  background:
+    linear-gradient(180deg, rgb(255 112 138 / 12%), rgb(10 17 33 / 94%)),
+    #081121;
+  box-shadow: 0 0 0 1px rgb(255 112 138 / 10%) inset;
+}
+
 .program-exercise-editor {
   display: grid;
   gap: 0.45rem;
@@ -1369,6 +1377,13 @@ textarea:focus-visible {
   padding: 0.65rem;
 }
 
+.program-block-row.is-empty-exercises .program-exercise-editor {
+  border-color: #ff708a55;
+  background:
+    linear-gradient(180deg, rgb(255 112 138 / 8%), rgb(17 10 14 / 94%)),
+    #120b10;
+}
+
 .program-exercise-editor h6 {
   margin: 0;
 }
@@ -1376,6 +1391,27 @@ textarea:focus-visible {
 .program-exercise-list {
   display: grid;
   gap: 0.4rem;
+}
+
+.program-block-empty-warning {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid #ff708a66;
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgb(255 112 138 / 10%), rgb(30 13 20 / 96%)),
+    #1a0d16;
+  padding: 0.55rem 0.65rem;
+  color: #ffd4db;
+}
+
+.program-block-empty-warning strong {
+  color: #fff1f4;
+}
+
+.program-block-empty-warning span {
+  color: #ffc2cf;
+  font-size: 0.84rem;
 }
 
 .program-exercise-row {
