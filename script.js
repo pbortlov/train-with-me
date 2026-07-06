@@ -14,6 +14,25 @@ import {
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
 import { buildProgressHubModel } from "./src/domain/progress";
+import {
+  buildProgramPreview,
+  buildProgramImportHints,
+  buildProgramTemplateSummary,
+  buildTemplateRecencyLabel,
+  filterPhaseTemplatesForDisplay,
+  buildProgramPreviewSummary,
+  buildCopiedProgramName,
+  buildStarterProgramText,
+  readProgramDayBlocks,
+  readProgramDayExercises,
+  readProgramBasics,
+  readProgramTrainingDays,
+  sortPhaseTemplatesForDisplay,
+  updateProgramDayBlocks,
+  updateProgramDayExercises,
+  updateProgramBasics,
+  updateProgramTrainingDays,
+} from "./src/domain/program-preview";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
@@ -178,8 +197,20 @@ const phaseImportDetails = document.getElementById("phase-import-details");
 const phaseImportForm = document.getElementById("phase-import-form");
 const phaseEditIdInput = document.getElementById("phase-edit-id");
 const phaseNameOverrideInput = document.getElementById("phase-name-override");
+const phaseDurationWeeksInput = document.getElementById("phase-duration-weeks");
+let phaseCopiedFromTemplateId = "";
+const programDayListEl = document.getElementById("program-day-list");
+const addProgramDayButton = document.getElementById("add-program-day");
+const loadProgramExampleButton = document.getElementById("load-program-example");
+const copyProgramTextButton = document.getElementById("copy-program-text");
+const resetProgramBuilderButton = document.getElementById("reset-program-builder");
+const programTemplatePicker = document.getElementById("program-template-picker");
+const loadProgramTemplateButton = document.getElementById("load-program-template");
+const phaseTemplateFilterInput = document.getElementById("phase-template-filter");
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
+const phaseImportPreviewEl = document.getElementById("phase-import-preview");
+const programBuilderSummaryEl = document.getElementById("program-builder-summary");
 const savePhaseButton = document.getElementById("save-phase-button");
 const cancelPhaseEditButton = document.getElementById("cancel-phase-edit");
 const phaseImportStatusEl = document.getElementById("phase-import-status");
@@ -269,6 +300,7 @@ let programCompletionChart = null;
 let selectedProgramProgressInstanceId = "";
 let programExerciseSortMode = "program-order";
 let editingPhaseTemplateId = "";
+let phaseTemplateFilterQuery = "";
 let completionStrengthDraft = [];
 let completionSprintDraft = [];
 let selectedCalendarSessionId = "";
@@ -657,8 +689,12 @@ function render() {
   renderCalendar();
   renderCalendarSessionDetail();
   renderPhaseTemplates();
+  renderProgramTemplatePicker();
   renderPhaseInstances();
   syncPhaseImportDisclosure();
+  syncProgramBasicsFromText();
+  syncProgramTrainingDaysFromText();
+  updatePhaseImportPreview();
   renderReview();
   renderAdherenceStats();
   renderProgramProgress();
@@ -3202,6 +3238,22 @@ function bindV2Events() {
     }
   });
   addSafeEventListener(phaseImportFileInput, "change", loadPhaseImportFile);
+  addSafeEventListener(phaseImportTextInput, "input", () => {
+    syncProgramBasicsFromText();
+    syncProgramTrainingDaysFromText();
+    updatePhaseImportPreview();
+  });
+  addSafeEventListener(phaseNameOverrideInput, "input", syncProgramBasicsToText);
+  addSafeEventListener(phaseDurationWeeksInput, "input", syncProgramBasicsToText);
+  addSafeEventListener(addProgramDayButton, "click", addProgramTrainingDay);
+  addSafeEventListener(loadProgramExampleButton, "click", loadProgramStarterExample);
+  addSafeEventListener(copyProgramTextButton, "click", copyProgramImportText);
+  addSafeEventListener(resetProgramBuilderButton, "click", resetProgramBuilder);
+  addSafeEventListener(loadProgramTemplateButton, "click", loadSelectedProgramTemplate);
+  addSafeEventListener(phaseTemplateFilterInput, "input", handlePhaseTemplateFilterInput);
+  addSafeEventListener(programDayListEl, "input", handleProgramEditorInput);
+  addSafeEventListener(programDayListEl, "change", handleProgramEditorInput);
+  addSafeEventListener(programDayListEl, "click", handleProgramEditorAction);
   addSafeEventListener(phaseImportForm, "submit", importStrengthPhase);
   addSafeEventListener(cancelPhaseEditButton, "click", resetPhaseImportForm);
   addSafeEventListener(phaseTemplateListEl, "click", handlePhaseTemplateAction);
@@ -4278,6 +4330,9 @@ function loadPhaseImportFile(event) {
   const reader = new FileReader();
   reader.onload = () => {
     phaseImportTextInput.value = String(reader.result || "");
+    syncProgramBasicsFromText();
+    syncProgramTrainingDaysFromText();
+    updatePhaseImportPreview();
   };
   reader.readAsText(file);
 }
@@ -4335,8 +4390,12 @@ function resetPhaseImportForm() {
     phaseImportForm.reset();
   }
   editingPhaseTemplateId = "";
+  phaseCopiedFromTemplateId = "";
   if (phaseEditIdInput) {
     phaseEditIdInput.value = "";
+  }
+  if (phaseDurationWeeksInput) {
+    phaseDurationWeeksInput.value = "";
   }
   if (savePhaseButton) {
     savePhaseButton.textContent = "Import strength phase";
@@ -4345,7 +4404,22 @@ function resetPhaseImportForm() {
   if (phaseImportStatusEl) {
     phaseImportStatusEl.textContent = "";
   }
+  syncPhaseImportMode();
   syncPhaseImportDisclosure();
+  syncProgramBasicsFromText();
+  syncProgramTrainingDaysFromText();
+  updatePhaseImportPreview();
+}
+
+function syncPhaseImportMode() {
+  if (!phaseImportDetails) {
+    return;
+  }
+  if (editingPhaseTemplateId) {
+    phaseImportDetails.dataset.programImportMode = "edit";
+    return;
+  }
+  delete phaseImportDetails.dataset.programImportMode;
 }
 
 function syncPhaseImportDisclosure() {
@@ -4355,24 +4429,600 @@ function syncPhaseImportDisclosure() {
   phaseImportDetails.open = Boolean(editingPhaseTemplateId) || phaseTemplates.length === 0;
 }
 
+function syncProgramBasicsFromText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  const basics = readProgramBasics(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
+  if (phaseNameOverrideInput && phaseNameOverrideInput.value !== basics.name) {
+    phaseNameOverrideInput.value = basics.name;
+  }
+  if (phaseDurationWeeksInput && phaseDurationWeeksInput.value !== basics.durationWeeks) {
+    phaseDurationWeeksInput.value = basics.durationWeeks;
+  }
+}
+
+function syncProgramBasicsToText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = updateProgramBasics(phaseImportTextInput.value, {
+    name: phaseNameOverrideInput?.value || "",
+    durationWeeks: phaseDurationWeeksInput?.value || "",
+  });
+  updatePhaseImportPreview();
+}
+
+function syncProgramTrainingDaysFromText() {
+  renderProgramDayEditor(
+    readProgramTrainingDays(phaseImportTextInput?.value || ""),
+    readProgramDayBlocks(phaseImportTextInput?.value || ""),
+    readProgramDayExercises(phaseImportTextInput?.value || ""),
+  );
+}
+
+function syncProgramTrainingDaysToText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = updateProgramTrainingDays(
+    phaseImportTextInput.value,
+    collectProgramTrainingDaysFromEditor(),
+  );
+  phaseImportTextInput.value = updateProgramDayBlocks(
+    phaseImportTextInput.value,
+    collectProgramDayBlocksFromEditor(),
+  );
+  phaseImportTextInput.value = updateProgramDayExercises(
+    phaseImportTextInput.value,
+    collectProgramDayExercisesFromEditor(),
+  );
+  updatePhaseImportPreview();
+}
+
+function syncProgramDayBlocksToText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = updateProgramDayBlocks(
+    phaseImportTextInput.value,
+    collectProgramDayBlocksFromEditor(),
+  );
+  phaseImportTextInput.value = updateProgramDayExercises(
+    phaseImportTextInput.value,
+    collectProgramDayExercisesFromEditor(),
+  );
+  updatePhaseImportPreview();
+}
+
+function syncProgramDayExercisesToText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = updateProgramDayExercises(
+    phaseImportTextInput.value,
+    collectProgramDayExercisesFromEditor(),
+  );
+  updatePhaseImportPreview();
+}
+
+function handleProgramEditorInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const role = target.dataset.role || "";
+  if (role.startsWith("program-exercise-")) {
+    syncProgramDayExercisesToText();
+    return;
+  }
+  if (role.startsWith("program-block-")) {
+    syncProgramDayBlocksToText();
+    return;
+  }
+  if (role.startsWith("program-day-")) {
+    syncProgramTrainingDaysToText();
+  }
+}
+
+function addProgramTrainingDay() {
+  const days = readProgramTrainingDays(phaseImportTextInput?.value || "");
+  days.push({
+    weekday: "Monday",
+    title: `Strength ${String.fromCharCode(65 + Math.min(days.length, 25))}`,
+    notes: "",
+  });
+  if (phaseImportTextInput) {
+    phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
+  }
+  renderProgramDayEditor(
+    days,
+    readProgramDayBlocks(phaseImportTextInput?.value || ""),
+    readProgramDayExercises(phaseImportTextInput?.value || ""),
+  );
+  updatePhaseImportPreview();
+}
+
+function loadProgramStarterExample() {
+  resetPhaseImportForm();
+  if (!phaseImportTextInput) {
+    return;
+  }
+  phaseImportTextInput.value = buildStarterProgramText();
+  syncProgramBasicsFromText();
+  syncProgramTrainingDaysFromText();
+  updatePhaseImportPreview();
+  if (phaseImportDetails) {
+    phaseImportDetails.open = true;
+  }
+  if (phaseImportStatusEl) {
+    phaseImportStatusEl.textContent = "Loaded a starter program example you can edit.";
+  }
+}
+
+async function copyProgramImportText() {
+  if (!phaseImportTextInput) {
+    return;
+  }
+  const text = phaseImportTextInput.value.trim();
+  if (!text) {
+    if (phaseImportStatusEl) {
+      phaseImportStatusEl.textContent = "Add or load program content first.";
+    }
+    return;
+  }
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      if (phaseImportStatusEl) {
+        phaseImportStatusEl.textContent = "Program import text copied to clipboard.";
+      }
+      return;
+    }
+    throw new Error("Clipboard access is not available.");
+  } catch (error) {
+    if (phaseImportStatusEl) {
+      phaseImportStatusEl.textContent = error instanceof Error ? error.message : "Could not copy program text.";
+    }
+  }
+}
+
+function resetProgramBuilder() {
+  resetPhaseImportForm();
+  if (phaseImportDetails) {
+    phaseImportDetails.open = true;
+  }
+  if (phaseImportStatusEl) {
+    phaseImportStatusEl.textContent = "Builder reset to a blank program.";
+  }
+}
+
+function handleProgramEditorAction(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  if (target.dataset.role === "remove-program-day") {
+    const index = Number(target.dataset.index);
+    const days = collectProgramTrainingDaysFromEditor().filter((_, dayIndex) => dayIndex !== index);
+    const dayBlocks = collectProgramDayBlocksFromEditor().filter((_, dayIndex) => dayIndex !== index);
+    const dayExercises = collectProgramDayExercisesFromEditor().filter((_, dayIndex) => dayIndex !== index);
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramTrainingDays(phaseImportTextInput.value, days);
+      phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
+    }
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
+    updatePhaseImportPreview();
+    return;
+  }
+  if (target.dataset.role === "add-program-block") {
+    const dayIndex = Number(target.dataset.dayIndex);
+    const days = collectProgramTrainingDaysFromEditor();
+    const dayBlocks = collectProgramDayBlocksFromEditor();
+    const dayExercises = collectProgramDayExercisesFromEditor();
+    const blocks = dayBlocks[dayIndex]?.blocks || [];
+    blocks.push({ label: `Block ${blocks.length + 1}`, duration: "", rest: "", sets: "" });
+    dayBlocks[dayIndex] = { blocks };
+    const exerciseBlocks = dayExercises[dayIndex]?.blocks || [];
+    exerciseBlocks.push({ exercises: [] });
+    dayExercises[dayIndex] = { blocks: exerciseBlocks };
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
+    }
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
+    updatePhaseImportPreview();
+    return;
+  }
+  if (target.dataset.role === "remove-program-block") {
+    const dayIndex = Number(target.dataset.dayIndex);
+    const blockIndex = Number(target.dataset.blockIndex);
+    const days = collectProgramTrainingDaysFromEditor();
+    const dayBlocks = collectProgramDayBlocksFromEditor();
+    const dayExercises = collectProgramDayExercisesFromEditor();
+    const blocks = (dayBlocks[dayIndex]?.blocks || []).filter((_, index) => index !== blockIndex);
+    dayBlocks[dayIndex] = { blocks };
+    const exerciseBlocks = (dayExercises[dayIndex]?.blocks || []).filter((_, index) => index !== blockIndex);
+    dayExercises[dayIndex] = { blocks: exerciseBlocks };
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramDayBlocks(phaseImportTextInput.value, dayBlocks);
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
+    }
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
+    updatePhaseImportPreview();
+    return;
+  }
+  if (target.dataset.role === "add-program-exercise") {
+    const dayIndex = Number(target.dataset.dayIndex);
+    const blockIndex = Number(target.dataset.blockIndex);
+    const days = collectProgramTrainingDaysFromEditor();
+    const dayBlocks = collectProgramDayBlocksFromEditor();
+    const dayExercises = collectProgramDayExercisesFromEditor();
+    const blockExercises = dayExercises[dayIndex]?.blocks?.[blockIndex]?.exercises || [];
+    blockExercises.push({ code: `E${blockExercises.length + 1}`, name: "", reps: "", notes: "", weight: "" });
+    const blocks = dayExercises[dayIndex]?.blocks || [];
+    blocks[blockIndex] = { exercises: blockExercises };
+    dayExercises[dayIndex] = { blocks };
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
+    }
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
+    updatePhaseImportPreview();
+    return;
+  }
+  if (target.dataset.role === "remove-program-exercise") {
+    const dayIndex = Number(target.dataset.dayIndex);
+    const blockIndex = Number(target.dataset.blockIndex);
+    const exerciseIndex = Number(target.dataset.exerciseIndex);
+    const days = collectProgramTrainingDaysFromEditor();
+    const dayBlocks = collectProgramDayBlocksFromEditor();
+    const dayExercises = collectProgramDayExercisesFromEditor();
+    const blockExercises = (dayExercises[dayIndex]?.blocks?.[blockIndex]?.exercises || []).filter((_, index) => index !== exerciseIndex);
+    const blocks = dayExercises[dayIndex]?.blocks || [];
+    blocks[blockIndex] = { exercises: blockExercises };
+    dayExercises[dayIndex] = { blocks };
+    if (phaseImportTextInput) {
+      phaseImportTextInput.value = updateProgramDayExercises(phaseImportTextInput.value, dayExercises);
+    }
+    renderProgramDayEditor(days, dayBlocks, dayExercises);
+    updatePhaseImportPreview();
+  }
+}
+
+function renderProgramDayEditor(days, dayBlocks = [], dayExercises = []) {
+  if (!programDayListEl) {
+    return;
+  }
+  if (!days.length) {
+    programDayListEl.innerHTML = "<p class=\"planner-empty program-empty-state program-empty-days\">No training days yet. Add a day or paste program text.</p>";
+    updateProgramBuilderSummary();
+    return;
+  }
+  programDayListEl.innerHTML = days
+    .map((day, index) => renderProgramDayEditorRow(day, index, dayBlocks[index]?.blocks || [], dayExercises[index]?.blocks || []))
+    .join("");
+  updateProgramBuilderSummary();
+}
+
+function renderProgramDayEditorRow(day, index, blocks, blockExercises) {
+  return `
+    <div class="program-day-row" data-index="${index}">
+      <label>
+        Weekday
+        <select data-role="program-day-weekday" data-index="${index}">
+          ${renderProgramWeekdayOptions(day.weekday)}
+        </select>
+      </label>
+      <label>
+        Day title
+        <input type="text" data-role="program-day-title" data-index="${index}" value="${escapeHtml(day.title)}" placeholder="e.g. Strength A" />
+      </label>
+      <label>
+        Notes
+        <input type="text" data-role="program-day-notes" data-index="${index}" value="${escapeHtml(day.notes)}" placeholder="e.g. Main lower-body day" />
+      </label>
+      <button type="button" class="ghost-button danger-button" data-role="remove-program-day" data-index="${index}">Remove day</button>
+      <div class="program-block-editor">
+        <div class="program-editor-header">
+          <h5>Blocks</h5>
+          <button type="button" class="ghost-button program-add-block-button" data-role="add-program-block" data-day-index="${index}">Add block</button>
+        </div>
+        <div class="program-block-list">
+          ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex, day, blockExercises[blockIndex]?.exercises || [])).join("") : "<p class=\"planner-empty program-empty-state program-empty-blocks\">No blocks yet. Add a block or edit the import text.</p>"}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderProgramBlockEditorRow(block, dayIndex, blockIndex, day, exercises) {
+  const isEmpty = !exercises.length;
+  const dayLabel = `${day?.weekday || "Day"} ${day?.title || "training day"}`.trim();
+  return `
+    <div class="program-block-row${isEmpty ? " is-empty-exercises" : ""}" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-day-label="${escapeHtml(dayLabel)}" data-block-label="${escapeHtml(block.label || `Block ${blockIndex + 1}`)}">
+      <label>
+        Label
+        <input type="text" data-role="program-block-label" value="${escapeHtml(block.label)}" placeholder="A" />
+      </label>
+      <label>
+        Duration
+        <input type="text" data-role="program-block-duration" value="${escapeHtml(block.duration)}" placeholder="15-20 mins" />
+      </label>
+      <label>
+        Rest
+        <input type="text" data-role="program-block-rest" value="${escapeHtml(block.rest)}" placeholder="90-120s" />
+      </label>
+      <label>
+        Sets
+        <input type="text" data-role="program-block-sets" value="${escapeHtml(block.sets)}" placeholder="3-4" />
+      </label>
+      <button type="button" class="ghost-button danger-button" data-role="remove-program-block" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Remove block</button>
+      <div class="program-exercise-editor">
+        <div class="program-editor-header">
+          <h6>Exercises</h6>
+          <button type="button" class="ghost-button program-add-exercise-button" data-role="add-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Add exercise</button>
+        </div>
+        <div class="program-exercise-list">
+          ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : `<div class="program-block-empty-warning" role="status"><strong>No exercises yet.</strong><span>Add one now so ${escapeHtml(dayLabel)} / ${escapeHtml(block.label || `Block ${blockIndex + 1}`)} stays valid when you save.</span></div>`}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex) {
+  return `
+    <div class="program-exercise-row" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">
+      <label>
+        Code
+        <input type="text" data-role="program-exercise-code" value="${escapeHtml(exercise.code)}" placeholder="A1" />
+      </label>
+      <label>
+        Exercise
+        <input type="text" data-role="program-exercise-name" value="${escapeHtml(exercise.name)}" placeholder="Back squat" />
+      </label>
+      <label>
+        Reps
+        <input type="text" data-role="program-exercise-reps" value="${escapeHtml(exercise.reps)}" placeholder="2x8-10" />
+      </label>
+      <label>
+        Notes
+        <input type="text" data-role="program-exercise-notes" value="${escapeHtml(exercise.notes)}" placeholder="Heavy" />
+      </label>
+      <label>
+        Weight
+        <input type="text" data-role="program-exercise-weight" value="${escapeHtml(exercise.weight)}" placeholder="100" />
+      </label>
+      <button type="button" class="ghost-button danger-button" data-role="remove-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">Remove exercise</button>
+    </div>
+  `;
+}
+
+function renderProgramWeekdayOptions(selectedWeekday) {
+  const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  return weekdays
+    .map((weekday) => `<option value="${weekday}"${weekday.toLowerCase() === String(selectedWeekday).toLowerCase() ? " selected" : ""}>${weekday}</option>`)
+    .join("");
+}
+
+function collectProgramTrainingDaysFromEditor() {
+  if (!programDayListEl) {
+    return [];
+  }
+  return Array.from(programDayListEl.querySelectorAll(".program-day-row")).map((row) => ({
+    weekday: row.querySelector('[data-role="program-day-weekday"]')?.value || "",
+    title: row.querySelector('[data-role="program-day-title"]')?.value || "",
+    notes: row.querySelector('[data-role="program-day-notes"]')?.value || "",
+  }));
+}
+
+function collectProgramDayBlocksFromEditor() {
+  if (!programDayListEl) {
+    return [];
+  }
+  return Array.from(programDayListEl.querySelectorAll(".program-day-row")).map((dayRow) => ({
+    blocks: Array.from(dayRow.querySelectorAll(".program-block-row")).map((blockRow) => ({
+      label: blockRow.querySelector('[data-role="program-block-label"]')?.value || "",
+      duration: blockRow.querySelector('[data-role="program-block-duration"]')?.value || "",
+      rest: blockRow.querySelector('[data-role="program-block-rest"]')?.value || "",
+      sets: blockRow.querySelector('[data-role="program-block-sets"]')?.value || "",
+    })),
+  }));
+}
+
+function collectProgramDayExercisesFromEditor() {
+  if (!programDayListEl) {
+    return [];
+  }
+  return Array.from(programDayListEl.querySelectorAll(".program-day-row")).map((dayRow) => ({
+    blocks: Array.from(dayRow.querySelectorAll(".program-block-row")).map((blockRow) => ({
+      exercises: Array.from(blockRow.querySelectorAll(".program-exercise-row")).map((exerciseRow) => ({
+        code: exerciseRow.querySelector('[data-role="program-exercise-code"]')?.value || "",
+        name: exerciseRow.querySelector('[data-role="program-exercise-name"]')?.value || "",
+        reps: exerciseRow.querySelector('[data-role="program-exercise-reps"]')?.value || "",
+        notes: exerciseRow.querySelector('[data-role="program-exercise-notes"]')?.value || "",
+        weight: exerciseRow.querySelector('[data-role="program-exercise-weight"]')?.value || "",
+      })),
+    })),
+  }));
+}
+
+function updatePhaseImportPreview() {
+  if (!phaseImportPreviewEl || !phaseImportTextInput) {
+    updateProgramBuilderSummary();
+    return;
+  }
+  const result = buildProgramPreview(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
+  if (result.error) {
+    const hints = buildProgramImportHints(result.error);
+    phaseImportPreviewEl.innerHTML = `
+      <div class="program-preview-error" role="alert" aria-live="assertive">
+        <h4 class="program-preview-error-title">Program import error</h4>
+        <p class="planner-empty">${escapeHtml(result.error)}</p>
+        ${hints.length ? `
+          <div class="program-preview-hints">
+            <h4>Fix this import</h4>
+            <ul class="detail-list">
+              ${hints.map((hint) => `<li>${escapeHtml(hint)}</li>`).join("")}
+            </ul>
+          </div>
+        ` : ""}
+      </div>
+    `;
+    updateProgramBuilderSummary();
+    return;
+  }
+  phaseImportPreviewEl.innerHTML = renderProgramPreview(result.model);
+  updateProgramBuilderSummary();
+}
+
+function updateProgramBuilderSummary() {
+  if (!programBuilderSummaryEl) {
+    return;
+  }
+  const dayCount = collectProgramTrainingDaysFromEditor().length;
+  const blockCount = collectProgramDayBlocksFromEditor().reduce((total, day) => total + day.blocks.length, 0);
+  const exerciseCount = collectProgramDayExercisesFromEditor().reduce(
+    (total, day) => total + day.blocks.reduce((dayTotal, block) => dayTotal + block.exercises.length, 0),
+    0,
+  );
+  programBuilderSummaryEl.textContent = `${dayCount} ${dayCount === 1 ? "day" : "days"} • ${blockCount} ${blockCount === 1 ? "block" : "blocks"} • ${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`;
+}
+
+function renderProgramPreview(model) {
+  if (!model) {
+    return `<p class="planner-empty">Paste or import a program to preview its training days, blocks, and exercises.</p>`;
+  }
+  const summary = buildProgramPreviewSummary(model);
+  return `
+    <div class="program-preview-heading">
+      <div>
+        <h4>${escapeHtml(model.name)}</h4>
+        <p class="phase-meta">${escapeHtml(model.durationWeeks)} weeks • ${escapeHtml(summary)}</p>
+      </div>
+    </div>
+    <div class="program-preview-days">
+      ${model.days.map(renderProgramPreviewDay).join("")}
+    </div>
+  `;
+}
+
+function renderProgramPreviewDay(day) {
+  return `
+    <article class="phase-training-card program-preview-day">
+      <div class="program-preview-day-heading">
+        <h5>${escapeHtml(day.weekday)} • ${escapeHtml(day.title)}</h5>
+        <div class="phase-meta">Day</div>
+      </div>
+      ${day.notes ? `<div class="phase-meta">${escapeHtml(day.notes)}</div>` : ""}
+      <div class="program-preview-blocks">
+        ${day.blocks.length ? day.blocks.map(renderProgramPreviewBlock).join("") : `<p class="planner-empty program-preview-empty program-preview-empty-blocks">No blocks yet.</p>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderProgramPreviewBlock(block) {
+  const meta = [
+    block.duration ? `${block.duration}` : "",
+    block.rest ? `${block.rest} rest` : "",
+    block.sets ? `${block.sets} sets` : "",
+  ].filter(Boolean).join(" • ");
+  return `
+    <section class="program-preview-block">
+      <div class="program-preview-block-heading">
+        <h6>${escapeHtml(block.label)}</h6>
+        <div class="phase-meta">Block</div>
+      </div>
+      ${meta ? `<div class="phase-meta">${escapeHtml(meta)}</div>` : ""}
+      <ul class="detail-list program-preview-exercise-list">
+        ${block.exercises.length ? block.exercises.map(renderProgramPreviewExercise).join("") : "<li class=\"program-preview-empty program-preview-empty-exercises\">No exercises yet.</li>"}
+      </ul>
+    </section>
+  `;
+}
+
+function renderProgramPreviewExercise(exercise) {
+  const details = [
+    exercise.reps,
+    exercise.notes,
+    exercise.weight ? `${exercise.weight} kg` : "",
+  ].filter(Boolean).join(" • ");
+  return `
+    <li class="program-preview-exercise">
+      <strong>${escapeHtml(exercise.code)} ${escapeHtml(exercise.name)}</strong>
+      ${details ? `<span>${escapeHtml(details)}</span>` : ""}
+    </li>
+  `;
+}
+
 function startPhaseTemplateEdit(templateId) {
   const template = phaseTemplates.find((item) => item.id === templateId);
   if (!template || !phaseImportTextInput) {
     return;
   }
   editingPhaseTemplateId = template.id;
+  phaseCopiedFromTemplateId = template.copiedFromTemplateId || "";
   if (phaseEditIdInput) {
     phaseEditIdInput.value = template.id;
   }
   phaseNameOverrideInput.value = template.name;
   phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
+  syncProgramBasicsFromText();
+  syncProgramTrainingDaysFromText();
+  updatePhaseImportPreview();
   if (savePhaseButton) {
     savePhaseButton.textContent = "Save phase changes";
   }
   cancelPhaseEditButton?.classList.remove("is-hidden");
+  syncPhaseImportMode();
   syncPhaseImportDisclosure();
   phaseImportStatusEl.textContent = `Editing "${template.name}". Saving will refresh already planned generated sessions from this template.`;
   phaseImportDetails?.scrollIntoView({ behavior: "smooth", block: "start" });
+  focusPhaseNameOverrideInput();
+}
+
+function startPhaseTemplateDuplicate(templateId) {
+  const template = phaseTemplates.find((item) => item.id === templateId);
+  if (!template || !phaseImportTextInput) {
+    return;
+  }
+  resetPhaseImportForm();
+  phaseCopiedFromTemplateId = template.id;
+  phaseImportTextInput.value = serializeStrengthPhaseDefinition(template);
+  syncProgramBasicsFromText();
+  if (phaseNameOverrideInput) {
+    phaseNameOverrideInput.value = buildCopiedProgramName(template.name);
+  }
+  syncProgramBasicsToText();
+  syncProgramTrainingDaysFromText();
+  updatePhaseImportPreview();
+  if (phaseEditIdInput) {
+    phaseEditIdInput.value = "";
+  }
+  if (phaseImportStatusEl) {
+    phaseImportStatusEl.textContent = `Loaded a copy of "${template.name}" as a new draft.`;
+  }
+  if (phaseImportDetails) {
+    phaseImportDetails.open = true;
+    phaseImportDetails.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  focusPhaseNameOverrideInput();
+}
+
+function focusPhaseNameOverrideInput() {
+  if (!phaseNameOverrideInput) {
+    return;
+  }
+  // Wait until the details panel is open before moving focus, otherwise mobile browsers can drop the caret.
+  requestAnimationFrame(() => {
+    phaseNameOverrideInput.focus({ preventScroll: true });
+    if (typeof phaseNameOverrideInput.setSelectionRange === "function") {
+      const end = phaseNameOverrideInput.value.length;
+      phaseNameOverrideInput.setSelectionRange(end, end);
+    }
+  });
 }
 
 function regenerateScheduledPhaseInstances(template) {
@@ -4527,8 +5177,13 @@ function importStrengthPhase(event) {
             ...imported,
             id: editingPhaseTemplateId,
             importedAt: phaseTemplates.find((template) => template.id === editingPhaseTemplateId)?.importedAt || Date.now(),
+            updatedAt: Date.now(),
+            copiedFromTemplateId: phaseTemplates.find((template) => template.id === editingPhaseTemplateId)?.copiedFromTemplateId || null,
           }
-        : imported,
+        : {
+            ...imported,
+            copiedFromTemplateId: phaseCopiedFromTemplateId || null,
+          },
     );
 
     if (editingPhaseTemplateId) {
@@ -4540,7 +5195,11 @@ function importStrengthPhase(event) {
         ? `Updated "${normalized.name}" and refreshed ${refreshedInstances} scheduled phase ${refreshedInstances === 1 ? "instance" : "instances"}.`
         : `Updated "${normalized.name}".`;
     } else {
-      phaseTemplates.unshift(normalizePhaseTemplate(imported));
+      phaseTemplates.unshift(normalizePhaseTemplate({
+        ...imported,
+        updatedAt: Date.now(),
+        copiedFromTemplateId: phaseCopiedFromTemplateId || null,
+      }));
       savePlannerCollections();
       resetPhaseImportForm();
       phaseImportStatusEl.textContent = `Imported phase template "${imported.name}".`;
@@ -4570,6 +5229,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
 
   let currentSlot = null;
   let currentBlock = null;
+  let currentBlockLine = 0;
 
   lines.forEach((line, index) => {
     const columns = line.split(",").map((column) => column.trim());
@@ -4583,6 +5243,9 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       return;
     }
     if (rowType === "SLOT") {
+      if (currentBlock && !currentBlock.exercises.length) {
+        throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
+      }
       const weekday = parseWeekday(columns[1]);
       currentSlot = {
         id: crypto.randomUUID(),
@@ -4599,6 +5262,9 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       if (!currentSlot) {
         throw new Error(`BLOCK row before SLOT at line ${index + 1}.`);
       }
+      if (currentBlock && !currentBlock.exercises.length) {
+        throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
+      }
       const duration = parseBlockDurationRange(columns[2]);
       const rest = parseBlockRestRange(columns[3]);
       currentBlock = {
@@ -4610,6 +5276,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
         sets: normalizeSetPrescription(columns[4]),
         exercises: [],
       };
+      currentBlockLine = index + 1;
       currentSlot.blocks.push(currentBlock);
       return;
     }
@@ -4631,6 +5298,9 @@ function parseStrengthPhaseDefinition(text, overrideName) {
 
   if (!template.name || !template.durationWeeks || !template.weekdaySlots.length) {
     throw new Error("A phase import needs PHASE metadata and at least one SLOT.");
+  }
+  if (currentBlock && !currentBlock.exercises.length) {
+    throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
   }
   return template;
 }
@@ -4666,21 +5336,30 @@ function renderPhaseTemplates() {
   if (!phaseTemplateListEl) {
     return;
   }
+  const visibleTemplates = getVisiblePhaseTemplates();
   if (!phaseTemplates.length) {
     phaseTemplateListEl.innerHTML = "<p class=\"planner-empty\">No saved phase templates yet.</p>";
     return;
   }
-  phaseTemplateListEl.innerHTML = phaseTemplates
+  if (!visibleTemplates.length) {
+    phaseTemplateListEl.innerHTML = "<p class=\"planner-empty\">No saved templates match this filter.</p>";
+    return;
+  }
+  const sortedTemplates = sortPhaseTemplatesForDisplay(visibleTemplates);
+  phaseTemplateListEl.innerHTML = sortedTemplates
     .map((template) => {
-      const slotSummary = template.weekdaySlots
-        .map((slot) => `${weekdayName(slot.weekday)}: ${slot.title}${slot.notes ? ` (${slot.notes})` : ""}`)
-        .join(" • ");
+      const templateSummary = buildProgramTemplateSummary(template);
+      const templateRecency = buildTemplateRecencyLabel(template);
+      const badgeLabel = getTemplateBadgeLabel(template);
       return `
         <article class="phase-card">
           <header>
             <div>
               <h4>${escapeHtml(template.name)}</h4>
-              <div class="phase-meta">${template.durationWeeks} weeks • ${escapeHtml(slotSummary)}</div>
+              <div class="phase-meta">${escapeHtml(templateSummary.summary)}</div>
+              <div class="phase-meta">${escapeHtml(templateSummary.detail)}</div>
+              ${templateRecency ? `<div class="phase-meta">${escapeHtml(templateRecency)}</div>` : ""}
+              ${badgeLabel ? `<div class="phase-badge ${badgeLabel.className}">${escapeHtml(badgeLabel.label)}</div>` : ""}
             </div>
           </header>
           <details class="phase-template-details">
@@ -4694,7 +5373,8 @@ function renderPhaseTemplates() {
             </label>
             <div class="phase-actions">
               <button type="button" class="ghost-button" data-role="edit-phase-template" data-id="${template.id}">Edit</button>
-              <button type="button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
+              <button type="button" class="ghost-button" data-role="duplicate-phase-template" data-id="${template.id}">Load copy</button>
+              <button type="button" class="ghost-button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
               <button type="button" class="ghost-button danger-button" data-role="delete-phase-template" data-id="${template.id}">Delete</button>
             </div>
           </div>
@@ -4702,6 +5382,75 @@ function renderPhaseTemplates() {
       `;
     })
     .join("");
+}
+
+function getTemplateBadgeLabel(template) {
+  if (template?.copiedFromTemplateId) {
+    return { label: "Copied", className: "phase-badge-copied" };
+  }
+  if (isRecentlyEditedTemplate(template)) {
+    return { label: "Recently edited", className: "phase-badge-recent" };
+  }
+  return null;
+}
+
+function renderProgramTemplatePicker() {
+  if (!programTemplatePicker) {
+    return;
+  }
+  const visibleTemplates = getVisiblePhaseTemplates();
+  if (!phaseTemplates.length) {
+    programTemplatePicker.innerHTML = '<option value="">No saved templates</option>';
+    programTemplatePicker.disabled = true;
+    return;
+  }
+  if (!visibleTemplates.length) {
+    programTemplatePicker.innerHTML = '<option value="">No matching templates</option>';
+    programTemplatePicker.disabled = true;
+    return;
+  }
+  const currentValue = programTemplatePicker.value;
+  programTemplatePicker.disabled = false;
+  const sortedTemplates = sortPhaseTemplatesForDisplay(visibleTemplates);
+  programTemplatePicker.innerHTML = [
+    '<option value="">Select a saved template</option>',
+    ...sortedTemplates.map((template) => `<option value="${template.id}">${escapeHtml(template.name)}</option>`),
+  ].join("");
+  if (sortedTemplates.some((template) => template.id === currentValue)) {
+    programTemplatePicker.value = currentValue;
+  }
+}
+
+function handlePhaseTemplateFilterInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) {
+    return;
+  }
+  phaseTemplateFilterQuery = target.value;
+  renderPhaseTemplates();
+  renderProgramTemplatePicker();
+}
+
+function getVisiblePhaseTemplates() {
+  return filterPhaseTemplatesForDisplay(phaseTemplates, phaseTemplateFilterQuery);
+}
+
+function isRecentlyEditedTemplate(template) {
+  const updatedAt = isNumber(template?.updatedAt) ? Number(template.updatedAt) : null;
+  if (!updatedAt) {
+    return false;
+  }
+  return Date.now() - updatedAt < 3 * 24 * 60 * 60 * 1000;
+}
+
+function loadSelectedProgramTemplate() {
+  if (!programTemplatePicker || !programTemplatePicker.value) {
+    if (phaseImportStatusEl) {
+      phaseImportStatusEl.textContent = "Select a saved template to load.";
+    }
+    return;
+  }
+  startPhaseTemplateEdit(programTemplatePicker.value);
 }
 
 function renderPhaseTemplateWorkouts(template) {
@@ -4750,6 +5499,11 @@ function handlePhaseTemplateAction(event) {
 
   if (role === "edit-phase-template") {
     startPhaseTemplateEdit(id);
+    return;
+  }
+
+  if (role === "duplicate-phase-template") {
+    startPhaseTemplateDuplicate(id);
     return;
   }
 
@@ -6485,6 +7239,12 @@ function normalizePhaseTemplate(template) {
         }))
       : [],
     importedAt: isNumber(template.importedAt) ? template.importedAt : Date.now(),
+    updatedAt: isNumber(template.updatedAt)
+      ? template.updatedAt
+      : isNumber(template.importedAt)
+        ? template.importedAt
+        : Date.now(),
+    copiedFromTemplateId: typeof template.copiedFromTemplateId === "string" ? template.copiedFromTemplateId : "",
   };
 }
 

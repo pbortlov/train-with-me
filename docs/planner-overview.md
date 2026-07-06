@@ -47,6 +47,27 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - inspect the workout structure inside each saved template
   - schedule a template onto real dates
   - keep create/import tools in a collapsible section after scheduled programs and saved templates
+  - preview imported program text as readable program basics, training days, blocks, and exercises before saving
+  - show a plain-language summary of days, blocks, and exercises above the preview
+  - show template list summaries that lead with counts, the first training days, and any slot notes so saved programs are easier to scan
+  - sort saved templates by the most recently edited templates first so the most useful ones stay near the top
+  - show when a template was last edited so the list reads more like a working queue than a raw storage dump
+  - filter saved templates by name, notes, or exercise text from the Programs page
+  - visually separate training days, blocks, and exercises with nested surfaces so the builder hierarchy is easier to read
+  - give add-day, add-block, and add-exercise actions more distinct palette emphasis so hierarchy matches the controls
+  - load a copy of a saved template into a new draft before making changes
+  - mark copied templates with a copied badge and recently edited templates with a recent badge
+  - edit program name and duration through fields that stay synced with the import text
+  - edit training days through fields that stay synced with `SLOT` rows
+  - edit blocks through fields that stay synced with `BLOCK` rows
+  - edit exercises through fields that stay synced with `EXERCISE` rows
+  - load a starter example to begin from a human-friendly template structure
+  - show a short guided checklist before the builder so the flow is easier to start
+  - copy the current import text to the clipboard for reuse or backup
+  - reset the builder to a blank draft when starting over
+  - load a saved template directly from the builder without scrolling back to the list
+  - show row-specific import hints when the structured text is missing PHASE, SLOT, BLOCK, or EXERCISE rows
+  - reject empty blocks so every imported block has at least one exercise
   - anchor each program week to the chosen start date instead of calendar Monday
   - refresh planned generated sessions for already scheduled instances when a template is updated
   - preserve manually moved generated strength-session dates during template refresh

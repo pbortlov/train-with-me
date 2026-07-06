@@ -327,34 +327,82 @@
 
         <article class="card">
           <h3>Scheduled programs</h3>
+          <p class="hint">Programs already placed on the calendar for upcoming work.</p>
           <div id="phase-instance-list" class="phase-list"></div>
         </article>
 
         <article class="card">
           <h3>Saved program templates</h3>
+          <p class="hint">Reusable templates you can duplicate, edit, or load into the builder.</p>
+          <label class="phase-template-filter">
+            Filter saved templates
+            <input
+              type="search"
+              id="phase-template-filter"
+              placeholder="Name, notes, or exercises"
+              autocomplete="off"
+            />
+          </label>
           <div id="phase-template-list" class="phase-list"></div>
         </article>
 
         <article class="card">
           <details id="phase-import-details" class="phase-import-details">
             <summary>Create or import program</summary>
-            <p class="hint">
+            <p class="hint program-import-lead">
               Import one strength phase per file or paste. Saved templates can also be loaded here for editing, and
               scheduled planned sessions will refresh from the updated template. Program weeks start from the chosen start date.
             </p>
+            <div class="program-editor-actions">
+              <button type="button" id="load-program-example" class="ghost-button">Load starter example</button>
+              <button type="button" id="copy-program-text" class="ghost-button">Copy import text</button>
+              <button type="button" id="reset-program-builder" class="ghost-button">Reset builder</button>
+            </div>
+            <div class="program-template-loader">
+              <label>
+                Load saved template
+                <select id="program-template-picker">
+                  <option value="">Select a saved template</option>
+                </select>
+              </label>
+              <button type="button" id="load-program-template" class="ghost-button">Load template</button>
+            </div>
+            <section class="program-builder-guide" aria-labelledby="program-builder-guide-heading">
+              <h4 id="program-builder-guide-heading">How to build a program</h4>
+              <ol class="program-builder-guide-list">
+                <li>Load the starter example or paste your own rows.</li>
+                <li>Edit the days, blocks, and exercises in the fields.</li>
+                <li>Save the template, then schedule it onto dates.</li>
+              </ol>
+            </section>
             <form id="phase-import-form">
               <input type="hidden" id="phase-edit-id" />
-              <div class="grid">
+              <div class="grid program-import-metadata">
                 <label>
-                  Phase name override
+                  Program name
                   <input type="text" id="phase-name-override" placeholder="Optional; import can define the name" />
+                </label>
+                <label>
+                  Duration (weeks)
+                  <input type="number" id="phase-duration-weeks" min="1" step="1" placeholder="e.g. 5" />
                 </label>
                 <label>
                   Import CSV file
                   <input type="file" id="phase-import-file" accept=".csv,text/csv,.txt,text/plain" />
                 </label>
               </div>
-              <label>
+              <section class="program-day-editor" aria-labelledby="program-day-editor-heading">
+                <div class="program-editor-header">
+                  <div>
+                    <h4 id="program-day-editor-heading">Training days</h4>
+                    <p id="program-builder-summary" class="phase-meta program-builder-summary" aria-live="polite"></p>
+                    <p class="hint">Edit weekly training days, blocks, and exercises, or load the starter example. The import text stays synced for compatibility.</p>
+                  </div>
+                  <button type="button" class="ghost-button program-add-day-button" id="add-program-day">Add day</button>
+                </div>
+                <div id="program-day-list" class="program-day-list"></div>
+              </section>
+              <label class="program-import-content">
                 Phase import content
                 <textarea
                   id="phase-import-text"
@@ -362,6 +410,9 @@
                   placeholder="PHASE,Phase 1,5&#10;SLOT,Tuesday,Strength A,Main lower-body day&#10;BLOCK,A,15-20 mins,90-120s,3-4&#10;EXERCISE,A1,Back squat,2x8-10,Heavy,100"
                 ></textarea>
               </label>
+              <section id="phase-import-preview" class="phase-import-preview" aria-live="polite">
+                <p class="planner-empty">Paste or import a program to preview its training days, blocks, and exercises.</p>
+              </section>
               <div class="dialog-actions">
                 <button type="submit" id="save-phase-button">Import strength phase</button>
                 <button type="button" id="cancel-phase-edit" class="ghost-button is-hidden">Cancel edit</button>
