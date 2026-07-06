@@ -156,6 +156,13 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("Builder reset to a blank program.");
   });
 
+  it("shows a live draft summary in the program builder header", () => {
+    expect(index).toContain('id="program-builder-summary"');
+    expect(script).toContain('programBuilderSummaryEl');
+    expect(script).toContain('updateProgramBuilderSummary()');
+    expect(styles).toContain('.program-builder-summary');
+  });
+
   it("visually separates program days blocks and exercises", () => {
     expect(styles).toContain(".program-day-row");
     expect(styles).toContain("linear-gradient(180deg, rgb(0 229 255 / 12%)");
@@ -170,7 +177,8 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('program-block-row${isEmpty ? " is-empty-exercises" : ""}');
     expect(script).toContain("program-block-empty-warning");
     expect(script).toContain("No exercises yet.");
-    expect(script).toContain("Add one now so this block stays valid when you save.");
+    expect(script).toContain("Add one now so");
+    expect(script).toContain("stays valid when you save.");
     expect(styles).toContain('.program-block-row.is-empty-exercises');
     expect(styles).toContain('border-color: #ff708a66');
     expect(styles).toContain('.program-block-row.is-empty-exercises .program-exercise-editor');

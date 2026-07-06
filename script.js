@@ -210,6 +210,7 @@ const phaseTemplateFilterInput = document.getElementById("phase-template-filter"
 const phaseImportFileInput = document.getElementById("phase-import-file");
 const phaseImportTextInput = document.getElementById("phase-import-text");
 const phaseImportPreviewEl = document.getElementById("phase-import-preview");
+const programBuilderSummaryEl = document.getElementById("program-builder-summary");
 const savePhaseButton = document.getElementById("save-phase-button");
 const cancelPhaseEditButton = document.getElementById("cancel-phase-edit");
 const phaseImportStatusEl = document.getElementById("phase-import-status");
@@ -4695,11 +4696,13 @@ function renderProgramDayEditor(days, dayBlocks = [], dayExercises = []) {
   }
   if (!days.length) {
     programDayListEl.innerHTML = "<p class=\"planner-empty program-empty-state program-empty-days\">No training days yet. Add a day or paste program text.</p>";
+    updateProgramBuilderSummary();
     return;
   }
   programDayListEl.innerHTML = days
     .map((day, index) => renderProgramDayEditorRow(day, index, dayBlocks[index]?.blocks || [], dayExercises[index]?.blocks || []))
     .join("");
+  updateProgramBuilderSummary();
 }
 
 function renderProgramDayEditorRow(day, index, blocks, blockExercises) {
@@ -4726,17 +4729,18 @@ function renderProgramDayEditorRow(day, index, blocks, blockExercises) {
           <button type="button" class="ghost-button program-add-block-button" data-role="add-program-block" data-day-index="${index}">Add block</button>
         </div>
         <div class="program-block-list">
-          ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex, blockExercises[blockIndex]?.exercises || [])).join("") : "<p class=\"planner-empty program-empty-state program-empty-blocks\">No blocks yet. Add a block or edit the import text.</p>"}
+          ${blocks.length ? blocks.map((block, blockIndex) => renderProgramBlockEditorRow(block, index, blockIndex, day, blockExercises[blockIndex]?.exercises || [])).join("") : "<p class=\"planner-empty program-empty-state program-empty-blocks\">No blocks yet. Add a block or edit the import text.</p>"}
         </div>
       </div>
     </div>
   `;
 }
 
-function renderProgramBlockEditorRow(block, dayIndex, blockIndex, exercises) {
+function renderProgramBlockEditorRow(block, dayIndex, blockIndex, day, exercises) {
   const isEmpty = !exercises.length;
+  const dayLabel = `${day?.weekday || "Day"} ${day?.title || "training day"}`.trim();
   return `
-    <div class="program-block-row${isEmpty ? " is-empty-exercises" : ""}" data-day-index="${dayIndex}" data-block-index="${blockIndex}">
+    <div class="program-block-row${isEmpty ? " is-empty-exercises" : ""}" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-day-label="${escapeHtml(dayLabel)}" data-block-label="${escapeHtml(block.label || `Block ${blockIndex + 1}`)}">
       <label>
         Label
         <input type="text" data-role="program-block-label" value="${escapeHtml(block.label)}" placeholder="A" />
@@ -4760,7 +4764,7 @@ function renderProgramBlockEditorRow(block, dayIndex, blockIndex, exercises) {
           <button type="button" class="ghost-button program-add-exercise-button" data-role="add-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Add exercise</button>
         </div>
         <div class="program-exercise-list">
-          ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : "<div class=\"program-block-empty-warning\" role=\"status\"><strong>No exercises yet.</strong><span>Add one now so this block stays valid when you save.</span></div>"}
+          ${exercises.length ? exercises.map((exercise, exerciseIndex) => renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exerciseIndex)).join("") : `<div class="program-block-empty-warning" role="status"><strong>No exercises yet.</strong><span>Add one now so ${escapeHtml(dayLabel)} / ${escapeHtml(block.label || `Block ${blockIndex + 1}`)} stays valid when you save.</span></div>`}
         </div>
       </div>
     </div>
@@ -4846,6 +4850,7 @@ function collectProgramDayExercisesFromEditor() {
 
 function updatePhaseImportPreview() {
   if (!phaseImportPreviewEl || !phaseImportTextInput) {
+    updateProgramBuilderSummary();
     return;
   }
   const result = buildProgramPreview(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
@@ -4865,9 +4870,24 @@ function updatePhaseImportPreview() {
         ` : ""}
       </div>
     `;
+    updateProgramBuilderSummary();
     return;
   }
   phaseImportPreviewEl.innerHTML = renderProgramPreview(result.model);
+  updateProgramBuilderSummary();
+}
+
+function updateProgramBuilderSummary() {
+  if (!programBuilderSummaryEl) {
+    return;
+  }
+  const dayCount = collectProgramTrainingDaysFromEditor().length;
+  const blockCount = collectProgramDayBlocksFromEditor().reduce((total, day) => total + day.blocks.length, 0);
+  const exerciseCount = collectProgramDayExercisesFromEditor().reduce(
+    (total, day) => total + day.blocks.reduce((dayTotal, block) => dayTotal + block.exercises.length, 0),
+    0,
+  );
+  programBuilderSummaryEl.textContent = `${dayCount} ${dayCount === 1 ? "day" : "days"} • ${blockCount} ${blockCount === 1 ? "block" : "blocks"} • ${exerciseCount} ${exerciseCount === 1 ? "exercise" : "exercises"}`;
 }
 
 function renderProgramPreview(model) {

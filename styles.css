@@ -1302,6 +1302,10 @@ textarea:focus-visible {
   margin: 0;
 }
 
+.program-builder-summary {
+  margin: 0;
+}
+
 .program-day-list {
   display: grid;
   gap: 0.55rem;
