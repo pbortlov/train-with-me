@@ -87,6 +87,17 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('color: #d7f8ff');
   });
 
+  it("renders program import errors as a stronger inline alert panel", () => {
+    expect(script).toContain('program-preview-error" role="alert" aria-live="assertive"');
+    expect(script).toContain('Program import error');
+    expect(styles).toContain('.program-preview-error');
+    expect(styles).toContain('border: 1px solid #ff708a66');
+    expect(styles).toContain('linear-gradient(180deg, rgb(255 112 138 / 10%)');
+    expect(styles).toContain('.program-preview-error-title');
+    expect(styles).toContain('.program-preview-hints');
+    expect(styles).toContain('border: 1px solid #ff708a55');
+  });
+
   it("gives the Program section cards a shared panel surface", () => {
     expect(styles).toContain('.view-panel[data-view="phases"] > .card');
     expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 4%)');

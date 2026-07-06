@@ -160,6 +160,12 @@ export function buildProgramImportHints(error: unknown): string[] {
   if (message.includes("must include at least one EXERCISE row")) {
     return ["Add at least one `EXERCISE` row before starting the next `BLOCK` or `SLOT`."];
   }
+  if (message.includes("Empty block detected")) {
+    return [
+      "Add at least one `EXERCISE` row to every `BLOCK` before saving.",
+      "Delete the `BLOCK` row if the block should not exist.",
+    ];
+  }
   if (message.includes("not a supported row type")) {
     return ["Use only `PHASE`, `SLOT`, `BLOCK`, and `EXERCISE` rows."];
   }
@@ -337,7 +343,11 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
   };
   let currentDay: ProgramPreviewDay | null = null;
   let currentBlock: ProgramPreviewBlock | null = null;
-  let currentBlockLine = 0;
+  const formatEmptyBlockError = (day: ProgramPreviewDay | null, block: ProgramPreviewBlock | null): string => {
+    const dayLabel = day ? `${day.weekday} ${day.title}`.trim() : "this training day";
+    const blockLabel = block?.label ? ` / ${block.label}` : "";
+    return `Empty block detected in ${dayLabel}${blockLabel}. Add at least one exercise before saving this program.`;
+  };
 
   for (let index = 0; index < lines.length; index += 1) {
     const columns = lines[index].split(",").map((column) => column.trim());
@@ -354,7 +364,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
 
     if (rowType === "SLOT") {
       if (currentBlock && !currentBlock.exercises.length) {
-        return { model: null, error: `Line ${currentBlockLine}: add at least one exercise inside this block.` };
+        return { model: null, error: formatEmptyBlockError(currentDay, currentBlock) };
       }
       if (!columns[1]) {
         return { model: null, error: `Line ${index + 1}: add a weekday for this training day.` };
@@ -375,7 +385,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
         return { model: null, error: `Line ${index + 1}: add a training day before adding blocks.` };
       }
       if (currentBlock && !currentBlock.exercises.length) {
-        return { model: null, error: `Line ${currentBlockLine}: add at least one exercise inside this block.` };
+        return { model: null, error: formatEmptyBlockError(currentDay, currentBlock) };
       }
       currentBlock = {
         label: columns[1] || `Block ${currentDay.blocks.length + 1}`,
@@ -384,7 +394,6 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
         sets: columns[4] || "",
         exercises: [],
       };
-      currentBlockLine = index + 1;
       currentDay.blocks.push(currentBlock);
       continue;
     }
@@ -410,8 +419,16 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
     return { model: null, error: "Add a PHASE row and at least one training day to preview this program." };
   }
 
+  for (const day of model.days) {
+    for (const block of day.blocks) {
+      if (!block.exercises.length) {
+        return { model: null, error: formatEmptyBlockError(day, block) };
+      }
+    }
+  }
+
   if (currentBlock && !currentBlock.exercises.length) {
-    return { model: null, error: `Line ${currentBlockLine}: add at least one exercise inside this block.` };
+    return { model: null, error: formatEmptyBlockError(currentDay, currentBlock) };
   }
 
   return { model, error: "" };

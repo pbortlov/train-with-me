@@ -170,6 +170,10 @@ describe("program import preview", () => {
     expect(buildProgramImportHints("Line 3: BLOCK row at line 3 must include at least one EXERCISE row.")).toEqual([
       "Add at least one `EXERCISE` row before starting the next `BLOCK` or `SLOT`.",
     ]);
+    expect(buildProgramImportHints("Empty block detected in Tuesday Strength A / A. Add at least one exercise before saving this program.")).toEqual([
+      "Add at least one `EXERCISE` row to every `BLOCK` before saving.",
+      "Delete the `BLOCK` row if the block should not exist.",
+    ]);
   });
 
   it("uses the name override in preview without changing import text", () => {
@@ -353,6 +357,6 @@ describe("program import preview", () => {
         "BLOCK,A,15 mins,60s,3",
         "SLOT,Friday,Strength B,Upper day",
       ].join("\n")).error,
-    ).toBe("Line 3: add at least one exercise inside this block.");
+    ).toBe("Empty block detected in Tuesday Strength A / A. Add at least one exercise before saving this program.");
   });
 });

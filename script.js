@@ -4851,7 +4851,8 @@ function updatePhaseImportPreview() {
   if (result.error) {
     const hints = buildProgramImportHints(result.error);
     phaseImportPreviewEl.innerHTML = `
-      <div class="program-preview-error">
+      <div class="program-preview-error" role="alert" aria-live="assertive">
+        <h4 class="program-preview-error-title">Program import error</h4>
         <p class="planner-empty">${escapeHtml(result.error)}</p>
         ${hints.length ? `
           <div class="program-preview-hints">

@@ -28,6 +28,9 @@ Copied templates are marked with a `Copied` badge, while recently edited
 templates keep the `Recently edited` badge.
 When the import text is incomplete, the preview shows row-specific hints for
 the missing `PHASE`, `SLOT`, `BLOCK`, or `EXERCISE` structure.
+The preview also rejects any `BLOCK` that has no `EXERCISE` rows so empty
+blocks are caught before saving, and the inline preview renders the failure as
+an alert panel instead of a plain paragraph.
 Saved template cards now lead with the phase duration, training-day count, block
 count, exercise count, and the first couple of scheduled days so the list is
 faster to scan.
