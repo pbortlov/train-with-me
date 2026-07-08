@@ -71,6 +71,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="phase-import-preview"');
     expect(index).toContain("Paste or import a program to preview its training days, blocks, and exercises.");
     expect(index).toContain("PROGRAM,Phase 1,5");
+    expect(index).toContain("TRAINING,Tuesday,Strength A,Main lower-body day");
   });
 
   it("styles the program import lead-in as a visible panel", () => {
@@ -401,6 +402,6 @@ describe("local-first UX guidance", () => {
   it("shows import hints when the builder text is incomplete", () => {
     expect(script).toContain('program-preview-hints');
     expect(script).toContain('Fix this import');
-    expect(previewDomain).toContain('Add a `SLOT` row before any `BLOCK` rows.');
+    expect(previewDomain).toContain('Add a `TRAINING` row before any `BLOCK` rows.');
   });
 });

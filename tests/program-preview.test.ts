@@ -23,7 +23,7 @@ import {
 
 const sampleProgram = [
   "PROGRAM,Phase 1,5",
-  "SLOT,Tuesday,Strength A,Main lower-body day",
+  "TRAINING,Tuesday,Strength A,Main lower-body day",
   "BLOCK,A,15-20 mins,90-120s,3-4",
   "EXERCISE,A1,Back squat,2x8-10,Heavy,100",
   "EXERCISE,A2,Barbell row,8-10,Control the eccentric,",
@@ -64,7 +64,7 @@ describe("program import preview", () => {
     const result = buildProgramPreview(starterProgram);
 
     expect(starterProgram).toContain("PROGRAM,Starter strength phase,4");
-    expect(starterProgram).toContain("SLOT,Tuesday,Strength A,Lower focus and main lift");
+    expect(starterProgram).toContain("TRAINING,Tuesday,Strength A,Lower focus and main lift");
     expect(result.error).toBe("");
     expect(result.model?.days).toHaveLength(2);
   });
@@ -158,17 +158,17 @@ describe("program import preview", () => {
 
   it("builds row-specific import hints for malformed program text", () => {
     expect(buildProgramImportHints("Add a PROGRAM row and at least one training day to preview this program.")).toEqual([
-      "Include a `PROGRAM` row and at least one `SLOT` row.",
-      "A minimal example is `PROGRAM,Phase 1,5` then `SLOT,Tuesday,Strength A,Notes`.",
+      "Include a `PROGRAM` row and at least one `TRAINING` row.",
+      "A minimal example is `PROGRAM,Phase 1,5` then `TRAINING,Tuesday,Strength A,Notes`.",
     ]);
     expect(buildProgramImportHints("Line 2: add a training day before adding blocks.")).toEqual([
-      "Add a `SLOT` row before any `BLOCK` rows.",
+      "Add a `TRAINING` row before any `BLOCK` rows.",
     ]);
     expect(buildProgramImportHints("Line 3: add a block before adding exercises.")).toEqual([
       "Add a `BLOCK` row before any `EXERCISE` rows.",
     ]);
     expect(buildProgramImportHints("Line 3: BLOCK row at line 3 must include at least one EXERCISE row.")).toEqual([
-      "Add at least one `EXERCISE` row before starting the next `BLOCK` or `SLOT`.",
+      "Add at least one `EXERCISE` row before starting the next `BLOCK` or `TRAINING`.",
     ]);
     expect(buildProgramImportHints("Empty block detected in Tuesday Strength A / A. Add at least one exercise before saving this program.")).toEqual([
       "Add at least one `EXERCISE` row to every `BLOCK` before saving.",
@@ -194,12 +194,12 @@ describe("program import preview", () => {
     expect(updateProgramBasics(sampleProgram, { name: "Winter strength", durationWeeks: "6" }).split("\n")[0]).toBe(
       "PROGRAM,Winter strength,6",
     );
-    expect(updateProgramBasics("SLOT,Tuesday,Strength A,", { name: "New program", durationWeeks: "4" })).toBe(
-      "PROGRAM,New program,4\nSLOT,Tuesday,Strength A,",
+    expect(updateProgramBasics("TRAINING,Tuesday,Strength A,", { name: "New program", durationWeeks: "4" })).toBe(
+      "PROGRAM,New program,4\nTRAINING,Tuesday,Strength A,",
     );
   });
 
-  it("reads training days from SLOT rows", () => {
+  it("reads training days from TRAINING rows", () => {
     expect(readProgramTrainingDays(sampleProgram)).toEqual([
       { weekday: "Tuesday", title: "Strength A", notes: "Main lower-body day" },
     ]);
@@ -210,7 +210,7 @@ describe("program import preview", () => {
       { weekday: "Wednesday", title: "Strength A revised", notes: "Lower focus" },
     ]);
 
-    expect(updated).toContain("SLOT,Wednesday,Strength A revised,Lower focus");
+    expect(updated).toContain("TRAINING,Wednesday,Strength A revised,Lower focus");
     expect(updated).toContain("BLOCK,A,15-20 mins,90-120s,3-4");
     expect(updated).toContain("EXERCISE,A1,Back squat,2x8-10,Heavy,100");
   });
@@ -218,7 +218,7 @@ describe("program import preview", () => {
   it("adds and removes full training day segments", () => {
     const twoDayProgram = [
       sampleProgram,
-      "SLOT,Friday,Strength B,Upper day",
+      "TRAINING,Friday,Strength B,Upper day",
       "BLOCK,A,12 mins,60s,3",
       "EXERCISE,A1,Front squat,2x10,,80",
     ].join("\n");
@@ -226,7 +226,7 @@ describe("program import preview", () => {
     expect(updateProgramTrainingDays(sampleProgram, [
       { weekday: "Tuesday", title: "Strength A", notes: "Main lower-body day" },
       { weekday: "Friday", title: "Strength B", notes: "Upper day" },
-    ])).toContain("SLOT,Friday,Strength B,Upper day");
+    ])).toContain("TRAINING,Friday,Strength B,Upper day");
     const removed = updateProgramTrainingDays(twoDayProgram, [
       { weekday: "Tuesday", title: "Strength A", notes: "Main lower-body day" },
     ]);
@@ -347,8 +347,11 @@ describe("program import preview", () => {
     expect(buildProgramPreview("BLOCK,A,15 mins,60s,3").error).toBe(
       "Line 1: add a training day before adding blocks.",
     );
-    expect(buildProgramPreview("PHASE,Phase 1,5\nSLOT,Tuesday,Strength A,Main lower-body day").error).toBe(
+    expect(buildProgramPreview("PHASE,Phase 1,5\nTRAINING,Tuesday,Strength A,Main lower-body day").error).toBe(
       'Line 1: "PHASE" is not a supported row type.',
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nSLOT,Tuesday,Strength A,Main lower-body day").error).toBe(
+      'Line 2: "SLOT" is not a supported row type.',
     );
     expect(buildProgramPreview("PROGRAM,Phase 1,5\nEXERCISE,A1,Squat,10").error).toBe(
       "Line 2: add a block before adding exercises.",
@@ -356,9 +359,9 @@ describe("program import preview", () => {
     expect(
       buildProgramPreview([
         "PROGRAM,Phase 1,5",
-        "SLOT,Tuesday,Strength A,Main lower-body day",
+        "TRAINING,Tuesday,Strength A,Main lower-body day",
         "BLOCK,A,15 mins,60s,3",
-        "SLOT,Friday,Strength B,Upper day",
+        "TRAINING,Friday,Strength B,Upper day",
       ].join("\n")).error,
     ).toBe("Empty block detected in Tuesday Strength A / A. Add at least one exercise before saving this program.");
   });

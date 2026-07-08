@@ -146,19 +146,19 @@ export function buildProgramImportHints(error: unknown): string[] {
     return [];
   }
   if (message.includes("Paste or import a program")) {
-    return ["Start with a PROGRAM row, then add at least one SLOT row."];
+    return ["Start with a PROGRAM row, then add at least one TRAINING row."];
   }
   if (message.includes("add a program name and duration")) {
     return ["Use a PROGRAM row like `PROGRAM,Phase 1,5`."];
   }
   if (message.includes("add a training day before adding blocks")) {
-    return ["Add a `SLOT` row before any `BLOCK` rows."];
+    return ["Add a `TRAINING` row before any `BLOCK` rows."];
   }
   if (message.includes("add a block before adding exercises")) {
     return ["Add a `BLOCK` row before any `EXERCISE` rows."];
   }
   if (message.includes("must include at least one EXERCISE row")) {
-    return ["Add at least one `EXERCISE` row before starting the next `BLOCK` or `SLOT`."];
+    return ["Add at least one `EXERCISE` row before starting the next `BLOCK` or `TRAINING`."];
   }
   if (message.includes("Empty block detected")) {
     return [
@@ -167,10 +167,10 @@ export function buildProgramImportHints(error: unknown): string[] {
     ];
   }
   if (message.includes("not a supported row type")) {
-    return ["Use only `PROGRAM`, `SLOT`, `BLOCK`, and `EXERCISE` rows."];
+    return ["Use only `PROGRAM`, `TRAINING`, `BLOCK`, and `EXERCISE` rows."];
   }
   if (message.includes("Add a PROGRAM row and at least one training day")) {
-    return ["Include a `PROGRAM` row and at least one `SLOT` row.", "A minimal example is `PROGRAM,Phase 1,5` then `SLOT,Tuesday,Strength A,Notes`."];
+    return ["Include a `PROGRAM` row and at least one `TRAINING` row.", "A minimal example is `PROGRAM,Phase 1,5` then `TRAINING,Tuesday,Strength A,Notes`."];
   }
   return [];
 }
@@ -362,7 +362,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
       continue;
     }
 
-    if (rowType === "SLOT") {
+    if (rowType === "TRAINING") {
       if (currentBlock && !currentBlock.exercises.length) {
         return { model: null, error: formatEmptyBlockError(currentDay, currentBlock) };
       }
@@ -437,13 +437,13 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
 export function buildStarterProgramText(): string {
   return [
     "PROGRAM,Starter strength phase,4",
-    "SLOT,Tuesday,Strength A,Lower focus and main lift",
+    "TRAINING,Tuesday,Strength A,Lower focus and main lift",
     "BLOCK,A,15-20 mins,90-120s,3-4",
     "EXERCISE,A1,Back squat,2x8-10,Heavy,",
     "EXERCISE,A2,Romanian deadlift,8-10,Controlled tempo,",
     "BLOCK,B,10-12 mins,60-90s,2-3",
     "EXERCISE,B1,Bulgarian split squat,8 each leg,,Bodyweight",
-    "SLOT,Friday,Strength B,Upper focus and pull",
+    "TRAINING,Friday,Strength B,Upper focus and pull",
     "BLOCK,A,12-15 mins,60-90s,3",
     "EXERCISE,A1,Bench press,3x5,Strong,",
     "EXERCISE,A2,Barbell row,8-10,,",
@@ -478,7 +478,7 @@ export function readProgramTrainingDays(text: unknown): ProgramTrainingDay[] {
   return String(text || "")
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.split(",")[0]?.trim().toUpperCase() === "SLOT")
+    .filter((line) => line.split(",")[0]?.trim().toUpperCase() === "TRAINING")
     .map((line) => {
       const columns = line.split(",").map((column) => column.trim());
       return {
@@ -616,11 +616,11 @@ function formatSlotRow(day: ProgramTrainingDay, index: number): string {
   const weekday = day.weekday.trim();
   const title = day.title.trim() || `Strength session ${index + 1}`;
   const notes = day.notes.trim();
-  return `SLOT,${weekday},${title},${notes}`;
+  return `TRAINING,${weekday},${title},${notes}`;
 }
 
 function isSlotLine(line: string): boolean {
-  return line.trim().split(",")[0]?.trim().toUpperCase() === "SLOT";
+  return line.trim().split(",")[0]?.trim().toUpperCase() === "TRAINING";
 }
 
 function formatBlockRow(block: ProgramBlockEditor, index: number): string {

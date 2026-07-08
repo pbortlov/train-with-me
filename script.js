@@ -4428,7 +4428,7 @@ function loadPhaseImportFile(event) {
 function serializeStrengthPhaseDefinition(template) {
   const rows = [`PROGRAM,${template.name},${template.durationWeeks}`];
   template.weekdaySlots.forEach((slot) => {
-    rows.push(`SLOT,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
+    rows.push(`TRAINING,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
     slot.blocks.forEach((block) => {
       rows.push(
         `BLOCK,${block.label || ""},${formatBlockDurationCsvValue(block)},${formatBlockRestCsvValue(block)},${block.sets || ""}`,
@@ -5342,7 +5342,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       }
       return;
     }
-    if (rowType === "SLOT") {
+    if (rowType === "TRAINING") {
       if (currentBlock && !currentBlock.exercises.length) {
         throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
       }
@@ -5360,7 +5360,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
     }
     if (rowType === "BLOCK") {
       if (!currentSlot) {
-        throw new Error(`BLOCK row before SLOT at line ${index + 1}.`);
+        throw new Error(`BLOCK row before TRAINING at line ${index + 1}.`);
       }
       if (currentBlock && !currentBlock.exercises.length) {
         throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
@@ -5397,7 +5397,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
   });
 
   if (!template.name || !template.durationWeeks || !template.weekdaySlots.length) {
-    throw new Error("A program import needs PROGRAM metadata and at least one SLOT.");
+    throw new Error("A program import needs PROGRAM metadata and at least one TRAINING.");
   }
   if (currentBlock && !currentBlock.exercises.length) {
     throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);

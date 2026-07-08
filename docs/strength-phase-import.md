@@ -32,7 +32,7 @@ the cursor in the program name field so editing can begin immediately.
 Copied templates are marked with a `Copied` badge, while recently edited
 templates keep the `Recently edited` badge.
 When the import text is incomplete, the preview shows row-specific hints for
-the missing `PROGRAM`, `SLOT`, `BLOCK`, or `EXERCISE` structure.
+the missing `PROGRAM`, `TRAINING`, `BLOCK`, or `EXERCISE` structure.
 The preview also rejects any `BLOCK` that has no `EXERCISE` rows so empty
 blocks are caught before saving, and the inline preview renders the failure as
 an alert panel instead of a plain paragraph.
@@ -56,7 +56,7 @@ and exercises so the structure is readable at a glance.
 The add controls also use stronger palette accents so `Add day`, `Add block`,
 and `Add exercise` feel distinct at the level they affect.
 The program name and duration fields update the `PROGRAM` row for easier editing.
-Training day fields update `SLOT` rows while preserving the block and exercise
+Training day fields update `TRAINING` rows while preserving the block and exercise
 rows that belong to each day.
 Block fields update `BLOCK` rows while preserving the exercise rows that belong
 to each block.
@@ -65,7 +65,7 @@ optional weight.
 
 The parser is order-based. It expects rows in a logical sequence:
 - `PROGRAM`
-- `SLOT`
+- `TRAINING`
 - `BLOCK`
 - `EXERCISE`
 
@@ -83,17 +83,17 @@ Example:
 PROGRAM,Phase 1,5
 ```
 
-### SLOT
+### TRAINING
 Defines one fixed weekly workout slot.
 
 ```text
-SLOT,<weekday>,<session title>,<slot notes optional>
+TRAINING,<weekday>,<session title>,<slot notes optional>
 ```
 
 Example:
 
 ```text
-SLOT,Tuesday,Strength A,Main lower-body day
+TRAINING,Tuesday,Strength A,Main lower-body day
 ```
 
 ### BLOCK
@@ -123,9 +123,11 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 ```
 
 ## Rules
-- `BLOCK` must come after a `SLOT`
+- `BLOCK` must come after a `TRAINING`
 - `EXERCISE` must come after a `BLOCK`
 - every `BLOCK` must include at least one `EXERCISE`
+- only `PROGRAM`, `TRAINING`, `BLOCK`, and `EXERCISE` are accepted row keywords
+- legacy `PHASE` and `SLOT` rows are rejected instead of being auto-converted
 - weekdays should be written as common names like `Tuesday`, `Fri`, `Sunday`
 - block duration should be written like `15 mins` or `15-20 mins`
 - block rest should be written like `30s` or `90-120s`
@@ -143,13 +145,13 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 ## Example
 ```text
 PROGRAM,Phase 1,5
-SLOT,Tuesday,Strength A,Main lower-body day
+TRAINING,Tuesday,Strength A,Main lower-body day
 BLOCK,A,15-20 mins,90-120s,3-4
 EXERCISE,A1,Back squat,2x8-10,Heavy,100
 EXERCISE,A2,Barbell row,8-10,Control the eccentric,
 BLOCK,B,10 mins,45s,2-3
 EXERCISE,B1,Walking lunge,10 each leg,
-SLOT,Friday,Strength B,Upper/lower mixed
+TRAINING,Friday,Strength B,Upper/lower mixed
 BLOCK,A,12 mins,60s,3
 EXERCISE,A1,Front squat,2x10,,80
 EXERCISE,A2,Pull-up,10,Pause at top,
