@@ -138,6 +138,13 @@ Example:
 EXERCISE,A1,Back squat,2x8-10,Heavy,100
 ```
 
+The `EXERCISE` row requires:
+- a code that is auto-generated like `A1`, `A2`, or `B1` when left empty
+- a non-empty exercise name
+- reps written like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`
+- optional notes
+- an optional positive weight like `60`, `62.5`, or `28.25`
+
 ## Rules
 - `BLOCK` must come after a `TRAINING`
 - `EXERCISE` must come after a `BLOCK`
@@ -152,11 +159,15 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 - `BLOCK` duration is optional, but when present must look like `15 min`, `15 mins`, or `15-20 mins`
 - `BLOCK` rest is optional, but when present must look like `30s`, `90 sec`, or `90-120s`
 - `BLOCK` sets are required and must look like `3` or `3-4`
+- `EXERCISE` code is generated when left empty
+- `EXERCISE` name is required
+- `EXERCISE` reps are required and must look like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`
+- `EXERCISE` weight is optional, but when present must be a positive number
 - weekdays should be written as common names like `Tuesday`, `Fri`, `Sunday`
 - block duration should be written like `15 mins` or `15-20 mins`
 - block rest should be written like `30s` or `90-120s`
 - set prescription can be `3` or a range like `3-4`
-- rep prescription is free text and can be values like `10`, `8-10`, `2x10`, or `2x8-10`
+- rep prescription should be written like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`
 - exercise weight is optional and can be left empty if it will be assigned later
 - slot notes are optional and are copied into the generated planned session notes
 - slot notes can include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`; the Calendar uses that together with block durations and planned rests to show total strength-session time
@@ -174,7 +185,7 @@ BLOCK,A,15-20 mins,90-120s,3-4
 EXERCISE,A1,Back squat,2x8-10,Heavy,100
 EXERCISE,A2,Barbell row,8-10,Control the eccentric,
 BLOCK,B,10 mins,45s,2-3
-EXERCISE,B1,Walking lunge,10 each leg,
+EXERCISE,B1,Walking lunge,10-12,
 TRAINING,Friday,Strength B,Upper/lower mixed
 BLOCK,A,12 mins,60s,3
 EXERCISE,A1,Front squat,2x10,,80

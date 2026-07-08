@@ -32,8 +32,10 @@ import {
   updateProgramDayExercises,
   updateProgramBasics,
   updateProgramTrainingDays,
+  buildProgramExerciseCode,
   validateProgramBasics,
   validateProgramBlock,
+  validateProgramExercise,
   normalizeProgramWeekday,
   validateProgramTrainingDay,
 } from "./src/domain/program-preview";
@@ -4641,6 +4643,43 @@ function syncProgramBlockValidation() {
   });
 }
 
+function syncProgramExerciseValidation() {
+  if (!programDayListEl) {
+    return;
+  }
+
+  Array.from(programDayListEl.querySelectorAll(".program-exercise-row")).forEach((exerciseRow) => {
+    const nameInput = exerciseRow.querySelector('[data-role="program-exercise-name"]');
+    const repsInput = exerciseRow.querySelector('[data-role="program-exercise-reps"]');
+    const weightInput = exerciseRow.querySelector('[data-role="program-exercise-weight"]');
+    const validation = validateProgramExercise({
+      code: exerciseRow.querySelector('[data-role="program-exercise-code"]')?.value || "",
+      name: nameInput?.value || "",
+      reps: repsInput?.value || "",
+      notes: exerciseRow.querySelector('[data-role="program-exercise-notes"]')?.value || "",
+      weight: weightInput?.value || "",
+    });
+
+    if (validation.nameError) {
+      setFieldError(nameInput, validation.nameError);
+    } else {
+      clearFieldError(nameInput);
+    }
+
+    if (validation.repsError) {
+      setFieldError(repsInput, validation.repsError);
+    } else {
+      clearFieldError(repsInput);
+    }
+
+    if (validation.weightError) {
+      setFieldError(weightInput, validation.weightError);
+    } else {
+      clearFieldError(weightInput);
+    }
+  });
+}
+
 function syncProgramTrainingDaysFromText() {
   renderProgramDayEditor(
     readProgramTrainingDays(phaseImportTextInput?.value || ""),
@@ -4840,7 +4879,7 @@ function handleProgramEditorAction(event) {
     const dayBlocks = collectProgramDayBlocksFromEditor();
     const dayExercises = collectProgramDayExercisesFromEditor();
     const blockExercises = dayExercises[dayIndex]?.blocks?.[blockIndex]?.exercises || [];
-    blockExercises.push({ code: `E${blockExercises.length + 1}`, name: "", reps: "", notes: "", weight: "" });
+    blockExercises.push({ code: "", name: "", reps: "", notes: "", weight: "" });
     const blocks = dayExercises[dayIndex]?.blocks || [];
     blocks[blockIndex] = { exercises: blockExercises };
     dayExercises[dayIndex] = { blocks };
@@ -4883,6 +4922,7 @@ function renderProgramDayEditor(days, dayBlocks = [], dayExercises = []) {
     .map((day, index) => renderProgramDayEditorRow(day, index, dayBlocks[index]?.blocks || [], dayExercises[index]?.blocks || []))
     .join("");
   syncProgramBlockValidation();
+  syncProgramExerciseValidation();
   updateProgramBuilderSummary();
 }
 
@@ -4957,23 +4997,23 @@ function renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exercise
     <div class="program-exercise-row" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">
       <label>
         Code
-        <input type="text" data-role="program-exercise-code" value="${escapeHtml(exercise.code)}" placeholder="A1" />
+        <input type="text" id="program-exercise-code-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-code" value="${escapeHtml(exercise.code)}" placeholder="A1" />
       </label>
       <label>
         Exercise
-        <input type="text" data-role="program-exercise-name" value="${escapeHtml(exercise.name)}" placeholder="Back squat" />
+        <input type="text" id="program-exercise-name-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-name" value="${escapeHtml(exercise.name)}" placeholder="Back squat" />
       </label>
       <label>
         Reps
-        <input type="text" data-role="program-exercise-reps" value="${escapeHtml(exercise.reps)}" placeholder="2x8-10" />
+        <input type="text" id="program-exercise-reps-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-reps" value="${escapeHtml(exercise.reps)}" placeholder="2x8-10" />
       </label>
       <label>
         Notes
-        <input type="text" data-role="program-exercise-notes" value="${escapeHtml(exercise.notes)}" placeholder="Heavy" />
+        <input type="text" id="program-exercise-notes-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-notes" value="${escapeHtml(exercise.notes)}" placeholder="Heavy" />
       </label>
       <label>
         Weight
-        <input type="text" data-role="program-exercise-weight" value="${escapeHtml(exercise.weight)}" placeholder="100" />
+        <input type="text" id="program-exercise-weight-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-weight" value="${escapeHtml(exercise.weight)}" placeholder="100" />
       </label>
       <button type="button" class="ghost-button danger-button" data-role="remove-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">Remove exercise</button>
     </div>
@@ -5036,6 +5076,7 @@ function updatePhaseImportPreview() {
   }
   syncProgramBasicsValidation();
   syncProgramBlockValidation();
+  syncProgramExerciseValidation();
   const result = buildProgramPreview(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
   if (result.error) {
     const hints = buildProgramImportHints(result.error);
@@ -5503,12 +5544,29 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       if (!currentBlock) {
         throw new Error(`EXERCISE row before BLOCK at line ${index + 1}.`);
       }
-      currentBlock.exercises.push({
-        code: columns[1] || `E${currentBlock.exercises.length + 1}`,
-        name: columns[2] || "Exercise",
+      const exercise = {
+        code: columns[1] || "",
+        name: columns[2] || "",
         reps: columns[3] || "",
         notes: columns[4] || "",
-        weight: toNumberOrNull(columns[5]),
+        weight: columns[5] || "",
+      };
+      const validation = validateProgramExercise(exercise);
+      if (validation.nameError) {
+        throw new Error(`Line ${index + 1}: ${validation.nameError}`);
+      }
+      if (validation.repsError) {
+        throw new Error(`Line ${index + 1}: ${validation.repsError}`);
+      }
+      if (validation.weightError) {
+        throw new Error(`Line ${index + 1}: ${validation.weightError}`);
+      }
+      currentBlock.exercises.push({
+        code: exercise.code.trim() || buildProgramExerciseCode(currentBlock.label, currentSlot.blocks.length - 1, currentBlock.exercises.length),
+        name: exercise.name.trim(),
+        reps: exercise.reps.trim(),
+        notes: exercise.notes || "",
+        weight: toNumberOrNull(exercise.weight),
       });
       return;
     }

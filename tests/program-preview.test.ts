@@ -19,8 +19,10 @@ import {
   updateProgramDayBlocks,
   updateProgramDayExercises,
   updateProgramTrainingDays,
+  buildProgramExerciseCode,
   validateProgramBasics,
   validateProgramBlock,
+  validateProgramExercise,
   validateProgramTrainingDay,
 } from "../src/domain/program-preview";
 
@@ -184,6 +186,18 @@ describe("program import preview", () => {
     expect(buildProgramImportHints("Line 3: BLOCK row sets must look like `3` or `3-4`.")).toEqual([
       "Use sets like `3` or `3-4`.",
     ]);
+    expect(buildProgramImportHints("Line 4: EXERCISE row needs an exercise name.")).toEqual([
+      "Add the exercise name after the code, like `EXERCISE,A1,Back squat,8-10`.",
+    ]);
+    expect(buildProgramImportHints("Line 4: EXERCISE row needs reps.")).toEqual([
+      "Add reps like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.",
+    ]);
+    expect(buildProgramImportHints("Line 4: EXERCISE row reps must look like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.")).toEqual([
+      "Use reps like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.",
+    ]);
+    expect(buildProgramImportHints("Line 4: EXERCISE row weight must be a positive number like `60`, `62.5`, or `28.25`.")).toEqual([
+      "Use weight like `60`, `62.5`, or `28.25`, or leave it blank.",
+    ]);
     expect(buildProgramImportHints("Add a PROGRAM row and at least one training day to preview this program.")).toEqual([
       "Include a `PROGRAM` row and at least one `TRAINING` row.",
       "A minimal example is `PROGRAM,Phase 1,5` then `TRAINING,Tuesday,Strength A,Notes`.",
@@ -306,7 +320,7 @@ describe("program import preview", () => {
     const twoBlockProgram = [
       sampleProgram,
       "BLOCK,B,10 mins,45s,2",
-      "EXERCISE,B1,Lunge,10 each leg,,",
+      "EXERCISE,B1,Lunge,10-12,,",
     ].join("\n");
 
     expect(updateProgramDayBlocks(sampleProgram, [
@@ -349,14 +363,14 @@ describe("program import preview", () => {
         blocks: [
           {
             exercises: [
-              { code: "A1", name: "Front squat", reps: "3x8", notes: "Smooth", weight: "90" },
+              { code: "A1", name: "Front squat", reps: "8", notes: "Smooth", weight: "90" },
             ],
           },
         ],
       },
     ]);
 
-    expect(updated).toContain("EXERCISE,A1,Front squat,3x8,Smooth,90");
+    expect(updated).toContain("EXERCISE,A1,Front squat,8,Smooth,90");
     expect(updated).not.toContain("Back squat");
   });
 
@@ -367,13 +381,13 @@ describe("program import preview", () => {
           {
             exercises: [
               { code: "A1", name: "Back squat", reps: "2x8-10", notes: "Heavy", weight: "100" },
-              { code: "A3", name: "Split squat", reps: "10 each", notes: "", weight: "" },
+              { code: "A3", name: "Split squat", reps: "10-12", notes: "", weight: "" },
             ],
           },
         ],
       },
     ]);
-    expect(added).toContain("EXERCISE,A3,Split squat,10 each,,");
+    expect(added).toContain("EXERCISE,A3,Split squat,10-12,,");
     const removed = updateProgramDayExercises(sampleProgram, [
       {
         blocks: [
@@ -386,6 +400,25 @@ describe("program import preview", () => {
       },
     ]);
     expect(removed).not.toContain("Barbell row");
+  });
+
+  it("generates block-aware EXERCISE codes when the code is blank", () => {
+    const generated = updateProgramDayExercises(sampleProgram, [
+      {
+        blocks: [
+          {
+            exercises: [
+              { code: "", name: "Back squat", reps: "2x8-10", notes: "Heavy", weight: "100" },
+              { code: "", name: "Barbell row", reps: "8-10", notes: "Control the eccentric", weight: "" },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(generated).toContain("EXERCISE,A1,Back squat,2x8-10,Heavy,100");
+    expect(generated).toContain("EXERCISE,A2,Barbell row,8-10,Control the eccentric,");
+    expect(buildProgramExerciseCode("B", 1, 0)).toBe("B1");
   });
 
   it("returns friendly validation messages for malformed structure", () => {
@@ -425,6 +458,18 @@ describe("program import preview", () => {
     expect(
       buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,90 sec,3\nEXERCISE,A1,Squat,10").error,
     ).toBe("");
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,30s,3\nEXERCISE,A1,,10").error).toBe(
+      "Line 4: EXERCISE row needs an exercise name.",
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,30s,3\nEXERCISE,A1,Squat,").error).toBe(
+      "Line 4: EXERCISE row needs reps.",
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,30s,3\nEXERCISE,A1,Squat,8 reps").error).toBe(
+      "Line 4: EXERCISE row reps must look like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.",
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,30s,3\nEXERCISE,A1,Squat,8,Heavy,60kg").error).toBe(
+      "Line 4: EXERCISE row weight must be a positive number like `60`, `62.5`, or `28.25`.",
+    );
     expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,30s,").error).toBe(
       "Line 3: BLOCK row needs a sets value.",
     );
@@ -523,6 +568,44 @@ describe("program import preview", () => {
       durationError: "",
       restError: "",
       setsError: "",
+    });
+  });
+
+  it("validates EXERCISE rows for name reps and weight", () => {
+    expect(validateProgramExercise({ code: "", name: "", reps: "8", notes: "", weight: "" })).toEqual({
+      nameError: "EXERCISE row needs an exercise name.",
+      repsError: "",
+      weightError: "",
+    });
+    expect(validateProgramExercise({ code: "", name: "Squat", reps: "", notes: "", weight: "" })).toEqual({
+      nameError: "",
+      repsError: "EXERCISE row needs reps.",
+      weightError: "",
+    });
+    expect(validateProgramExercise({ code: "", name: "Squat", reps: "hold for 30s", notes: "", weight: "" })).toEqual({
+      nameError: "",
+      repsError: "EXERCISE row reps must look like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.",
+      weightError: "",
+    });
+    expect(validateProgramExercise({ code: "", name: "Squat", reps: "8-10", notes: "", weight: "60kg" })).toEqual({
+      nameError: "",
+      repsError: "",
+      weightError: "EXERCISE row weight must be a positive number like `60`, `62.5`, or `28.25`.",
+    });
+    expect(validateProgramExercise({ code: "", name: "Squat", reps: "2x8-10", notes: "", weight: "62.5" })).toEqual({
+      nameError: "",
+      repsError: "",
+      weightError: "",
+    });
+    expect(validateProgramExercise({ code: "", name: "Squat", reps: "2x10", notes: "", weight: "" })).toEqual({
+      nameError: "",
+      repsError: "",
+      weightError: "",
+    });
+    expect(validateProgramExercise({ code: "", name: "Squat", reps: "3x5", notes: "", weight: "" })).toEqual({
+      nameError: "",
+      repsError: "EXERCISE row reps must look like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.",
+      weightError: "",
     });
   });
 });

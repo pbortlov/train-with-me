@@ -434,4 +434,15 @@ describe("local-first UX guidance", () => {
   it("keeps single block timing values from being reformatted into fake ranges", () => {
     expect(script).toContain("isNumber(min) && isNumber(max) && max > 0");
   });
+
+  it("shows inline EXERCISE-row feedback and generated codes in the builder", () => {
+    expect(script).toContain("function syncProgramExerciseValidation()");
+    expect(script).toContain("setFieldError(nameInput, validation.nameError);");
+    expect(script).toContain("setFieldError(repsInput, validation.repsError);");
+    expect(script).toContain("setFieldError(weightInput, validation.weightError);");
+    expect(script).toContain('blockExercises.push({ code: "", name: "", reps: "", notes: "", weight: "" });');
+    expect(previewDomain).toContain("EXERCISE row needs an exercise name.");
+    expect(previewDomain).toContain("EXERCISE row reps must look like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.");
+    expect(previewDomain).toContain("EXERCISE row weight must be a positive number like `60`, `62.5`, or `28.25`.");
+  });
 });
