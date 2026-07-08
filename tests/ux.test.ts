@@ -413,4 +413,9 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('Fix this import');
     expect(previewDomain).toContain('Add a `TRAINING` row before any `BLOCK` rows.');
   });
+
+  it("generates Training # titles for blank TRAINING rows", () => {
+    expect(script).toContain('`Training #${template.weekdaySlots.length + 1}`');
+    expect(previewDomain).toContain("Training #");
+  });
 });

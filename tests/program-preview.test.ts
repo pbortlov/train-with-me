@@ -20,6 +20,7 @@ import {
   updateProgramDayExercises,
   updateProgramTrainingDays,
   validateProgramBasics,
+  validateProgramTrainingDay,
 } from "../src/domain/program-preview";
 
 const sampleProgram = [
@@ -215,6 +216,24 @@ describe("program import preview", () => {
     ]);
   });
 
+  it("normalizes blank TRAINING titles to Training # labels by order", () => {
+    const text = [
+      "PROGRAM,Phase 1,5",
+      "TRAINING,Tuesday,,Main lower-body day",
+      "BLOCK,A,15-20 mins,90-120s,3-4",
+      "EXERCISE,A1,Back squat,2x8-10,Heavy,100",
+      "TRAINING,Fri,,Upper day",
+      "BLOCK,A,12 mins,60s,3",
+      "EXERCISE,A1,Front squat,2x10,,80",
+    ].join("\n");
+
+    expect(readProgramTrainingDays(text)).toEqual([
+      { weekday: "Tuesday", title: "Training #1", notes: "Main lower-body day" },
+      { weekday: "Friday", title: "Training #2", notes: "Upper day" },
+    ]);
+    expect(buildProgramPreview(text).model?.days.map((day) => day.title)).toEqual(["Training #1", "Training #2"]);
+  });
+
   it("updates training day rows while preserving their block and exercise rows", () => {
     const updated = updateProgramTrainingDays(sampleProgram, [
       { weekday: "Wednesday", title: "Strength A revised", notes: "Lower focus" },
@@ -375,6 +394,12 @@ describe("program import preview", () => {
     expect(buildProgramPreview("PROGRAM,Phase 1,5\nSLOT,Tuesday,Strength A,Main lower-body day").error).toBe(
       'Line 2: "SLOT" is not a supported row type.',
     );
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,,Strength A,Main lower-body day").error).toBe(
+      "Line 2: TRAINING row needs a weekday.",
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Funday,Strength A,Main lower-body day").error).toBe(
+      "Line 2: TRAINING row weekday must be a real day like Monday, Mon, Tuesday, Tue, Friday, or Sun.",
+    );
     expect(buildProgramPreview("PROGRAM,Phase 1,5\nEXERCISE,A1,Squat,10").error).toBe(
       "Line 2: add a block before adding exercises.",
     );
@@ -404,6 +429,18 @@ describe("program import preview", () => {
     expect(validateProgramBasics({ name: "Phase 1", durationWeeks: "5" })).toEqual({
       nameError: "",
       durationWeeksError: "",
+    });
+  });
+
+  it("validates TRAINING weekdays and accepts abbreviations", () => {
+    expect(validateProgramTrainingDay({ weekday: "", title: "", notes: "" })).toEqual({
+      weekdayError: "TRAINING row needs a weekday.",
+    });
+    expect(validateProgramTrainingDay({ weekday: "Funday", title: "", notes: "" })).toEqual({
+      weekdayError: "TRAINING row weekday must be a real day like Monday, Mon, Tuesday, Tue, Friday, or Sun.",
+    });
+    expect(validateProgramTrainingDay({ weekday: "Fri", title: "", notes: "" })).toEqual({
+      weekdayError: "",
     });
   });
 });

@@ -157,6 +157,12 @@ export function buildProgramImportHints(error: unknown): string[] {
   if (message.includes("PROGRAM row duration must be a positive whole number")) {
     return ["Use a positive whole number for weeks, like `PROGRAM,Phase 1,5`."];
   }
+  if (message.includes("TRAINING row needs a weekday")) {
+    return ["Add a weekday after `TRAINING,` like `TRAINING,Tuesday,Strength A,Notes`."];
+  }
+  if (message.includes("TRAINING row weekday must be a real day")) {
+    return ["Use a real weekday like `Monday`, `Mon`, `Tuesday`, `Tue`, `Friday`, or `Sun`."];
+  }
   if (message.includes("add a training day before adding blocks")) {
     return ["Add a `TRAINING` row before any `BLOCK` rows."];
   }
@@ -304,6 +310,10 @@ export interface ProgramBasicsValidation {
   durationWeeksError: string;
 }
 
+export interface ProgramTrainingDayValidation {
+  weekdayError: string;
+}
+
 export interface ProgramTrainingDay {
   weekday: string;
   title: string;
@@ -337,6 +347,25 @@ export interface ProgramDayExercises {
   blocks: ProgramBlockExercises[];
 }
 
+const PROGRAM_WEEKDAY_LABELS = {
+  monday: "Monday",
+  mon: "Monday",
+  tuesday: "Tuesday",
+  tue: "Tuesday",
+  tues: "Tuesday",
+  wednesday: "Wednesday",
+  wed: "Wednesday",
+  thursday: "Thursday",
+  thu: "Thursday",
+  thur: "Thursday",
+  friday: "Friday",
+  fri: "Friday",
+  saturday: "Saturday",
+  sat: "Saturday",
+  sunday: "Sunday",
+  sun: "Sunday",
+} as const;
+
 export function validateProgramBasics(basics: ProgramBasics): ProgramBasicsValidation {
   const name = basics.name.trim();
   const durationWeeks = basics.durationWeeks.trim();
@@ -365,6 +394,29 @@ export function validateProgramBasics(basics: ProgramBasics): ProgramBasicsValid
   return {
     nameError: "",
     durationWeeksError: "",
+  };
+}
+
+export function normalizeProgramWeekday(value: unknown): string {
+  const key = String(value || "").trim().toLowerCase();
+  return PROGRAM_WEEKDAY_LABELS[key as keyof typeof PROGRAM_WEEKDAY_LABELS] || "";
+}
+
+export function validateProgramTrainingDay(day: ProgramTrainingDay): ProgramTrainingDayValidation {
+  if (!String(day.weekday || "").trim()) {
+    return {
+      weekdayError: "TRAINING row needs a weekday.",
+    };
+  }
+
+  if (!normalizeProgramWeekday(day.weekday)) {
+    return {
+      weekdayError: "TRAINING row weekday must be a real day like Monday, Mon, Tuesday, Tue, Friday, or Sun.",
+    };
+  }
+
+  return {
+    weekdayError: "",
   };
 }
 
@@ -415,13 +467,19 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
       if (currentBlock && !currentBlock.exercises.length) {
         return { model: null, error: formatEmptyBlockError(currentDay, currentBlock) };
       }
-      if (!columns[1]) {
-        return { model: null, error: `Line ${index + 1}: add a weekday for this training day.` };
+      const day = {
+        weekday: columns[1] || "",
+        title: columns[2] || "",
+        notes: columns[3] || "",
+      };
+      const validation = validateProgramTrainingDay(day);
+      if (validation.weekdayError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.weekdayError}` };
       }
       currentDay = {
-        weekday: columns[1],
-        title: columns[2] || `Strength session ${model.days.length + 1}`,
-        notes: columns[3] || "",
+        weekday: normalizeProgramWeekday(day.weekday),
+        title: day.title.trim() || buildProgramTrainingTitle(model.days.length),
+        notes: day.notes || "",
         blocks: [],
       };
       model.days.push(currentDay);
@@ -528,11 +586,11 @@ export function readProgramTrainingDays(text: unknown): ProgramTrainingDay[] {
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.split(",")[0]?.trim().toUpperCase() === "TRAINING")
-    .map((line) => {
+    .map((line, index) => {
       const columns = line.split(",").map((column) => column.trim());
       return {
-        weekday: columns[1] || "",
-        title: columns[2] || "",
+        weekday: normalizeProgramWeekday(columns[1]) || columns[1] || "",
+        title: columns[2] || buildProgramTrainingTitle(index),
         notes: columns[3] || "",
       };
     });
@@ -662,10 +720,14 @@ function splitBlockSegments(lines: string[]): string[][] {
 }
 
 function formatSlotRow(day: ProgramTrainingDay, index: number): string {
-  const weekday = day.weekday.trim();
-  const title = day.title.trim() || `Strength session ${index + 1}`;
+  const weekday = normalizeProgramWeekday(day.weekday) || day.weekday.trim();
+  const title = day.title.trim() || buildProgramTrainingTitle(index);
   const notes = day.notes.trim();
   return `TRAINING,${weekday},${title},${notes}`;
+}
+
+function buildProgramTrainingTitle(index: number): string {
+  return `Training #${index + 1}`;
 }
 
 function isSlotLine(line: string): boolean {

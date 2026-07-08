@@ -33,6 +33,8 @@ import {
   updateProgramBasics,
   updateProgramTrainingDays,
   validateProgramBasics,
+  normalizeProgramWeekday,
+  validateProgramTrainingDay,
 } from "./src/domain/program-preview";
 import {
   createProgramTemplateExportPayload,
@@ -5389,12 +5391,21 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       if (currentBlock && !currentBlock.exercises.length) {
         throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
       }
-      const weekday = parseWeekday(columns[1]);
+      const day = {
+        weekday: columns[1] || "",
+        title: columns[2] || "",
+        notes: columns[3] || "",
+      };
+      const validation = validateProgramTrainingDay(day);
+      if (validation.weekdayError) {
+        throw new Error(`Line ${index + 1}: ${validation.weekdayError}`);
+      }
+      const weekday = parseWeekday(day.weekday);
       currentSlot = {
         id: crypto.randomUUID(),
         weekday,
-        title: columns[2] || `Strength session ${template.weekdaySlots.length + 1}`,
-        notes: columns[3] || "",
+        title: day.title.trim() || `Training #${template.weekdaySlots.length + 1}`,
+        notes: day.notes || "",
         blocks: [],
       };
       template.weekdaySlots.push(currentSlot);
@@ -5450,27 +5461,17 @@ function parseStrengthPhaseDefinition(text, overrideName) {
 
 function parseWeekday(value) {
   const weekdayMap = {
-    monday: 1,
-    mon: 1,
-    tuesday: 2,
-    tue: 2,
-    tues: 2,
-    wednesday: 3,
-    wed: 3,
-    thursday: 4,
-    thu: 4,
-    thur: 4,
-    friday: 5,
-    fri: 5,
-    saturday: 6,
-    sat: 6,
-    sunday: 7,
-    sun: 7,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+    Sunday: 7,
   };
-  const key = String(value || "").trim().toLowerCase();
-  const parsed = weekdayMap[key];
+  const parsed = weekdayMap[normalizeProgramWeekday(value)];
   if (!parsed) {
-    throw new Error(`Invalid weekday "${value}".`);
+    throw new Error(`TRAINING row weekday must be a real day like Monday, Mon, Tuesday, Tue, Friday, or Sun.`);
   }
   return parsed;
 }

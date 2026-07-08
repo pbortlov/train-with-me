@@ -101,6 +101,11 @@ Example:
 TRAINING,Tuesday,Strength A,Main lower-body day
 ```
 
+The `TRAINING` row requires:
+- a weekday
+- a real weekday value such as `Monday`, `Mon`, `Tuesday`, `Tue`, `Friday`, or `Sun`
+- an optional title that falls back to `Training #1`, `Training #2`, `Training #3` by order in the program when left empty
+
 ### BLOCK
 Defines one block inside the current slot.
 
@@ -135,6 +140,8 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 - legacy `PHASE` and `SLOT` rows are rejected instead of being auto-converted
 - `PROGRAM` name is required
 - `PROGRAM` duration is required and must be a positive whole number
+- `TRAINING` weekday is required and must be a real weekday name or short form like `Mon` or `Fri`
+- `TRAINING` title is optional and defaults to `Training #...` by program order when left empty
 - weekdays should be written as common names like `Tuesday`, `Fri`, `Sunday`
 - block duration should be written like `15 mins` or `15-20 mins`
 - block rest should be written like `30s` or `90-120s`
