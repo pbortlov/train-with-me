@@ -83,6 +83,11 @@ Example:
 PROGRAM,Phase 1,5
 ```
 
+The `PROGRAM` row requires:
+- a non-empty program name
+- a duration in weeks
+- a positive integer duration such as `4` or `12`
+
 ### TRAINING
 Defines one fixed weekly workout slot.
 
@@ -128,6 +133,8 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 - every `BLOCK` must include at least one `EXERCISE`
 - only `PROGRAM`, `TRAINING`, `BLOCK`, and `EXERCISE` are accepted row keywords
 - legacy `PHASE` and `SLOT` rows are rejected instead of being auto-converted
+- `PROGRAM` name is required
+- `PROGRAM` duration is required and must be a positive integer
 - weekdays should be written as common names like `Tuesday`, `Fri`, `Sunday`
 - block duration should be written like `15 mins` or `15-20 mins`
 - block rest should be written like `30s` or `90-120s`

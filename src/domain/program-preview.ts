@@ -148,8 +148,14 @@ export function buildProgramImportHints(error: unknown): string[] {
   if (message.includes("Paste or import a program")) {
     return ["Start with a PROGRAM row, then add at least one TRAINING row."];
   }
-  if (message.includes("add a program name and duration")) {
-    return ["Use a PROGRAM row like `PROGRAM,Phase 1,5`."];
+  if (message.includes("PROGRAM row needs a program name")) {
+    return ["Add text after `PROGRAM,` for the program name."];
+  }
+  if (message.includes("PROGRAM row needs a duration in weeks")) {
+    return ["Add a positive whole-number week count like `PROGRAM,Phase 1,5`."];
+  }
+  if (message.includes("PROGRAM row duration must be a positive integer")) {
+    return ["Use a positive whole number for weeks, like `PROGRAM,Phase 1,5`."];
   }
   if (message.includes("add a training day before adding blocks")) {
     return ["Add a `TRAINING` row before any `BLOCK` rows."];
@@ -293,6 +299,11 @@ export interface ProgramBasics {
   durationWeeks: string;
 }
 
+export interface ProgramBasicsValidation {
+  nameError: string;
+  durationWeeksError: string;
+}
+
 export interface ProgramTrainingDay {
   weekday: string;
   title: string;
@@ -326,6 +337,37 @@ export interface ProgramDayExercises {
   blocks: ProgramBlockExercises[];
 }
 
+export function validateProgramBasics(basics: ProgramBasics): ProgramBasicsValidation {
+  const name = basics.name.trim();
+  const durationWeeks = basics.durationWeeks.trim();
+
+  if (!name) {
+    return {
+      nameError: "PROGRAM row needs a program name.",
+      durationWeeksError: "",
+    };
+  }
+
+  if (!durationWeeks) {
+    return {
+      nameError: "",
+      durationWeeksError: "PROGRAM row needs a duration in weeks.",
+    };
+  }
+
+  if (!/^[1-9]\d*$/.test(durationWeeks)) {
+    return {
+      nameError: "",
+      durationWeeksError: "PROGRAM row duration must be a positive integer.",
+    };
+  }
+
+  return {
+    nameError: "",
+    durationWeeksError: "",
+  };
+}
+
 export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPreviewResult {
   const lines = String(text || "")
     .split("\n")
@@ -356,8 +398,15 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
     if (rowType === "PROGRAM") {
       model.name = overrideName.trim() || columns[1] || model.name;
       model.durationWeeks = columns[2] || "";
-      if (!model.name || !model.durationWeeks) {
-        return { model: null, error: `Line ${index + 1}: add a program name and duration.` };
+      const validation = validateProgramBasics({
+        name: model.name,
+        durationWeeks: model.durationWeeks,
+      });
+      if (validation.nameError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.nameError}` };
+      }
+      if (validation.durationWeeksError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.durationWeeksError}` };
       }
       continue;
     }

@@ -19,6 +19,7 @@ import {
   updateProgramDayBlocks,
   updateProgramDayExercises,
   updateProgramTrainingDays,
+  validateProgramBasics,
 } from "../src/domain/program-preview";
 
 const sampleProgram = [
@@ -157,6 +158,15 @@ describe("program import preview", () => {
   });
 
   it("builds row-specific import hints for malformed program text", () => {
+    expect(buildProgramImportHints("Line 1: PROGRAM row needs a program name.")).toEqual([
+      "Add text after `PROGRAM,` for the program name.",
+    ]);
+    expect(buildProgramImportHints("Line 1: PROGRAM row needs a duration in weeks.")).toEqual([
+      "Add a positive whole-number week count like `PROGRAM,Phase 1,5`.",
+    ]);
+    expect(buildProgramImportHints("Line 1: PROGRAM row duration must be a positive integer.")).toEqual([
+      "Use a positive whole number for weeks, like `PROGRAM,Phase 1,5`.",
+    ]);
     expect(buildProgramImportHints("Add a PROGRAM row and at least one training day to preview this program.")).toEqual([
       "Include a `PROGRAM` row and at least one `TRAINING` row.",
       "A minimal example is `PROGRAM,Phase 1,5` then `TRAINING,Tuesday,Strength A,Notes`.",
@@ -344,6 +354,18 @@ describe("program import preview", () => {
   });
 
   it("returns friendly validation messages for malformed structure", () => {
+    expect(buildProgramPreview("PROGRAM,,5\nTRAINING,Tuesday,Strength A,Main lower-body day").error).toBe(
+      "Line 1: PROGRAM row needs a program name.",
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,\nTRAINING,Tuesday,Strength A,Main lower-body day").error).toBe(
+      "Line 1: PROGRAM row needs a duration in weeks.",
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,abc\nTRAINING,Tuesday,Strength A,Main lower-body day").error).toBe(
+      "Line 1: PROGRAM row duration must be a positive integer.",
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,0\nTRAINING,Tuesday,Strength A,Main lower-body day").error).toBe(
+      "Line 1: PROGRAM row duration must be a positive integer.",
+    );
     expect(buildProgramPreview("BLOCK,A,15 mins,60s,3").error).toBe(
       "Line 1: add a training day before adding blocks.",
     );
@@ -364,5 +386,24 @@ describe("program import preview", () => {
         "TRAINING,Friday,Strength B,Upper day",
       ].join("\n")).error,
     ).toBe("Empty block detected in Tuesday Strength A / A. Add at least one exercise before saving this program.");
+  });
+
+  it("validates PROGRAM basics as a required name and positive integer duration", () => {
+    expect(validateProgramBasics({ name: "", durationWeeks: "5" })).toEqual({
+      nameError: "PROGRAM row needs a program name.",
+      durationWeeksError: "",
+    });
+    expect(validateProgramBasics({ name: "Phase 1", durationWeeks: "" })).toEqual({
+      nameError: "",
+      durationWeeksError: "PROGRAM row needs a duration in weeks.",
+    });
+    expect(validateProgramBasics({ name: "Phase 1", durationWeeks: "-2" })).toEqual({
+      nameError: "",
+      durationWeeksError: "PROGRAM row duration must be a positive integer.",
+    });
+    expect(validateProgramBasics({ name: "Phase 1", durationWeeks: "5" })).toEqual({
+      nameError: "",
+      durationWeeksError: "",
+    });
   });
 });

@@ -325,6 +325,15 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.program-import-metadata label');
   });
 
+  it("shows inline PROGRAM-row feedback on the metadata fields", () => {
+    expect(script).toContain("function syncProgramBasicsValidation");
+    expect(script).toContain("setFieldError(phaseNameOverrideInput, validation.nameError);");
+    expect(script).toContain("setFieldError(phaseDurationWeeksInput, validation.durationWeeksError);");
+    expect(previewDomain).toContain("PROGRAM row needs a program name.");
+    expect(previewDomain).toContain("PROGRAM row needs a duration in weeks.");
+    expect(previewDomain).toContain("PROGRAM row duration must be a positive integer.");
+  });
+
   it("styles the phase import content textarea as its own panel", () => {
     expect(index).toContain('class="program-import-content"');
     expect(styles).toContain('.program-import-content');

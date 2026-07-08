@@ -32,6 +32,7 @@ import {
   updateProgramDayExercises,
   updateProgramBasics,
   updateProgramTrainingDays,
+  validateProgramBasics,
 } from "./src/domain/program-preview";
 import {
   createProgramTemplateExportPayload,
@@ -4485,6 +4486,8 @@ function resetPhaseImportForm() {
   if (phaseDurationWeeksInput) {
     phaseDurationWeeksInput.value = "";
   }
+  clearFieldError(phaseNameOverrideInput);
+  clearFieldError(phaseDurationWeeksInput);
   if (savePhaseButton) {
     savePhaseButton.textContent = "Import strength phase";
   }
@@ -4548,6 +4551,7 @@ function syncProgramBasicsFromText() {
   if (phaseDurationWeeksInput && phaseDurationWeeksInput.value !== basics.durationWeeks) {
     phaseDurationWeeksInput.value = basics.durationWeeks;
   }
+  syncProgramBasicsValidation(basics);
 }
 
 function syncProgramBasicsToText() {
@@ -4558,7 +4562,37 @@ function syncProgramBasicsToText() {
     name: phaseNameOverrideInput?.value || "",
     durationWeeks: phaseDurationWeeksInput?.value || "",
   });
+  syncProgramBasicsValidation();
   updatePhaseImportPreview();
+}
+
+function syncProgramBasicsValidation(basics = null) {
+  const hasProgramDraft = Boolean(
+    phaseImportTextInput?.value.trim()
+    || phaseNameOverrideInput?.value.trim()
+    || phaseDurationWeeksInput?.value.trim(),
+  );
+
+  if (!hasProgramDraft) {
+    clearFieldError(phaseNameOverrideInput);
+    clearFieldError(phaseDurationWeeksInput);
+    return;
+  }
+
+  const values = basics || readProgramBasics(phaseImportTextInput?.value || "", phaseNameOverrideInput?.value || "");
+  const validation = validateProgramBasics(values);
+
+  if (validation.nameError) {
+    setFieldError(phaseNameOverrideInput, validation.nameError);
+  } else {
+    clearFieldError(phaseNameOverrideInput);
+  }
+
+  if (validation.durationWeeksError) {
+    setFieldError(phaseDurationWeeksInput, validation.durationWeeksError);
+  } else {
+    clearFieldError(phaseDurationWeeksInput);
+  }
 }
 
 function syncProgramTrainingDaysFromText() {
@@ -4953,6 +4987,7 @@ function updatePhaseImportPreview() {
     updateProgramBuilderSummary();
     return;
   }
+  syncProgramBasicsValidation();
   const result = buildProgramPreview(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
   if (result.error) {
     const hints = buildProgramImportHints(result.error);
@@ -5335,11 +5370,19 @@ function parseStrengthPhaseDefinition(text, overrideName) {
     const columns = line.split(",").map((column) => column.trim());
     const rowType = columns[0]?.toUpperCase();
     if (rowType === "PROGRAM") {
-      template.name = overrideName || columns[1] || template.name;
-      template.durationWeeks = Number(columns[2]);
-      if (!template.name || !Number.isFinite(template.durationWeeks)) {
-        throw new Error(`Invalid PROGRAM row at line ${index + 1}.`);
+      const basics = {
+        name: overrideName || columns[1] || template.name,
+        durationWeeks: columns[2] || "",
+      };
+      const validation = validateProgramBasics(basics);
+      if (validation.nameError) {
+        throw new Error(`Line ${index + 1}: ${validation.nameError}`);
       }
+      if (validation.durationWeeksError) {
+        throw new Error(`Line ${index + 1}: ${validation.durationWeeksError}`);
+      }
+      template.name = basics.name;
+      template.durationWeeks = Number(basics.durationWeeks);
       return;
     }
     if (rowType === "TRAINING") {
