@@ -154,7 +154,7 @@ export function buildProgramImportHints(error: unknown): string[] {
   if (message.includes("PROGRAM row needs a duration in weeks")) {
     return ["Add a positive whole-number week count like `PROGRAM,Phase 1,5`."];
   }
-  if (message.includes("PROGRAM row duration must be a positive integer")) {
+  if (message.includes("PROGRAM row duration must be a positive whole number")) {
     return ["Use a positive whole number for weeks, like `PROGRAM,Phase 1,5`."];
   }
   if (message.includes("add a training day before adding blocks")) {
@@ -358,7 +358,7 @@ export function validateProgramBasics(basics: ProgramBasics): ProgramBasicsValid
   if (!/^[1-9]\d*$/.test(durationWeeks)) {
     return {
       nameError: "",
-      durationWeeksError: "PROGRAM row duration must be a positive integer.",
+      durationWeeksError: "PROGRAM row duration must be a positive whole number.",
     };
   }
 

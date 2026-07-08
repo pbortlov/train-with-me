@@ -331,7 +331,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("setFieldError(phaseDurationWeeksInput, validation.durationWeeksError);");
     expect(previewDomain).toContain("PROGRAM row needs a program name.");
     expect(previewDomain).toContain("PROGRAM row needs a duration in weeks.");
-    expect(previewDomain).toContain("PROGRAM row duration must be a positive integer.");
+    expect(previewDomain).toContain("PROGRAM row duration must be a positive whole number.");
   });
 
   it("styles the phase import content textarea as its own panel", () => {

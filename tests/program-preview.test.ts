@@ -164,7 +164,7 @@ describe("program import preview", () => {
     expect(buildProgramImportHints("Line 1: PROGRAM row needs a duration in weeks.")).toEqual([
       "Add a positive whole-number week count like `PROGRAM,Phase 1,5`.",
     ]);
-    expect(buildProgramImportHints("Line 1: PROGRAM row duration must be a positive integer.")).toEqual([
+    expect(buildProgramImportHints("Line 1: PROGRAM row duration must be a positive whole number.")).toEqual([
       "Use a positive whole number for weeks, like `PROGRAM,Phase 1,5`.",
     ]);
     expect(buildProgramImportHints("Add a PROGRAM row and at least one training day to preview this program.")).toEqual([
@@ -361,10 +361,10 @@ describe("program import preview", () => {
       "Line 1: PROGRAM row needs a duration in weeks.",
     );
     expect(buildProgramPreview("PROGRAM,Phase 1,abc\nTRAINING,Tuesday,Strength A,Main lower-body day").error).toBe(
-      "Line 1: PROGRAM row duration must be a positive integer.",
+      "Line 1: PROGRAM row duration must be a positive whole number.",
     );
     expect(buildProgramPreview("PROGRAM,Phase 1,0\nTRAINING,Tuesday,Strength A,Main lower-body day").error).toBe(
-      "Line 1: PROGRAM row duration must be a positive integer.",
+      "Line 1: PROGRAM row duration must be a positive whole number.",
     );
     expect(buildProgramPreview("BLOCK,A,15 mins,60s,3").error).toBe(
       "Line 1: add a training day before adding blocks.",
@@ -388,7 +388,7 @@ describe("program import preview", () => {
     ).toBe("Empty block detected in Tuesday Strength A / A. Add at least one exercise before saving this program.");
   });
 
-  it("validates PROGRAM basics as a required name and positive integer duration", () => {
+  it("validates PROGRAM basics as a required name and positive whole-number duration", () => {
     expect(validateProgramBasics({ name: "", durationWeeks: "5" })).toEqual({
       nameError: "PROGRAM row needs a program name.",
       durationWeeksError: "",
@@ -399,7 +399,7 @@ describe("program import preview", () => {
     });
     expect(validateProgramBasics({ name: "Phase 1", durationWeeks: "-2" })).toEqual({
       nameError: "",
-      durationWeeksError: "PROGRAM row duration must be a positive integer.",
+      durationWeeksError: "PROGRAM row duration must be a positive whole number.",
     });
     expect(validateProgramBasics({ name: "Phase 1", durationWeeks: "5" })).toEqual({
       nameError: "",
