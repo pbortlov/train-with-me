@@ -146,10 +146,10 @@ export function buildProgramImportHints(error: unknown): string[] {
     return [];
   }
   if (message.includes("Paste or import a program")) {
-    return ["Start with a PHASE row, then add at least one SLOT row."];
+    return ["Start with a PROGRAM row, then add at least one SLOT row."];
   }
   if (message.includes("add a program name and duration")) {
-    return ["Use a PHASE row like `PHASE,Phase 1,5`."];
+    return ["Use a PROGRAM row like `PROGRAM,Phase 1,5`."];
   }
   if (message.includes("add a training day before adding blocks")) {
     return ["Add a `SLOT` row before any `BLOCK` rows."];
@@ -167,10 +167,10 @@ export function buildProgramImportHints(error: unknown): string[] {
     ];
   }
   if (message.includes("not a supported row type")) {
-    return ["Use only `PHASE`, `SLOT`, `BLOCK`, and `EXERCISE` rows."];
+    return ["Use only `PROGRAM`, `SLOT`, `BLOCK`, and `EXERCISE` rows."];
   }
-  if (message.includes("Add a PHASE row and at least one training day")) {
-    return ["Include a `PHASE` row and at least one `SLOT` row.", "A minimal example is `PHASE,Phase 1,5` then `SLOT,Tuesday,Strength A,Notes`."];
+  if (message.includes("Add a PROGRAM row and at least one training day")) {
+    return ["Include a `PROGRAM` row and at least one `SLOT` row.", "A minimal example is `PROGRAM,Phase 1,5` then `SLOT,Tuesday,Strength A,Notes`."];
   }
   return [];
 }
@@ -353,7 +353,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
     const columns = lines[index].split(",").map((column) => column.trim());
     const rowType = columns[0]?.toUpperCase();
 
-    if (rowType === "PHASE") {
+    if (rowType === "PROGRAM") {
       model.name = overrideName.trim() || columns[1] || model.name;
       model.durationWeeks = columns[2] || "";
       if (!model.name || !model.durationWeeks) {
@@ -416,7 +416,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
   }
 
   if (!model.name || !model.durationWeeks || !model.days.length) {
-    return { model: null, error: "Add a PHASE row and at least one training day to preview this program." };
+    return { model: null, error: "Add a PROGRAM row and at least one training day to preview this program." };
   }
 
   for (const day of model.days) {
@@ -436,7 +436,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
 
 export function buildStarterProgramText(): string {
   return [
-    "PHASE,Starter strength phase,4",
+    "PROGRAM,Starter strength phase,4",
     "SLOT,Tuesday,Strength A,Lower focus and main lift",
     "BLOCK,A,15-20 mins,90-120s,3-4",
     "EXERCISE,A1,Back squat,2x8-10,Heavy,",
@@ -451,7 +451,7 @@ export function buildStarterProgramText(): string {
 }
 
 export function readProgramBasics(text: unknown, overrideName = ""): ProgramBasics {
-  const phaseColumns = findPhaseColumns(text);
+  const phaseColumns = findProgramColumns(text);
   return {
     name: overrideName.trim() || phaseColumns?.[1] || "",
     durationWeeks: phaseColumns?.[2] || "",
@@ -462,8 +462,8 @@ export function updateProgramBasics(text: unknown, basics: ProgramBasics): strin
   const lines = String(text || "").split("\n");
   const normalizedName = basics.name.trim();
   const normalizedDuration = basics.durationWeeks.trim();
-  const phaseRow = `PHASE,${normalizedName},${normalizedDuration}`;
-  const phaseIndex = lines.findIndex((line) => line.trim().split(",")[0]?.trim().toUpperCase() === "PHASE");
+  const phaseRow = `PROGRAM,${normalizedName},${normalizedDuration}`;
+  const phaseIndex = lines.findIndex((line) => line.trim().split(",")[0]?.trim().toUpperCase() === "PROGRAM");
 
   if (phaseIndex >= 0) {
     const nextLines = [...lines];
@@ -642,10 +642,10 @@ function isExerciseLine(line: string): boolean {
   return line.trim().split(",")[0]?.trim().toUpperCase() === "EXERCISE";
 }
 
-function findPhaseColumns(text: unknown): string[] | null {
+function findProgramColumns(text: unknown): string[] | null {
   const phaseLine = String(text || "")
     .split("\n")
     .map((line) => line.trim())
-    .find((line) => line.split(",")[0]?.trim().toUpperCase() === "PHASE");
+    .find((line) => line.split(",")[0]?.trim().toUpperCase() === "PROGRAM");
   return phaseLine ? phaseLine.split(",").map((column) => column.trim()) : null;
 }

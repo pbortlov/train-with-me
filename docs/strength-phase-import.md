@@ -32,7 +32,7 @@ the cursor in the program name field so editing can begin immediately.
 Copied templates are marked with a `Copied` badge, while recently edited
 templates keep the `Recently edited` badge.
 When the import text is incomplete, the preview shows row-specific hints for
-the missing `PHASE`, `SLOT`, `BLOCK`, or `EXERCISE` structure.
+the missing `PROGRAM`, `SLOT`, `BLOCK`, or `EXERCISE` structure.
 The preview also rejects any `BLOCK` that has no `EXERCISE` rows so empty
 blocks are caught before saving, and the inline preview renders the failure as
 an alert panel instead of a plain paragraph.
@@ -55,7 +55,7 @@ The builder now uses nested colored surfaces to separate training days, blocks,
 and exercises so the structure is readable at a glance.
 The add controls also use stronger palette accents so `Add day`, `Add block`,
 and `Add exercise` feel distinct at the level they affect.
-The program name and duration fields update the `PHASE` row for easier editing.
+The program name and duration fields update the `PROGRAM` row for easier editing.
 Training day fields update `SLOT` rows while preserving the block and exercise
 rows that belong to each day.
 Block fields update `BLOCK` rows while preserving the exercise rows that belong
@@ -64,23 +64,23 @@ Exercise fields update `EXERCISE` rows for code, name, reps, notes, and
 optional weight.
 
 The parser is order-based. It expects rows in a logical sequence:
-- `PHASE`
+- `PROGRAM`
 - `SLOT`
 - `BLOCK`
 - `EXERCISE`
 
 ## Row Types
-### PHASE
-Defines phase-level metadata.
+### PROGRAM
+Defines program-level metadata.
 
 ```text
-PHASE,<phase name>,<duration weeks>
+PROGRAM,<phase name>,<duration weeks>
 ```
 
 Example:
 
 ```text
-PHASE,Phase 1,5
+PROGRAM,Phase 1,5
 ```
 
 ### SLOT
@@ -142,7 +142,7 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 
 ## Example
 ```text
-PHASE,Phase 1,5
+PROGRAM,Phase 1,5
 SLOT,Tuesday,Strength A,Main lower-body day
 BLOCK,A,15-20 mins,90-120s,3-4
 EXERCISE,A1,Back squat,2x8-10,Heavy,100

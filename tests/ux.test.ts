@@ -70,6 +70,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain("Edit weekly training days, blocks, and exercises, or load the starter example. The import text stays synced for compatibility.");
     expect(index).toContain('id="phase-import-preview"');
     expect(index).toContain("Paste or import a program to preview its training days, blocks, and exercises.");
+    expect(index).toContain("PROGRAM,Phase 1,5");
   });
 
   it("styles the program import lead-in as a visible panel", () => {

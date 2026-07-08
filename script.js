@@ -4426,7 +4426,7 @@ function loadPhaseImportFile(event) {
 }
 
 function serializeStrengthPhaseDefinition(template) {
-  const rows = [`PHASE,${template.name},${template.durationWeeks}`];
+  const rows = [`PROGRAM,${template.name},${template.durationWeeks}`];
   template.weekdaySlots.forEach((slot) => {
     rows.push(`SLOT,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
     slot.blocks.forEach((block) => {
@@ -5334,11 +5334,11 @@ function parseStrengthPhaseDefinition(text, overrideName) {
   lines.forEach((line, index) => {
     const columns = line.split(",").map((column) => column.trim());
     const rowType = columns[0]?.toUpperCase();
-    if (rowType === "PHASE") {
+    if (rowType === "PROGRAM") {
       template.name = overrideName || columns[1] || template.name;
       template.durationWeeks = Number(columns[2]);
       if (!template.name || !Number.isFinite(template.durationWeeks)) {
-        throw new Error(`Invalid PHASE row at line ${index + 1}.`);
+        throw new Error(`Invalid PROGRAM row at line ${index + 1}.`);
       }
       return;
     }
@@ -5397,7 +5397,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
   });
 
   if (!template.name || !template.durationWeeks || !template.weekdaySlots.length) {
-    throw new Error("A phase import needs PHASE metadata and at least one SLOT.");
+    throw new Error("A program import needs PROGRAM metadata and at least one SLOT.");
   }
   if (currentBlock && !currentBlock.exercises.length) {
     throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
