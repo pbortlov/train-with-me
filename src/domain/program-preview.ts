@@ -146,19 +146,58 @@ export function buildProgramImportHints(error: unknown): string[] {
     return [];
   }
   if (message.includes("Paste or import a program")) {
-    return ["Start with a PHASE row, then add at least one SLOT row."];
+    return ["Start with a PROGRAM row, then add at least one TRAINING row."];
   }
-  if (message.includes("add a program name and duration")) {
-    return ["Use a PHASE row like `PHASE,Phase 1,5`."];
+  if (message.includes("PROGRAM row needs a program name")) {
+    return ["Add text after `PROGRAM,` for the program name."];
+  }
+  if (message.includes("PROGRAM row needs a duration in weeks")) {
+    return ["Add a positive whole-number week count like `PROGRAM,Phase 1,5`."];
+  }
+  if (message.includes("PROGRAM row duration must be a positive whole number")) {
+    return ["Use a positive whole number for weeks, like `PROGRAM,Phase 1,5`."];
+  }
+  if (message.includes("TRAINING row needs a weekday")) {
+    return ["Add a weekday after `TRAINING,` like `TRAINING,Tuesday,Strength A,Notes`."];
+  }
+  if (message.includes("TRAINING row weekday must be a real day")) {
+    return ["Use a real weekday like `Monday`, `Mon`, `Tuesday`, `Tue`, `Friday`, or `Sun`."];
+  }
+  if (message.includes("BLOCK row needs a label")) {
+    return ["Add text after `BLOCK,` for the block label, like `BLOCK,A,15-20 mins,90-120s,3-4`."];
+  }
+  if (message.includes("BLOCK row duration must look like")) {
+    return ["Use block duration like `15 min`, `15 mins`, or `15-20 mins`."];
+  }
+  if (message.includes("BLOCK row rest must look like")) {
+    return ["Use block rest like `30s`, `90 sec`, or `90-120s`."];
+  }
+  if (message.includes("BLOCK row needs a sets value")) {
+    return ["Add a sets value like `3` or `3-4` at the end of the `BLOCK` row."];
+  }
+  if (message.includes("BLOCK row sets must look like")) {
+    return ["Use sets like `3` or `3-4`."];
+  }
+  if (message.includes("EXERCISE row needs an exercise name")) {
+    return ["Add the exercise name after the code, like `EXERCISE,A1,Back squat,8-10`."];
+  }
+  if (message.includes("EXERCISE row needs reps")) {
+    return ["Add reps like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`."];
+  }
+  if (message.includes("EXERCISE row reps must look like")) {
+    return ["Use reps like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`."];
+  }
+  if (message.includes("EXERCISE row weight must be a positive number")) {
+    return ["Use weight like `60`, `62.5`, or `28.25`, or leave it blank."];
   }
   if (message.includes("add a training day before adding blocks")) {
-    return ["Add a `SLOT` row before any `BLOCK` rows."];
+    return ["Add a `TRAINING` row before any `BLOCK` rows."];
   }
   if (message.includes("add a block before adding exercises")) {
     return ["Add a `BLOCK` row before any `EXERCISE` rows."];
   }
   if (message.includes("must include at least one EXERCISE row")) {
-    return ["Add at least one `EXERCISE` row before starting the next `BLOCK` or `SLOT`."];
+    return ["Add at least one `EXERCISE` row before starting the next `BLOCK` or `TRAINING`."];
   }
   if (message.includes("Empty block detected")) {
     return [
@@ -167,10 +206,10 @@ export function buildProgramImportHints(error: unknown): string[] {
     ];
   }
   if (message.includes("not a supported row type")) {
-    return ["Use only `PHASE`, `SLOT`, `BLOCK`, and `EXERCISE` rows."];
+    return ["Use only `PROGRAM`, `TRAINING`, `BLOCK`, and `EXERCISE` rows."];
   }
-  if (message.includes("Add a PHASE row and at least one training day")) {
-    return ["Include a `PHASE` row and at least one `SLOT` row.", "A minimal example is `PHASE,Phase 1,5` then `SLOT,Tuesday,Strength A,Notes`."];
+  if (message.includes("Add a PROGRAM row and at least one training day")) {
+    return ["Include a `PROGRAM` row and at least one `TRAINING` row.", "A minimal example is `PROGRAM,Phase 1,5` then `TRAINING,Tuesday,Strength A,Notes`."];
   }
   return [];
 }
@@ -293,6 +332,28 @@ export interface ProgramBasics {
   durationWeeks: string;
 }
 
+export interface ProgramBasicsValidation {
+  nameError: string;
+  durationWeeksError: string;
+}
+
+export interface ProgramTrainingDayValidation {
+  weekdayError: string;
+}
+
+export interface ProgramBlockValidation {
+  labelError: string;
+  durationError: string;
+  restError: string;
+  setsError: string;
+}
+
+export interface ProgramExerciseValidation {
+  nameError: string;
+  repsError: string;
+  weightError: string;
+}
+
 export interface ProgramTrainingDay {
   weekday: string;
   title: string;
@@ -326,6 +387,189 @@ export interface ProgramDayExercises {
   blocks: ProgramBlockExercises[];
 }
 
+const PROGRAM_WEEKDAY_LABELS = {
+  monday: "Monday",
+  mon: "Monday",
+  tuesday: "Tuesday",
+  tue: "Tuesday",
+  tues: "Tuesday",
+  wednesday: "Wednesday",
+  wed: "Wednesday",
+  thursday: "Thursday",
+  thu: "Thursday",
+  thur: "Thursday",
+  friday: "Friday",
+  fri: "Friday",
+  saturday: "Saturday",
+  sat: "Saturday",
+  sunday: "Sunday",
+  sun: "Sunday",
+} as const;
+
+export function validateProgramBasics(basics: ProgramBasics): ProgramBasicsValidation {
+  const name = basics.name.trim();
+  const durationWeeks = basics.durationWeeks.trim();
+
+  if (!name) {
+    return {
+      nameError: "PROGRAM row needs a program name.",
+      durationWeeksError: "",
+    };
+  }
+
+  if (!durationWeeks) {
+    return {
+      nameError: "",
+      durationWeeksError: "PROGRAM row needs a duration in weeks.",
+    };
+  }
+
+  if (!/^[1-9]\d*$/.test(durationWeeks)) {
+    return {
+      nameError: "",
+      durationWeeksError: "PROGRAM row duration must be a positive whole number.",
+    };
+  }
+
+  return {
+    nameError: "",
+    durationWeeksError: "",
+  };
+}
+
+export function normalizeProgramWeekday(value: unknown): string {
+  const key = String(value || "").trim().toLowerCase();
+  return PROGRAM_WEEKDAY_LABELS[key as keyof typeof PROGRAM_WEEKDAY_LABELS] || "";
+}
+
+export function validateProgramTrainingDay(day: ProgramTrainingDay): ProgramTrainingDayValidation {
+  if (!String(day.weekday || "").trim()) {
+    return {
+      weekdayError: "TRAINING row needs a weekday.",
+    };
+  }
+
+  if (!normalizeProgramWeekday(day.weekday)) {
+    return {
+      weekdayError: "TRAINING row weekday must be a real day like Monday, Mon, Tuesday, Tue, Friday, or Sun.",
+    };
+  }
+
+  return {
+    weekdayError: "",
+  };
+}
+
+export function validateProgramBlock(block: ProgramBlockEditor): ProgramBlockValidation {
+  const label = String(block.label || "").trim();
+  const duration = String(block.duration || "").trim();
+  const rest = String(block.rest || "").trim();
+  const sets = String(block.sets || "").trim();
+
+  if (!label) {
+    return {
+      labelError: "BLOCK row needs a label.",
+      durationError: "",
+      restError: "",
+      setsError: "",
+    };
+  }
+
+  if (duration && !/^\d+(?:\s*-\s*\d+)?\s*mins?\.?$/i.test(duration)) {
+    return {
+      labelError: "",
+      durationError: "BLOCK row duration must look like `15 min`, `15 mins`, or `15-20 mins`.",
+      restError: "",
+      setsError: "",
+    };
+  }
+
+  if (rest && !/^\d+(?:\s*-\s*\d+)?\s*(?:s|sec|secs)\.?$/i.test(rest)) {
+    return {
+      labelError: "",
+      durationError: "",
+      restError: "BLOCK row rest must look like `30s`, `90 sec`, or `90-120s`.",
+      setsError: "",
+    };
+  }
+
+  if (!sets) {
+    return {
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "BLOCK row needs a sets value.",
+    };
+  }
+
+  if (!/^\d+(?:-\d+)?$/.test(sets.replace(/\s+/g, ""))) {
+    return {
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "BLOCK row sets must look like `3` or `3-4`.",
+    };
+  }
+
+  return {
+    labelError: "",
+    durationError: "",
+    restError: "",
+    setsError: "",
+  };
+}
+
+export function buildProgramExerciseCode(blockLabel: unknown, blockIndex: number, exerciseIndex: number): string {
+  const normalizedLabel = String(blockLabel || "").trim();
+  const letterMatch = normalizedLabel.match(/[A-Za-z]/);
+  const prefix = letterMatch?.[0]?.toUpperCase() || String.fromCharCode(65 + Math.min(blockIndex, 25));
+  return `${prefix}${exerciseIndex + 1}`;
+}
+
+export function validateProgramExercise(exercise: ProgramExerciseEditor): ProgramExerciseValidation {
+  const name = String(exercise.name || "").trim();
+  const reps = String(exercise.reps || "").trim();
+  const weight = String(exercise.weight || "").trim();
+
+  if (!name) {
+    return {
+      nameError: "EXERCISE row needs an exercise name.",
+      repsError: "",
+      weightError: "",
+    };
+  }
+
+  if (!reps) {
+    return {
+      nameError: "",
+      repsError: "EXERCISE row needs reps.",
+      weightError: "",
+    };
+  }
+
+  if (!/^(\d+|\d+-\d+|2x\d+|2x\d+-\d+|\d+s|\d+-\d+s)$/.test(reps)) {
+    return {
+      nameError: "",
+      repsError: "EXERCISE row reps must look like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.",
+      weightError: "",
+    };
+  }
+
+  if (weight && !/^(?:[1-9]\d*)(?:\.\d+)?$/.test(weight)) {
+    return {
+      nameError: "",
+      repsError: "",
+      weightError: "EXERCISE row weight must be a positive number like `60`, `62.5`, or `28.25`.",
+    };
+  }
+
+  return {
+    nameError: "",
+    repsError: "",
+    weightError: "",
+  };
+}
+
 export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPreviewResult {
   const lines = String(text || "")
     .split("\n")
@@ -353,26 +597,39 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
     const columns = lines[index].split(",").map((column) => column.trim());
     const rowType = columns[0]?.toUpperCase();
 
-    if (rowType === "PHASE") {
+    if (rowType === "PROGRAM") {
       model.name = overrideName.trim() || columns[1] || model.name;
       model.durationWeeks = columns[2] || "";
-      if (!model.name || !model.durationWeeks) {
-        return { model: null, error: `Line ${index + 1}: add a program name and duration.` };
+      const validation = validateProgramBasics({
+        name: model.name,
+        durationWeeks: model.durationWeeks,
+      });
+      if (validation.nameError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.nameError}` };
+      }
+      if (validation.durationWeeksError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.durationWeeksError}` };
       }
       continue;
     }
 
-    if (rowType === "SLOT") {
+    if (rowType === "TRAINING") {
       if (currentBlock && !currentBlock.exercises.length) {
         return { model: null, error: formatEmptyBlockError(currentDay, currentBlock) };
       }
-      if (!columns[1]) {
-        return { model: null, error: `Line ${index + 1}: add a weekday for this training day.` };
+      const day = {
+        weekday: columns[1] || "",
+        title: columns[2] || "",
+        notes: columns[3] || "",
+      };
+      const validation = validateProgramTrainingDay(day);
+      if (validation.weekdayError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.weekdayError}` };
       }
       currentDay = {
-        weekday: columns[1],
-        title: columns[2] || `Strength session ${model.days.length + 1}`,
-        notes: columns[3] || "",
+        weekday: normalizeProgramWeekday(day.weekday),
+        title: day.title.trim() || buildProgramTrainingTitle(model.days.length),
+        notes: day.notes || "",
         blocks: [],
       };
       model.days.push(currentDay);
@@ -387,11 +644,30 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
       if (currentBlock && !currentBlock.exercises.length) {
         return { model: null, error: formatEmptyBlockError(currentDay, currentBlock) };
       }
-      currentBlock = {
-        label: columns[1] || `Block ${currentDay.blocks.length + 1}`,
+      const block = {
+        label: columns[1] || "",
         duration: columns[2] || "",
         rest: columns[3] || "",
         sets: columns[4] || "",
+      };
+      const validation = validateProgramBlock(block);
+      if (validation.labelError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.labelError}` };
+      }
+      if (validation.durationError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.durationError}` };
+      }
+      if (validation.restError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.restError}` };
+      }
+      if (validation.setsError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.setsError}` };
+      }
+      currentBlock = {
+        label: block.label.trim(),
+        duration: block.duration.trim(),
+        rest: block.rest.trim(),
+        sets: block.sets.replace(/\s+/g, ""),
         exercises: [],
       };
       currentDay.blocks.push(currentBlock);
@@ -402,12 +678,29 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
       if (!currentBlock) {
         return { model: null, error: `Line ${index + 1}: add a block before adding exercises.` };
       }
-      currentBlock.exercises.push({
-        code: columns[1] || `E${currentBlock.exercises.length + 1}`,
-        name: columns[2] || "Exercise",
+      const exercise = {
+        code: columns[1] || "",
+        name: columns[2] || "",
         reps: columns[3] || "",
         notes: columns[4] || "",
         weight: columns[5] || "",
+      };
+      const validation = validateProgramExercise(exercise);
+      if (validation.nameError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.nameError}` };
+      }
+      if (validation.repsError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.repsError}` };
+      }
+      if (validation.weightError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.weightError}` };
+      }
+      currentBlock.exercises.push({
+        code: exercise.code.trim() || buildProgramExerciseCode(currentBlock.label, currentDay?.blocks.length ? currentDay.blocks.length - 1 : 0, currentBlock.exercises.length),
+        name: exercise.name.trim(),
+        reps: exercise.reps.trim(),
+        notes: exercise.notes || "",
+        weight: exercise.weight.trim(),
       });
       continue;
     }
@@ -416,7 +709,7 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
   }
 
   if (!model.name || !model.durationWeeks || !model.days.length) {
-    return { model: null, error: "Add a PHASE row and at least one training day to preview this program." };
+    return { model: null, error: "Add a PROGRAM row and at least one training day to preview this program." };
   }
 
   for (const day of model.days) {
@@ -436,22 +729,22 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
 
 export function buildStarterProgramText(): string {
   return [
-    "PHASE,Starter strength phase,4",
-    "SLOT,Tuesday,Strength A,Lower focus and main lift",
+    "PROGRAM,Starter strength phase,4",
+    "TRAINING,Tuesday,Strength A,Lower focus and main lift",
     "BLOCK,A,15-20 mins,90-120s,3-4",
     "EXERCISE,A1,Back squat,2x8-10,Heavy,",
     "EXERCISE,A2,Romanian deadlift,8-10,Controlled tempo,",
     "BLOCK,B,10-12 mins,60-90s,2-3",
-    "EXERCISE,B1,Bulgarian split squat,8 each leg,,Bodyweight",
-    "SLOT,Friday,Strength B,Upper focus and pull",
+    "EXERCISE,B1,Bulgarian split squat,8-10,Bodyweight,",
+    "TRAINING,Friday,Strength B,Upper focus and pull",
     "BLOCK,A,12-15 mins,60-90s,3",
-    "EXERCISE,A1,Bench press,3x5,Strong,",
+    "EXERCISE,A1,Bench press,5,Strong,",
     "EXERCISE,A2,Barbell row,8-10,,",
   ].join("\n");
 }
 
 export function readProgramBasics(text: unknown, overrideName = ""): ProgramBasics {
-  const phaseColumns = findPhaseColumns(text);
+  const phaseColumns = findProgramColumns(text);
   return {
     name: overrideName.trim() || phaseColumns?.[1] || "",
     durationWeeks: phaseColumns?.[2] || "",
@@ -462,8 +755,8 @@ export function updateProgramBasics(text: unknown, basics: ProgramBasics): strin
   const lines = String(text || "").split("\n");
   const normalizedName = basics.name.trim();
   const normalizedDuration = basics.durationWeeks.trim();
-  const phaseRow = `PHASE,${normalizedName},${normalizedDuration}`;
-  const phaseIndex = lines.findIndex((line) => line.trim().split(",")[0]?.trim().toUpperCase() === "PHASE");
+  const phaseRow = `PROGRAM,${normalizedName},${normalizedDuration}`;
+  const phaseIndex = lines.findIndex((line) => line.trim().split(",")[0]?.trim().toUpperCase() === "PROGRAM");
 
   if (phaseIndex >= 0) {
     const nextLines = [...lines];
@@ -478,12 +771,12 @@ export function readProgramTrainingDays(text: unknown): ProgramTrainingDay[] {
   return String(text || "")
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.split(",")[0]?.trim().toUpperCase() === "SLOT")
-    .map((line) => {
+    .filter((line) => line.split(",")[0]?.trim().toUpperCase() === "TRAINING")
+    .map((line, index) => {
       const columns = line.split(",").map((column) => column.trim());
       return {
-        weekday: columns[1] || "",
-        title: columns[2] || "",
+        weekday: normalizeProgramWeekday(columns[1]) || columns[1] || "",
+        title: columns[2] || buildProgramTrainingTitle(index),
         notes: columns[3] || "",
       };
     });
@@ -542,13 +835,14 @@ export function updateProgramDayBlocks(text: unknown, dayBlocks: ProgramDayBlock
 
 export function readProgramDayExercises(text: unknown): ProgramDayExercises[] {
   return splitSlotSegmentsFromText(text).map((daySegment) => ({
-    blocks: splitBlockSegments(daySegment.slice(1)).map((blockSegment) => ({
+    blocks: splitBlockSegments(daySegment.slice(1)).map((blockSegment, blockIndex) => ({
       exercises: blockSegment
         .filter(isExerciseLine)
-        .map((line) => {
+        .map((line, exerciseIndex) => {
           const columns = line.split(",").map((column) => column.trim());
+          const blockColumns = blockSegment[0]?.split(",").map((column) => column.trim()) || [];
           return {
-            code: columns[1] || "",
+            code: columns[1] || buildProgramExerciseCode(blockColumns[1], blockIndex, exerciseIndex),
             name: columns[2] || "",
             reps: columns[3] || "",
             notes: columns[4] || "",
@@ -574,7 +868,8 @@ export function updateProgramDayExercises(text: unknown, dayExercises: ProgramDa
     const nextBlocks = blockSegments.map((blockSegment, blockIndex) => {
       const blockRow = blockSegment[0];
       const nextExercises = dayExercises[dayIndex]?.blocks?.[blockIndex]?.exercises || [];
-      return [blockRow, ...nextExercises.map(formatExerciseRow)];
+      const blockColumns = blockRow.split(",").map((column) => column.trim());
+      return [blockRow, ...nextExercises.map((exercise, exerciseIndex) => formatExerciseRow(exercise, exerciseIndex, blockColumns[1], blockIndex))];
     });
     return [slotRow, ...nextBlocks.flat()];
   });
@@ -613,28 +908,31 @@ function splitBlockSegments(lines: string[]): string[][] {
 }
 
 function formatSlotRow(day: ProgramTrainingDay, index: number): string {
-  const weekday = day.weekday.trim();
-  const title = day.title.trim() || `Strength session ${index + 1}`;
+  const weekday = normalizeProgramWeekday(day.weekday) || day.weekday.trim();
+  const title = day.title.trim() || buildProgramTrainingTitle(index);
   const notes = day.notes.trim();
-  return `SLOT,${weekday},${title},${notes}`;
+  return `TRAINING,${weekday},${title},${notes}`;
+}
+
+function buildProgramTrainingTitle(index: number): string {
+  return `Training #${index + 1}`;
 }
 
 function isSlotLine(line: string): boolean {
-  return line.trim().split(",")[0]?.trim().toUpperCase() === "SLOT";
+  return line.trim().split(",")[0]?.trim().toUpperCase() === "TRAINING";
 }
 
 function formatBlockRow(block: ProgramBlockEditor, index: number): string {
-  const label = block.label.trim() || `Block ${index + 1}`;
-  return `BLOCK,${label},${block.duration.trim()},${block.rest.trim()},${block.sets.trim()}`;
+  return `BLOCK,${block.label.trim()},${block.duration.trim()},${block.rest.trim()},${block.sets.trim()}`;
 }
 
 function isBlockLine(line: string): boolean {
   return line.trim().split(",")[0]?.trim().toUpperCase() === "BLOCK";
 }
 
-function formatExerciseRow(exercise: ProgramExerciseEditor, index: number): string {
-  const code = exercise.code.trim() || `E${index + 1}`;
-  const name = exercise.name.trim() || "Exercise";
+function formatExerciseRow(exercise: ProgramExerciseEditor, index: number, blockLabel = "", blockIndex = 0): string {
+  const code = exercise.code.trim() || buildProgramExerciseCode(blockLabel, blockIndex, index);
+  const name = exercise.name.trim();
   return `EXERCISE,${code},${name},${exercise.reps.trim()},${exercise.notes.trim()},${exercise.weight.trim()}`;
 }
 
@@ -642,10 +940,10 @@ function isExerciseLine(line: string): boolean {
   return line.trim().split(",")[0]?.trim().toUpperCase() === "EXERCISE";
 }
 
-function findPhaseColumns(text: unknown): string[] | null {
+function findProgramColumns(text: unknown): string[] | null {
   const phaseLine = String(text || "")
     .split("\n")
     .map((line) => line.trim())
-    .find((line) => line.split(",")[0]?.trim().toUpperCase() === "PHASE");
+    .find((line) => line.split(",")[0]?.trim().toUpperCase() === "PROGRAM");
   return phaseLine ? phaseLine.split(",").map((column) => column.trim()) : null;
 }

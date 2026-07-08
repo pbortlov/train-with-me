@@ -70,6 +70,8 @@ describe("local-first UX guidance", () => {
     expect(index).toContain("Edit weekly training days, blocks, and exercises, or load the starter example. The import text stays synced for compatibility.");
     expect(index).toContain('id="phase-import-preview"');
     expect(index).toContain("Paste or import a program to preview its training days, blocks, and exercises.");
+    expect(index).toContain("PROGRAM,Phase 1,5");
+    expect(index).toContain("TRAINING,Tuesday,Strength A,Main lower-body day");
   });
 
   it("styles the program import lead-in as a visible panel", () => {
@@ -323,6 +325,15 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.program-import-metadata label');
   });
 
+  it("shows inline PROGRAM-row feedback on the metadata fields", () => {
+    expect(script).toContain("function syncProgramBasicsValidation");
+    expect(script).toContain("setFieldError(phaseNameOverrideInput, validation.nameError);");
+    expect(script).toContain("setFieldError(phaseDurationWeeksInput, validation.durationWeeksError);");
+    expect(previewDomain).toContain("PROGRAM row needs a program name.");
+    expect(previewDomain).toContain("PROGRAM row needs a duration in weeks.");
+    expect(previewDomain).toContain("PROGRAM row duration must be a positive whole number.");
+  });
+
   it("styles the phase import content textarea as its own panel", () => {
     expect(index).toContain('class="program-import-content"');
     expect(styles).toContain('.program-import-content');
@@ -400,6 +411,38 @@ describe("local-first UX guidance", () => {
   it("shows import hints when the builder text is incomplete", () => {
     expect(script).toContain('program-preview-hints');
     expect(script).toContain('Fix this import');
-    expect(previewDomain).toContain('Add a `SLOT` row before any `BLOCK` rows.');
+    expect(previewDomain).toContain('Add a `TRAINING` row before any `BLOCK` rows.');
+  });
+
+  it("generates Training # titles for blank TRAINING rows", () => {
+    expect(script).toContain('`Training #${template.weekdaySlots.length + 1}`');
+    expect(previewDomain).toContain("Training #");
+  });
+
+  it("shows inline BLOCK-row feedback in the builder", () => {
+    expect(script).toContain("function syncProgramBlockValidation()");
+    expect(script).toContain("setFieldError(labelInput, validation.labelError);");
+    expect(script).toContain("setFieldError(durationInput, validation.durationError);");
+    expect(script).toContain("setFieldError(restInput, validation.restError);");
+    expect(script).toContain("setFieldError(setsInput, validation.setsError);");
+    expect(previewDomain).toContain("BLOCK row needs a label.");
+    expect(previewDomain).toContain("BLOCK row duration must look like `15 min`, `15 mins`, or `15-20 mins`.");
+    expect(previewDomain).toContain("BLOCK row rest must look like `30s`, `90 sec`, or `90-120s`.");
+    expect(previewDomain).toContain("BLOCK row sets must look like `3` or `3-4`.");
+  });
+
+  it("keeps single block timing values from being reformatted into fake ranges", () => {
+    expect(script).toContain("isNumber(min) && isNumber(max) && max > 0");
+  });
+
+  it("shows inline EXERCISE-row feedback and generated codes in the builder", () => {
+    expect(script).toContain("function syncProgramExerciseValidation()");
+    expect(script).toContain("setFieldError(nameInput, validation.nameError);");
+    expect(script).toContain("setFieldError(repsInput, validation.repsError);");
+    expect(script).toContain("setFieldError(weightInput, validation.weightError);");
+    expect(script).toContain('blockExercises.push({ code: "", name: "", reps: "", notes: "", weight: "" });');
+    expect(previewDomain).toContain("EXERCISE row needs an exercise name.");
+    expect(previewDomain).toContain("EXERCISE row reps must look like `8`, `8-10`, `2x10`, `2x8-10`, `30s`, or `15-30s`.");
+    expect(previewDomain).toContain("EXERCISE row weight must be a positive number like `60`, `62.5`, or `28.25`.");
   });
 });

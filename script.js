@@ -32,6 +32,12 @@ import {
   updateProgramDayExercises,
   updateProgramBasics,
   updateProgramTrainingDays,
+  buildProgramExerciseCode,
+  validateProgramBasics,
+  validateProgramBlock,
+  validateProgramExercise,
+  normalizeProgramWeekday,
+  validateProgramTrainingDay,
 } from "./src/domain/program-preview";
 import {
   createProgramTemplateExportPayload,
@@ -4426,9 +4432,9 @@ function loadPhaseImportFile(event) {
 }
 
 function serializeStrengthPhaseDefinition(template) {
-  const rows = [`PHASE,${template.name},${template.durationWeeks}`];
+  const rows = [`PROGRAM,${template.name},${template.durationWeeks}`];
   template.weekdaySlots.forEach((slot) => {
-    rows.push(`SLOT,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
+    rows.push(`TRAINING,${weekdayName(slot.weekday)},${slot.title},${slot.notes || ""}`);
     slot.blocks.forEach((block) => {
       rows.push(
         `BLOCK,${block.label || ""},${formatBlockDurationCsvValue(block)},${formatBlockRestCsvValue(block)},${block.sets || ""}`,
@@ -4446,7 +4452,7 @@ function serializeStrengthPhaseDefinition(template) {
 function formatBlockDurationCsvValue(block) {
   const min = toNumberOrNull(block?.durationMin);
   const max = toNumberOrNull(block?.durationMax);
-  if (isNumber(min) && isNumber(max)) {
+  if (isNumber(min) && isNumber(max) && max > 0) {
     return `${formatNumber(min)}-${formatNumber(max)} mins`;
   }
   if (isNumber(min)) {
@@ -4461,7 +4467,7 @@ function formatBlockDurationCsvValue(block) {
 function formatBlockRestCsvValue(block) {
   const min = toNumberOrNull(block?.restSec);
   const max = toNumberOrNull(block?.restMaxSec);
-  if (isNumber(min) && isNumber(max)) {
+  if (isNumber(min) && isNumber(max) && max > 0) {
     return `${formatNumber(min)}-${formatNumber(max)}s`;
   }
   if (isNumber(min)) {
@@ -4485,6 +4491,8 @@ function resetPhaseImportForm() {
   if (phaseDurationWeeksInput) {
     phaseDurationWeeksInput.value = "";
   }
+  clearFieldError(phaseNameOverrideInput);
+  clearFieldError(phaseDurationWeeksInput);
   if (savePhaseButton) {
     savePhaseButton.textContent = "Import strength phase";
   }
@@ -4548,6 +4556,7 @@ function syncProgramBasicsFromText() {
   if (phaseDurationWeeksInput && phaseDurationWeeksInput.value !== basics.durationWeeks) {
     phaseDurationWeeksInput.value = basics.durationWeeks;
   }
+  syncProgramBasicsValidation(basics);
 }
 
 function syncProgramBasicsToText() {
@@ -4558,7 +4567,117 @@ function syncProgramBasicsToText() {
     name: phaseNameOverrideInput?.value || "",
     durationWeeks: phaseDurationWeeksInput?.value || "",
   });
+  syncProgramBasicsValidation();
   updatePhaseImportPreview();
+}
+
+function syncProgramBasicsValidation(basics = null) {
+  const hasProgramDraft = Boolean(
+    phaseImportTextInput?.value.trim()
+    || phaseNameOverrideInput?.value.trim()
+    || phaseDurationWeeksInput?.value.trim(),
+  );
+
+  if (!hasProgramDraft) {
+    clearFieldError(phaseNameOverrideInput);
+    clearFieldError(phaseDurationWeeksInput);
+    return;
+  }
+
+  const values = basics || readProgramBasics(phaseImportTextInput?.value || "", phaseNameOverrideInput?.value || "");
+  const validation = validateProgramBasics(values);
+
+  if (validation.nameError) {
+    setFieldError(phaseNameOverrideInput, validation.nameError);
+  } else {
+    clearFieldError(phaseNameOverrideInput);
+  }
+
+  if (validation.durationWeeksError) {
+    setFieldError(phaseDurationWeeksInput, validation.durationWeeksError);
+  } else {
+    clearFieldError(phaseDurationWeeksInput);
+  }
+}
+
+function syncProgramBlockValidation() {
+  if (!programDayListEl) {
+    return;
+  }
+
+  Array.from(programDayListEl.querySelectorAll(".program-block-row")).forEach((blockRow) => {
+    const labelInput = blockRow.querySelector('[data-role="program-block-label"]');
+    const durationInput = blockRow.querySelector('[data-role="program-block-duration"]');
+    const restInput = blockRow.querySelector('[data-role="program-block-rest"]');
+    const setsInput = blockRow.querySelector('[data-role="program-block-sets"]');
+    const validation = validateProgramBlock({
+      label: labelInput?.value || "",
+      duration: durationInput?.value || "",
+      rest: restInput?.value || "",
+      sets: setsInput?.value || "",
+    });
+
+    if (validation.labelError) {
+      setFieldError(labelInput, validation.labelError);
+    } else {
+      clearFieldError(labelInput);
+    }
+
+    if (validation.durationError) {
+      setFieldError(durationInput, validation.durationError);
+    } else {
+      clearFieldError(durationInput);
+    }
+
+    if (validation.restError) {
+      setFieldError(restInput, validation.restError);
+    } else {
+      clearFieldError(restInput);
+    }
+
+    if (validation.setsError) {
+      setFieldError(setsInput, validation.setsError);
+    } else {
+      clearFieldError(setsInput);
+    }
+  });
+}
+
+function syncProgramExerciseValidation() {
+  if (!programDayListEl) {
+    return;
+  }
+
+  Array.from(programDayListEl.querySelectorAll(".program-exercise-row")).forEach((exerciseRow) => {
+    const nameInput = exerciseRow.querySelector('[data-role="program-exercise-name"]');
+    const repsInput = exerciseRow.querySelector('[data-role="program-exercise-reps"]');
+    const weightInput = exerciseRow.querySelector('[data-role="program-exercise-weight"]');
+    const validation = validateProgramExercise({
+      code: exerciseRow.querySelector('[data-role="program-exercise-code"]')?.value || "",
+      name: nameInput?.value || "",
+      reps: repsInput?.value || "",
+      notes: exerciseRow.querySelector('[data-role="program-exercise-notes"]')?.value || "",
+      weight: weightInput?.value || "",
+    });
+
+    if (validation.nameError) {
+      setFieldError(nameInput, validation.nameError);
+    } else {
+      clearFieldError(nameInput);
+    }
+
+    if (validation.repsError) {
+      setFieldError(repsInput, validation.repsError);
+    } else {
+      clearFieldError(repsInput);
+    }
+
+    if (validation.weightError) {
+      setFieldError(weightInput, validation.weightError);
+    } else {
+      clearFieldError(weightInput);
+    }
+  });
 }
 
 function syncProgramTrainingDaysFromText() {
@@ -4760,7 +4879,7 @@ function handleProgramEditorAction(event) {
     const dayBlocks = collectProgramDayBlocksFromEditor();
     const dayExercises = collectProgramDayExercisesFromEditor();
     const blockExercises = dayExercises[dayIndex]?.blocks?.[blockIndex]?.exercises || [];
-    blockExercises.push({ code: `E${blockExercises.length + 1}`, name: "", reps: "", notes: "", weight: "" });
+    blockExercises.push({ code: "", name: "", reps: "", notes: "", weight: "" });
     const blocks = dayExercises[dayIndex]?.blocks || [];
     blocks[blockIndex] = { exercises: blockExercises };
     dayExercises[dayIndex] = { blocks };
@@ -4802,6 +4921,8 @@ function renderProgramDayEditor(days, dayBlocks = [], dayExercises = []) {
   programDayListEl.innerHTML = days
     .map((day, index) => renderProgramDayEditorRow(day, index, dayBlocks[index]?.blocks || [], dayExercises[index]?.blocks || []))
     .join("");
+  syncProgramBlockValidation();
+  syncProgramExerciseValidation();
   updateProgramBuilderSummary();
 }
 
@@ -4843,19 +4964,19 @@ function renderProgramBlockEditorRow(block, dayIndex, blockIndex, day, exercises
     <div class="program-block-row${isEmpty ? " is-empty-exercises" : ""}" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-day-label="${escapeHtml(dayLabel)}" data-block-label="${escapeHtml(block.label || `Block ${blockIndex + 1}`)}">
       <label>
         Label
-        <input type="text" data-role="program-block-label" value="${escapeHtml(block.label)}" placeholder="A" />
+        <input type="text" id="program-block-label-${dayIndex}-${blockIndex}" data-role="program-block-label" value="${escapeHtml(block.label)}" placeholder="A" />
       </label>
       <label>
         Duration
-        <input type="text" data-role="program-block-duration" value="${escapeHtml(block.duration)}" placeholder="15-20 mins" />
+        <input type="text" id="program-block-duration-${dayIndex}-${blockIndex}" data-role="program-block-duration" value="${escapeHtml(block.duration)}" placeholder="15-20 mins" />
       </label>
       <label>
         Rest
-        <input type="text" data-role="program-block-rest" value="${escapeHtml(block.rest)}" placeholder="90-120s" />
+        <input type="text" id="program-block-rest-${dayIndex}-${blockIndex}" data-role="program-block-rest" value="${escapeHtml(block.rest)}" placeholder="90-120s" />
       </label>
       <label>
         Sets
-        <input type="text" data-role="program-block-sets" value="${escapeHtml(block.sets)}" placeholder="3-4" />
+        <input type="text" id="program-block-sets-${dayIndex}-${blockIndex}" data-role="program-block-sets" value="${escapeHtml(block.sets)}" placeholder="3-4" />
       </label>
       <button type="button" class="ghost-button danger-button" data-role="remove-program-block" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Remove block</button>
       <div class="program-exercise-editor">
@@ -4876,23 +4997,23 @@ function renderProgramExerciseEditorRow(exercise, dayIndex, blockIndex, exercise
     <div class="program-exercise-row" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">
       <label>
         Code
-        <input type="text" data-role="program-exercise-code" value="${escapeHtml(exercise.code)}" placeholder="A1" />
+        <input type="text" id="program-exercise-code-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-code" value="${escapeHtml(exercise.code)}" placeholder="A1" />
       </label>
       <label>
         Exercise
-        <input type="text" data-role="program-exercise-name" value="${escapeHtml(exercise.name)}" placeholder="Back squat" />
+        <input type="text" id="program-exercise-name-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-name" value="${escapeHtml(exercise.name)}" placeholder="Back squat" />
       </label>
       <label>
         Reps
-        <input type="text" data-role="program-exercise-reps" value="${escapeHtml(exercise.reps)}" placeholder="2x8-10" />
+        <input type="text" id="program-exercise-reps-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-reps" value="${escapeHtml(exercise.reps)}" placeholder="2x8-10" />
       </label>
       <label>
         Notes
-        <input type="text" data-role="program-exercise-notes" value="${escapeHtml(exercise.notes)}" placeholder="Heavy" />
+        <input type="text" id="program-exercise-notes-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-notes" value="${escapeHtml(exercise.notes)}" placeholder="Heavy" />
       </label>
       <label>
         Weight
-        <input type="text" data-role="program-exercise-weight" value="${escapeHtml(exercise.weight)}" placeholder="100" />
+        <input type="text" id="program-exercise-weight-${dayIndex}-${blockIndex}-${exerciseIndex}" data-role="program-exercise-weight" value="${escapeHtml(exercise.weight)}" placeholder="100" />
       </label>
       <button type="button" class="ghost-button danger-button" data-role="remove-program-exercise" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-exercise-index="${exerciseIndex}">Remove exercise</button>
     </div>
@@ -4953,6 +5074,9 @@ function updatePhaseImportPreview() {
     updateProgramBuilderSummary();
     return;
   }
+  syncProgramBasicsValidation();
+  syncProgramBlockValidation();
+  syncProgramExerciseValidation();
   const result = buildProgramPreview(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
   if (result.error) {
     const hints = buildProgramImportHints(result.error);
@@ -5334,24 +5458,41 @@ function parseStrengthPhaseDefinition(text, overrideName) {
   lines.forEach((line, index) => {
     const columns = line.split(",").map((column) => column.trim());
     const rowType = columns[0]?.toUpperCase();
-    if (rowType === "PHASE") {
-      template.name = overrideName || columns[1] || template.name;
-      template.durationWeeks = Number(columns[2]);
-      if (!template.name || !Number.isFinite(template.durationWeeks)) {
-        throw new Error(`Invalid PHASE row at line ${index + 1}.`);
+    if (rowType === "PROGRAM") {
+      const basics = {
+        name: overrideName || columns[1] || template.name,
+        durationWeeks: columns[2] || "",
+      };
+      const validation = validateProgramBasics(basics);
+      if (validation.nameError) {
+        throw new Error(`Line ${index + 1}: ${validation.nameError}`);
       }
+      if (validation.durationWeeksError) {
+        throw new Error(`Line ${index + 1}: ${validation.durationWeeksError}`);
+      }
+      template.name = basics.name;
+      template.durationWeeks = Number(basics.durationWeeks);
       return;
     }
-    if (rowType === "SLOT") {
+    if (rowType === "TRAINING") {
       if (currentBlock && !currentBlock.exercises.length) {
         throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
       }
-      const weekday = parseWeekday(columns[1]);
+      const day = {
+        weekday: columns[1] || "",
+        title: columns[2] || "",
+        notes: columns[3] || "",
+      };
+      const validation = validateProgramTrainingDay(day);
+      if (validation.weekdayError) {
+        throw new Error(`Line ${index + 1}: ${validation.weekdayError}`);
+      }
+      const weekday = parseWeekday(day.weekday);
       currentSlot = {
         id: crypto.randomUUID(),
         weekday,
-        title: columns[2] || `Strength session ${template.weekdaySlots.length + 1}`,
-        notes: columns[3] || "",
+        title: day.title.trim() || `Training #${template.weekdaySlots.length + 1}`,
+        notes: day.notes || "",
         blocks: [],
       };
       template.weekdaySlots.push(currentSlot);
@@ -5360,20 +5501,39 @@ function parseStrengthPhaseDefinition(text, overrideName) {
     }
     if (rowType === "BLOCK") {
       if (!currentSlot) {
-        throw new Error(`BLOCK row before SLOT at line ${index + 1}.`);
+        throw new Error(`BLOCK row before TRAINING at line ${index + 1}.`);
       }
       if (currentBlock && !currentBlock.exercises.length) {
         throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
       }
-      const duration = parseBlockDurationRange(columns[2]);
-      const rest = parseBlockRestRange(columns[3]);
+      const block = {
+        label: columns[1] || "",
+        duration: columns[2] || "",
+        rest: columns[3] || "",
+        sets: columns[4] || "",
+      };
+      const validation = validateProgramBlock(block);
+      if (validation.labelError) {
+        throw new Error(`Line ${index + 1}: ${validation.labelError}`);
+      }
+      if (validation.durationError) {
+        throw new Error(`Line ${index + 1}: ${validation.durationError}`);
+      }
+      if (validation.restError) {
+        throw new Error(`Line ${index + 1}: ${validation.restError}`);
+      }
+      if (validation.setsError) {
+        throw new Error(`Line ${index + 1}: ${validation.setsError}`);
+      }
+      const duration = parseBlockDurationRange(block.duration);
+      const rest = parseBlockRestRange(block.rest);
       currentBlock = {
-        label: columns[1] || `Block ${currentSlot.blocks.length + 1}`,
+        label: block.label.trim(),
         durationMin: duration.durationMin,
         durationMax: duration.durationMax,
         restSec: rest.restSec,
         restMaxSec: rest.restMaxSec,
-        sets: normalizeSetPrescription(columns[4]),
+        sets: normalizeSetPrescription(block.sets),
         exercises: [],
       };
       currentBlockLine = index + 1;
@@ -5384,12 +5544,29 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       if (!currentBlock) {
         throw new Error(`EXERCISE row before BLOCK at line ${index + 1}.`);
       }
-      currentBlock.exercises.push({
-        code: columns[1] || `E${currentBlock.exercises.length + 1}`,
-        name: columns[2] || "Exercise",
+      const exercise = {
+        code: columns[1] || "",
+        name: columns[2] || "",
         reps: columns[3] || "",
         notes: columns[4] || "",
-        weight: toNumberOrNull(columns[5]),
+        weight: columns[5] || "",
+      };
+      const validation = validateProgramExercise(exercise);
+      if (validation.nameError) {
+        throw new Error(`Line ${index + 1}: ${validation.nameError}`);
+      }
+      if (validation.repsError) {
+        throw new Error(`Line ${index + 1}: ${validation.repsError}`);
+      }
+      if (validation.weightError) {
+        throw new Error(`Line ${index + 1}: ${validation.weightError}`);
+      }
+      currentBlock.exercises.push({
+        code: exercise.code.trim() || buildProgramExerciseCode(currentBlock.label, currentSlot.blocks.length - 1, currentBlock.exercises.length),
+        name: exercise.name.trim(),
+        reps: exercise.reps.trim(),
+        notes: exercise.notes || "",
+        weight: toNumberOrNull(exercise.weight),
       });
       return;
     }
@@ -5397,7 +5574,7 @@ function parseStrengthPhaseDefinition(text, overrideName) {
   });
 
   if (!template.name || !template.durationWeeks || !template.weekdaySlots.length) {
-    throw new Error("A phase import needs PHASE metadata and at least one SLOT.");
+    throw new Error("A program import needs PROGRAM metadata and at least one TRAINING.");
   }
   if (currentBlock && !currentBlock.exercises.length) {
     throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
@@ -5407,27 +5584,17 @@ function parseStrengthPhaseDefinition(text, overrideName) {
 
 function parseWeekday(value) {
   const weekdayMap = {
-    monday: 1,
-    mon: 1,
-    tuesday: 2,
-    tue: 2,
-    tues: 2,
-    wednesday: 3,
-    wed: 3,
-    thursday: 4,
-    thu: 4,
-    thur: 4,
-    friday: 5,
-    fri: 5,
-    saturday: 6,
-    sat: 6,
-    sunday: 7,
-    sun: 7,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+    Sunday: 7,
   };
-  const key = String(value || "").trim().toLowerCase();
-  const parsed = weekdayMap[key];
+  const parsed = weekdayMap[normalizeProgramWeekday(value)];
   if (!parsed) {
-    throw new Error(`Invalid weekday "${value}".`);
+    throw new Error(`TRAINING row weekday must be a real day like Monday, Mon, Tuesday, Tue, Friday, or Sun.`);
   }
   return parsed;
 }
@@ -7202,7 +7369,7 @@ function parseBlockDurationRange(value) {
 function formatBlockDuration(block) {
   const min = toNumberOrNull(block?.durationMin);
   const max = toNumberOrNull(block?.durationMax);
-  if (isNumber(min) && isNumber(max)) {
+  if (isNumber(min) && isNumber(max) && max > 0) {
     return `${formatNumber(min)}-${formatNumber(max)} mins`;
   }
   if (isNumber(min)) {
@@ -7239,7 +7406,7 @@ function parseBlockRestRange(value) {
 function formatBlockRest(block) {
   const min = toNumberOrNull(block?.restSec);
   const max = toNumberOrNull(block?.restMaxSec);
-  if (isNumber(min) && isNumber(max)) {
+  if (isNumber(min) && isNumber(max) && max > 0) {
     return `${formatNumber(min)}-${formatNumber(max)}s`;
   }
   if (isNumber(min)) {
