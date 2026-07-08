@@ -98,6 +98,33 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('border: 1px solid #ff708a55');
   });
 
+  it("renders save-time program import failures with the same alert styling", () => {
+    expect(script).toContain("function renderPhaseImportStatus(message, tone = \"info\")");
+    expect(script).toContain('renderPhaseImportStatus(error instanceof Error ? error.message : "Could not import phase.", "error");');
+    expect(styles).toContain('#phase-import-status.is-error');
+    expect(styles).toContain('linear-gradient(180deg, rgb(255 112 138 / 10%)');
+    expect(styles).toContain('#phase-import-status.is-error .phase-import-status-title');
+  });
+
+  it("adds a dedicated JSON export/import flow for saved program templates", () => {
+    expect(index).toContain('id="export-program-templates"');
+    expect(index).toContain('id="import-program-templates-file"');
+    expect(index).toContain('id="program-template-transfer-status"');
+    expect(index).toContain("Export or import reusable templates as a separate JSON file.");
+    expect(index).toContain("Export templates");
+    expect(index).toContain("Import template JSON");
+    expect(script).toContain("createProgramTemplateExportPayload");
+    expect(script).toContain("parseProgramTemplateExportPayload");
+    expect(script).toContain("program-template-transfer-status-title");
+    expect(script).toContain("Exported ");
+    expect(script).toContain("Imported ");
+    expect(script).toContain("function exportSingleProgramTemplate(template)");
+    expect(script).toContain('data-role="export-phase-template"');
+    expect(script).toContain('">Export</button>');
+    expect(styles).toContain(".program-template-transfer");
+    expect(styles).toContain("#program-template-transfer-status.is-error");
+  });
+
   it("gives the Program section cards a shared panel surface", () => {
     expect(styles).toContain('.view-panel[data-view="phases"] > .card');
     expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 4%)');
@@ -129,7 +156,7 @@ describe("local-first UX guidance", () => {
   });
 
   it("focuses the program name field when editing an existing template too", () => {
-    const editIndex = script.indexOf('phaseImportStatusEl.textContent = `Editing "');
+    const editIndex = script.indexOf('renderPhaseImportStatus(`Editing "');
     const focusIndex = script.indexOf("focusPhaseNameOverrideInput();");
 
     expect(editIndex).toBeGreaterThan(-1);

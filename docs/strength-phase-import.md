@@ -4,6 +4,11 @@
 V2 import supports `strength phases` only.
 
 Run and sprint sessions are planned manually in the calendar for now.
+Reusable program templates can also be exported to and imported from a dedicated
+JSON file from the Programs page. That flow stays separate from the full app
+backup export/import.
+Saved template cards also provide a one-template export action so a single
+reusable program can be shared without exporting the full template library.
 
 ## Import Shape
 One imported file should describe one reusable strength phase.
@@ -33,6 +38,8 @@ blocks are caught before saving, and the inline preview renders the failure as
 an alert panel instead of a plain paragraph.
 The block editor also highlights empty blocks directly with an inline warning
 so the missing exercise is visible before preview or save time.
+Save-time import failures now use the same red alert styling as the preview
+error so the feedback stays visually consistent.
 Saved template cards now lead with the phase duration, training-day count, block
 count, exercise count, and the first couple of scheduled days so the list is
 faster to scan.

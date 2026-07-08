@@ -334,6 +334,15 @@
         <article class="card">
           <h3>Saved program templates</h3>
           <p class="hint">Reusable templates you can duplicate, edit, or load into the builder.</p>
+          <p class="hint">Export or import reusable templates as a separate JSON file. This does not touch workouts, goals, planned sessions, or UI settings.</p>
+          <div class="program-template-transfer">
+            <button type="button" class="ghost-button" id="export-program-templates">Export templates</button>
+            <label>
+              Import template JSON
+              <input type="file" id="import-program-templates-file" accept=".json,application/json" />
+            </label>
+          </div>
+          <p id="program-template-transfer-status" class="hint"></p>
           <label class="phase-template-filter">
             Filter saved templates
             <input

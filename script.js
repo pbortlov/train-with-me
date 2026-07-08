@@ -33,6 +33,12 @@ import {
   updateProgramBasics,
   updateProgramTrainingDays,
 } from "./src/domain/program-preview";
+import {
+  createProgramTemplateExportPayload,
+  mergeProgramTemplates,
+  normalizeProgramTemplate,
+  parseProgramTemplateExportPayload,
+} from "./src/domain/program-template-export";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
@@ -214,6 +220,9 @@ const programBuilderSummaryEl = document.getElementById("program-builder-summary
 const savePhaseButton = document.getElementById("save-phase-button");
 const cancelPhaseEditButton = document.getElementById("cancel-phase-edit");
 const phaseImportStatusEl = document.getElementById("phase-import-status");
+const exportProgramTemplatesButton = document.getElementById("export-program-templates");
+const importProgramTemplatesFileInput = document.getElementById("import-program-templates-file");
+const programTemplateTransferStatusEl = document.getElementById("program-template-transfer-status");
 const phaseTemplateListEl = document.getElementById("phase-template-list");
 const phaseInstanceListEl = document.getElementById("phase-instance-list");
 const reviewSummaryEl = document.getElementById("review-summary");
@@ -487,6 +496,8 @@ programExerciseSortInput?.addEventListener("change", () => {
   programExerciseSortMode = programExerciseSortInput.value || "program-order";
   renderProgramProgress();
 });
+addSafeEventListener(exportProgramTemplatesButton, "click", exportProgramTemplates);
+addSafeEventListener(importProgramTemplatesFileInput, "change", importProgramTemplatesData);
 exportDataButton.addEventListener("click", exportBackupData);
 importDataFileInput.addEventListener("change", importBackupData);
 confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
@@ -2641,6 +2652,16 @@ function toggleChartCardVisibility(card, isVisible) {
   card.classList.toggle("is-hidden", !isVisible);
 }
 
+function downloadJsonFile(filename, payload) {
+  const fileBlob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const downloadUrl = URL.createObjectURL(fileBlob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(downloadUrl);
+}
+
 function exportBackupData() {
   const backupPayload = createBackupPayload({
     workouts,
@@ -2651,14 +2672,81 @@ function exportBackupData() {
     uiSettings,
   });
 
-  const fileBlob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: "application/json" });
-  const downloadUrl = URL.createObjectURL(fileBlob);
-  const link = document.createElement("a");
-  link.href = downloadUrl;
-  link.download = `train-with-me-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(downloadUrl);
+  downloadJsonFile(`train-with-me-backup-${new Date().toISOString().slice(0, 10)}.json`, backupPayload);
   backupStatusEl.textContent = "Backup exported successfully.";
+}
+
+function renderProgramTemplateTransferStatus(message, tone = "info") {
+  if (!programTemplateTransferStatusEl) {
+    return;
+  }
+
+  programTemplateTransferStatusEl.classList.toggle("is-error", tone === "error");
+  programTemplateTransferStatusEl.setAttribute("aria-live", tone === "error" ? "assertive" : "polite");
+  programTemplateTransferStatusEl.setAttribute("role", tone === "error" ? "alert" : "status");
+
+  if (tone === "error") {
+    programTemplateTransferStatusEl.innerHTML = `
+      <strong class="program-template-transfer-status-title">Program template import error</strong>
+      <span>${escapeHtml(message)}</span>
+    `;
+    return;
+  }
+
+  programTemplateTransferStatusEl.textContent = message;
+}
+
+function exportProgramTemplates() {
+  const payload = createProgramTemplateExportPayload(phaseTemplates);
+  downloadJsonFile(`train-with-me-program-templates-${new Date().toISOString().slice(0, 10)}.json`, payload);
+  renderProgramTemplateTransferStatus(`Exported ${phaseTemplates.length} saved template${phaseTemplates.length === 1 ? "" : "s"} to JSON.`);
+}
+
+function buildProgramTemplateExportFilename(templateName) {
+  const normalizedName = String(templateName || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const safeName = normalizedName || "program-template";
+  return `train-with-me-program-template-${safeName}-${new Date().toISOString().slice(0, 10)}.json`;
+}
+
+function exportSingleProgramTemplate(template) {
+  const payload = createProgramTemplateExportPayload([template]);
+  downloadJsonFile(buildProgramTemplateExportFilename(template?.name), payload);
+  renderProgramTemplateTransferStatus(`Exported "${template?.name || "Program template"}" for sharing.`);
+}
+
+function importProgramTemplatesData(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const importedTemplates = parseProgramTemplateExportPayload(JSON.parse(String(reader.result || "{}")));
+      phaseTemplates = mergeProgramTemplates(phaseTemplates, importedTemplates).map((template) =>
+        normalizeProgramTemplate(template),
+      );
+      save(STORAGE_KEY_PHASE_TEMPLATES, phaseTemplates);
+      render();
+      renderProgramTemplateTransferStatus(
+        `Imported ${importedTemplates.length} template${importedTemplates.length === 1 ? "" : "s"} successfully.`,
+      );
+    } catch (error) {
+      renderProgramTemplateTransferStatus(
+        error instanceof Error ? error.message : "Could not import program templates.",
+        "error",
+      );
+    } finally {
+      importProgramTemplatesFileInput.value = "";
+    }
+  };
+
+  reader.readAsText(file);
 }
 
 function importBackupData(event) {
@@ -4403,12 +4491,32 @@ function resetPhaseImportForm() {
   cancelPhaseEditButton?.classList.add("is-hidden");
   if (phaseImportStatusEl) {
     phaseImportStatusEl.textContent = "";
+    phaseImportStatusEl.classList.remove("is-error");
+    phaseImportStatusEl.removeAttribute("aria-live");
+    phaseImportStatusEl.removeAttribute("role");
   }
   syncPhaseImportMode();
   syncPhaseImportDisclosure();
   syncProgramBasicsFromText();
   syncProgramTrainingDaysFromText();
   updatePhaseImportPreview();
+}
+
+function renderPhaseImportStatus(message, tone = "info") {
+  if (!phaseImportStatusEl) {
+    return;
+  }
+  phaseImportStatusEl.classList.toggle("is-error", tone === "error");
+  phaseImportStatusEl.setAttribute("aria-live", tone === "error" ? "assertive" : "polite");
+  phaseImportStatusEl.setAttribute("role", tone === "error" ? "alert" : "status");
+  if (tone === "error") {
+    phaseImportStatusEl.innerHTML = `
+      <strong class="phase-import-status-title">Program import error</strong>
+      <span>${escapeHtml(message)}</span>
+    `;
+    return;
+  }
+  phaseImportStatusEl.textContent = message;
 }
 
 function syncPhaseImportMode() {
@@ -4555,9 +4663,7 @@ function loadProgramStarterExample() {
   if (phaseImportDetails) {
     phaseImportDetails.open = true;
   }
-  if (phaseImportStatusEl) {
-    phaseImportStatusEl.textContent = "Loaded a starter program example you can edit.";
-  }
+  renderPhaseImportStatus("Loaded a starter program example you can edit.");
 }
 
 async function copyProgramImportText() {
@@ -4574,16 +4680,12 @@ async function copyProgramImportText() {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
-      if (phaseImportStatusEl) {
-        phaseImportStatusEl.textContent = "Program import text copied to clipboard.";
-      }
+      renderPhaseImportStatus("Program import text copied to clipboard.");
       return;
     }
     throw new Error("Clipboard access is not available.");
   } catch (error) {
-    if (phaseImportStatusEl) {
-      phaseImportStatusEl.textContent = error instanceof Error ? error.message : "Could not copy program text.";
-    }
+    renderPhaseImportStatus(error instanceof Error ? error.message : "Could not copy program text.", "error");
   }
 }
 
@@ -4592,9 +4694,7 @@ function resetProgramBuilder() {
   if (phaseImportDetails) {
     phaseImportDetails.open = true;
   }
-  if (phaseImportStatusEl) {
-    phaseImportStatusEl.textContent = "Builder reset to a blank program.";
-  }
+  renderPhaseImportStatus("Builder reset to a blank program.");
 }
 
 function handleProgramEditorAction(event) {
@@ -4978,7 +5078,7 @@ function startPhaseTemplateEdit(templateId) {
   cancelPhaseEditButton?.classList.remove("is-hidden");
   syncPhaseImportMode();
   syncPhaseImportDisclosure();
-  phaseImportStatusEl.textContent = `Editing "${template.name}". Saving will refresh already planned generated sessions from this template.`;
+  renderPhaseImportStatus(`Editing "${template.name}". Saving will refresh already planned generated sessions from this template.`);
   phaseImportDetails?.scrollIntoView({ behavior: "smooth", block: "start" });
   focusPhaseNameOverrideInput();
 }
@@ -5001,9 +5101,7 @@ function startPhaseTemplateDuplicate(templateId) {
   if (phaseEditIdInput) {
     phaseEditIdInput.value = "";
   }
-  if (phaseImportStatusEl) {
-    phaseImportStatusEl.textContent = `Loaded a copy of "${template.name}" as a new draft.`;
-  }
+  renderPhaseImportStatus(`Loaded a copy of "${template.name}" as a new draft.`);
   if (phaseImportDetails) {
     phaseImportDetails.open = true;
     phaseImportDetails.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -5191,9 +5289,11 @@ function importStrengthPhase(event) {
       const refreshedInstances = regenerateScheduledPhaseInstances(normalized);
       savePlannerCollections();
       resetPhaseImportForm();
-      phaseImportStatusEl.textContent = refreshedInstances
-        ? `Updated "${normalized.name}" and refreshed ${refreshedInstances} scheduled phase ${refreshedInstances === 1 ? "instance" : "instances"}.`
-        : `Updated "${normalized.name}".`;
+      renderPhaseImportStatus(
+        refreshedInstances
+          ? `Updated "${normalized.name}" and refreshed ${refreshedInstances} scheduled phase ${refreshedInstances === 1 ? "instance" : "instances"}.`
+          : `Updated "${normalized.name}".`,
+      );
     } else {
       phaseTemplates.unshift(normalizePhaseTemplate({
         ...imported,
@@ -5202,11 +5302,11 @@ function importStrengthPhase(event) {
       }));
       savePlannerCollections();
       resetPhaseImportForm();
-      phaseImportStatusEl.textContent = `Imported phase template "${imported.name}".`;
+      renderPhaseImportStatus(`Imported phase template "${imported.name}".`);
     }
     render();
   } catch (error) {
-    phaseImportStatusEl.textContent = error instanceof Error ? error.message : "Could not import phase.";
+    renderPhaseImportStatus(error instanceof Error ? error.message : "Could not import phase.", "error");
   }
 }
 
@@ -5374,6 +5474,7 @@ function renderPhaseTemplates() {
             <div class="phase-actions">
               <button type="button" class="ghost-button" data-role="edit-phase-template" data-id="${template.id}">Edit</button>
               <button type="button" class="ghost-button" data-role="duplicate-phase-template" data-id="${template.id}">Load copy</button>
+              <button type="button" class="ghost-button" data-role="export-phase-template" data-id="${template.id}">Export</button>
               <button type="button" class="ghost-button" data-role="schedule-phase" data-id="${template.id}">Schedule phase</button>
               <button type="button" class="ghost-button danger-button" data-role="delete-phase-template" data-id="${template.id}">Delete</button>
             </div>
@@ -5445,9 +5546,7 @@ function isRecentlyEditedTemplate(template) {
 
 function loadSelectedProgramTemplate() {
   if (!programTemplatePicker || !programTemplatePicker.value) {
-    if (phaseImportStatusEl) {
-      phaseImportStatusEl.textContent = "Select a saved template to load.";
-    }
+    renderPhaseImportStatus("Select a saved template to load.");
     return;
   }
   startPhaseTemplateEdit(programTemplatePicker.value);
@@ -5504,6 +5603,15 @@ function handlePhaseTemplateAction(event) {
 
   if (role === "duplicate-phase-template") {
     startPhaseTemplateDuplicate(id);
+    return;
+  }
+
+  if (role === "export-phase-template") {
+    const template = phaseTemplates.find((item) => item.id === id);
+    if (!template) {
+      return;
+    }
+    exportSingleProgramTemplate(template);
     return;
   }
 
@@ -7225,27 +7333,7 @@ function normalizePlannedDetails(type, details) {
 }
 
 function normalizePhaseTemplate(template) {
-  return {
-    id: template.id || crypto.randomUUID(),
-    name: template.name || "Strength phase",
-    durationWeeks: toNumberOrNull(template.durationWeeks) || 1,
-    weekdaySlots: Array.isArray(template.weekdaySlots)
-      ? template.weekdaySlots.map((slot) => ({
-          id: slot.id || crypto.randomUUID(),
-          weekday: toNumberOrNull(slot.weekday) || 1,
-          title: slot.title || "Strength session",
-          notes: typeof slot.notes === "string" ? slot.notes : "",
-          blocks: normalizePlannedDetails("strength", { blocks: slot.blocks }).blocks,
-        }))
-      : [],
-    importedAt: isNumber(template.importedAt) ? template.importedAt : Date.now(),
-    updatedAt: isNumber(template.updatedAt)
-      ? template.updatedAt
-      : isNumber(template.importedAt)
-        ? template.importedAt
-        : Date.now(),
-    copiedFromTemplateId: typeof template.copiedFromTemplateId === "string" ? template.copiedFromTemplateId : "",
-  };
+  return normalizeProgramTemplate(template);
 }
 
 function normalizePhaseInstance(instance) {
