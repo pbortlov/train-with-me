@@ -163,6 +163,21 @@ export function buildProgramImportHints(error: unknown): string[] {
   if (message.includes("TRAINING row weekday must be a real day")) {
     return ["Use a real weekday like `Monday`, `Mon`, `Tuesday`, `Tue`, `Friday`, or `Sun`."];
   }
+  if (message.includes("BLOCK row needs a label")) {
+    return ["Add text after `BLOCK,` for the block label, like `BLOCK,A,15-20 mins,90-120s,3-4`."];
+  }
+  if (message.includes("BLOCK row duration must look like")) {
+    return ["Use block duration like `15 min`, `15 mins`, or `15-20 mins`."];
+  }
+  if (message.includes("BLOCK row rest must look like")) {
+    return ["Use block rest like `30s`, `90 sec`, or `90-120s`."];
+  }
+  if (message.includes("BLOCK row needs a sets value")) {
+    return ["Add a sets value like `3` or `3-4` at the end of the `BLOCK` row."];
+  }
+  if (message.includes("BLOCK row sets must look like")) {
+    return ["Use sets like `3` or `3-4`."];
+  }
   if (message.includes("add a training day before adding blocks")) {
     return ["Add a `TRAINING` row before any `BLOCK` rows."];
   }
@@ -314,6 +329,13 @@ export interface ProgramTrainingDayValidation {
   weekdayError: string;
 }
 
+export interface ProgramBlockValidation {
+  labelError: string;
+  durationError: string;
+  restError: string;
+  setsError: string;
+}
+
 export interface ProgramTrainingDay {
   weekday: string;
   title: string;
@@ -420,6 +442,65 @@ export function validateProgramTrainingDay(day: ProgramTrainingDay): ProgramTrai
   };
 }
 
+export function validateProgramBlock(block: ProgramBlockEditor): ProgramBlockValidation {
+  const label = String(block.label || "").trim();
+  const duration = String(block.duration || "").trim();
+  const rest = String(block.rest || "").trim();
+  const sets = String(block.sets || "").trim();
+
+  if (!label) {
+    return {
+      labelError: "BLOCK row needs a label.",
+      durationError: "",
+      restError: "",
+      setsError: "",
+    };
+  }
+
+  if (duration && !/^\d+(?:\s*-\s*\d+)?\s*mins?\.?$/i.test(duration)) {
+    return {
+      labelError: "",
+      durationError: "BLOCK row duration must look like `15 min`, `15 mins`, or `15-20 mins`.",
+      restError: "",
+      setsError: "",
+    };
+  }
+
+  if (rest && !/^\d+(?:\s*-\s*\d+)?\s*(?:s|sec|secs)\.?$/i.test(rest)) {
+    return {
+      labelError: "",
+      durationError: "",
+      restError: "BLOCK row rest must look like `30s`, `90 sec`, or `90-120s`.",
+      setsError: "",
+    };
+  }
+
+  if (!sets) {
+    return {
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "BLOCK row needs a sets value.",
+    };
+  }
+
+  if (!/^\d+(?:-\d+)?$/.test(sets.replace(/\s+/g, ""))) {
+    return {
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "BLOCK row sets must look like `3` or `3-4`.",
+    };
+  }
+
+  return {
+    labelError: "",
+    durationError: "",
+    restError: "",
+    setsError: "",
+  };
+}
+
 export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPreviewResult {
   const lines = String(text || "")
     .split("\n")
@@ -494,11 +575,30 @@ export function buildProgramPreview(text: unknown, overrideName = ""): ProgramPr
       if (currentBlock && !currentBlock.exercises.length) {
         return { model: null, error: formatEmptyBlockError(currentDay, currentBlock) };
       }
-      currentBlock = {
-        label: columns[1] || `Block ${currentDay.blocks.length + 1}`,
+      const block = {
+        label: columns[1] || "",
         duration: columns[2] || "",
         rest: columns[3] || "",
         sets: columns[4] || "",
+      };
+      const validation = validateProgramBlock(block);
+      if (validation.labelError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.labelError}` };
+      }
+      if (validation.durationError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.durationError}` };
+      }
+      if (validation.restError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.restError}` };
+      }
+      if (validation.setsError) {
+        return { model: null, error: `Line ${index + 1}: ${validation.setsError}` };
+      }
+      currentBlock = {
+        label: block.label.trim(),
+        duration: block.duration.trim(),
+        rest: block.rest.trim(),
+        sets: block.sets.replace(/\s+/g, ""),
         exercises: [],
       };
       currentDay.blocks.push(currentBlock);
@@ -735,8 +835,7 @@ function isSlotLine(line: string): boolean {
 }
 
 function formatBlockRow(block: ProgramBlockEditor, index: number): string {
-  const label = block.label.trim() || `Block ${index + 1}`;
-  return `BLOCK,${label},${block.duration.trim()},${block.rest.trim()},${block.sets.trim()}`;
+  return `BLOCK,${block.label.trim()},${block.duration.trim()},${block.rest.trim()},${block.sets.trim()}`;
 }
 
 function isBlockLine(line: string): boolean {

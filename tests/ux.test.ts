@@ -418,4 +418,20 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('`Training #${template.weekdaySlots.length + 1}`');
     expect(previewDomain).toContain("Training #");
   });
+
+  it("shows inline BLOCK-row feedback in the builder", () => {
+    expect(script).toContain("function syncProgramBlockValidation()");
+    expect(script).toContain("setFieldError(labelInput, validation.labelError);");
+    expect(script).toContain("setFieldError(durationInput, validation.durationError);");
+    expect(script).toContain("setFieldError(restInput, validation.restError);");
+    expect(script).toContain("setFieldError(setsInput, validation.setsError);");
+    expect(previewDomain).toContain("BLOCK row needs a label.");
+    expect(previewDomain).toContain("BLOCK row duration must look like `15 min`, `15 mins`, or `15-20 mins`.");
+    expect(previewDomain).toContain("BLOCK row rest must look like `30s`, `90 sec`, or `90-120s`.");
+    expect(previewDomain).toContain("BLOCK row sets must look like `3` or `3-4`.");
+  });
+
+  it("keeps single block timing values from being reformatted into fake ranges", () => {
+    expect(script).toContain("isNumber(min) && isNumber(max) && max > 0");
+  });
 });

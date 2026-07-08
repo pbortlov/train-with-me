@@ -20,6 +20,7 @@ import {
   updateProgramDayExercises,
   updateProgramTrainingDays,
   validateProgramBasics,
+  validateProgramBlock,
   validateProgramTrainingDay,
 } from "../src/domain/program-preview";
 
@@ -167,6 +168,21 @@ describe("program import preview", () => {
     ]);
     expect(buildProgramImportHints("Line 1: PROGRAM row duration must be a positive whole number.")).toEqual([
       "Use a positive whole number for weeks, like `PROGRAM,Phase 1,5`.",
+    ]);
+    expect(buildProgramImportHints("Line 3: BLOCK row needs a label.")).toEqual([
+      "Add text after `BLOCK,` for the block label, like `BLOCK,A,15-20 mins,90-120s,3-4`.",
+    ]);
+    expect(buildProgramImportHints("Line 3: BLOCK row duration must look like `15 min`, `15 mins`, or `15-20 mins`.")).toEqual([
+      "Use block duration like `15 min`, `15 mins`, or `15-20 mins`.",
+    ]);
+    expect(buildProgramImportHints("Line 3: BLOCK row rest must look like `30s`, `90 sec`, or `90-120s`.")).toEqual([
+      "Use block rest like `30s`, `90 sec`, or `90-120s`.",
+    ]);
+    expect(buildProgramImportHints("Line 3: BLOCK row needs a sets value.")).toEqual([
+      "Add a sets value like `3` or `3-4` at the end of the `BLOCK` row.",
+    ]);
+    expect(buildProgramImportHints("Line 3: BLOCK row sets must look like `3` or `3-4`.")).toEqual([
+      "Use sets like `3` or `3-4`.",
     ]);
     expect(buildProgramImportHints("Add a PROGRAM row and at least one training day to preview this program.")).toEqual([
       "Include a `PROGRAM` row and at least one `TRAINING` row.",
@@ -400,6 +416,21 @@ describe("program import preview", () => {
     expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Funday,Strength A,Main lower-body day").error).toBe(
       "Line 2: TRAINING row weekday must be a real day like Monday, Mon, Tuesday, Tue, Friday, or Sun.",
     );
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,,15 mins,30s,3").error).toBe(
+      "Line 3: BLOCK row needs a label.",
+    );
+    expect(
+      buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 min,30s,3\nEXERCISE,A1,Squat,10").error,
+    ).toBe("");
+    expect(
+      buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,90 sec,3\nEXERCISE,A1,Squat,10").error,
+    ).toBe("");
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,30s,").error).toBe(
+      "Line 3: BLOCK row needs a sets value.",
+    );
+    expect(buildProgramPreview("PROGRAM,Phase 1,5\nTRAINING,Tuesday,Strength A,Notes\nBLOCK,A,15 mins,30s,2x3").error).toBe(
+      "Line 3: BLOCK row sets must look like `3` or `3-4`.",
+    );
     expect(buildProgramPreview("PROGRAM,Phase 1,5\nEXERCISE,A1,Squat,10").error).toBe(
       "Line 2: add a block before adding exercises.",
     );
@@ -441,6 +472,57 @@ describe("program import preview", () => {
     });
     expect(validateProgramTrainingDay({ weekday: "Fri", title: "", notes: "" })).toEqual({
       weekdayError: "",
+    });
+  });
+
+  it("validates BLOCK rows for label duration rest and sets", () => {
+    expect(validateProgramBlock({ label: "", duration: "15 mins", rest: "30s", sets: "3" })).toEqual({
+      labelError: "BLOCK row needs a label.",
+      durationError: "",
+      restError: "",
+      setsError: "",
+    });
+    expect(validateProgramBlock({ label: "A", duration: "15 min", rest: "30s", sets: "3" })).toEqual({
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "",
+    });
+    expect(validateProgramBlock({ label: "A", duration: "15 mins", rest: "90 sec", sets: "3" })).toEqual({
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "",
+    });
+    expect(validateProgramBlock({ label: "A", duration: "fifteen", rest: "30s", sets: "3" })).toEqual({
+      labelError: "",
+      durationError: "BLOCK row duration must look like `15 min`, `15 mins`, or `15-20 mins`.",
+      restError: "",
+      setsError: "",
+    });
+    expect(validateProgramBlock({ label: "A", duration: "15 mins", rest: "ninety", sets: "3" })).toEqual({
+      labelError: "",
+      durationError: "",
+      restError: "BLOCK row rest must look like `30s`, `90 sec`, or `90-120s`.",
+      setsError: "",
+    });
+    expect(validateProgramBlock({ label: "A", duration: "15 mins", rest: "30s", sets: "" })).toEqual({
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "BLOCK row needs a sets value.",
+    });
+    expect(validateProgramBlock({ label: "A", duration: "15 mins", rest: "30s", sets: "2x3" })).toEqual({
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "BLOCK row sets must look like `3` or `3-4`.",
+    });
+    expect(validateProgramBlock({ label: "A", duration: "15-20 mins", rest: "90-120s", sets: "3-4" })).toEqual({
+      labelError: "",
+      durationError: "",
+      restError: "",
+      setsError: "",
     });
   });
 });

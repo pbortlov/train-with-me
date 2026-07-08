@@ -33,6 +33,7 @@ import {
   updateProgramBasics,
   updateProgramTrainingDays,
   validateProgramBasics,
+  validateProgramBlock,
   normalizeProgramWeekday,
   validateProgramTrainingDay,
 } from "./src/domain/program-preview";
@@ -4449,7 +4450,7 @@ function serializeStrengthPhaseDefinition(template) {
 function formatBlockDurationCsvValue(block) {
   const min = toNumberOrNull(block?.durationMin);
   const max = toNumberOrNull(block?.durationMax);
-  if (isNumber(min) && isNumber(max)) {
+  if (isNumber(min) && isNumber(max) && max > 0) {
     return `${formatNumber(min)}-${formatNumber(max)} mins`;
   }
   if (isNumber(min)) {
@@ -4464,7 +4465,7 @@ function formatBlockDurationCsvValue(block) {
 function formatBlockRestCsvValue(block) {
   const min = toNumberOrNull(block?.restSec);
   const max = toNumberOrNull(block?.restMaxSec);
-  if (isNumber(min) && isNumber(max)) {
+  if (isNumber(min) && isNumber(max) && max > 0) {
     return `${formatNumber(min)}-${formatNumber(max)}s`;
   }
   if (isNumber(min)) {
@@ -4595,6 +4596,49 @@ function syncProgramBasicsValidation(basics = null) {
   } else {
     clearFieldError(phaseDurationWeeksInput);
   }
+}
+
+function syncProgramBlockValidation() {
+  if (!programDayListEl) {
+    return;
+  }
+
+  Array.from(programDayListEl.querySelectorAll(".program-block-row")).forEach((blockRow) => {
+    const labelInput = blockRow.querySelector('[data-role="program-block-label"]');
+    const durationInput = blockRow.querySelector('[data-role="program-block-duration"]');
+    const restInput = blockRow.querySelector('[data-role="program-block-rest"]');
+    const setsInput = blockRow.querySelector('[data-role="program-block-sets"]');
+    const validation = validateProgramBlock({
+      label: labelInput?.value || "",
+      duration: durationInput?.value || "",
+      rest: restInput?.value || "",
+      sets: setsInput?.value || "",
+    });
+
+    if (validation.labelError) {
+      setFieldError(labelInput, validation.labelError);
+    } else {
+      clearFieldError(labelInput);
+    }
+
+    if (validation.durationError) {
+      setFieldError(durationInput, validation.durationError);
+    } else {
+      clearFieldError(durationInput);
+    }
+
+    if (validation.restError) {
+      setFieldError(restInput, validation.restError);
+    } else {
+      clearFieldError(restInput);
+    }
+
+    if (validation.setsError) {
+      setFieldError(setsInput, validation.setsError);
+    } else {
+      clearFieldError(setsInput);
+    }
+  });
 }
 
 function syncProgramTrainingDaysFromText() {
@@ -4838,6 +4882,7 @@ function renderProgramDayEditor(days, dayBlocks = [], dayExercises = []) {
   programDayListEl.innerHTML = days
     .map((day, index) => renderProgramDayEditorRow(day, index, dayBlocks[index]?.blocks || [], dayExercises[index]?.blocks || []))
     .join("");
+  syncProgramBlockValidation();
   updateProgramBuilderSummary();
 }
 
@@ -4879,19 +4924,19 @@ function renderProgramBlockEditorRow(block, dayIndex, blockIndex, day, exercises
     <div class="program-block-row${isEmpty ? " is-empty-exercises" : ""}" data-day-index="${dayIndex}" data-block-index="${blockIndex}" data-day-label="${escapeHtml(dayLabel)}" data-block-label="${escapeHtml(block.label || `Block ${blockIndex + 1}`)}">
       <label>
         Label
-        <input type="text" data-role="program-block-label" value="${escapeHtml(block.label)}" placeholder="A" />
+        <input type="text" id="program-block-label-${dayIndex}-${blockIndex}" data-role="program-block-label" value="${escapeHtml(block.label)}" placeholder="A" />
       </label>
       <label>
         Duration
-        <input type="text" data-role="program-block-duration" value="${escapeHtml(block.duration)}" placeholder="15-20 mins" />
+        <input type="text" id="program-block-duration-${dayIndex}-${blockIndex}" data-role="program-block-duration" value="${escapeHtml(block.duration)}" placeholder="15-20 mins" />
       </label>
       <label>
         Rest
-        <input type="text" data-role="program-block-rest" value="${escapeHtml(block.rest)}" placeholder="90-120s" />
+        <input type="text" id="program-block-rest-${dayIndex}-${blockIndex}" data-role="program-block-rest" value="${escapeHtml(block.rest)}" placeholder="90-120s" />
       </label>
       <label>
         Sets
-        <input type="text" data-role="program-block-sets" value="${escapeHtml(block.sets)}" placeholder="3-4" />
+        <input type="text" id="program-block-sets-${dayIndex}-${blockIndex}" data-role="program-block-sets" value="${escapeHtml(block.sets)}" placeholder="3-4" />
       </label>
       <button type="button" class="ghost-button danger-button" data-role="remove-program-block" data-day-index="${dayIndex}" data-block-index="${blockIndex}">Remove block</button>
       <div class="program-exercise-editor">
@@ -4990,6 +5035,7 @@ function updatePhaseImportPreview() {
     return;
   }
   syncProgramBasicsValidation();
+  syncProgramBlockValidation();
   const result = buildProgramPreview(phaseImportTextInput.value, phaseNameOverrideInput?.value || "");
   if (result.error) {
     const hints = buildProgramImportHints(result.error);
@@ -5419,15 +5465,34 @@ function parseStrengthPhaseDefinition(text, overrideName) {
       if (currentBlock && !currentBlock.exercises.length) {
         throw new Error(`BLOCK row at line ${currentBlockLine} must include at least one EXERCISE row.`);
       }
-      const duration = parseBlockDurationRange(columns[2]);
-      const rest = parseBlockRestRange(columns[3]);
+      const block = {
+        label: columns[1] || "",
+        duration: columns[2] || "",
+        rest: columns[3] || "",
+        sets: columns[4] || "",
+      };
+      const validation = validateProgramBlock(block);
+      if (validation.labelError) {
+        throw new Error(`Line ${index + 1}: ${validation.labelError}`);
+      }
+      if (validation.durationError) {
+        throw new Error(`Line ${index + 1}: ${validation.durationError}`);
+      }
+      if (validation.restError) {
+        throw new Error(`Line ${index + 1}: ${validation.restError}`);
+      }
+      if (validation.setsError) {
+        throw new Error(`Line ${index + 1}: ${validation.setsError}`);
+      }
+      const duration = parseBlockDurationRange(block.duration);
+      const rest = parseBlockRestRange(block.rest);
       currentBlock = {
-        label: columns[1] || `Block ${currentSlot.blocks.length + 1}`,
+        label: block.label.trim(),
         durationMin: duration.durationMin,
         durationMax: duration.durationMax,
         restSec: rest.restSec,
         restMaxSec: rest.restMaxSec,
-        sets: normalizeSetPrescription(columns[4]),
+        sets: normalizeSetPrescription(block.sets),
         exercises: [],
       };
       currentBlockLine = index + 1;
@@ -7246,7 +7311,7 @@ function parseBlockDurationRange(value) {
 function formatBlockDuration(block) {
   const min = toNumberOrNull(block?.durationMin);
   const max = toNumberOrNull(block?.durationMax);
-  if (isNumber(min) && isNumber(max)) {
+  if (isNumber(min) && isNumber(max) && max > 0) {
     return `${formatNumber(min)}-${formatNumber(max)} mins`;
   }
   if (isNumber(min)) {
@@ -7283,7 +7348,7 @@ function parseBlockRestRange(value) {
 function formatBlockRest(block) {
   const min = toNumberOrNull(block?.restSec);
   const max = toNumberOrNull(block?.restMaxSec);
-  if (isNumber(min) && isNumber(max)) {
+  if (isNumber(min) && isNumber(max) && max > 0) {
     return `${formatNumber(min)}-${formatNumber(max)}s`;
   }
   if (isNumber(min)) {

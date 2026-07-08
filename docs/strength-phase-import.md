@@ -119,6 +119,12 @@ Example:
 BLOCK,A,15-20 mins,90-120s,3-4
 ```
 
+The `BLOCK` row requires:
+- a non-empty label
+- an optional duration written like `15 min`, `15 mins`, or `15-20 mins`
+- an optional rest written like `30s`, `90 sec`, or `90-120s`
+- a sets value written like `3` or `3-4`
+
 ### EXERCISE
 Defines one exercise inside the current block.
 
@@ -142,6 +148,10 @@ EXERCISE,A1,Back squat,2x8-10,Heavy,100
 - `PROGRAM` duration is required and must be a positive whole number
 - `TRAINING` weekday is required and must be a real weekday name or short form like `Mon` or `Fri`
 - `TRAINING` title is optional and defaults to `Training #...` by program order when left empty
+- `BLOCK` label is required
+- `BLOCK` duration is optional, but when present must look like `15 min`, `15 mins`, or `15-20 mins`
+- `BLOCK` rest is optional, but when present must look like `30s`, `90 sec`, or `90-120s`
+- `BLOCK` sets are required and must look like `3` or `3-4`
 - weekdays should be written as common names like `Tuesday`, `Fri`, `Sunday`
 - block duration should be written like `15 mins` or `15-20 mins`
 - block rest should be written like `30s` or `90-120s`
