@@ -84,6 +84,21 @@ describe("local-first UX guidance", () => {
     expect(index).toContain("TRAINING,Tuesday,Strength A,Main lower-body day");
   });
 
+  it("orders the main navigation around athlete usage", () => {
+    const todayIndex = index.indexOf('data-view-target="today"');
+    const calendarIndex = index.indexOf('data-view-target="calendar"');
+    const statsIndex = index.indexOf('data-view-target="stats"');
+    const phasesIndex = index.indexOf('data-view-target="phases"');
+    const dataIndex = index.indexOf('data-view-target="data"');
+
+    expect(todayIndex).toBeGreaterThan(-1);
+    expect(calendarIndex).toBeGreaterThan(todayIndex);
+    expect(statsIndex).toBeGreaterThan(calendarIndex);
+    expect(phasesIndex).toBeGreaterThan(statsIndex);
+    expect(dataIndex).toBeGreaterThan(phasesIndex);
+    expect(index).not.toContain('data-view-target="review"');
+  });
+
   it("styles the program import lead-in as a visible panel", () => {
     expect(index).toContain('class="hint program-import-lead"');
     expect(index).toContain("<summary>Create or import program</summary>");

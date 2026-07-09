@@ -17,6 +17,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 ## Main Pages
 - `Today`
   - default landing page for new installations
+  - quick navigator for the current day and the next useful action
   - exact-date view of today's planned sessions and standalone workout logs
   - direct access to planned-session details and `Log & Complete`
   - strength, run, and sprint quick logging through the existing Calendar form
@@ -75,11 +76,12 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - support slot notes, including `Warm Up: 10 mins` or `Warm Up: 10-15 mins` for calendar time calculation, block timing like `15 mins`, `15-20 mins`, `30s`, `90-120s`, set prescriptions like `3` or `3-4`, and optional exercise weight targets inside imported strength plans
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
-  - planned vs actual comparisons
+  - planned vs actual comparisons remain available as a secondary inspection view
   - run actual pace is calculated from logged distance and time
   - sprint review includes planned sprint blocks, actual sprint rows, and session feeling
   - strength review includes actual per-set execution with load type, reps, and load details
 - `Stats`
+  - the main progress and motivation surface after logging
   - Progress Hub summarizes total workouts, plan completion, active goals, achieved goals, training mix, and planned-session completion
   - Progress Hub shortcuts scroll to goals, adherence, and activity chart details without changing metric semantics
   - adherence summaries

@@ -16,7 +16,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
 - Sprint Insights for sprint workouts, rep volume, distance-specific bests, fastest rep, and feeling mix
 - Local-first onboarding, keyboard skip link, and backup safety guidance
-- Calendar-first weekly planning view
+- Today-first quick navigation with Calendar for weekly planning
 - Manual planned sessions for:
   - run
   - sprint
@@ -52,7 +52,7 @@ The app is designed to stay approachable for non-technical users by default, whi
   - completed
   - modified
   - missed
-- Separate Review page for planned vs actual comparison
+- Review stays available as a secondary inspection view, not a primary athlete tab
 - Weekly adherence summaries such as `5/6`
 - Stats page with:
   - goal progress
@@ -70,11 +70,11 @@ The app is designed to stay approachable for non-technical users by default, whi
 - PWA install support
 
 ## Main Pages
-- `Today`: daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
+- `Today`: quick navigator, daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
 - `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, and `Log & Complete` execution logging
+- `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview
-- `Review`: planned vs actual review for completed, modified, and missed planned sessions
-- `Stats`: Progress Hub, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts
+- `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept outside the primary athlete nav
 - `Data`: backup, exercise library, and workout history management
 
 ## Strength Phase Import
