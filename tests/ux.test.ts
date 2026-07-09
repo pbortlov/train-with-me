@@ -7,6 +7,16 @@ const styles = readFileSync("styles.css", "utf8");
 const previewDomain = readFileSync("src/domain/program-preview.ts", "utf8");
 
 describe("local-first UX guidance", () => {
+  it("extracts shared design tokens from the Programs palette", () => {
+    expect(styles).toContain("--surface-program-panel-bg");
+    expect(styles).toContain("--button-program-secondary-bg");
+    expect(styles).toContain("--button-program-build-day-bg");
+    expect(styles).toContain("--button-program-danger-bg");
+    expect(styles).toContain(".button-primary");
+    expect(styles).toContain(".button-secondary");
+    expect(styles).toContain(".button-danger");
+  });
+
   it("keeps keyboard users a skip link to the app content", () => {
     expect(index).toContain('class="skip-link"');
     expect(index).toContain('href="#main-content"');
@@ -78,33 +88,33 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('class="hint program-import-lead"');
     expect(index).toContain("<summary>Create or import program</summary>");
     expect(styles).toContain('.phase-import-details summary');
-    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 7%)');
+    expect(styles).toContain('background: var(--surface-program-summary-bg);');
     expect(styles).toContain('.phase-import-details summary::after');
     expect(styles).toContain('content: "Open"');
     expect(styles).toContain('.phase-import-details[open] summary');
-    expect(styles).toContain('border-color: #76e4ff66');
+    expect(styles).toContain('border-color: var(--surface-program-summary-open-border);');
     expect(styles).toContain('.phase-import-details .program-import-lead');
-    expect(styles).toContain('border: 1px solid #00e5ff33');
-    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 5%)');
-    expect(styles).toContain('color: #d7f8ff');
+    expect(styles).toContain('border: 1px solid var(--surface-program-lead-border);');
+    expect(styles).toContain('background: var(--surface-program-lead-bg);');
+    expect(styles).toContain('color: var(--surface-program-lead-text);');
   });
 
   it("renders program import errors as a stronger inline alert panel", () => {
     expect(script).toContain('program-preview-error" role="alert" aria-live="assertive"');
     expect(script).toContain('Program import error');
     expect(styles).toContain('.program-preview-error');
-    expect(styles).toContain('border: 1px solid #ff708a66');
-    expect(styles).toContain('linear-gradient(180deg, rgb(255 112 138 / 10%)');
+    expect(styles).toContain('border: 1px solid var(--surface-program-error-border);');
+    expect(styles).toContain('background: var(--surface-program-error-bg);');
     expect(styles).toContain('.program-preview-error-title');
     expect(styles).toContain('.program-preview-hints');
-    expect(styles).toContain('border: 1px solid #ff708a55');
+    expect(styles).toContain('border: 1px solid var(--surface-program-error-muted-border);');
   });
 
   it("renders save-time program import failures with the same alert styling", () => {
     expect(script).toContain("function renderPhaseImportStatus(message, tone = \"info\")");
     expect(script).toContain('renderPhaseImportStatus(error instanceof Error ? error.message : "Could not import phase.", "error");');
     expect(styles).toContain('#phase-import-status.is-error');
-    expect(styles).toContain('linear-gradient(180deg, rgb(255 112 138 / 10%)');
+    expect(styles).toContain('background: var(--surface-program-error-bg);');
     expect(styles).toContain('#phase-import-status.is-error .phase-import-status-title');
   });
 
@@ -129,7 +139,7 @@ describe("local-first UX guidance", () => {
 
   it("gives the Program section cards a shared panel surface", () => {
     expect(styles).toContain('.view-panel[data-view="phases"] > .card');
-    expect(styles).toContain('linear-gradient(180deg, rgb(0 229 255 / 4%)');
+    expect(styles).toContain('background: var(--surface-program-panel-bg);');
     expect(styles).toContain('.view-panel[data-view="phases"] > .card h2');
     expect(styles).toContain('.view-panel[data-view="phases"] > .card .hint');
   });
@@ -175,7 +185,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('phaseImportDetails.dataset.programImportMode = "edit"');
     expect(script).toContain('delete phaseImportDetails.dataset.programImportMode');
     expect(styles).toContain('.phase-import-details[data-program-import-mode="edit"]');
-    expect(styles).toContain('linear-gradient(180deg, rgb(255 216 77 / 7%)');
+    expect(styles).toContain('background: var(--surface-program-edit-bg);');
     expect(styles).toContain('.phase-import-details[data-program-import-mode="edit"] .dialog-actions #save-phase-button');
     expect(styles).toContain('.phase-import-details[data-program-import-mode="edit"] .dialog-actions #cancel-phase-edit');
   });
@@ -209,7 +219,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("Add one now so");
     expect(script).toContain("stays valid when you save.");
     expect(styles).toContain('.program-block-row.is-empty-exercises');
-    expect(styles).toContain('border-color: #ff708a66');
+    expect(styles).toContain('border: 1px solid var(--surface-program-error-border);');
     expect(styles).toContain('.program-block-row.is-empty-exercises .program-exercise-editor');
     expect(styles).toContain('.program-block-empty-warning');
   });
@@ -319,8 +329,8 @@ describe("local-first UX guidance", () => {
   it("groups the program import metadata fields into one control strip", () => {
     expect(index).toContain('program-import-metadata');
     expect(styles).toContain('.program-import-metadata');
-    expect(styles).toContain('border: 1px solid #38bdf844');
-    expect(styles).toContain('linear-gradient(180deg, rgb(56 189 248 / 6%)');
+    expect(styles).toContain('border: 1px solid var(--surface-program-meta-border);');
+    expect(styles).toContain('background: var(--surface-program-meta-bg);');
     expect(styles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
     expect(styles).toContain('.program-import-metadata label');
   });
@@ -337,8 +347,8 @@ describe("local-first UX guidance", () => {
   it("styles the phase import content textarea as its own panel", () => {
     expect(index).toContain('class="program-import-content"');
     expect(styles).toContain('.program-import-content');
-    expect(styles).toContain('border: 1px solid #ffd84d44');
-    expect(styles).toContain('linear-gradient(180deg, rgb(255 216 77 / 6%)');
+    expect(styles).toContain('border: 1px solid var(--surface-program-content-border);');
+    expect(styles).toContain('background: var(--surface-program-content-bg);');
     expect(styles).toContain('.program-import-content textarea');
     expect(styles).toContain('min-height: 13rem');
   });
@@ -353,17 +363,20 @@ describe("local-first UX guidance", () => {
 
   it("styles the import action row as a closing footer band", () => {
     expect(styles).toContain('.phase-import-details .dialog-actions');
-    expect(styles).toContain('border: 1px solid #ffd84d33');
-    expect(styles).toContain('linear-gradient(180deg, rgb(255 216 77 / 5%)');
+    expect(styles).toContain('border: 1px solid var(--surface-program-content-border);');
+    expect(styles).toContain('background: var(--surface-program-content-bg);');
+    expect(styles).toContain('.phase-import-details .dialog-actions button');
+    expect(styles).toContain('font-size: 0.85rem;');
     expect(styles).toContain('.phase-import-details .dialog-actions #save-phase-button');
     expect(styles).toContain('min-width: 12rem');
+    expect(styles).toContain('background: var(--button-program-build-submit-bg);');
   });
 
   it("makes program import status messages visible as feedback strips", () => {
     expect(script).toContain('phaseImportStatusEl.textContent');
     expect(styles).toContain('#phase-import-status:not(:empty)');
-    expect(styles).toContain('border: 1px solid #6dff5c44');
-    expect(styles).toContain('linear-gradient(180deg, rgb(109 255 92 / 6%)');
+    expect(styles).toContain('border: 1px solid var(--surface-program-status-border);');
+    expect(styles).toContain('background: var(--surface-program-status-bg);');
     expect(styles).toContain('min-height: 2.75rem');
   });
 
@@ -379,8 +392,8 @@ describe("local-first UX guidance", () => {
   it("makes the saved-template filter read like a control strip", () => {
     expect(index).toContain('class="phase-template-filter"');
     expect(styles).toContain('.phase-template-filter');
-    expect(styles).toContain('border: 1px solid #9b5cff44');
-    expect(styles).toContain('linear-gradient(180deg, rgb(155 92 255 / 7%)');
+    expect(styles).toContain('border: 1px solid var(--surface-program-filter-border);');
+    expect(styles).toContain('background: var(--surface-program-filter-bg);');
     expect(styles).toContain('.phase-template-filter input');
   });
 
