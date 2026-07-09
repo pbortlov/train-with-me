@@ -39,22 +39,27 @@
       </header>
 
       <section class="view-panel" data-view="today">
-        <article class="card today-hero">
-          <div>
+        <article class="card today-launchpad">
+          <div class="today-launchpad-copy">
             <p class="today-eyebrow">Today</p>
             <h2 id="today-date-heading">Your training day</h2>
             <p id="today-status" class="hint" aria-live="polite"></p>
+            <p class="hint today-launchpad-note">
+              Start here, jump to the week, and check progress after you log.
+            </p>
           </div>
-          <button type="button" class="ghost-button today-calendar-button" data-today-action="open-calendar">
-            Open week
-          </button>
+          <div class="today-launchpad-actions" aria-label="Today launch actions">
+            <button type="button" class="today-calendar-button" data-today-action="open-calendar">
+              Open week
+            </button>
+            <button type="button" class="ghost-button" data-today-action="open-stats">Open stats</button>
+          </div>
+          <div id="today-summary" class="today-summary" aria-label="Today's training summary"></div>
         </article>
-
-        <div id="today-summary" class="today-summary" aria-label="Today's training summary"></div>
 
         <article class="card">
           <h3>Today's training</h3>
-          <p class="hint">Review the plan, complete a session, or open an existing workout.</p>
+          <p class="hint">Review the plan, complete a session, or open an existing workout from the day view.</p>
           <div id="today-training-list" class="today-training-list"></div>
         </article>
 
@@ -77,8 +82,8 @@
             <p class="hint">This app stores training on this device. A quick routine keeps the local-first workflow safe.</p>
           </div>
           <ol class="onboarding-steps">
-            <li><strong>Plan or log today:</strong> use Today for quick actions and Calendar for the weekly plan.</li>
-            <li><strong>Review progress:</strong> use Stats for progress, strength, running, and sprint summaries.</li>
+            <li><strong>Enter fast:</strong> use Today as the launchpad, then open Calendar when you want the week.</li>
+            <li><strong>Check wins:</strong> use Stats for progress, strength, running, and sprint summaries.</li>
             <li><strong>Back up often:</strong> export JSON from Data after important training changes.</li>
           </ol>
         </article>

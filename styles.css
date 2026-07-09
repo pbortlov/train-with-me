@@ -278,7 +278,7 @@ body {
   display: none;
 }
 
-.today-hero,
+.today-launchpad,
 .today-quick-log {
   display: flex;
   justify-content: space-between;
@@ -295,8 +295,34 @@ body {
   text-transform: uppercase;
 }
 
+.today-launchpad {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.today-launchpad-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.today-launchpad-note {
+  margin-bottom: 0;
+  color: #d7f8ff;
+}
+
+.today-launchpad-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .today-calendar-button {
   flex: 0 0 auto;
+}
+
+.today-calendar-button,
+.today-launchpad-actions .ghost-button {
+  min-width: 8.5rem;
 }
 
 .today-summary {

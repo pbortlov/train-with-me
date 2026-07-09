@@ -3436,6 +3436,12 @@ function handleTodayAction(event) {
     return;
   }
 
+  if (actionButton.dataset.todayAction === "open-stats") {
+    setCurrentView("stats");
+    render();
+    return;
+  }
+
   if (actionButton.dataset.todayAction !== "quick-log") {
     return;
   }

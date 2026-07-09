@@ -99,6 +99,13 @@ describe("local-first UX guidance", () => {
     expect(index).not.toContain('data-view-target="review"');
   });
 
+  it("turns Today into a launchpad with a direct stats jump", () => {
+    expect(index).toContain('class="card today-launchpad"');
+    expect(index).toContain('data-today-action="open-stats"');
+    expect(index).toContain('class="hint today-launchpad-note"');
+    expect(index).toContain('Start here, jump to the week, and check progress after you log.');
+  });
+
   it("styles the program import lead-in as a visible panel", () => {
     expect(index).toContain('class="hint program-import-lead"');
     expect(index).toContain("<summary>Create or import program</summary>");

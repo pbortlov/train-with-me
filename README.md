@@ -8,7 +8,7 @@ Train With Me V1 is a local-first training planner and workout tracker for:
 The app is designed to stay approachable for non-technical users by default, while advanced planning features live behind a `Geek / coach mode` toggle.
 
 ## V1 Features
-- Mobile-first Today dashboard for planned sessions, completed training, and quick logging
+- Mobile-first Today launchpad for planned sessions, completed training, and quick logging
 - Persistent bottom navigation on phone-sized screens
 - Fast activity-specific actual logging for strength, run, and sprint, with Today/Yesterday date shortcuts
 - Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix
@@ -16,7 +16,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
 - Sprint Insights for sprint workouts, rep volume, distance-specific bests, fastest rep, and feeling mix
 - Local-first onboarding, keyboard skip link, and backup safety guidance
-- Today-first quick navigation with Calendar for weekly planning
+- Today-first quick navigation with Calendar for weekly planning and Stats for quick progress checks
 - Manual planned sessions for:
   - run
   - sprint
@@ -70,7 +70,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - PWA install support
 
 ## Main Pages
-- `Today`: quick navigator, daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
+- `Today`: quick navigator and launchpad, daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
 - `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, and `Log & Complete` execution logging
 - `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview

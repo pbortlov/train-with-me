@@ -17,7 +17,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 ## Main Pages
 - `Today`
   - default landing page for new installations
-  - quick navigator for the current day and the next useful action
+  - quick navigator and launchpad for the current day and the next useful action
   - exact-date view of today's planned sessions and standalone workout logs
   - direct access to planned-session details and `Log & Complete`
   - strength, run, and sprint quick logging through the existing Calendar form
@@ -82,6 +82,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - strength review includes actual per-set execution with load type, reps, and load details
 - `Stats`
   - the main progress and motivation surface after logging
+  - accessible from Today as a direct launchpad action
   - Progress Hub summarizes total workouts, plan completion, active goals, achieved goals, training mix, and planned-session completion
   - Progress Hub shortcuts scroll to goals, adherence, and activity chart details without changing metric semantics
   - adherence summaries
