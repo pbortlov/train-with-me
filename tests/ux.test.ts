@@ -106,6 +106,15 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('Start here, jump to the week, and check progress after you log.');
   });
 
+  it("makes Calendar the weekly working surface with a momentum strip", () => {
+    expect(index).toContain('class="card calendar-launchpad"');
+    expect(index).toContain('id="calendar-momentum"');
+    expect(index).toContain('See the whole week, choose the day, and keep the plan close to the action.');
+    expect(styles).toContain('.calendar-launchpad');
+    expect(styles).toContain('.calendar-momentum-card');
+    expect(styles).toContain('.calendar-nav #current-week');
+  });
+
   it("styles the program import lead-in as a visible panel", () => {
     expect(index).toContain('class="hint program-import-lead"');
     expect(index).toContain("<summary>Create or import program</summary>");

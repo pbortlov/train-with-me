@@ -32,7 +32,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Calendar shows the program week at the day level and tints generated program sessions with matching palette colors
 - Today stays highlighted with a rounded accent outline and date pill even when the day belongs to a colored program week
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
-- Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions
+- Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions, plus a week-launchpad header and a compact next-up/progress strip
 - Completed planned sessions can be edited after `Log & Complete` to correct weights, reps, sets, times, or notes
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
 - Sprint logging and sprint workout editing include a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
@@ -71,7 +71,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 
 ## Main Pages
 - `Today`: quick navigator and launchpad, daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
-- `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, and `Log & Complete` execution logging
+- `Calendar`: weekly working surface, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, `Log & Complete` execution logging, and a momentum strip that shows next up plus weekly progress
 - `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept outside the primary athlete nav

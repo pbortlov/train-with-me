@@ -162,6 +162,7 @@ const todayTrainingListEl = document.getElementById("today-training-list");
 const addTrainingModeButtons = document.querySelectorAll("[data-add-training-mode]");
 const addTrainingPanels = document.querySelectorAll("[data-add-training-panel]");
 const plannerSummaryEl = document.getElementById("planner-summary");
+const calendarMomentumEl = document.getElementById("calendar-momentum");
 const calendarWeekLabelEl = document.getElementById("calendar-week-label");
 const calendarGridEl = document.getElementById("calendar-grid");
 const calendarSessionDialog = document.getElementById("calendar-session-dialog");
@@ -3606,12 +3607,35 @@ function renderCalendar() {
   const weekDates = getWeekDates(uiSettings.currentWeekStart);
   const weekSessions = getPlannedSessionsForWeek(uiSettings.currentWeekStart);
   const weekWorkouts = getStandaloneWorkoutsForWeek(uiSettings.currentWeekStart);
+  const weeklyStats = computeWeeklyAdherence(uiSettings.currentWeekStart);
   const programWeekMap = buildCalendarProgramWeekMap(weekDates);
+  const orderedWeekSessions = [...weekSessions].sort((left, right) => left.date.localeCompare(right.date));
   const availableSessionIds = new Set(weekSessions.map((session) => session.id));
   if (!selectedCalendarSessionId || !availableSessionIds.has(selectedCalendarSessionId)) {
     selectedCalendarSessionId = weekSessions[0]?.id || "";
   }
   calendarWeekLabelEl.textContent = `Week of ${formatHumanDate(weekDates[0])} to ${formatHumanDate(weekDates[6])}`;
+  if (calendarMomentumEl) {
+    const today = formatDateInput(new Date());
+    const nextUpSession =
+      orderedWeekSessions.find((session) => session.status === "planned" && session.date >= today) ||
+      orderedWeekSessions.find((session) => session.status === "planned") ||
+      orderedWeekSessions.find((session) => session.status !== "missed") ||
+      null;
+    const nextUpLabel = nextUpSession
+      ? `${formatHumanDate(nextUpSession.date)} • ${nextUpSession.title}`
+      : "No training sessions planned this week.";
+    const progressLabel = weeklyStats.total
+      ? `${weeklyStats.completed}/${weeklyStats.total} done this week`
+      : `${weekWorkouts.length} logged ${weekWorkouts.length === 1 ? "workout" : "workouts"} in this week`;
+    calendarMomentumEl.innerHTML = `
+      <article class="calendar-momentum-card">
+        <span class="label">Next up</span>
+        <span class="value">${escapeHtml(nextUpLabel)}</span>
+        <span class="detail">${escapeHtml(progressLabel)}</span>
+      </article>
+    `;
+  }
 
   calendarGridEl.innerHTML = weekDates
     .map((date) => {

@@ -611,6 +611,18 @@ textarea:focus-visible {
   color: var(--muted);
 }
 
+.calendar-launchpad {
+  display: grid;
+  gap: 0.85rem;
+  border-color: var(--surface-program-panel-border);
+  background: var(--surface-program-panel-bg);
+}
+
+.calendar-launchpad-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
 .calendar-toolbar {
   display: flex;
   justify-content: space-between;
@@ -622,6 +634,66 @@ textarea:focus-visible {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.calendar-nav #current-week {
+  background: var(--accent);
+  color: #061021;
+  border-color: var(--accent);
+}
+
+.calendar-nav #current-week:hover {
+  filter: brightness(1.06) saturate(1.04);
+}
+
+.calendar-nav #prev-week,
+.calendar-nav #next-week {
+  background: var(--button-program-secondary-bg);
+  color: var(--button-program-secondary-text);
+  border-color: var(--button-program-secondary-border);
+  box-shadow: var(--button-program-secondary-shadow);
+}
+
+.calendar-nav #prev-week:hover,
+.calendar-nav #next-week:hover {
+  background: var(--button-program-secondary-bg-hover);
+  color: var(--button-program-secondary-text-hover);
+  box-shadow: var(--button-program-secondary-shadow-hover);
+}
+
+.calendar-momentum {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.6rem;
+}
+
+.calendar-momentum-card {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid #00e5ff33;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 6%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.75rem 0.85rem;
+}
+
+.calendar-momentum-card .label {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.calendar-momentum-card .value {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.calendar-momentum-card .detail {
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .calendar-grid {
@@ -636,6 +708,10 @@ textarea:focus-visible {
 
 .add-training-card {
   gap: 1rem;
+  border-color: #9b5cff55;
+  background:
+    linear-gradient(180deg, rgb(155 92 255 / 5%), rgb(8 17 33 / 96%)),
+    #081121;
 }
 
 .add-training-header {
