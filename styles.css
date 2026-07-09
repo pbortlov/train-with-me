@@ -3,12 +3,163 @@
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   --bg: #06080f;
   --card: #111623;
+  --card-strong: #081121;
+  --input-bg: #0b1120;
+  --ghost-bg: #0a1326;
   --text: #f5f7ff;
   --muted: #9aa7c7;
   --accent: #00e5ff;
   --border: #24324f;
   --success: #6dff5c;
   --danger: #ff4d6d;
+  --panel-title: #e9fcff;
+  --panel-hint: #b4cde8;
+  --focus-ring: #ffffff;
+  --primary-button-border: #00e5ff66;
+  --primary-button-text: #001018;
+  --primary-button-shadow: 0 0 0.6rem #00e5ff44;
+  --secondary-button-bg: #0a1326;
+  --secondary-button-border: #24324f;
+  --secondary-button-text: #f5f7ff;
+  --danger-button-text: #22000a;
+  --danger-button-border: #ff4d6d88;
+  --danger-button-shadow: 0 0 0.6rem #ff4d6d55;
+  --surface-program-panel-border: #00e5ff33;
+  --surface-program-panel-bg:
+    linear-gradient(180deg, rgb(0 229 255 / 4%), rgb(8 17 33 / 96%)),
+    #081121;
+  --surface-program-summary-border: #00e5ff33;
+  --surface-program-summary-bg:
+    linear-gradient(180deg, rgb(0 229 255 / 7%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-summary-open-border: #76e4ff66;
+  --surface-program-summary-open-bg:
+    linear-gradient(180deg, rgb(118 228 255 / 10%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-template-border: #9b5cff55;
+  --surface-program-template-bg:
+    linear-gradient(180deg, rgb(155 92 255 / 8%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-template-shadow: inset 0 0 0 1px rgb(155 92 255 / 6%);
+  --surface-program-instance-border: #ffd84d55;
+  --surface-program-instance-bg:
+    linear-gradient(180deg, rgb(255 216 77 / 8%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-instance-shadow: inset 0 0 0 1px rgb(255 216 77 / 6%);
+  --surface-program-filter-border: #9b5cff44;
+  --surface-program-filter-bg:
+    linear-gradient(180deg, rgb(155 92 255 / 7%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-lead-border: #00e5ff33;
+  --surface-program-lead-bg:
+    linear-gradient(180deg, rgb(0 229 255 / 5%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-lead-text: #d7f8ff;
+  --surface-program-meta-border: #38bdf844;
+  --surface-program-meta-bg:
+    linear-gradient(180deg, rgb(56 189 248 / 6%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-content-border: #ffd84d44;
+  --surface-program-content-bg:
+    linear-gradient(180deg, rgb(255 216 77 / 6%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-content-text: #fff0b7;
+  --surface-program-loader-border: #00e5ff44;
+  --surface-program-loader-bg:
+    linear-gradient(180deg, rgb(0 229 255 / 8%), rgb(8 17 33 / 94%)),
+    #081121;
+  --surface-program-guide-border: #00e5ff33;
+  --surface-program-guide-bg:
+    linear-gradient(180deg, rgb(0 229 255 / 6%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-preview-border: #00e5ff33;
+  --surface-program-preview-bg:
+    linear-gradient(180deg, rgb(0 229 255 / 4%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-edit-border: #ffd84d55;
+  --surface-program-edit-bg:
+    linear-gradient(180deg, rgb(255 216 77 / 7%), rgb(8 17 33 / 96%)),
+    #081121;
+  --surface-program-edit-shadow: 0 0 0 1px rgb(255 216 77 / 8%) inset;
+  --surface-program-status-border: #6dff5c44;
+  --surface-program-status-bg:
+    linear-gradient(180deg, rgb(109 255 92 / 6%), rgb(8 17 33 / 95%)),
+    #081121;
+  --surface-program-status-text: #dfffe1;
+  --surface-program-error-border: #ff708a66;
+  --surface-program-error-bg:
+    linear-gradient(180deg, rgb(255 112 138 / 10%), rgb(34 12 22 / 96%)),
+    #1a0d16;
+  --surface-program-error-text: #ffd4db;
+  --surface-program-error-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 10%),
+    0 0.75rem 1.35rem rgb(255 77 109 / 16%);
+  --surface-program-error-muted-border: #ff708a55;
+  --surface-program-error-muted-bg:
+    linear-gradient(180deg, rgb(255 112 138 / 6%), rgb(18 11 16 / 96%)),
+    #120b10;
+  --button-program-build-day-bg: linear-gradient(180deg, #00f0ff, #00b6d4);
+  --button-program-build-day-bg-hover: linear-gradient(180deg, #70f8ff, #00a4c3);
+  --button-program-build-day-border: #6ef8ff;
+  --button-program-build-day-text: #001018;
+  --button-program-build-day-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    0 0.8rem 1.35rem rgb(0 229 255 / 28%);
+  --button-program-build-day-shadow-hover:
+    inset 0 1px 0 rgb(255 255 255 / 22%),
+    0 0.95rem 1.55rem rgb(0 229 255 / 34%);
+  --button-program-build-block-bg: linear-gradient(180deg, #6dff5c, #2fca65);
+  --button-program-build-block-bg-hover: linear-gradient(180deg, #a0ff91, #27b75c);
+  --button-program-build-block-border: #a9ff9c;
+  --button-program-build-block-text: #00120b;
+  --button-program-build-block-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    0 0.8rem 1.35rem rgb(109 255 92 / 26%);
+  --button-program-build-block-shadow-hover:
+    inset 0 1px 0 rgb(255 255 255 / 20%),
+    0 0.95rem 1.55rem rgb(109 255 92 / 32%);
+  --button-program-build-submit-bg: linear-gradient(180deg, #7cff71, #2fca65);
+  --button-program-build-submit-bg-hover: linear-gradient(180deg, #b1ffa7, #28b55d);
+  --button-program-build-submit-border: #a9ff9c;
+  --button-program-build-submit-text: #00120b;
+  --button-program-build-submit-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    0 0.8rem 1.35rem rgb(109 255 92 / 28%);
+  --button-program-build-submit-shadow-hover:
+    inset 0 1px 0 rgb(255 255 255 / 22%),
+    0 0.95rem 1.55rem rgb(109 255 92 / 34%);
+  --button-program-build-exercise-bg: linear-gradient(180deg, #ffd84d, #d6a800);
+  --button-program-build-exercise-bg-hover: linear-gradient(180deg, #ffe98d, #c99600);
+  --button-program-build-exercise-border: #ffe27d;
+  --button-program-build-exercise-text: #241900;
+  --button-program-build-exercise-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 14%),
+    0 0.8rem 1.35rem rgb(255 216 77 / 26%);
+  --button-program-build-exercise-shadow-hover:
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    0 0.95rem 1.55rem rgb(255 216 77 / 32%);
+  --button-program-secondary-bg: linear-gradient(180deg, #1c4268, #10253d);
+  --button-program-secondary-bg-hover: linear-gradient(180deg, #28517d, #132c45);
+  --button-program-secondary-border: #76e4ff88;
+  --button-program-secondary-text: #effdff;
+  --button-program-secondary-text-hover: #f7ffff;
+  --button-program-secondary-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    0 0.8rem 1.35rem rgb(0 145 255 / 18%);
+  --button-program-secondary-shadow-hover:
+    inset 0 1px 0 rgb(255 255 255 / 20%),
+    0 0.95rem 1.55rem rgb(0 145 255 / 24%);
+  --button-program-danger-bg: linear-gradient(180deg, #ff708a, #db4966);
+  --button-program-danger-bg-hover: linear-gradient(180deg, #ff8ca1, #cd3b5c);
+  --button-program-danger-border: #ffb1c388;
+  --button-program-danger-text: #fff3f7;
+  --button-program-danger-text-hover: #fff8fa;
+  --button-program-danger-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    0 0.8rem 1.35rem rgb(255 77 109 / 28%);
+  --button-program-danger-shadow-hover:
+    inset 0 1px 0 rgb(255 255 255 / 20%),
+    0 0.95rem 1.55rem rgb(255 77 109 / 34%);
   --band-yellow: #ffd84d;
   --band-red: #ff5c5c;
   --band-black: #2f3747;
@@ -346,7 +497,7 @@ textarea {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.6rem 0.7rem;
-  background: #0b1120;
+  background: var(--input-bg);
   color: var(--text);
   caret-color: var(--accent);
 }
@@ -369,22 +520,43 @@ textarea.field-invalid {
 }
 
 button {
-  border: 1px solid #00e5ff66;
+  border: 1px solid var(--primary-button-border);
   border-radius: 10px;
   padding: 0.7rem 0.9rem;
   background: var(--accent);
-  color: #001018;
+  color: var(--primary-button-text);
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 0 0.6rem #00e5ff44;
+  box-shadow: var(--primary-button-shadow);
 }
 
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #ffffff;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+.button-primary {
+  border-color: var(--primary-button-border);
+  background: var(--accent);
+  color: var(--primary-button-text);
+  box-shadow: var(--primary-button-shadow);
+}
+
+.button-secondary {
+  background: var(--secondary-button-bg);
+  color: var(--secondary-button-text);
+  border-color: var(--secondary-button-border);
+  box-shadow: none;
+}
+
+.button-danger {
+  color: var(--danger-button-text);
+  border-color: var(--danger-button-border);
+  background: var(--danger);
+  box-shadow: var(--danger-button-shadow);
 }
 
 .hint {
@@ -821,11 +993,9 @@ textarea:focus-visible {
 }
 
 #phase-template-list .phase-card {
-  border-color: #9b5cff55;
-  background:
-    linear-gradient(180deg, rgb(155 92 255 / 8%), rgb(8 17 33 / 95%)),
-    #081121;
-  box-shadow: inset 0 0 0 1px rgb(155 92 255 / 6%);
+  border-color: var(--surface-program-template-border);
+  background: var(--surface-program-template-bg);
+  box-shadow: var(--surface-program-template-shadow);
 }
 
 #phase-template-list .phase-card header {
@@ -834,18 +1004,14 @@ textarea:focus-visible {
 }
 
 #phase-template-list .phase-template-details {
-  border-color: #9b5cff55;
-  background:
-    linear-gradient(180deg, rgb(155 92 255 / 6%), rgb(10 17 33 / 94%)),
-    #081121;
+  border-color: var(--surface-program-template-border);
+  background: var(--surface-program-filter-bg);
 }
 
 #phase-instance-list .phase-card {
-  border-color: #ffd84d55;
-  background:
-    linear-gradient(180deg, rgb(255 216 77 / 8%), rgb(8 17 33 / 95%)),
-    #081121;
-  box-shadow: inset 0 0 0 1px rgb(255 216 77 / 6%);
+  border-color: var(--surface-program-instance-border);
+  background: var(--surface-program-instance-bg);
+  box-shadow: var(--surface-program-instance-shadow);
 }
 
 #phase-instance-list .phase-card header {
@@ -858,25 +1024,23 @@ textarea:focus-visible {
 }
 
 .view-panel[data-view="phases"] > .card {
-  border-color: #00e5ff33;
-  background:
-    linear-gradient(180deg, rgb(0 229 255 / 4%), rgb(8 17 33 / 96%)),
-    #081121;
+  border-color: var(--surface-program-panel-border);
+  background: var(--surface-program-panel-bg);
 }
 
 .view-panel[data-view="phases"] > .card h2,
 .view-panel[data-view="phases"] > .card h3 {
-  color: #e9fcff;
+  color: var(--panel-title);
 }
 
 .view-panel[data-view="phases"] > .card .hint {
-  color: #b4cde8;
+  color: var(--panel-hint);
 }
 
 .phase-template-details {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #0a1326;
+  background: var(--ghost-bg);
   padding: 0.65rem 0.75rem;
 }
 
@@ -888,11 +1052,9 @@ textarea:focus-visible {
 .phase-template-filter {
   display: grid;
   gap: 0.3rem;
-  border: 1px solid #9b5cff44;
+  border: 1px solid var(--surface-program-filter-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(155 92 255 / 7%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-filter-bg);
   padding: 0.75rem;
   margin-bottom: 0.75rem;
   color: #d9ccff;
@@ -908,11 +1070,9 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  border: 1px solid #00e5ff33;
+  border: 1px solid var(--surface-program-summary-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(0 229 255 / 7%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-summary-bg);
   padding: 0.75rem 0.85rem;
   margin-bottom: 0.75rem;
   cursor: pointer;
@@ -934,22 +1094,18 @@ textarea:focus-visible {
 }
 
 .phase-import-details[open] summary {
-  border-color: #76e4ff66;
-  background:
-    linear-gradient(180deg, rgb(118 228 255 / 10%), rgb(8 17 33 / 95%)),
-    #081121;
+  border-color: var(--surface-program-summary-open-border);
+  background: var(--surface-program-summary-open-bg);
   color: #f3feff;
 }
 
 .phase-import-details .program-import-lead {
-  border: 1px solid #00e5ff33;
+  border: 1px solid var(--surface-program-lead-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(0 229 255 / 5%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-lead-bg);
   padding: 0.75rem;
   margin: 0.65rem 0 0.85rem;
-  color: #d7f8ff;
+  color: var(--surface-program-lead-text);
 }
 
 .phase-import-details form {
@@ -957,11 +1113,9 @@ textarea:focus-visible {
 }
 
 .program-import-metadata {
-  border: 1px solid #38bdf844;
+  border: 1px solid var(--surface-program-meta-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(56 189 248 / 6%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-meta-bg);
   padding: 0.75rem;
   margin-bottom: 0.75rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -974,14 +1128,12 @@ textarea:focus-visible {
 .program-import-content {
   display: grid;
   gap: 0.35rem;
-  border: 1px solid #ffd84d44;
+  border: 1px solid var(--surface-program-content-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(255 216 77 / 6%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-content-bg);
   padding: 0.75rem;
   margin-bottom: 0.75rem;
-  color: #fff0b7;
+  color: var(--surface-program-content-text);
   font-weight: 700;
 }
 
@@ -1020,11 +1172,9 @@ textarea:focus-visible {
   gap: 0.55rem;
   align-items: end;
   margin-bottom: 0.85rem;
-  border: 1px solid #00e5ff44;
+  border: 1px solid var(--surface-program-loader-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(0 229 255 / 8%), rgb(8 17 33 / 94%)),
-    #081121;
+  background: var(--surface-program-loader-bg);
   padding: 0.7rem;
 }
 
@@ -1045,52 +1195,40 @@ textarea:focus-visible {
 }
 
 .phase-import-details[data-program-import-mode="edit"] {
-  border: 1px solid #ffd84d55;
-  background:
-    linear-gradient(180deg, rgb(255 216 77 / 7%), rgb(8 17 33 / 96%)),
-    #081121;
-  box-shadow: 0 0 0 1px rgb(255 216 77 / 8%) inset;
+  border: 1px solid var(--surface-program-edit-border);
+  background: var(--surface-program-edit-bg);
+  box-shadow: var(--surface-program-edit-shadow);
 }
 
 .phase-import-details[data-program-import-mode="edit"] .dialog-actions #save-phase-button {
-  background: linear-gradient(180deg, #ffd84d, #d6a800);
-  border-color: #ffe27d;
-  color: #241900;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 18%),
-    0 0.8rem 1.35rem rgb(255 216 77 / 26%);
+  background: var(--button-program-build-exercise-bg);
+  border-color: var(--button-program-build-exercise-border);
+  color: var(--button-program-build-exercise-text);
+  box-shadow: var(--button-program-build-exercise-shadow);
 }
 
 .phase-import-details[data-program-import-mode="edit"] .dialog-actions #save-phase-button:hover {
-  background: linear-gradient(180deg, #ffe98d, #c99600);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 22%),
-    0 0.95rem 1.55rem rgb(255 216 77 / 32%);
+  background: var(--button-program-build-exercise-bg-hover);
+  box-shadow: var(--button-program-build-exercise-shadow-hover);
 }
 
 .phase-import-details[data-program-import-mode="edit"] .dialog-actions #cancel-phase-edit {
-  background: linear-gradient(180deg, #ff708a, #db4966);
-  border-color: #ffb1c388;
-  color: #fff3f7;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 16%),
-    0 0.8rem 1.35rem rgb(255 77 109 / 24%);
+  background: var(--button-program-danger-bg);
+  border-color: var(--button-program-danger-border);
+  color: var(--button-program-danger-text);
+  box-shadow: var(--button-program-danger-shadow);
 }
 
 .phase-import-details[data-program-import-mode="edit"] .dialog-actions #cancel-phase-edit:hover {
-  background: linear-gradient(180deg, #ff8ca1, #cd3b5c);
-  color: #fff8fa;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 20%),
-    0 0.95rem 1.55rem rgb(255 77 109 / 34%);
+  background: var(--button-program-danger-bg-hover);
+  color: var(--button-program-danger-text-hover);
+  box-shadow: var(--button-program-danger-shadow-hover);
 }
 
 .program-builder-guide {
-  border: 1px solid #00e5ff33;
+  border: 1px solid var(--surface-program-guide-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(0 229 255 / 6%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-guide-bg);
   padding: 0.8rem;
   display: grid;
   gap: 0.55rem;
@@ -1141,11 +1279,9 @@ textarea:focus-visible {
   display: grid;
   gap: 0.75rem;
   margin: 0.35rem 0 0.85rem;
-  border: 1px solid #00e5ff33;
+  border: 1px solid var(--surface-program-preview-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(0 229 255 / 4%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-preview-bg);
   padding: 0.75rem;
 }
 
@@ -1167,41 +1303,52 @@ textarea:focus-visible {
 }
 
 .phase-import-details .dialog-actions {
-  border: 1px solid #ffd84d33;
+  border: 1px solid var(--surface-program-content-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(255 216 77 / 5%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-content-bg);
   padding: 0.75rem;
   margin-top: 0.25rem;
 }
 
+.phase-import-details .dialog-actions button {
+  min-height: auto;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.85rem;
+}
+
 .phase-import-details .dialog-actions #save-phase-button {
   min-width: 12rem;
+  background: var(--button-program-build-submit-bg);
+  border-color: var(--button-program-build-submit-border);
+  color: var(--button-program-build-submit-text);
+  box-shadow: var(--button-program-build-submit-shadow);
+}
+
+.phase-import-details .dialog-actions #save-phase-button:hover {
+  background: var(--button-program-build-submit-bg-hover);
+  box-shadow: var(--button-program-build-submit-shadow-hover);
+}
+
+.phase-import-details .dialog-actions #cancel-phase-edit {
+  min-width: 10rem;
 }
 
 #phase-import-status:not(:empty),
 #program-template-transfer-status:not(:empty) {
-  border: 1px solid #6dff5c44;
+  border: 1px solid var(--surface-program-status-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(109 255 92 / 6%), rgb(8 17 33 / 95%)),
-    #081121;
+  background: var(--surface-program-status-bg);
   padding: 0.7rem 0.8rem;
-  color: #dfffe1;
+  color: var(--surface-program-status-text);
   min-height: 2.75rem;
 }
 
 #phase-import-status.is-error,
 #program-template-transfer-status.is-error {
-  border-color: #ff708a66;
-  background:
-    linear-gradient(180deg, rgb(255 112 138 / 10%), rgb(34 12 22 / 96%)),
-    #1a0d16;
-  color: #ffd4db;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 10%),
-    0 0.75rem 1.35rem rgb(255 77 109 / 16%);
+  border-color: var(--surface-program-error-border);
+  background: var(--surface-program-error-bg);
+  color: var(--surface-program-error-text);
+  box-shadow: var(--surface-program-error-shadow);
 }
 
 #phase-import-status.is-error .phase-import-status-title,
@@ -1216,21 +1363,17 @@ textarea:focus-visible {
 
 #phase-import-status.is-error span,
 #program-template-transfer-status.is-error span {
-  color: #ffd4db;
+  color: var(--surface-program-error-text);
 }
 
 .program-preview-error {
   display: grid;
   gap: 0.6rem;
-  border: 1px solid #ff708a66;
+  border: 1px solid var(--surface-program-error-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(255 112 138 / 10%), rgb(34 12 22 / 96%)),
-    #1a0d16;
+  background: var(--surface-program-error-bg);
   padding: 0.75rem 0.8rem;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 10%),
-    0 0.75rem 1.35rem rgb(255 77 109 / 16%);
+  box-shadow: var(--surface-program-error-shadow);
 }
 
 .program-preview-error-title {
@@ -1243,11 +1386,9 @@ textarea:focus-visible {
 }
 
 .program-preview-hints {
-  border: 1px solid #ff708a55;
+  border: 1px solid var(--surface-program-error-muted-border);
   border-radius: 10px;
-  background:
-    linear-gradient(180deg, rgb(255 112 138 / 6%), rgb(18 11 16 / 96%)),
-    #120b10;
+  background: var(--surface-program-error-muted-bg);
   padding: 0.7rem 0.8rem;
   display: grid;
   gap: 0.45rem;
@@ -2286,9 +2427,9 @@ td {
 }
 
 .ghost-button {
-  background: #0a1326;
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: var(--secondary-button-bg);
+  color: var(--secondary-button-text);
+  border: 1px solid var(--secondary-button-border);
   padding: 0.4rem 0.55rem;
   font-size: 0.85rem;
   margin-right: 0.35rem;
@@ -2296,51 +2437,39 @@ td {
 }
 
 button.program-add-day-button {
-  background: linear-gradient(180deg, #00f0ff, #00b6d4);
-  border-color: #6ef8ff;
-  color: #001018;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 18%),
-    0 0.8rem 1.35rem rgb(0 229 255 / 28%);
+  background: var(--button-program-build-day-bg);
+  border-color: var(--button-program-build-day-border);
+  color: var(--button-program-build-day-text);
+  box-shadow: var(--button-program-build-day-shadow);
 }
 
 button.program-add-day-button:hover {
-  background: linear-gradient(180deg, #70f8ff, #00a4c3);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 22%),
-    0 0.95rem 1.55rem rgb(0 229 255 / 34%);
+  background: var(--button-program-build-day-bg-hover);
+  box-shadow: var(--button-program-build-day-shadow-hover);
 }
 
 button.program-add-block-button {
-  background: linear-gradient(180deg, #6dff5c, #2fca65);
-  border-color: #a9ff9c;
-  color: #00120b;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 16%),
-    0 0.8rem 1.35rem rgb(109 255 92 / 26%);
+  background: var(--button-program-build-block-bg);
+  border-color: var(--button-program-build-block-border);
+  color: var(--button-program-build-block-text);
+  box-shadow: var(--button-program-build-block-shadow);
 }
 
 button.program-add-block-button:hover {
-  background: linear-gradient(180deg, #a0ff91, #27b75c);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 20%),
-    0 0.95rem 1.55rem rgb(109 255 92 / 32%);
+  background: var(--button-program-build-block-bg-hover);
+  box-shadow: var(--button-program-build-block-shadow-hover);
 }
 
 button.program-add-exercise-button {
-  background: linear-gradient(180deg, #ffd84d, #d6a800);
-  border-color: #ffe27d;
-  color: #241900;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 14%),
-    0 0.8rem 1.35rem rgb(255 216 77 / 26%);
+  background: var(--button-program-build-exercise-bg);
+  border-color: var(--button-program-build-exercise-border);
+  color: var(--button-program-build-exercise-text);
+  box-shadow: var(--button-program-build-exercise-shadow);
 }
 
 button.program-add-exercise-button:hover {
-  background: linear-gradient(180deg, #ffe98d, #c99600);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 18%),
-    0 0.95rem 1.55rem rgb(255 216 77 / 32%);
+  background: var(--button-program-build-exercise-bg-hover);
+  box-shadow: var(--button-program-build-exercise-shadow-hover);
 }
 
 .view-panel[data-view="phases"] button.danger-button:hover {
@@ -2348,20 +2477,16 @@ button.program-add-exercise-button:hover {
 }
 
 .view-panel[data-view="phases"] .ghost-button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button) {
-  background: linear-gradient(180deg, #1c4268, #10253d);
-  border-color: #76e4ff88;
-  color: #effdff;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 16%),
-    0 0.8rem 1.35rem rgb(0 145 255 / 18%);
+  background: var(--button-program-secondary-bg);
+  border-color: var(--button-program-secondary-border);
+  color: var(--button-program-secondary-text);
+  box-shadow: var(--button-program-secondary-shadow);
 }
 
 .view-panel[data-view="phases"] .ghost-button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button):hover {
-  background: linear-gradient(180deg, #28517d, #132c45);
-  color: #f7ffff;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 20%),
-    0 0.95rem 1.55rem rgb(0 145 255 / 24%);
+  background: var(--button-program-secondary-bg-hover);
+  color: var(--button-program-secondary-text-hover);
+  box-shadow: var(--button-program-secondary-shadow-hover);
 }
 
 .view-panel[data-view="phases"] button:not(.program-add-day-button):not(.program-add-block-button):not(.program-add-exercise-button) {
@@ -2377,27 +2502,23 @@ button.program-add-exercise-button:hover {
 }
 
 .view-panel[data-view="phases"] .danger-button {
-  background: linear-gradient(180deg, #ff708a, #db4966);
-  border-color: #ffb1c388;
-  color: #fff3f7;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 16%),
-    0 0.8rem 1.35rem rgb(255 77 109 / 28%);
+  background: var(--button-program-danger-bg);
+  border-color: var(--button-program-danger-border);
+  color: var(--button-program-danger-text);
+  box-shadow: var(--button-program-danger-shadow);
 }
 
 .view-panel[data-view="phases"] .danger-button:hover {
-  background: linear-gradient(180deg, #ff8ca1, #cd3b5c);
-  color: #fff8fa;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 20%),
-    0 0.95rem 1.55rem rgb(255 77 109 / 34%);
+  background: var(--button-program-danger-bg-hover);
+  color: var(--button-program-danger-text-hover);
+  box-shadow: var(--button-program-danger-shadow-hover);
 }
 
 .danger-button {
-  color: #22000a;
-  border-color: #ff4d6d88;
+  color: var(--danger-button-text);
+  border-color: var(--danger-button-border);
   background: var(--danger);
-  box-shadow: 0 0 0.6rem #ff4d6d55;
+  box-shadow: var(--danger-button-shadow);
 }
 
 textarea {
