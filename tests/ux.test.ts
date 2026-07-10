@@ -111,6 +111,13 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.today-quick-log-strength');
     expect(styles).toContain('.today-quick-log-run');
     expect(styles).toContain('.today-quick-log-sprint');
+    expect(script).toContain('status-${session.status} activity-${session.type}');
+    expect(script).toContain('today-complete-button');
+    expect(styles).toContain('.today-session-card.status-planned');
+    expect(styles).toContain('.today-session-card.status-completed');
+    expect(styles).toContain('.today-session-card.status-modified');
+    expect(styles).toContain('.today-session-card.status-missed');
+    expect(styles).toContain('.today-complete-button');
   });
 
   it("makes Calendar the weekly working surface with a momentum strip", () => {

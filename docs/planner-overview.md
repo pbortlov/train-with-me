@@ -19,6 +19,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - default landing page for new installations
   - quick navigator and launchpad for the current day and the next useful action
   - exact-date view of today's planned sessions and standalone workout logs
+  - status-colored planned-session cards with a stronger `Log & Complete` action for due sessions
   - direct access to planned-session details and `Log & Complete`
   - strength, run, and sprint quick logging through the existing Calendar form
   - local-first onboarding that reminds athletes to plan/log, review progress, and export backups

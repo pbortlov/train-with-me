@@ -764,7 +764,7 @@ function renderTodaySessionCard(session) {
   const canComplete = session.status === "planned";
 
   return `
-    <article class="planned-session-card today-session-card">
+    <article class="planned-session-card today-session-card status-${session.status} activity-${session.type}">
       <div class="planned-session-title">${escapeHtml(session.title)}</div>
       <div class="planned-session-time">${escapeHtml(primaryMeta)}</div>
       <div class="planned-session-footer">
@@ -774,7 +774,7 @@ function renderTodaySessionCard(session) {
         <button type="button" class="ghost-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">Details</button>
         ${
           canComplete
-            ? `<button type="button" class="planned-session-button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>`
+            ? `<button type="button" class="button-primary today-complete-button planned-session-button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>`
             : ""
         }
       </div>
