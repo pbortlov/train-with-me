@@ -1272,11 +1272,8 @@ textarea:focus-visible {
 }
 
 .today-details-button {
-  justify-self: start;
-  width: fit-content;
-  min-width: 6.75rem;
-  padding-inline: 0.8rem;
-  font-size: 0.82rem;
+  width: 100%;
+  min-width: 0;
   background: var(--button-program-secondary-bg);
   border-color: var(--button-program-secondary-border);
   color: var(--button-program-secondary-text);

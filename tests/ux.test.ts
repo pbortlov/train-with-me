@@ -127,6 +127,7 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.today-session-actions');
     expect(styles).toContain('.today-details-button');
     expect(styles).toContain('.today-complete-button');
+    expect(styles).toContain('.today-details-button {\n  width: 100%;');
   });
 
   it("makes Calendar the weekly working surface with a momentum strip", () => {
