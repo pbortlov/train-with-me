@@ -99,6 +99,15 @@ describe("local-first UX guidance", () => {
     expect(index).not.toContain('data-view-target="review"');
   });
 
+  it("keeps Review as a collapsed secondary drawer", () => {
+    expect(index).toContain('<details class="card review-disclosure">');
+    expect(index).toContain('<summary>Review sessions</summary>');
+    expect(index).toContain('id="review-summary"');
+    expect(index).toContain('id="review-session-list"');
+    expect(styles).toContain('.review-disclosure summary');
+    expect(styles).toContain('.review-disclosure[open] summary');
+  });
+
   it("turns Today into a launchpad with a direct stats jump", () => {
     expect(index).toContain('class="card today-launchpad"');
     expect(index).toContain('data-today-action="open-stats"');

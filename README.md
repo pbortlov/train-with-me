@@ -74,7 +74,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - `Calendar`: weekly working surface, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, `Log & Complete` execution logging, and a momentum strip that shows next up plus weekly progress
 - `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts, with a reward-first top section
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview
-- `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept outside the primary athlete nav
+- `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept outside the primary athlete nav and tucked behind a collapsed drawer
 - `Data`: quiet maintenance surface for backup, with exercise library and workout history tucked behind expandable drawers
 
 ## Strength Phase Import

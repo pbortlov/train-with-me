@@ -1350,6 +1350,45 @@ textarea:focus-visible {
   box-shadow: var(--button-program-secondary-shadow-hover);
 }
 
+.review-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--surface-program-summary-border);
+  border-radius: 10px;
+  background: var(--surface-program-summary-bg);
+  padding: 0.75rem 0.85rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 800;
+  list-style: none;
+}
+
+.review-disclosure summary::after {
+  content: "Open";
+  color: #d7f8ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.review-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.review-disclosure[open] summary {
+  border-color: var(--surface-program-summary-open-border);
+  background: var(--surface-program-summary-open-bg);
+  color: #f3feff;
+}
+
+.review-disclosure[open] summary::after {
+  content: "Close";
+}
+
 .phase-template-details {
   border: 1px solid var(--border);
   border-radius: 10px;

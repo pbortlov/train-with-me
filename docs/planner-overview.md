@@ -79,6 +79,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
   - planned vs actual comparisons remain available as a secondary inspection view
+  - lives behind a collapsed drawer so it stays out of the daily athlete flow
   - run actual pace is calculated from logged distance and time
   - sprint review includes planned sprint blocks, actual sprint rows, and session feeling
   - strength review includes actual per-set execution with load type, reps, and load details
