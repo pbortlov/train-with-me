@@ -104,6 +104,13 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('data-today-action="open-stats"');
     expect(index).toContain('class="hint today-launchpad-note"');
     expect(index).toContain('Start here, jump to the week, and check progress after you log.');
+    expect(index).toContain('class="today-quick-log-button today-quick-log-strength"');
+    expect(index).toContain('class="today-quick-log-button today-quick-log-run"');
+    expect(index).toContain('class="today-quick-log-button today-quick-log-sprint"');
+    expect(styles).toContain('.today-quick-log-button');
+    expect(styles).toContain('.today-quick-log-strength');
+    expect(styles).toContain('.today-quick-log-run');
+    expect(styles).toContain('.today-quick-log-sprint');
   });
 
   it("makes Calendar the weekly working surface with a momentum strip", () => {

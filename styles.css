@@ -351,6 +351,63 @@ body {
   gap: 0.5rem;
 }
 
+.today-quick-log-button {
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+  font-weight: 700;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 14%),
+    0 0.75rem 1.2rem rgb(0 0 0 / 20%);
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.today-quick-log-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06) saturate(1.04);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    0 0.9rem 1.45rem rgb(0 0 0 / 24%);
+}
+
+.today-quick-log-strength {
+  background: var(--button-program-build-block-bg);
+  border-color: var(--button-program-build-block-border);
+  color: var(--button-program-build-block-text);
+  box-shadow: var(--button-program-build-block-shadow);
+}
+
+.today-quick-log-strength:hover {
+  background: var(--button-program-build-block-bg-hover);
+  box-shadow: var(--button-program-build-block-shadow-hover);
+}
+
+.today-quick-log-run {
+  background: var(--button-program-build-day-bg);
+  border-color: var(--button-program-build-day-border);
+  color: var(--button-program-build-day-text);
+  box-shadow: var(--button-program-build-day-shadow);
+}
+
+.today-quick-log-run:hover {
+  background: var(--button-program-build-day-bg-hover);
+  box-shadow: var(--button-program-build-day-shadow-hover);
+}
+
+.today-quick-log-sprint {
+  background: var(--button-program-build-exercise-bg);
+  border-color: var(--button-program-build-exercise-border);
+  color: var(--button-program-build-exercise-text);
+  box-shadow: var(--button-program-build-exercise-shadow);
+}
+
+.today-quick-log-sprint:hover {
+  background: var(--button-program-build-exercise-bg-hover);
+  box-shadow: var(--button-program-build-exercise-shadow-hover);
+}
+
 .today-session-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
