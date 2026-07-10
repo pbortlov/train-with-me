@@ -75,7 +75,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts, with a reward-first top section
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept outside the primary athlete nav
-- `Data`: backup, exercise library, and workout history management
+- `Data`: quiet maintenance surface for backup, with exercise library and workout history tucked behind expandable drawers
 
 ## Strength Phase Import
 V1 import focuses on `strength phases` only.

@@ -678,12 +678,12 @@
       </section>
 
       <section class="view-panel" data-view="data">
-        <article class="card">
+        <article class="card data-utility-card">
           <h2>Data</h2>
-          <p class="hint">Manage backups, saved exercise names, and workout history here.</p>
+          <p class="hint">Manage backups, saved exercise names, and workout history here. This page is for maintenance, not daily training flow.</p>
         </article>
 
-        <article class="card">
+        <article class="card data-backup-card">
           <h3>Backup</h3>
           <p class="hint">Export your data to a JSON file, or import a backup file.</p>
           <div class="backup-safety-panel" role="note" aria-label="Backup safety checklist">
@@ -696,8 +696,8 @@
             </ul>
           </div>
           <div class="grid">
-            <button type="button" id="export-data">Export Data (JSON)</button>
-            <label>
+            <button type="button" id="export-data" class="data-backup-control data-backup-export">Export Data (JSON)</button>
+            <label class="data-backup-control data-backup-import data-import-button">
               Import JSON file
               <input type="file" id="import-data-file" accept=".json,application/json" />
             </label>
@@ -705,14 +705,14 @@
           <p id="backup-status" class="hint"></p>
         </article>
 
-        <article class="card">
-          <h3>Exercise Library</h3>
+        <details class="card data-library-card data-collapsible-card">
+          <summary>Exercise Library</summary>
           <p class="hint">Saved exercise names for quick reuse in workout logging and editing.</p>
           <ul id="exercise-library-list" class="detail-list"></ul>
-        </article>
+        </details>
 
-        <article class="card">
-          <h3>Workout History</h3>
+        <details class="card data-history-card data-collapsible-card">
+          <summary>Workout History</summary>
           <div class="table-wrap">
             <table>
               <thead>
@@ -727,7 +727,7 @@
               <tbody id="history-body"></tbody>
             </table>
           </div>
-        </article>
+        </details>
       </section>
     </main>
 

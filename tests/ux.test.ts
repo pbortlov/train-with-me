@@ -125,6 +125,26 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.sprint-insights-card');
   });
 
+  it("keeps Data and dialogs in a quieter utility style", () => {
+    expect(index).toContain('class="card data-utility-card"');
+    expect(index).toContain('class="card data-backup-card"');
+    expect(index).toContain('<details class="card data-library-card data-collapsible-card">');
+    expect(index).toContain('<details class="card data-history-card data-collapsible-card">');
+    expect(index).toContain('id="export-data" class="data-backup-control data-backup-export"');
+    expect(index).toContain('class="data-backup-control data-backup-import data-import-button"');
+    expect(styles).toContain('.view-panel[data-view="data"] > .card');
+    expect(styles).toContain('.data-collapsible-card summary');
+    expect(styles).toContain('background: var(--surface-program-panel-bg);');
+    expect(styles).toContain('background: var(--surface-program-lead-bg);');
+    expect(styles).toContain('.data-backup-export');
+    expect(styles).toContain('.data-backup-import');
+    expect(styles).toContain('background: var(--button-program-build-day-bg);');
+    expect(styles).toContain('background: var(--button-program-secondary-bg);');
+    expect(styles).toContain('.view-panel[data-view="data"] .danger-button');
+    expect(styles).toContain('dialog::backdrop');
+    expect(styles).toContain('background:\n    linear-gradient(180deg, rgb(10 19 38 / 98%), rgb(6 8 15 / 98%)');
+  });
+
   it("styles the program import lead-in as a visible panel", () => {
     expect(index).toContain('class="hint program-import-lead"');
     expect(index).toContain("<summary>Create or import program</summary>");

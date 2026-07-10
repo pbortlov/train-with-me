@@ -102,10 +102,10 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - Sprint Insights summarize sprint workouts, total reps, unique distances, latest sprint, fastest rep, distance-specific bests, recent sessions, and feeling mix
   - per-entry strength, run, and sprint charts separate from strength phases
 - `Data`
-  - backup export/import
-  - backup safety checklist before export/import controls
-  - exercise library management
-  - workout history management
+  - quiet maintenance surface for backup export/import and maintenance
+  - backup safety checklist before export/import controls, styled to match the Programs surface
+  - exercise library management hidden behind an expandable drawer
+  - workout history management hidden behind an expandable drawer
 
 ## Status Model
 Each planned session can be:
