@@ -2947,6 +2947,32 @@ textarea {
     align-items: stretch;
   }
 
+  .calendar-launchpad {
+    gap: 0.7rem;
+  }
+
+  .calendar-nav {
+    width: 100%;
+  }
+
+  .calendar-nav button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .add-training-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mode-toggle {
+    width: 100%;
+  }
+
+  .mode-toggle .ghost-button {
+    flex: 1 1 0;
+  }
+
   .grid,
   .summary {
     grid-template-columns: 1fr;
@@ -2965,7 +2991,18 @@ textarea {
   }
 
   .calendar-day {
-    min-height: auto;
+    min-height: 9.5rem;
+    padding: 0.65rem;
+    gap: 0.55rem;
+  }
+
+  .calendar-momentum-card {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .planned-session-card {
+    padding: 0.65rem;
+    gap: 0.45rem;
   }
 
   .completion-exercise-row {

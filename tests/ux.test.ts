@@ -113,6 +113,9 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.calendar-launchpad');
     expect(styles).toContain('.calendar-momentum-card');
     expect(styles).toContain('.calendar-nav #current-week');
+    expect(styles).toContain('.calendar-nav button {\n    flex: 1 1 0;');
+    expect(styles).toContain('.mode-toggle {\n    width: 100%;');
+    expect(styles).toContain('min-height: 9.5rem;');
   });
 
   it("keeps Stats reward-first with a momentum highlight", () => {
