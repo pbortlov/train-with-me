@@ -18,6 +18,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 - `Today`
   - default landing page for new installations
   - quick navigator and launchpad for the current day and the next useful action
+  - primary `Open week` action with a secondary `Open stats` cue so daily navigation starts in the right place
   - exact-date view of today's planned sessions and standalone workout logs
   - status-colored planned-session cards with a dominant `Log & Complete` action for due sessions and a secondary `Details` action
   - direct access to planned-session details and `Log & Complete`

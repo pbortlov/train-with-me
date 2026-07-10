@@ -314,6 +314,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: stretch;
 }
 
 .today-calendar-button {
@@ -321,8 +322,41 @@ body {
 }
 
 .today-calendar-button,
-.today-launchpad-actions .ghost-button {
+.today-launchpad-actions .button-primary,
+.today-launchpad-actions .button-secondary {
   min-width: 8.5rem;
+}
+
+.today-launchpad-actions .button-primary,
+.today-launchpad-actions .button-secondary {
+  min-height: 2.75rem;
+  justify-content: center;
+  text-align: center;
+}
+
+.today-launchpad-week-button {
+  background: var(--button-program-build-day-bg);
+  border-color: var(--button-program-build-day-border);
+  color: var(--button-program-build-day-text);
+  box-shadow: var(--button-program-build-day-shadow);
+}
+
+.today-launchpad-week-button:hover {
+  background: var(--button-program-build-day-bg-hover);
+  box-shadow: var(--button-program-build-day-shadow-hover);
+}
+
+.today-launchpad-stats-button {
+  background: var(--button-program-secondary-bg);
+  border-color: var(--button-program-secondary-border);
+  color: var(--button-program-secondary-text);
+  box-shadow: var(--button-program-secondary-shadow);
+}
+
+.today-launchpad-stats-button:hover {
+  background: var(--button-program-secondary-bg-hover);
+  color: var(--button-program-secondary-text-hover);
+  box-shadow: var(--button-program-secondary-shadow-hover);
 }
 
 .today-summary {
