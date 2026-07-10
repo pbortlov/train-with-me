@@ -115,6 +115,16 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.calendar-nav #current-week');
   });
 
+  it("keeps Stats reward-first with a momentum highlight", () => {
+    expect(index).toContain('id="progress-hub-highlight"');
+    expect(index).toContain('<h2 id="progress-hub-heading">Progress Hub</h2>');
+    expect(index).toContain('<h2>Weekly scorecard</h2>');
+    expect(styles).toContain('.progress-hub-highlight-card');
+    expect(styles).toContain('.strength-insights-card');
+    expect(styles).toContain('.running-insights-card');
+    expect(styles).toContain('.sprint-insights-card');
+  });
+
   it("styles the program import lead-in as a visible panel", () => {
     expect(index).toContain('class="hint program-import-lead"');
     expect(index).toContain("<summary>Create or import program</summary>");

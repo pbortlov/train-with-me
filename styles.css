@@ -447,6 +447,48 @@ body {
   gap: 0.5rem;
 }
 
+.progress-hub-highlight {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.6rem;
+}
+
+.progress-hub-highlight-card {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid #6dff5c44;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgb(109 255 92 / 6%), rgb(8 17 33 / 95%)),
+    #081121;
+  padding: 0.75rem 0.85rem;
+}
+
+.progress-hub-highlight-card.is-accent {
+  border-color: #00e5ff55;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 7%), rgb(8 17 33 / 95%)),
+    #081121;
+}
+
+.progress-hub-highlight-card .label {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.progress-hub-highlight-card .value {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.progress-hub-highlight-card .detail {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 .progress-hub-row {
   display: flex;
   justify-content: space-between;
@@ -467,6 +509,27 @@ body {
 .sprint-insights-card {
   display: grid;
   gap: 0.75rem;
+}
+
+.strength-insights-card {
+  border-color: #9b5cff55;
+  background:
+    linear-gradient(180deg, rgb(155 92 255 / 5%), rgb(8 17 33 / 96%)),
+    #081121;
+}
+
+.running-insights-card {
+  border-color: #00e5ff44;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 5%), rgb(8 17 33 / 96%)),
+    #081121;
+}
+
+.sprint-insights-card {
+  border-color: #ffd84d55;
+  background:
+    linear-gradient(180deg, rgb(255 216 77 / 5%), rgb(8 17 33 / 96%)),
+    #081121;
 }
 
 .strength-insights-details {

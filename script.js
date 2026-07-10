@@ -237,6 +237,7 @@ const reviewSessionListEl = document.getElementById("review-session-list");
 const adherenceSummaryEl = document.getElementById("adherence-summary");
 const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
 const progressHubStatusEl = document.getElementById("progress-hub-status");
+const progressHubHighlightEl = document.getElementById("progress-hub-highlight");
 const progressHubSummaryEl = document.getElementById("progress-hub-summary");
 const progressHubBreakdownEl = document.getElementById("progress-hub-breakdown");
 const progressHubActions = document.querySelectorAll("[data-progress-jump]");
@@ -1059,9 +1060,38 @@ function renderProgressHub() {
   }
 
   const model = buildProgressHubModel(workouts, plannedSessions, goals);
+  const weekStats = computeWeeklyAdherence(uiSettings.currentWeekStart);
+  const achievedGoals = (goals.history || [])
+    .filter((goal) => goal.achievedAt)
+    .sort((left, right) => (right.achievedAt || "").localeCompare(left.achievedAt || ""));
   progressHubStatusEl.textContent = model.lastWorkoutDate
     ? `Last workout logged ${formatHumanDate(model.lastWorkoutDate)}.`
     : "Log your first workout to start building progress history.";
+  if (progressHubHighlightEl) {
+    const latestGoal = achievedGoals[0];
+    progressHubHighlightEl.innerHTML = `
+      <article class="progress-hub-highlight-card is-accent">
+        <span class="label">Momentum</span>
+        <span class="value">${model.completionRate}% plan completion</span>
+        <span class="detail">${weekStats.completed}/${weekStats.total || 0} planned sessions done this week</span>
+      </article>
+      <article class="progress-hub-highlight-card">
+        <span class="label">Latest win</span>
+        <span class="value">${
+          latestGoal?.achievedAt
+            ? `Goal achieved ${formatHumanDate(latestGoal.achievedAt)}`
+            : model.lastWorkoutDate
+              ? `Last workout ${formatHumanDate(model.lastWorkoutDate)}`
+              : "No wins logged yet"
+        }</span>
+        <span class="detail">${
+          latestGoal?.achievedAt
+            ? `${daysBetween(latestGoal.setAt, latestGoal.achievedAt)} day(s) to reach it`
+            : `${model.totalWorkouts} workout${model.totalWorkouts === 1 ? "" : "s"} logged`
+        }</span>
+      </article>
+    `;
+  }
   progressHubSummaryEl.innerHTML = `
     <article class="badge">
       <span class="label">Workouts</span>

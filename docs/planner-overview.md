@@ -85,6 +85,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 - `Stats`
   - the main progress and motivation surface after logging
   - accessible from Today as a direct launchpad action
+  - reward-first top section with a momentum highlight before the detailed cards
   - Progress Hub summarizes total workouts, plan completion, active goals, achieved goals, training mix, and planned-session completion
   - Progress Hub shortcuts scroll to goals, adherence, and activity chart details without changing metric semantics
   - adherence summaries

@@ -11,7 +11,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Mobile-first Today launchpad for planned sessions, completed training, and quick logging
 - Persistent bottom navigation on phone-sized screens
 - Fast activity-specific actual logging for strength, run, and sprint, with Today/Yesterday date shortcuts
-- Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix
+- Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix, with a momentum highlight
 - Strength Insights for strength workout count, exercise coverage, load mix, top kg lift, and most trained exercises
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
 - Sprint Insights for sprint workouts, rep volume, distance-specific bests, fastest rep, and feeling mix
@@ -72,7 +72,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 ## Main Pages
 - `Today`: quick navigator and launchpad, daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
 - `Calendar`: weekly working surface, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, `Log & Complete` execution logging, and a momentum strip that shows next up plus weekly progress
-- `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts
+- `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts, with a reward-first top section
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept outside the primary athlete nav
 - `Data`: backup, exercise library, and workout history management
