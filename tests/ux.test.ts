@@ -99,15 +99,6 @@ describe("local-first UX guidance", () => {
     expect(index).not.toContain('data-view-target="review"');
   });
 
-  it("keeps Review as a collapsed secondary drawer", () => {
-    expect(index).toContain('<details class="card review-disclosure" id="review-disclosure">');
-    expect(index).toContain('<summary>Review sessions</summary>');
-    expect(index).toContain('id="review-summary"');
-    expect(index).toContain('id="review-session-list"');
-    expect(styles).toContain('.review-disclosure summary');
-    expect(styles).toContain('.review-disclosure[open] summary');
-  });
-
   it("turns Today into a launchpad with a direct stats jump", () => {
     expect(index).toContain('class="card today-launchpad"');
     expect(index).toContain('data-today-action="open-stats"');
@@ -129,10 +120,16 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('<h2 id="progress-hub-heading">Progress Hub</h2>');
     expect(index).toContain('<h2>Weekly scorecard</h2>');
     expect(index).toContain('data-progress-jump="review"');
+    expect(index).toContain('<details class="card review-disclosure" id="review-disclosure">');
+    expect(index).toContain('<summary>Review sessions</summary>');
+    expect(index).toContain('id="review-summary"');
+    expect(index).toContain('id="review-session-list"');
     expect(styles).toContain('.progress-hub-highlight-card');
     expect(styles).toContain('.strength-insights-card');
     expect(styles).toContain('.running-insights-card');
     expect(styles).toContain('.sprint-insights-card');
+    expect(styles).toContain('.review-disclosure summary');
+    expect(styles).toContain('.review-disclosure[open] summary');
   });
 
   it("keeps Data and dialogs in a quieter utility style", () => {

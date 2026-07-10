@@ -78,8 +78,8 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - support slot notes, including `Warm Up: 10 mins` or `Warm Up: 10-15 mins` for calendar time calculation, block timing like `15 mins`, `15-20 mins`, `30s`, `90-120s`, set prescriptions like `3` or `3-4`, and optional exercise weight targets inside imported strength plans
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
-  - planned vs actual comparisons remain available as a secondary inspection view
-  - lives behind a collapsed drawer so it stays out of the daily athlete flow
+  - planned vs actual comparisons remain available as a secondary inspection drawer inside Stats
+  - stays out of the primary athlete nav and opens from the Stats page
   - run actual pace is calculated from logged distance and time
   - sprint review includes planned sprint blocks, actual sprint rows, and session feeling
   - strength review includes actual per-set execution with load type, reps, and load details

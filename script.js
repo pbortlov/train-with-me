@@ -300,6 +300,7 @@ let uiSettings = load(STORAGE_KEY_UI_SETTINGS, {
   coachMode: false,
   currentWeekStart: formatDateInput(startOfWeek(new Date())),
 });
+uiSettings.currentView = normalizeViewName(uiSettings.currentView);
 let editingWorkoutId = null;
 let draftSprintSets = [];
 let draftPlannedSprintBlocks = [];
@@ -1136,7 +1137,7 @@ function scrollToProgressSection(target) {
   const section = sectionByTarget[target];
   if (section instanceof HTMLElement) {
     if (target === "review") {
-      setCurrentView("review");
+      setCurrentView("stats");
       render();
       reviewDisclosureEl?.setAttribute("open", "");
     }
@@ -2819,7 +2820,9 @@ function importBackupData(event) {
         ? parsed.phaseInstances.map((instance) => normalizePhaseInstance(instance))
         : [];
       uiSettings = {
-        currentView: typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "today",
+        currentView: normalizeViewName(
+          typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "today",
+        ),
         coachMode: Boolean(parsed.uiSettings?.coachMode),
         currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
@@ -3428,9 +3431,16 @@ function savePlannerCollections() {
 }
 
 function setCurrentView(view) {
-  uiSettings.currentView = ["today", "calendar", "phases", "review", "stats", "data"].includes(view) ? view : "today";
+  uiSettings.currentView = normalizeViewName(view);
   savePlannerCollections();
   syncViewState();
+}
+
+function normalizeViewName(view) {
+  if (view === "review") {
+    return "stats";
+  }
+  return ["today", "calendar", "phases", "stats", "data"].includes(view) ? view : "today";
 }
 
 function setCoachMode(enabled) {
