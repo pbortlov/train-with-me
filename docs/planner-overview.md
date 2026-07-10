@@ -27,7 +27,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - week-first layout
   - main working surface for choosing a day and keeping the week visible
   - launchpad header with a next-up / weekly-progress cue above the grid
-  - one `Add Training` surface with `Log actual` and `Plan session` modes
+  - one visible `Add Training` surface for actual logs, plus a collapsed planning drawer for manual run/sprint plans
   - manual run/sprint planning through `Plan session`
   - sprint plans use structured blocks with reps, distance, optional target time per rep, and optional rest
   - planned run editing opens in a popup instead of reusing the in-page creation form

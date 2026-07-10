@@ -785,28 +785,61 @@ textarea:focus-visible {
   flex-wrap: wrap;
 }
 
-.mode-toggle {
-  display: flex;
-  gap: 0.4rem;
-  padding: 0.25rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #081121;
-}
-
-.mode-toggle .ghost-button {
-  margin: 0;
-}
-
-.mode-toggle .ghost-button.is-active {
-  background: var(--accent);
-  color: #061021;
-  border-color: var(--accent);
-}
-
 .add-training-panel {
   display: grid;
   gap: 0.75rem;
+}
+
+.add-training-note {
+  margin-bottom: 0;
+  color: #d7f8ff;
+}
+
+.add-training-plan-details {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid var(--surface-program-summary-border);
+  border-radius: 12px;
+  background: var(--surface-program-panel-bg);
+  padding: 0.75rem;
+}
+
+.add-training-plan-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--surface-program-summary-border);
+  border-radius: 10px;
+  background: var(--surface-program-summary-bg);
+  padding: 0.75rem 0.85rem;
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 800;
+  list-style: none;
+}
+
+.add-training-plan-details summary::after {
+  content: "Open";
+  color: #d7f8ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.add-training-plan-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.add-training-plan-details[open] summary {
+  border-color: var(--surface-program-summary-open-border);
+  background: var(--surface-program-summary-open-bg);
+  color: #f3feff;
+}
+
+.add-training-plan-details[open] summary::after {
+  content: "Close";
 }
 
 .calendar-day {
@@ -3031,12 +3064,12 @@ textarea {
     align-items: stretch;
   }
 
-  .mode-toggle {
-    width: 100%;
+  .add-training-note {
+    font-size: 0.84rem;
   }
 
-  .mode-toggle .ghost-button {
-    flex: 1 1 0;
+  .add-training-plan-details {
+    padding: 0.65rem;
   }
 
   .grid,

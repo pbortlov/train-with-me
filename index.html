@@ -115,12 +115,9 @@
           <div class="add-training-header">
             <div>
               <h3>Add Training</h3>
-              <p class="hint">Log an actual workout or plan a future run/sprint session from one place.</p>
+              <p class="hint">Log an actual workout now. Open the planning drawer when you need a future run or sprint session.</p>
             </div>
-            <div class="mode-toggle" aria-label="Add training mode">
-              <button type="button" class="ghost-button is-active" data-add-training-mode="log">Log actual</button>
-              <button type="button" class="ghost-button" data-add-training-mode="plan">Plan session</button>
-            </div>
+            <p class="hint add-training-note">Log actual stays visible. Planning is tucked into the drawer below.</p>
           </div>
 
           <section class="add-training-panel" data-add-training-panel="log">
@@ -249,7 +246,8 @@
             </form>
           </section>
 
-          <section class="add-training-panel is-hidden" data-add-training-panel="plan">
+          <details class="add-training-plan-details" id="planned-session-drawer">
+            <summary>Plan session</summary>
             <p class="hint">Plan a future run or sprint session. Strength plans should usually come from a program template.</p>
             <form id="planned-session-form">
             <input type="hidden" id="planned-session-id" />
@@ -318,7 +316,7 @@
             </div>
             <p id="planned-session-status" class="hint"></p>
             </form>
-          </section>
+          </details>
         </article>
       </section>
 

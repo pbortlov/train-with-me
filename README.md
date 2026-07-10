@@ -71,7 +71,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 
 ## Main Pages
 - `Today`: quick navigator and launchpad, daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
-- `Calendar`: weekly working surface, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, `Log & Complete` execution logging, and a momentum strip that shows next up plus weekly progress
+- `Calendar`: weekly working surface, `Add Training` for actual logs plus a collapsed planning drawer for manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, `Log & Complete` execution logging, and a momentum strip that shows next up plus weekly progress
 - `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts, with a reward-first top section and a review drawer shortcut
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept out of the primary athlete nav and opened from the Stats page

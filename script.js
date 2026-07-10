@@ -159,8 +159,6 @@ const todayDateHeadingEl = document.getElementById("today-date-heading");
 const todayStatusEl = document.getElementById("today-status");
 const todaySummaryEl = document.getElementById("today-summary");
 const todayTrainingListEl = document.getElementById("today-training-list");
-const addTrainingModeButtons = document.querySelectorAll("[data-add-training-mode]");
-const addTrainingPanels = document.querySelectorAll("[data-add-training-panel]");
 const plannerSummaryEl = document.getElementById("planner-summary");
 const calendarMomentumEl = document.getElementById("calendar-momentum");
 const calendarWeekLabelEl = document.getElementById("calendar-week-label");
@@ -189,6 +187,7 @@ const prevWeekButton = document.getElementById("prev-week");
 const nextWeekButton = document.getElementById("next-week");
 const currentWeekButton = document.getElementById("current-week");
 const plannedSessionForm = document.getElementById("planned-session-form");
+const plannedSessionDrawer = document.getElementById("planned-session-drawer");
 const plannedSessionIdInput = document.getElementById("planned-session-id");
 const plannedSessionDateInput = document.getElementById("planned-session-date");
 const plannedSessionTypeInput = document.getElementById("planned-session-type");
@@ -529,11 +528,6 @@ addSafeEventListener(editStrengthExercisesList, "change", handleInlineStrengthEd
 addSafeEventListener(editStrengthExercisesList, "click", handleInlineStrengthDelete);
 addSafeEventListener(exerciseLibraryListEl, "click", handleExerciseLibraryClick);
 document.addEventListener("click", handleBandColorPickerClick);
-addTrainingModeButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    setAddTrainingMode(button.dataset.addTrainingMode || "log");
-  });
-});
 addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
   const loadType = editStrengthLoadTypeInput.value;
   editStrengthWeightInput.disabled = loadType !== "kg";
@@ -2883,13 +2877,9 @@ function addSafeEventListener(element, eventName, handler) {
 
 function setAddTrainingMode(mode) {
   const selectedMode = mode === "plan" ? "plan" : "log";
-  addTrainingModeButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.addTrainingMode === selectedMode);
-    button.setAttribute("aria-pressed", button.dataset.addTrainingMode === selectedMode ? "true" : "false");
-  });
-  addTrainingPanels.forEach((panel) => {
-    panel.classList.toggle("is-hidden", panel.dataset.addTrainingPanel !== selectedMode);
-  });
+  if (plannedSessionDrawer) {
+    plannedSessionDrawer.open = selectedMode === "plan";
+  }
 }
 
 function toggleEditDialogFields(activity) {
@@ -4490,6 +4480,7 @@ function fillPlannedSessionForm(session) {
     renderPlannedSprintBlocks();
   }
   updatePlannedTypeFields();
+  plannedSessionDrawer?.scrollIntoView({ behavior: "smooth", block: "start" });
   setCurrentView("calendar");
 }
 

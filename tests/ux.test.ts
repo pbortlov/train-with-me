@@ -110,11 +110,13 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('class="card calendar-launchpad"');
     expect(index).toContain('id="calendar-momentum"');
     expect(index).toContain('See the whole week, choose the day, and keep the plan close to the action.');
+    expect(index).toContain('<details class="add-training-plan-details" id="planned-session-drawer">');
+    expect(index).toContain('<summary>Plan session</summary>');
     expect(styles).toContain('.calendar-launchpad');
     expect(styles).toContain('.calendar-momentum-card');
     expect(styles).toContain('.calendar-nav #current-week');
     expect(styles).toContain('.calendar-nav button {\n    flex: 1 1 0;');
-    expect(styles).toContain('.mode-toggle {\n    width: 100%;');
+    expect(styles).toContain('.add-training-plan-details summary');
     expect(styles).toContain('min-height: 9.5rem;');
     expect(script).toContain('session-detail-close-button');
     expect(script).toContain('session-action-primary');
