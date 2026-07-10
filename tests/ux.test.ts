@@ -84,6 +84,109 @@ describe("local-first UX guidance", () => {
     expect(index).toContain("TRAINING,Tuesday,Strength A,Main lower-body day");
   });
 
+  it("orders the main navigation around athlete usage", () => {
+    const todayIndex = index.indexOf('data-view-target="today"');
+    const calendarIndex = index.indexOf('data-view-target="calendar"');
+    const statsIndex = index.indexOf('data-view-target="stats"');
+    const phasesIndex = index.indexOf('data-view-target="phases"');
+    const dataIndex = index.indexOf('data-view-target="data"');
+
+    expect(todayIndex).toBeGreaterThan(-1);
+    expect(calendarIndex).toBeGreaterThan(todayIndex);
+    expect(statsIndex).toBeGreaterThan(calendarIndex);
+    expect(phasesIndex).toBeGreaterThan(statsIndex);
+    expect(dataIndex).toBeGreaterThan(phasesIndex);
+    expect(index).not.toContain('data-view-target="review"');
+  });
+
+  it("turns Today into a launchpad with a direct stats jump", () => {
+    expect(index).toContain('class="card today-launchpad"');
+    expect(index).toContain('data-today-action="open-stats"');
+    expect(index).toContain('class="hint today-launchpad-note"');
+    expect(index).toContain('Start here, jump to the week, and check progress after you log.');
+    expect(index).toContain('class="button-primary today-calendar-button today-launchpad-week-button"');
+    expect(index).toContain('class="button-secondary today-launchpad-stats-button"');
+    expect(index).toContain('class="today-quick-log-button today-quick-log-strength"');
+    expect(index).toContain('class="today-quick-log-button today-quick-log-run"');
+    expect(index).toContain('class="today-quick-log-button today-quick-log-sprint"');
+    expect(styles).toContain('.today-launchpad-actions .button-primary');
+    expect(styles).toContain('.today-launchpad-actions .button-secondary');
+    expect(styles).toContain('.today-launchpad-week-button');
+    expect(styles).toContain('.today-launchpad-stats-button');
+    expect(styles).toContain('.today-quick-log-button');
+    expect(styles).toContain('.today-quick-log-strength');
+    expect(styles).toContain('.today-quick-log-run');
+    expect(styles).toContain('.today-quick-log-sprint');
+    expect(script).toContain('status-${session.status} activity-${session.type}');
+    expect(script).toContain('today-complete-button');
+    expect(script).toContain('today-details-button');
+    expect(styles).toContain('.today-session-card.status-planned');
+    expect(styles).toContain('.today-session-card.status-completed');
+    expect(styles).toContain('.today-session-card.status-modified');
+    expect(styles).toContain('.today-session-card.status-missed');
+    expect(styles).toContain('.today-session-actions');
+    expect(styles).toContain('.today-details-button');
+    expect(styles).toContain('.today-complete-button');
+    expect(styles).toContain('.today-details-button {\n  width: 100%;');
+  });
+
+  it("makes Calendar the weekly working surface with a momentum strip", () => {
+    expect(index).toContain('class="card calendar-launchpad"');
+    expect(index).toContain('id="calendar-momentum"');
+    expect(index).toContain('See the whole week, choose the day, and keep the plan close to the action.');
+    expect(index).toContain('<details class="add-training-plan-details" id="planned-session-drawer">');
+    expect(index).toContain('<summary>Plan session</summary>');
+    expect(styles).toContain('.calendar-launchpad');
+    expect(styles).toContain('.calendar-momentum-card');
+    expect(styles).toContain('.calendar-nav #current-week');
+    expect(styles).toContain('.calendar-nav button {\n    flex: 1 1 0;');
+    expect(styles).toContain('.add-training-plan-details summary');
+    expect(styles).toContain('min-height: 9.5rem;');
+    expect(script).toContain('session-detail-close-button');
+    expect(script).toContain('session-action-primary');
+    expect(script).toContain('session-action-danger');
+    expect(styles).toContain('.session-detail-close-button');
+    expect(styles).toContain('.session-action-primary');
+    expect(styles).toContain('.session-action-danger');
+  });
+
+  it("keeps Stats reward-first with a momentum highlight", () => {
+    expect(index).toContain('id="progress-hub-highlight"');
+    expect(index).toContain('<h2 id="progress-hub-heading">Progress Hub</h2>');
+    expect(index).toContain('<h2>Weekly scorecard</h2>');
+    expect(index).toContain('data-progress-jump="review"');
+    expect(index).toContain('<details class="card review-disclosure" id="review-disclosure">');
+    expect(index).toContain('<summary>Review sessions</summary>');
+    expect(index).toContain('id="review-summary"');
+    expect(index).toContain('id="review-session-list"');
+    expect(styles).toContain('.progress-hub-highlight-card');
+    expect(styles).toContain('.strength-insights-card');
+    expect(styles).toContain('.running-insights-card');
+    expect(styles).toContain('.sprint-insights-card');
+    expect(styles).toContain('.review-disclosure summary');
+    expect(styles).toContain('.review-disclosure[open] summary');
+  });
+
+  it("keeps Data and dialogs in a quieter utility style", () => {
+    expect(index).toContain('class="card data-utility-card"');
+    expect(index).toContain('class="card data-backup-card"');
+    expect(index).toContain('<details class="card data-library-card data-collapsible-card">');
+    expect(index).toContain('<details class="card data-history-card data-collapsible-card">');
+    expect(index).toContain('id="export-data" class="data-backup-control data-backup-export"');
+    expect(index).toContain('class="data-backup-control data-backup-import data-import-button"');
+    expect(styles).toContain('.view-panel[data-view="data"] > .card');
+    expect(styles).toContain('.data-collapsible-card summary');
+    expect(styles).toContain('background: var(--surface-program-panel-bg);');
+    expect(styles).toContain('background: var(--surface-program-lead-bg);');
+    expect(styles).toContain('.data-backup-export');
+    expect(styles).toContain('.data-backup-import');
+    expect(styles).toContain('background: var(--button-program-build-day-bg);');
+    expect(styles).toContain('background: var(--button-program-secondary-bg);');
+    expect(styles).toContain('.view-panel[data-view="data"] .danger-button');
+    expect(styles).toContain('dialog::backdrop');
+    expect(styles).toContain('background:\n    linear-gradient(180deg, rgb(10 19 38 / 98%), rgb(6 8 15 / 98%)');
+  });
+
   it("styles the program import lead-in as a visible panel", () => {
     expect(index).toContain('class="hint program-import-lead"');
     expect(index).toContain("<summary>Create or import program</summary>");

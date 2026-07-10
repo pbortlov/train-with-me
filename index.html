@@ -32,30 +32,34 @@
         <nav class="view-nav" aria-label="Main navigation">
           <button type="button" class="ghost-button nav-button" data-view-target="today">Today</button>
           <button type="button" class="ghost-button nav-button" data-view-target="calendar">Calendar</button>
-          <button type="button" class="ghost-button nav-button" data-view-target="phases">Programs</button>
-          <button type="button" class="ghost-button nav-button" data-view-target="review">Review</button>
           <button type="button" class="ghost-button nav-button" data-view-target="stats">Stats</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="phases">Programs</button>
           <button type="button" class="ghost-button nav-button" data-view-target="data">Data</button>
         </nav>
       </header>
 
       <section class="view-panel" data-view="today">
-        <article class="card today-hero">
-          <div>
+        <article class="card today-launchpad">
+          <div class="today-launchpad-copy">
             <p class="today-eyebrow">Today</p>
             <h2 id="today-date-heading">Your training day</h2>
             <p id="today-status" class="hint" aria-live="polite"></p>
+            <p class="hint today-launchpad-note">
+              Start here, jump to the week, and check progress after you log.
+            </p>
           </div>
-          <button type="button" class="ghost-button today-calendar-button" data-today-action="open-calendar">
-            Open week
-          </button>
+          <div class="today-launchpad-actions" aria-label="Today launch actions">
+            <button type="button" class="button-primary today-calendar-button today-launchpad-week-button" data-today-action="open-calendar">
+              Open week
+            </button>
+            <button type="button" class="button-secondary today-launchpad-stats-button" data-today-action="open-stats">Open stats</button>
+          </div>
+          <div id="today-summary" class="today-summary" aria-label="Today's training summary"></div>
         </article>
-
-        <div id="today-summary" class="today-summary" aria-label="Today's training summary"></div>
 
         <article class="card">
           <h3>Today's training</h3>
-          <p class="hint">Review the plan, complete a session, or open an existing workout.</p>
+          <p class="hint">Review the plan, complete a session, or open an existing workout from the day view.</p>
           <div id="today-training-list" class="today-training-list"></div>
         </article>
 
@@ -65,9 +69,9 @@
             <p class="hint">Start an unplanned workout with today's date already selected.</p>
           </div>
           <div class="today-quick-actions" aria-label="Quick workout logging">
-            <button type="button" data-today-action="quick-log" data-activity="strength">Strength</button>
-            <button type="button" data-today-action="quick-log" data-activity="run">Run</button>
-            <button type="button" data-today-action="quick-log" data-activity="sprint">Sprint</button>
+            <button type="button" class="today-quick-log-button today-quick-log-strength" data-today-action="quick-log" data-activity="strength">Strength</button>
+            <button type="button" class="today-quick-log-button today-quick-log-run" data-today-action="quick-log" data-activity="run">Run</button>
+            <button type="button" class="today-quick-log-button today-quick-log-sprint" data-today-action="quick-log" data-activity="sprint">Sprint</button>
           </div>
         </article>
 
@@ -78,19 +82,20 @@
             <p class="hint">This app stores training on this device. A quick routine keeps the local-first workflow safe.</p>
           </div>
           <ol class="onboarding-steps">
-            <li><strong>Plan or log today:</strong> use Today for quick actions and Calendar for the weekly plan.</li>
-            <li><strong>Review progress:</strong> use Stats for progress, strength, running, and sprint summaries.</li>
+            <li><strong>Enter fast:</strong> use Today as the launchpad, then open Calendar when you want the week.</li>
+            <li><strong>Check wins:</strong> use Stats for progress, strength, running, and sprint summaries.</li>
             <li><strong>Back up often:</strong> export JSON from Data after important training changes.</li>
           </ol>
         </article>
       </section>
 
       <section class="view-panel" data-view="calendar">
-        <article class="card">
+        <article class="card calendar-launchpad">
           <div class="calendar-toolbar">
-            <div>
-              <h2>Calendar</h2>
-              <p class="hint">Plan the week first. Use Log &amp; Complete when the real workout differs from the plan.</p>
+            <div class="calendar-launchpad-copy">
+              <p class="today-eyebrow">Calendar</p>
+              <h2>Week view</h2>
+              <p class="hint">See the whole week, choose the day, and keep the plan close to the action.</p>
             </div>
             <div class="calendar-nav">
               <button type="button" class="ghost-button" id="prev-week">Previous week</button>
@@ -99,6 +104,7 @@
             </div>
           </div>
           <div class="summary" id="planner-summary"></div>
+          <div id="calendar-momentum" class="calendar-momentum"></div>
           <p id="calendar-week-label" class="hint"></p>
           <div class="calendar-layout">
             <div id="calendar-grid" class="calendar-grid"></div>
@@ -109,12 +115,9 @@
           <div class="add-training-header">
             <div>
               <h3>Add Training</h3>
-              <p class="hint">Log an actual workout or plan a future run/sprint session from one place.</p>
+              <p class="hint">Log an actual workout now. Open the planning drawer when you need a future run or sprint session.</p>
             </div>
-            <div class="mode-toggle" aria-label="Add training mode">
-              <button type="button" class="ghost-button is-active" data-add-training-mode="log">Log actual</button>
-              <button type="button" class="ghost-button" data-add-training-mode="plan">Plan session</button>
-            </div>
+            <p class="hint add-training-note">Log actual stays visible. Planning is tucked into the drawer below.</p>
           </div>
 
           <section class="add-training-panel" data-add-training-panel="log">
@@ -243,7 +246,8 @@
             </form>
           </section>
 
-          <section class="add-training-panel is-hidden" data-add-training-panel="plan">
+          <details class="add-training-plan-details" id="planned-session-drawer">
+            <summary>Plan session</summary>
             <p class="hint">Plan a future run or sprint session. Strength plans should usually come from a program template.</p>
             <form id="planned-session-form">
             <input type="hidden" id="planned-session-id" />
@@ -312,7 +316,7 @@
             </div>
             <p id="planned-session-status" class="hint"></p>
             </form>
-          </section>
+          </details>
         </article>
       </section>
 
@@ -432,15 +436,6 @@
         </article>
       </section>
 
-      <section class="view-panel" data-view="review">
-        <article class="card">
-          <h2>Review</h2>
-          <p class="hint">Compare what was planned with what was actually done. Modified sessions stay visible here.</p>
-          <div id="review-summary" class="summary"></div>
-          <div id="review-session-list" class="review-list"></div>
-        </article>
-      </section>
-
       <section class="view-panel" data-view="stats">
         <article class="card progress-hub" aria-labelledby="progress-hub-heading">
           <div class="progress-hub-header">
@@ -452,21 +447,24 @@
             <div class="progress-hub-actions" aria-label="Progress shortcuts">
               <button type="button" class="ghost-button" data-progress-jump="goals">Goals</button>
               <button type="button" class="ghost-button" data-progress-jump="adherence">Adherence</button>
+              <button type="button" class="ghost-button" data-progress-jump="review">Review</button>
               <button type="button" class="ghost-button" data-progress-jump="strength">Strength</button>
               <button type="button" class="ghost-button" data-progress-jump="running">Running</button>
               <button type="button" class="ghost-button" data-progress-jump="sprint">Sprint</button>
               <button type="button" class="ghost-button" data-progress-jump="activity">Activity charts</button>
             </div>
           </div>
+          <div id="progress-hub-highlight" class="progress-hub-highlight"></div>
           <div id="progress-hub-summary" class="progress-hub-summary"></div>
           <div id="progress-hub-breakdown" class="progress-hub-breakdown"></div>
         </article>
 
-        <article class="card" id="adherence-section">
-          <h2>Stats</h2>
-          <div id="adherence-summary" class="summary"></div>
-          <div id="adherence-breakdown" class="goal-progress"></div>
-        </article>
+        <details class="card review-disclosure" id="review-disclosure">
+          <summary>Review sessions</summary>
+          <p class="hint">Compare what was planned with what was actually done. Modified sessions stay visible here.</p>
+          <div id="review-summary" class="summary"></div>
+          <div id="review-session-list" class="review-list"></div>
+        </details>
 
         <article class="card" id="goals-section">
           <h3>Goals</h3>
@@ -513,6 +511,13 @@
 
           <div id="goal-progress" class="goal-progress"></div>
           <div id="goal-history" class="goal-progress"></div>
+        </article>
+
+        <article class="card" id="adherence-section">
+          <h2>Weekly scorecard</h2>
+          <p class="hint">A quick read on plan completion before the deeper analysis cards below.</p>
+          <div id="adherence-summary" class="summary"></div>
+          <div id="adherence-breakdown" class="goal-progress"></div>
         </article>
 
         <article class="card">
@@ -670,12 +675,12 @@
       </section>
 
       <section class="view-panel" data-view="data">
-        <article class="card">
+        <article class="card data-utility-card">
           <h2>Data</h2>
-          <p class="hint">Manage backups, saved exercise names, and workout history here.</p>
+          <p class="hint">Manage backups, saved exercise names, and workout history here. This page is for maintenance, not daily training flow.</p>
         </article>
 
-        <article class="card">
+        <article class="card data-backup-card">
           <h3>Backup</h3>
           <p class="hint">Export your data to a JSON file, or import a backup file.</p>
           <div class="backup-safety-panel" role="note" aria-label="Backup safety checklist">
@@ -688,8 +693,8 @@
             </ul>
           </div>
           <div class="grid">
-            <button type="button" id="export-data">Export Data (JSON)</button>
-            <label>
+            <button type="button" id="export-data" class="data-backup-control data-backup-export">Export Data (JSON)</button>
+            <label class="data-backup-control data-backup-import data-import-button">
               Import JSON file
               <input type="file" id="import-data-file" accept=".json,application/json" />
             </label>
@@ -697,14 +702,14 @@
           <p id="backup-status" class="hint"></p>
         </article>
 
-        <article class="card">
-          <h3>Exercise Library</h3>
+        <details class="card data-library-card data-collapsible-card">
+          <summary>Exercise Library</summary>
           <p class="hint">Saved exercise names for quick reuse in workout logging and editing.</p>
           <ul id="exercise-library-list" class="detail-list"></ul>
-        </article>
+        </details>
 
-        <article class="card">
-          <h3>Workout History</h3>
+        <details class="card data-history-card data-collapsible-card">
+          <summary>Workout History</summary>
           <div class="table-wrap">
             <table>
               <thead>
@@ -719,7 +724,7 @@
               <tbody id="history-body"></tbody>
             </table>
           </div>
-        </article>
+        </details>
       </section>
     </main>
 

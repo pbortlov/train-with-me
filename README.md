@@ -8,15 +8,15 @@ Train With Me V1 is a local-first training planner and workout tracker for:
 The app is designed to stay approachable for non-technical users by default, while advanced planning features live behind a `Geek / coach mode` toggle.
 
 ## V1 Features
-- Mobile-first Today dashboard for planned sessions, completed training, and quick logging
+- Mobile-first Today launchpad for planned sessions, completed training, and quick logging
 - Persistent bottom navigation on phone-sized screens
 - Fast activity-specific actual logging for strength, run, and sprint, with Today/Yesterday date shortcuts
-- Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix
+- Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix, with a momentum highlight
 - Strength Insights for strength workout count, exercise coverage, load mix, top kg lift, and most trained exercises
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
 - Sprint Insights for sprint workouts, rep volume, distance-specific bests, fastest rep, and feeling mix
 - Local-first onboarding, keyboard skip link, and backup safety guidance
-- Calendar-first weekly planning view
+- Today-first quick navigation with Calendar for weekly planning and Stats for quick progress checks
 - Manual planned sessions for:
   - run
   - sprint
@@ -32,7 +32,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Calendar shows the program week at the day level and tints generated program sessions with matching palette colors
 - Today stays highlighted with a rounded accent outline and date pill even when the day belongs to a colored program week
 - Week cards keep training name, time, inline status, and `View training` without overflowing the day cell
-- Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions
+- Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions, plus a week-launchpad header and a compact next-up/progress strip
 - Completed planned sessions can be edited after `Log & Complete` to correct weights, reps, sets, times, or notes
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
 - Sprint logging and sprint workout editing include a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
@@ -52,7 +52,7 @@ The app is designed to stay approachable for non-technical users by default, whi
   - completed
   - modified
   - missed
-- Separate Review page for planned vs actual comparison
+- Review stays available as a secondary inspection view, not a primary athlete tab
 - Weekly adherence summaries such as `5/6`
 - Stats page with:
   - goal progress
@@ -70,12 +70,12 @@ The app is designed to stay approachable for non-technical users by default, whi
 - PWA install support
 
 ## Main Pages
-- `Today`: daily plan, completion shortcuts, existing workout access, and activity-specific quick logging
-- `Calendar`: weekly plan, `Add Training` for actual logs or manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, and `Log & Complete` execution logging
+- `Today`: quick navigator and launchpad, daily plan, completion shortcuts, status-colored planned-session cards with a dominant `Log & Complete` action, existing workout access, and activity-specific quick logging
+- `Calendar`: weekly working surface, `Add Training` for actual logs plus a collapsed planning drawer for manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, `Log & Complete` execution logging, and a momentum strip that shows next up plus weekly progress
+- `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts, with a reward-first top section and a review drawer shortcut
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview
-- `Review`: planned vs actual review for completed, modified, and missed planned sessions
-- `Stats`: Progress Hub, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts
-- `Data`: backup, exercise library, and workout history management
+- `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept out of the primary athlete nav and opened from the Stats page
+- `Data`: quiet maintenance surface for backup, with exercise library and workout history tucked behind expandable drawers
 
 ## Strength Phase Import
 V1 import focuses on `strength phases` only.

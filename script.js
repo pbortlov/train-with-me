@@ -159,9 +159,8 @@ const todayDateHeadingEl = document.getElementById("today-date-heading");
 const todayStatusEl = document.getElementById("today-status");
 const todaySummaryEl = document.getElementById("today-summary");
 const todayTrainingListEl = document.getElementById("today-training-list");
-const addTrainingModeButtons = document.querySelectorAll("[data-add-training-mode]");
-const addTrainingPanels = document.querySelectorAll("[data-add-training-panel]");
 const plannerSummaryEl = document.getElementById("planner-summary");
+const calendarMomentumEl = document.getElementById("calendar-momentum");
 const calendarWeekLabelEl = document.getElementById("calendar-week-label");
 const calendarGridEl = document.getElementById("calendar-grid");
 const calendarSessionDialog = document.getElementById("calendar-session-dialog");
@@ -188,6 +187,7 @@ const prevWeekButton = document.getElementById("prev-week");
 const nextWeekButton = document.getElementById("next-week");
 const currentWeekButton = document.getElementById("current-week");
 const plannedSessionForm = document.getElementById("planned-session-form");
+const plannedSessionDrawer = document.getElementById("planned-session-drawer");
 const plannedSessionIdInput = document.getElementById("planned-session-id");
 const plannedSessionDateInput = document.getElementById("planned-session-date");
 const plannedSessionTypeInput = document.getElementById("planned-session-type");
@@ -231,11 +231,13 @@ const importProgramTemplatesFileInput = document.getElementById("import-program-
 const programTemplateTransferStatusEl = document.getElementById("program-template-transfer-status");
 const phaseTemplateListEl = document.getElementById("phase-template-list");
 const phaseInstanceListEl = document.getElementById("phase-instance-list");
+const reviewDisclosureEl = document.getElementById("review-disclosure");
 const reviewSummaryEl = document.getElementById("review-summary");
 const reviewSessionListEl = document.getElementById("review-session-list");
 const adherenceSummaryEl = document.getElementById("adherence-summary");
 const adherenceBreakdownEl = document.getElementById("adherence-breakdown");
 const progressHubStatusEl = document.getElementById("progress-hub-status");
+const progressHubHighlightEl = document.getElementById("progress-hub-highlight");
 const progressHubSummaryEl = document.getElementById("progress-hub-summary");
 const progressHubBreakdownEl = document.getElementById("progress-hub-breakdown");
 const progressHubActions = document.querySelectorAll("[data-progress-jump]");
@@ -297,6 +299,7 @@ let uiSettings = load(STORAGE_KEY_UI_SETTINGS, {
   coachMode: false,
   currentWeekStart: formatDateInput(startOfWeek(new Date())),
 });
+uiSettings.currentView = normalizeViewName(uiSettings.currentView);
 let editingWorkoutId = null;
 let draftSprintSets = [];
 let draftPlannedSprintBlocks = [];
@@ -525,11 +528,6 @@ addSafeEventListener(editStrengthExercisesList, "change", handleInlineStrengthEd
 addSafeEventListener(editStrengthExercisesList, "click", handleInlineStrengthDelete);
 addSafeEventListener(exerciseLibraryListEl, "click", handleExerciseLibraryClick);
 document.addEventListener("click", handleBandColorPickerClick);
-addTrainingModeButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    setAddTrainingMode(button.dataset.addTrainingMode || "log");
-  });
-});
 addSafeEventListener(editStrengthLoadTypeInput, "change", () => {
   const loadType = editStrengthLoadTypeInput.value;
   editStrengthWeightInput.disabled = loadType !== "kg";
@@ -766,19 +764,19 @@ function renderTodaySessionCard(session) {
   const canComplete = session.status === "planned";
 
   return `
-    <article class="planned-session-card today-session-card">
+    <article class="planned-session-card today-session-card status-${session.status} activity-${session.type}">
       <div class="planned-session-title">${escapeHtml(session.title)}</div>
       <div class="planned-session-time">${escapeHtml(primaryMeta)}</div>
       <div class="planned-session-footer">
         <span class="planned-session-status-inline status-${session.status}">${escapeHtml(session.status)}</span>
       </div>
       <div class="today-session-actions">
-        <button type="button" class="ghost-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">Details</button>
         ${
           canComplete
-            ? `<button type="button" class="planned-session-button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>`
+            ? `<button type="button" class="button-primary today-complete-button planned-session-button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>`
             : ""
         }
+        <button type="button" class="ghost-button today-details-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">Details</button>
       </div>
     </article>
   `;
@@ -1058,9 +1056,38 @@ function renderProgressHub() {
   }
 
   const model = buildProgressHubModel(workouts, plannedSessions, goals);
+  const weekStats = computeWeeklyAdherence(uiSettings.currentWeekStart);
+  const achievedGoals = (goals.history || [])
+    .filter((goal) => goal.achievedAt)
+    .sort((left, right) => (right.achievedAt || "").localeCompare(left.achievedAt || ""));
   progressHubStatusEl.textContent = model.lastWorkoutDate
     ? `Last workout logged ${formatHumanDate(model.lastWorkoutDate)}.`
     : "Log your first workout to start building progress history.";
+  if (progressHubHighlightEl) {
+    const latestGoal = achievedGoals[0];
+    progressHubHighlightEl.innerHTML = `
+      <article class="progress-hub-highlight-card is-accent">
+        <span class="label">Momentum</span>
+        <span class="value">${model.completionRate}% plan completion</span>
+        <span class="detail">${weekStats.completed}/${weekStats.total || 0} planned sessions done this week</span>
+      </article>
+      <article class="progress-hub-highlight-card">
+        <span class="label">Latest win</span>
+        <span class="value">${
+          latestGoal?.achievedAt
+            ? `Goal achieved ${formatHumanDate(latestGoal.achievedAt)}`
+            : model.lastWorkoutDate
+              ? `Last workout ${formatHumanDate(model.lastWorkoutDate)}`
+              : "No wins logged yet"
+        }</span>
+        <span class="detail">${
+          latestGoal?.achievedAt
+            ? `${daysBetween(latestGoal.setAt, latestGoal.achievedAt)} day(s) to reach it`
+            : `${model.totalWorkouts} workout${model.totalWorkouts === 1 ? "" : "s"} logged`
+        }</span>
+      </article>
+    `;
+  }
   progressHubSummaryEl.innerHTML = `
     <article class="badge">
       <span class="label">Workouts</span>
@@ -1095,6 +1122,7 @@ function scrollToProgressSection(target) {
   const sectionByTarget = {
     adherence: document.getElementById("adherence-section"),
     goals: document.getElementById("goals-section"),
+    review: reviewDisclosureEl,
     strength: document.getElementById("strength-insights-section"),
     running: document.getElementById("running-insights-section"),
     sprint: document.getElementById("sprint-insights-section"),
@@ -1102,6 +1130,11 @@ function scrollToProgressSection(target) {
   };
   const section = sectionByTarget[target];
   if (section instanceof HTMLElement) {
+    if (target === "review") {
+      setCurrentView("stats");
+      render();
+      reviewDisclosureEl?.setAttribute("open", "");
+    }
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
@@ -2781,7 +2814,9 @@ function importBackupData(event) {
         ? parsed.phaseInstances.map((instance) => normalizePhaseInstance(instance))
         : [];
       uiSettings = {
-        currentView: typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "today",
+        currentView: normalizeViewName(
+          typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "today",
+        ),
         coachMode: Boolean(parsed.uiSettings?.coachMode),
         currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
@@ -2842,13 +2877,9 @@ function addSafeEventListener(element, eventName, handler) {
 
 function setAddTrainingMode(mode) {
   const selectedMode = mode === "plan" ? "plan" : "log";
-  addTrainingModeButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.addTrainingMode === selectedMode);
-    button.setAttribute("aria-pressed", button.dataset.addTrainingMode === selectedMode ? "true" : "false");
-  });
-  addTrainingPanels.forEach((panel) => {
-    panel.classList.toggle("is-hidden", panel.dataset.addTrainingPanel !== selectedMode);
-  });
+  if (plannedSessionDrawer) {
+    plannedSessionDrawer.open = selectedMode === "plan";
+  }
 }
 
 function toggleEditDialogFields(activity) {
@@ -3390,9 +3421,16 @@ function savePlannerCollections() {
 }
 
 function setCurrentView(view) {
-  uiSettings.currentView = ["today", "calendar", "phases", "review", "stats", "data"].includes(view) ? view : "today";
+  uiSettings.currentView = normalizeViewName(view);
   savePlannerCollections();
   syncViewState();
+}
+
+function normalizeViewName(view) {
+  if (view === "review") {
+    return "stats";
+  }
+  return ["today", "calendar", "phases", "stats", "data"].includes(view) ? view : "today";
 }
 
 function setCoachMode(enabled) {
@@ -3432,6 +3470,12 @@ function handleTodayAction(event) {
   if (actionButton.dataset.todayAction === "open-calendar") {
     uiSettings.currentWeekStart = formatDateInput(startOfWeek(new Date()));
     setCurrentView("calendar");
+    render();
+    return;
+  }
+
+  if (actionButton.dataset.todayAction === "open-stats") {
+    setCurrentView("stats");
     render();
     return;
   }
@@ -3600,12 +3644,35 @@ function renderCalendar() {
   const weekDates = getWeekDates(uiSettings.currentWeekStart);
   const weekSessions = getPlannedSessionsForWeek(uiSettings.currentWeekStart);
   const weekWorkouts = getStandaloneWorkoutsForWeek(uiSettings.currentWeekStart);
+  const weeklyStats = computeWeeklyAdherence(uiSettings.currentWeekStart);
   const programWeekMap = buildCalendarProgramWeekMap(weekDates);
+  const orderedWeekSessions = [...weekSessions].sort((left, right) => left.date.localeCompare(right.date));
   const availableSessionIds = new Set(weekSessions.map((session) => session.id));
   if (!selectedCalendarSessionId || !availableSessionIds.has(selectedCalendarSessionId)) {
     selectedCalendarSessionId = weekSessions[0]?.id || "";
   }
   calendarWeekLabelEl.textContent = `Week of ${formatHumanDate(weekDates[0])} to ${formatHumanDate(weekDates[6])}`;
+  if (calendarMomentumEl) {
+    const today = formatDateInput(new Date());
+    const nextUpSession =
+      orderedWeekSessions.find((session) => session.status === "planned" && session.date >= today) ||
+      orderedWeekSessions.find((session) => session.status === "planned") ||
+      orderedWeekSessions.find((session) => session.status !== "missed") ||
+      null;
+    const nextUpLabel = nextUpSession
+      ? `${formatHumanDate(nextUpSession.date)} • ${nextUpSession.title}`
+      : "No training sessions planned this week.";
+    const progressLabel = weeklyStats.total
+      ? `${weeklyStats.completed}/${weeklyStats.total} done this week`
+      : `${weekWorkouts.length} logged ${weekWorkouts.length === 1 ? "workout" : "workouts"} in this week`;
+    calendarMomentumEl.innerHTML = `
+      <article class="calendar-momentum-card">
+        <span class="label">Next up</span>
+        <span class="value">${escapeHtml(nextUpLabel)}</span>
+        <span class="detail">${escapeHtml(progressLabel)}</span>
+      </article>
+    `;
+  }
 
   calendarGridEl.innerHTML = weekDates
     .map((date) => {
@@ -3726,7 +3793,7 @@ function renderCalendarSessionDetail() {
         </div>
         <div class="session-detail-modal-controls">
           <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
-          <button type="button" class="ghost-button" data-role="close-calendar-session-dialog">Close</button>
+          <button type="button" class="ghost-button session-detail-close-button" data-role="close-calendar-session-dialog">Close</button>
         </div>
       </header>
       ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
@@ -3740,16 +3807,16 @@ function renderCalendarSessionDetail() {
         }
       </div>
       <div class="session-actions">
-        <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
-        ${isMovableGeneratedStrengthSession(session) ? `<button type="button" class="ghost-button" data-role="move-strength-session" data-id="${session.id}">Move</button>` : ""}
+        <button type="button" class="ghost-button session-action-secondary" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
+        ${isMovableGeneratedStrengthSession(session) ? `<button type="button" class="ghost-button session-action-secondary" data-role="move-strength-session" data-id="${session.id}">Move</button>` : ""}
         ${
           session.status === "planned"
-            ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
-               <button type="button" class="ghost-button danger-button" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
-            : `${session.actual ? `<button type="button" data-role="edit-completed-session" data-id="${session.id}">Edit log</button>` : ""}
-               <button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`
+            ? `<button type="button" class="button-primary session-action-primary" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
+               <button type="button" class="ghost-button danger-button session-action-danger" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
+            : `${session.actual ? `<button type="button" class="button-primary session-action-primary" data-role="edit-completed-session" data-id="${session.id}">Edit log</button>` : ""}
+               <button type="button" class="ghost-button session-action-secondary" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`
         }
-        <button type="button" class="ghost-button danger-button" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
+        <button type="button" class="ghost-button danger-button session-action-danger" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
       </div>
     </article>
   `;
@@ -4413,6 +4480,7 @@ function fillPlannedSessionForm(session) {
     renderPlannedSprintBlocks();
   }
   updatePlannedTypeFields();
+  plannedSessionDrawer?.scrollIntoView({ behavior: "smooth", block: "start" });
   setCurrentView("calendar");
 }
 
