@@ -116,6 +116,12 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.calendar-nav button {\n    flex: 1 1 0;');
     expect(styles).toContain('.mode-toggle {\n    width: 100%;');
     expect(styles).toContain('min-height: 9.5rem;');
+    expect(script).toContain('session-detail-close-button');
+    expect(script).toContain('session-action-primary');
+    expect(script).toContain('session-action-danger');
+    expect(styles).toContain('.session-detail-close-button');
+    expect(styles).toContain('.session-action-primary');
+    expect(styles).toContain('.session-action-danger');
   });
 
   it("keeps Stats reward-first with a momentum highlight", () => {

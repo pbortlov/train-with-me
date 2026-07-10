@@ -3803,7 +3803,7 @@ function renderCalendarSessionDetail() {
         </div>
         <div class="session-detail-modal-controls">
           <span class="session-status status-${session.status}">${escapeHtml(session.status)}</span>
-          <button type="button" class="ghost-button" data-role="close-calendar-session-dialog">Close</button>
+          <button type="button" class="ghost-button session-detail-close-button" data-role="close-calendar-session-dialog">Close</button>
         </div>
       </header>
       ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
@@ -3817,16 +3817,16 @@ function renderCalendarSessionDetail() {
         }
       </div>
       <div class="session-actions">
-        <button type="button" class="ghost-button" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
-        ${isMovableGeneratedStrengthSession(session) ? `<button type="button" class="ghost-button" data-role="move-strength-session" data-id="${session.id}">Move</button>` : ""}
+        <button type="button" class="ghost-button session-action-secondary" data-role="edit-planned-session" data-id="${session.id}">Edit</button>
+        ${isMovableGeneratedStrengthSession(session) ? `<button type="button" class="ghost-button session-action-secondary" data-role="move-strength-session" data-id="${session.id}">Move</button>` : ""}
         ${
           session.status === "planned"
-            ? `<button type="button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
-               <button type="button" class="ghost-button danger-button" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
-            : `${session.actual ? `<button type="button" data-role="edit-completed-session" data-id="${session.id}">Edit log</button>` : ""}
-               <button type="button" class="ghost-button" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`
+            ? `<button type="button" class="button-primary session-action-primary" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>
+               <button type="button" class="ghost-button danger-button session-action-danger" data-role="miss-planned-session" data-id="${session.id}">Miss</button>`
+            : `${session.actual ? `<button type="button" class="button-primary session-action-primary" data-role="edit-completed-session" data-id="${session.id}">Edit log</button>` : ""}
+               <button type="button" class="ghost-button session-action-secondary" data-role="reset-planned-session" data-id="${session.id}">Reset</button>`
         }
-        <button type="button" class="ghost-button danger-button" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
+        <button type="button" class="ghost-button danger-button session-action-danger" data-role="delete-planned-session" data-id="${session.id}">Delete</button>
       </div>
     </article>
   `;

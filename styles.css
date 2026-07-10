@@ -2061,6 +2061,72 @@ textarea:focus-visible {
   justify-content: flex-end;
 }
 
+.session-detail-close-button,
+.session-action-secondary,
+.session-action-primary,
+.session-action-danger {
+  min-height: 44px;
+  padding: 0.65rem 0.85rem;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 11%),
+    0 0.75rem 1.2rem rgb(0 0 0 / 20%);
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.session-detail-close-button:hover,
+.session-action-secondary:hover,
+.session-action-primary:hover,
+.session-action-danger:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06) saturate(1.04);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 14%),
+    0 0.9rem 1.45rem rgb(0 0 0 / 24%);
+}
+
+.session-detail-close-button,
+.session-action-secondary {
+  background: var(--button-program-secondary-bg);
+  border-color: var(--button-program-secondary-border);
+  color: var(--button-program-secondary-text);
+  box-shadow: var(--button-program-secondary-shadow);
+}
+
+.session-detail-close-button:hover,
+.session-action-secondary:hover {
+  background: var(--button-program-secondary-bg-hover);
+  color: var(--button-program-secondary-text-hover);
+  box-shadow: var(--button-program-secondary-shadow-hover);
+}
+
+.session-action-primary {
+  background: var(--button-program-build-block-bg);
+  border-color: var(--button-program-build-block-border);
+  color: var(--button-program-build-block-text);
+  box-shadow: var(--button-program-build-block-shadow);
+}
+
+.session-action-primary:hover {
+  background: var(--button-program-build-block-bg-hover);
+  box-shadow: var(--button-program-build-block-shadow-hover);
+}
+
+.session-action-danger {
+  background: var(--button-program-danger-bg);
+  border-color: var(--button-program-danger-border);
+  color: var(--button-program-danger-text);
+  box-shadow: var(--button-program-danger-shadow);
+}
+
+.session-action-danger:hover {
+  background: var(--button-program-danger-bg-hover);
+  color: var(--button-program-danger-text-hover);
+  box-shadow: var(--button-program-danger-shadow-hover);
+}
+
 .session-detail-header {
   display: flex;
   justify-content: space-between;
@@ -2988,6 +3054,30 @@ textarea {
   .calendar-session-detail {
     min-height: 100vh;
     padding: 0.75rem;
+  }
+
+  .session-detail-modal-header {
+    flex-direction: column;
+  }
+
+  .session-detail-modal-controls {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .session-detail-modal-controls .session-status,
+  .session-detail-modal-controls .session-detail-close-button {
+    width: 100%;
+  }
+
+  .session-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .session-actions button {
+    width: 100%;
+    margin-right: 0;
   }
 
   .calendar-day {
