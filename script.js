@@ -232,6 +232,7 @@ const importProgramTemplatesFileInput = document.getElementById("import-program-
 const programTemplateTransferStatusEl = document.getElementById("program-template-transfer-status");
 const phaseTemplateListEl = document.getElementById("phase-template-list");
 const phaseInstanceListEl = document.getElementById("phase-instance-list");
+const reviewDisclosureEl = document.getElementById("review-disclosure");
 const reviewSummaryEl = document.getElementById("review-summary");
 const reviewSessionListEl = document.getElementById("review-session-list");
 const adherenceSummaryEl = document.getElementById("adherence-summary");
@@ -1126,6 +1127,7 @@ function scrollToProgressSection(target) {
   const sectionByTarget = {
     adherence: document.getElementById("adherence-section"),
     goals: document.getElementById("goals-section"),
+    review: reviewDisclosureEl,
     strength: document.getElementById("strength-insights-section"),
     running: document.getElementById("running-insights-section"),
     sprint: document.getElementById("sprint-insights-section"),
@@ -1133,6 +1135,11 @@ function scrollToProgressSection(target) {
   };
   const section = sectionByTarget[target];
   if (section instanceof HTMLElement) {
+    if (target === "review") {
+      setCurrentView("review");
+      render();
+      reviewDisclosureEl?.setAttribute("open", "");
+    }
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }

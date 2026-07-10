@@ -100,7 +100,7 @@ describe("local-first UX guidance", () => {
   });
 
   it("keeps Review as a collapsed secondary drawer", () => {
-    expect(index).toContain('<details class="card review-disclosure">');
+    expect(index).toContain('<details class="card review-disclosure" id="review-disclosure">');
     expect(index).toContain('<summary>Review sessions</summary>');
     expect(index).toContain('id="review-summary"');
     expect(index).toContain('id="review-session-list"');
@@ -128,6 +128,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="progress-hub-highlight"');
     expect(index).toContain('<h2 id="progress-hub-heading">Progress Hub</h2>');
     expect(index).toContain('<h2>Weekly scorecard</h2>');
+    expect(index).toContain('data-progress-jump="review"');
     expect(styles).toContain('.progress-hub-highlight-card');
     expect(styles).toContain('.strength-insights-card');
     expect(styles).toContain('.running-insights-card');
