@@ -410,8 +410,8 @@ body {
 
 .today-session-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: 0.4rem;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
 }
 
 .logging-shortcuts {
@@ -1237,11 +1237,30 @@ textarea:focus-visible {
   text-overflow: ellipsis;
 }
 
+.today-details-button {
+  justify-self: start;
+  width: fit-content;
+  min-width: 6.75rem;
+  padding-inline: 0.8rem;
+  font-size: 0.82rem;
+  background: var(--button-program-secondary-bg);
+  border-color: var(--button-program-secondary-border);
+  color: var(--button-program-secondary-text);
+  box-shadow: var(--button-program-secondary-shadow);
+}
+
+.today-details-button:hover {
+  background: var(--button-program-secondary-bg-hover);
+  color: var(--button-program-secondary-text-hover);
+  box-shadow: var(--button-program-secondary-shadow-hover);
+}
+
 .today-complete-button {
   background: var(--button-program-build-block-bg);
   border-color: var(--button-program-build-block-border);
   color: var(--button-program-build-block-text);
   box-shadow: var(--button-program-build-block-shadow);
+  width: 100%;
 }
 
 .today-complete-button:hover {

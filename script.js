@@ -771,12 +771,12 @@ function renderTodaySessionCard(session) {
         <span class="planned-session-status-inline status-${session.status}">${escapeHtml(session.status)}</span>
       </div>
       <div class="today-session-actions">
-        <button type="button" class="ghost-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">Details</button>
         ${
           canComplete
             ? `<button type="button" class="button-primary today-complete-button planned-session-button" data-role="complete-planned-session" data-id="${session.id}">Log &amp; Complete</button>`
             : ""
         }
+        <button type="button" class="ghost-button today-details-button planned-session-button" data-role="select-planned-session" data-id="${session.id}">Details</button>
       </div>
     </article>
   `;
