@@ -136,6 +136,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('See the whole week, choose the day, and keep the plan close to the action.');
     expect(index).toContain('<details class="add-training-plan-details" id="planned-session-drawer">');
     expect(index).toContain('<summary>Plan session</summary>');
+    expect(index).toContain("Moves this training day and future matching program days by the same day offset.");
     expect(styles).toContain('.calendar-launchpad');
     expect(styles).toContain('.calendar-momentum-card');
     expect(styles).toContain('.calendar-nav #current-week');
@@ -145,6 +146,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('session-detail-close-button');
     expect(script).toContain('session-action-primary');
     expect(script).toContain('session-action-danger');
+    expect(script).toContain('slotDayShifts');
     expect(styles).toContain('.session-detail-close-button');
     expect(styles).toContain('.session-action-primary');
     expect(styles).toContain('.session-action-danger');

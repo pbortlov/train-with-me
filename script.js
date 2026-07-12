@@ -13,6 +13,12 @@ import {
 } from "./src/domain/normalization";
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
+import {
+  buildPhaseSlotId,
+  getDateShiftDelta,
+  getPhaseOccurrenceSchedule,
+  normalizePhaseSlotDayShifts,
+} from "./src/domain/phase-scheduling";
 import { buildProgressHubModel } from "./src/domain/progress";
 import {
   buildProgramPreview,
@@ -2813,6 +2819,7 @@ function importBackupData(event) {
       phaseInstances = Array.isArray(parsed.phaseInstances)
         ? parsed.phaseInstances.map((instance) => normalizePhaseInstance(instance))
         : [];
+      syncAllPhaseInstancePlannedSessionDates();
       uiSettings = {
         currentView: normalizeViewName(
           typeof parsed.uiSettings?.currentView === "string" ? parsed.uiSettings.currentView : "today",
@@ -3323,6 +3330,7 @@ function strengthBestWeight(workout) {
 
 function initializeV2() {
   setCoachMode(uiSettings.coachMode);
+  syncAllPhaseInstancePlannedSessionDates();
   bindV2Events();
   plannedSessionDateInput.value = formatDateInput(new Date());
   updatePlannedTypeFields();
@@ -4442,6 +4450,67 @@ function closeStrengthSessionMoveDialog() {
   }
 }
 
+function findTemplateSlotByPhaseSlotId(template, phaseSlotId) {
+  if (!template || !phaseSlotId) {
+    return null;
+  }
+  for (let slotIndex = 0; slotIndex < template.weekdaySlots.length; slotIndex += 1) {
+    const slot = template.weekdaySlots[slotIndex];
+    if (buildPhaseSlotId(slot.weekday, slotIndex, slot.id) === phaseSlotId) {
+      return { slot, slotIndex };
+    }
+  }
+  return null;
+}
+
+function syncPhaseInstancePlannedSessionDates(instance, template, targetSessionId = "") {
+  const slotDayShifts = normalizePhaseSlotDayShifts(instance?.slotDayShifts);
+  plannedSessions = plannedSessions.map((session) => {
+    if (
+      session.type !== "strength" ||
+      session.source !== "phase-generated" ||
+      session.phaseInstanceId !== instance.id ||
+      session.status !== "planned"
+    ) {
+      return session;
+    }
+    ensurePhaseOccurrenceMetadata(session);
+    if (!session.phaseSlotId || !isNumber(session.phaseWeekIndex)) {
+      return session;
+    }
+    if (session.dateMovedManually && session.id !== targetSessionId) {
+      return session;
+    }
+    const templateSlot = findTemplateSlotByPhaseSlotId(template, session.phaseSlotId);
+    if (!templateSlot) {
+      return session;
+    }
+    const schedule = getPhaseOccurrenceSchedule({
+      startDate: instance.startDate,
+      slotWeekday: templateSlot.slot.weekday,
+      phaseSlotId: session.phaseSlotId,
+      phaseWeekIndex: session.phaseWeekIndex,
+      slotDayShifts,
+    });
+    return normalizePlannedSession({
+      ...session,
+      date: schedule.effectiveDate,
+      generatedDate: schedule.generatedDate,
+      dateMovedManually: false,
+    });
+  });
+}
+
+function syncAllPhaseInstancePlannedSessionDates() {
+  phaseInstances.forEach((instance) => {
+    const template = phaseTemplates.find((item) => item.id === instance.templateId);
+    if (!template) {
+      return;
+    }
+    syncPhaseInstancePlannedSessionDates(instance, template);
+  });
+}
+
 function saveStrengthSessionMove(event) {
   event.preventDefault();
   const session = plannedSessions.find((item) => item.id === strengthSessionMoveIdInput.value);
@@ -4455,9 +4524,37 @@ function saveStrengthSessionMove(event) {
     return;
   }
   ensurePhaseOccurrenceMetadata(session);
-  session.generatedDate = session.generatedDate || session.date;
-  session.date = newDate;
-  session.dateMovedManually = session.date !== session.generatedDate;
+  const instance = phaseInstances.find((item) => item.id === session.phaseInstanceId);
+  const template = phaseTemplates.find((item) => item.id === session.phaseTemplateId || item.id === instance?.templateId);
+  if (!instance || !template || !session.phaseSlotId || !isNumber(session.phaseWeekIndex)) {
+    strengthSessionMoveStatusEl.textContent = "This generated session is missing its program scheduling details.";
+    return;
+  }
+  const templateSlot = findTemplateSlotByPhaseSlotId(template, session.phaseSlotId);
+  if (!templateSlot) {
+    strengthSessionMoveStatusEl.textContent = "Could not match this generated session to its training day.";
+    return;
+  }
+  const currentVisibleDate = normalizeDateInput(session.date);
+  const dayDelta = getDateShiftDelta(currentVisibleDate, newDate);
+  if (dayDelta === null) {
+    strengthSessionMoveStatusEl.textContent = "Choose a valid new date.";
+    return;
+  }
+  if (dayDelta === 0) {
+    closeStrengthSessionMoveDialog();
+    return;
+  }
+  instance.slotDayShifts = normalizePhaseSlotDayShifts([
+    ...normalizePhaseSlotDayShifts(instance.slotDayShifts),
+    {
+      phaseSlotId: session.phaseSlotId,
+      fromWeekIndex: session.phaseWeekIndex,
+      dayDelta,
+      createdAt: Date.now(),
+    },
+  ]);
+  syncPhaseInstancePlannedSessionDates(instance, template, session.id);
   savePlannerCollections();
   closeStrengthSessionMoveDialog();
   render();
@@ -5350,12 +5447,23 @@ function regeneratePhaseInstanceFromTemplate(instance, template) {
       .filter((session) => session.phaseSlotId && isNumber(session.phaseWeekIndex))
       .map((session) => `${session.phaseSlotId}:${session.phaseWeekIndex}`),
   );
-  const reviewedDates = new Set(reviewedSessions.map((session) => session.date));
+  const reviewedDates = new Set(
+    reviewedSessions
+      .map((session) => ensurePhaseOccurrenceMetadata(session))
+      .map((session) => session.generatedDate || session.date),
+  );
   plannedSessions = plannedSessions.filter(
     (session) => !(session.phaseInstanceId === instance.id && session.source === "phase-generated" && session.status === "planned"),
   );
 
-  const regeneratedSessions = buildPhaseSessions(template, instance.startDate, instance.id, reviewedDates, reviewedOccurrences).map((session) => {
+  const regeneratedSessions = buildPhaseSessions(
+    template,
+    instance.startDate,
+    instance.id,
+    reviewedDates,
+    reviewedOccurrences,
+    instance.slotDayShifts,
+  ).map((session) => {
     const movedSession = movedByOccurrence.get(`${session.phaseSlotId}:${session.phaseWeekIndex}`);
     if (!movedSession) {
       return session;
@@ -5380,25 +5488,26 @@ function regeneratePhaseInstanceFromTemplate(instance, template) {
   });
 }
 
-function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set(), reviewedOccurrences = new Set()) {
+function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new Set(), reviewedOccurrences = new Set(), slotDayShifts = []) {
   const generatedSessions = [];
-  const normalizedStartDate = new Date(startDate);
-  normalizedStartDate.setHours(0, 0, 0, 0);
-  const startWeekday = getProgramWeekday(normalizedStartDate);
   for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
-    const anchoredWeekStart = addDays(normalizedStartDate, weekIndex * 7);
     template.weekdaySlots.forEach((slot, slotIndex) => {
-      const slotOffset = ((slot.weekday - startWeekday) + 7) % 7;
-      const sessionDate = formatDateInput(addDays(anchoredWeekStart, slotOffset));
-      const phaseSlotId = slot.id || `${slot.weekday}-${slotIndex}`;
+      const phaseSlotId = buildPhaseSlotId(slot.weekday, slotIndex, slot.id);
+      const schedule = getPhaseOccurrenceSchedule({
+        startDate,
+        slotWeekday: slot.weekday,
+        phaseSlotId,
+        phaseWeekIndex: weekIndex,
+        slotDayShifts,
+      });
       const occurrenceKey = `${phaseSlotId}:${weekIndex}`;
-      if (reviewedDates.has(sessionDate) || reviewedOccurrences.has(occurrenceKey)) {
+      if (reviewedDates.has(schedule.generatedDate) || reviewedOccurrences.has(occurrenceKey)) {
         return;
       }
       generatedSessions.push(
         normalizePlannedSession({
           id: crypto.randomUUID(),
-          date: sessionDate,
+          date: schedule.effectiveDate,
           type: "strength",
           title: slot.title,
           source: "phase-generated",
@@ -5406,7 +5515,7 @@ function buildPhaseSessions(template, startDate, instanceId, reviewedDates = new
           phaseInstanceId: instanceId,
           phaseSlotId,
           phaseWeekIndex: weekIndex,
-          generatedDate: sessionDate,
+          generatedDate: schedule.generatedDate,
           dateMovedManually: false,
           status: "planned",
           notes: slot.notes,
@@ -5430,18 +5539,19 @@ function ensurePhaseOccurrenceMetadata(session) {
   if (!instance || !template) {
     return session;
   }
-  const normalizedStartDate = new Date(instance.startDate);
-  normalizedStartDate.setHours(0, 0, 0, 0);
-  const startWeekday = getProgramWeekday(normalizedStartDate);
   const matchDate = normalizeDateInput(session.generatedDate) || normalizeDateInput(session.date);
   for (let weekIndex = 0; weekIndex < template.durationWeeks; weekIndex += 1) {
-    const anchoredWeekStart = addDays(normalizedStartDate, weekIndex * 7);
     for (let slotIndex = 0; slotIndex < template.weekdaySlots.length; slotIndex += 1) {
       const slot = template.weekdaySlots[slotIndex];
-      const slotOffset = ((slot.weekday - startWeekday) + 7) % 7;
-      const generatedDate = formatDateInput(addDays(anchoredWeekStart, slotOffset));
+      const generatedDate = getPhaseOccurrenceSchedule({
+        startDate: instance.startDate,
+        slotWeekday: slot.weekday,
+        phaseSlotId: buildPhaseSlotId(slot.weekday, slotIndex, slot.id),
+        phaseWeekIndex: weekIndex,
+        slotDayShifts: [],
+      }).generatedDate;
       if (generatedDate === matchDate && slot.title === session.title) {
-        session.phaseSlotId = slot.id || `${slot.weekday}-${slotIndex}`;
+        session.phaseSlotId = buildPhaseSlotId(slot.weekday, slotIndex, slot.id);
         session.phaseWeekIndex = weekIndex;
         session.generatedDate = generatedDate;
         return session;
@@ -5449,12 +5559,6 @@ function ensurePhaseOccurrenceMetadata(session) {
     }
   }
   return session;
-}
-
-function getProgramWeekday(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  const day = date.getDay();
-  return day === 0 ? 7 : day;
 }
 
 function importStrengthPhase(event) {
@@ -7578,6 +7682,7 @@ function normalizePhaseInstance(instance) {
     templateName: instance.templateName || "",
     startDate: normalizeDateInput(instance.startDate) || formatDateInput(new Date()),
     durationWeeks: toNumberOrNull(instance.durationWeeks) || 1,
+    slotDayShifts: normalizePhaseSlotDayShifts(instance.slotDayShifts || instance.slotWeekShifts),
     generatedSessionIds: Array.isArray(instance.generatedSessionIds) ? instance.generatedSessionIds : [],
     createdAt: isNumber(instance.createdAt) ? instance.createdAt : Date.now(),
   };

@@ -11,7 +11,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 ## Main Entities
 - `plannedSession`: a dated session on the calendar
 - `phaseTemplate`: reusable imported strength phase
-- `phaseInstance`: a scheduled use of a template starting on a chosen date
+- `phaseInstance`: a scheduled use of a template starting on a chosen date, with optional future slot shift rules
 - `workout`: the actual logged workout record
 
 ## Main Pages
@@ -34,7 +34,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - sprint plans use structured blocks with reps, distance, optional target time per rep, and optional rest
   - planned run editing opens in a popup instead of reusing the in-page creation form
   - generated strength sessions
-  - generated strength sessions can be moved manually while still planned, without changing the phase template
+  - generated strength sessions can shift future matching training days by the same day offset while still planned, without changing the phase template
   - program week tints use the program start-date anchor, show the week number at the day level, and use matching generated-session card colors
   - today's calendar day keeps a rounded accent outline and date pill above program-week tinting
   - compact session cards with a popup training view so the day cell size stays stable
