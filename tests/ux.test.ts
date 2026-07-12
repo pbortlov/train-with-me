@@ -147,6 +147,9 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('session-action-primary');
     expect(script).toContain('session-action-danger');
     expect(script).toContain('slotDayShifts');
+    expect(script).toContain('getProgramWeekIndexForDate');
+    expect(styles).toContain('.planned-session-card.is-selected {\n  box-shadow:');
+    expect(script).toContain('if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId))');
     expect(styles).toContain('.session-detail-close-button');
     expect(styles).toContain('.session-action-primary');
     expect(styles).toContain('.session-action-danger');

@@ -17,6 +17,7 @@ import {
   buildPhaseSlotId,
   getDateShiftDelta,
   getPhaseOccurrenceSchedule,
+  getProgramWeekIndexForDate,
   normalizePhaseSlotDayShifts,
 } from "./src/domain/phase-scheduling";
 import { buildProgressHubModel } from "./src/domain/progress";
@@ -3558,27 +3559,16 @@ function getStandaloneWorkoutsForWeek(weekStart) {
 
 function buildCalendarProgramWeekMap(weekDates) {
   const dayKeys = weekDates.map((date) => formatDateInput(date));
-  const dayKeySet = new Set(dayKeys);
   const programWeekMap = new Map(dayKeys.map((dayKey) => [dayKey, []]));
-
-  phaseInstances.forEach((instance) => {
-    const durationWeeks = toNumberOrNull(instance.durationWeeks) || 0;
-    for (let weekIndex = 0; weekIndex < durationWeeks; weekIndex += 1) {
-      const weekStart = addDays(instance.startDate, weekIndex * 7);
-      for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
-        const dayKey = formatDateInput(addDays(weekStart, dayOffset));
-        if (!dayKeySet.has(dayKey)) {
-          continue;
-        }
-        programWeekMap.get(dayKey).push({
-          phaseInstanceId: instance.id,
-          weekIndex,
-          label: `Week ${weekIndex + 1}`,
-          colorClass: programWeekColorClass(weekIndex),
-        });
+  plannedSessions
+    .filter((session) => session.source === "phase-generated" && programWeekMap.has(session.date))
+    .forEach((session) => {
+      const marker = programWeekMarkerForSession(session);
+      if (!marker) {
+        return;
       }
-    }
-  });
+      programWeekMap.get(session.date).push(marker);
+    });
 
   return programWeekMap;
 }
@@ -3599,14 +3589,19 @@ function programWeekMarkerForDay(markers) {
 }
 
 function programWeekMarkerForSession(session) {
-  if (session.source !== "phase-generated" || !isNumber(session.phaseWeekIndex)) {
+  if (session.source !== "phase-generated") {
+    return null;
+  }
+  const instance = phaseInstances.find((item) => item.id === session.phaseInstanceId);
+  const weekIndex = instance ? getProgramWeekIndexForDate(instance.startDate, session.date) : null;
+  if (!instance || !isNumber(weekIndex)) {
     return null;
   }
   return {
     phaseInstanceId: session.phaseInstanceId || "",
-    weekIndex: Number(session.phaseWeekIndex),
-    label: `Week ${Number(session.phaseWeekIndex) + 1}`,
-    colorClass: programWeekColorClass(session.phaseWeekIndex),
+    weekIndex: Number(weekIndex),
+    label: `Week ${Number(weekIndex) + 1}`,
+    colorClass: programWeekColorClass(weekIndex),
   };
 }
 
@@ -3656,8 +3651,8 @@ function renderCalendar() {
   const programWeekMap = buildCalendarProgramWeekMap(weekDates);
   const orderedWeekSessions = [...weekSessions].sort((left, right) => left.date.localeCompare(right.date));
   const availableSessionIds = new Set(weekSessions.map((session) => session.id));
-  if (!selectedCalendarSessionId || !availableSessionIds.has(selectedCalendarSessionId)) {
-    selectedCalendarSessionId = weekSessions[0]?.id || "";
+  if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId)) {
+    selectedCalendarSessionId = "";
   }
   calendarWeekLabelEl.textContent = `Week of ${formatHumanDate(weekDates[0])} to ${formatHumanDate(weekDates[6])}`;
   if (calendarMomentumEl) {

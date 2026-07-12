@@ -149,3 +149,16 @@ export function getDateShiftDelta(fromDate: string, toDate: string): number | nu
   }
   return signedDaysBetween(normalizedFromDate, normalizedToDate);
 }
+
+export function getProgramWeekIndexForDate(startDate: string, sessionDate: string): number | null {
+  const normalizedStartDate = normalizeDate(startDate);
+  const normalizedSessionDate = normalizeDate(sessionDate);
+  if (!normalizedStartDate || !normalizedSessionDate) {
+    return null;
+  }
+  const dayDelta = signedDaysBetween(normalizedStartDate, normalizedSessionDate);
+  if (dayDelta === null) {
+    return null;
+  }
+  return Math.max(0, Math.floor(dayDelta / 7));
+}
