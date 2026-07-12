@@ -2675,6 +2675,21 @@ textarea:focus-visible {
   line-height: 1.35;
 }
 
+.program-progress-group-row th {
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 7%), rgb(8 17 33 / 95%)),
+    #081121;
+  border-color: var(--surface-program-panel-border);
+  color: var(--panel-title);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.program-progress-group-title {
+  font-weight: 700;
+}
+
 .program-progress-table .is-improved {
   border-left: 3px solid #6dff5c;
 }

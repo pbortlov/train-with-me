@@ -164,6 +164,12 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('<summary>Review sessions</summary>');
     expect(index).toContain('id="review-summary"');
     expect(index).toContain('id="review-session-list"');
+    expect(script).toContain('effectivePhaseWeekIndex');
+    expect(script).toContain('visibleDurationWeeks');
+    expect(script).toContain('Session ${index + 1}');
+    expect(script).toContain('compare each exercise against its previous logged session');
+    expect(script).toContain('groupProgramExerciseRows');
+    expect(styles).toContain('.program-progress-group-row th');
     expect(styles).toContain('.progress-hub-highlight-card');
     expect(styles).toContain('.strength-insights-card');
     expect(styles).toContain('.running-insights-card');
