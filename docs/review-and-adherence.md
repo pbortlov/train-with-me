@@ -49,16 +49,20 @@ Program adherence charts display completed and modified sessions together as `Do
 ## Program Strength Progress
 Program progress is strength-only for now.
 
-The program duration comes from the scheduled strength phase instance, not from a fixed week count. A four-week phase shows Week 1 to Week 4, while a six-week phase shows Week 1 to Week 6.
+The program duration starts from the scheduled strength phase instance, but week rows follow the visible shifted generated-session schedule. If a rescheduled slot pushes later work outward, Program Strength Progress keeps the week labels aligned with the delayed plan.
 
 Program Strength Progress compares:
 - overall program completion as a doughnut chart with `completed + modified` as green and `planned + missed` as grey
 - weekly strength adherence inside the selected phase instance
 - completed, modified, missed, and still-planned generated strength sessions
-- exercise progression by program week
+- exercise progression by sequential logged sessions for each exercise
 - top weight, max reps, completed sets, and logged set summaries
 
-Exercise improvement labels compare the current logged program week with the previous logged program week for the same exercise:
+Exercise progress stays grouped by training day title so the athlete can still
+see where each exercise belongs in the program while comparing one logged
+session with the next.
+
+Exercise improvement labels compare the current logged session with the previous logged session for the same exercise:
 - `Improved`: any current-week kg set has higher weight than any previous-week kg set, even if reps are lower
 - `Improved`: any current-week kg set uses the same weight as a previous-week kg set with higher reps
 - `Matched`: the current week repeats the same kg set performance as the previous logged week
@@ -66,7 +70,7 @@ Exercise improvement labels compare the current logged program week with the pre
 
 Exercise progress rows can be sorted by:
 - `Program order`: the first planned session/block/exercise position
-- `Highest improvement`: strongest latest improvement compared with the previous logged week
+- `Highest improvement`: strongest latest improvement compared with the previous logged session
 - `Needs attention`: below-previous, missing-latest, or frequently unlogged exercises first
 
 Run and sprint sessions are not attached to strength phases yet. They remain separate activity charts on the Stats page.

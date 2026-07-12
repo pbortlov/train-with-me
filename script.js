@@ -6950,7 +6950,7 @@ function renderProgramProgress() {
   programProgressSummaryEl.innerHTML = `
     <article class="badge">
       <span class="label">Program length</span>
-      <span class="value">${model.durationWeeks} weeks</span>
+      <span class="value">${model.visibleDurationWeeks} weeks</span>
     </article>
     <article class="badge">
       <span class="label">Adherence</span>
@@ -6987,9 +6987,20 @@ function buildProgramProgressModel(instanceId) {
   const sessions = plannedSessions
     .filter((session) => session.type === "strength" && session.phaseInstanceId === instance.id)
     .map((session) => ensurePhaseOccurrenceMetadata(session))
+    .map((session) => ({
+      ...session,
+      effectivePhaseWeekIndex: getProgramWeekIndexForDate(startDate, session.date),
+    }))
     .filter(Boolean);
-  const weekRows = Array.from({ length: durationWeeks }, (_, index) => {
-    const weekSessions = sessions.filter((session) => session.phaseWeekIndex === index);
+  const highestEffectiveWeekIndex = sessions.reduce((max, session) => {
+    if (!isNumber(session.effectivePhaseWeekIndex)) {
+      return max;
+    }
+    return Math.max(max, Number(session.effectivePhaseWeekIndex));
+  }, durationWeeks - 1);
+  const visibleDurationWeeks = Math.max(durationWeeks, highestEffectiveWeekIndex + 1);
+  const weekRows = Array.from({ length: visibleDurationWeeks }, (_, index) => {
+    const weekSessions = sessions.filter((session) => session.effectivePhaseWeekIndex === index);
     const completed = weekSessions.filter((session) => session.status === "completed").length;
     const modified = weekSessions.filter((session) => session.status === "modified").length;
     const missed = weekSessions.filter((session) => session.status === "missed").length;
@@ -7014,6 +7025,7 @@ function buildProgramProgressModel(instanceId) {
     id: instance.id,
     name: instance.templateName || "Strength program",
     durationWeeks,
+    visibleDurationWeeks,
     startDate,
     endDate,
     sessions,
@@ -7023,15 +7035,15 @@ function buildProgramProgressModel(instanceId) {
     missed,
     remaining,
     completionPercent,
-    exerciseRows: buildProgramExerciseRows(sessions, durationWeeks),
+    exerciseRows: buildProgramExerciseRows(sessions),
   };
 }
 
-function buildProgramExerciseRows(sessions, durationWeeks) {
+function buildProgramExerciseRows(sessions) {
   const entriesByName = new Map();
   sessions
     .filter((session) => ["completed", "modified"].includes(session.status) && session.actual?.blocks?.length)
-    .sort((a, b) => (a.phaseWeekIndex - b.phaseWeekIndex) || a.date.localeCompare(b.date))
+    .sort((a, b) => (a.effectivePhaseWeekIndex - b.effectivePhaseWeekIndex) || a.date.localeCompare(b.date))
     .forEach((session) => {
       const plannedBlocks = session.details?.blocks || [];
       const actualBlocks = session.actual?.blocks || [];
@@ -7042,21 +7054,25 @@ function buildProgramExerciseRows(sessions, durationWeeks) {
             return;
           }
           const plannedExercise = plannedBlock.exercises?.[exerciseIndex] || {};
-          const key = normalizeExerciseKey(actualExercise.name || plannedExercise.name || "");
-          if (!key) {
+          const exerciseName = actualExercise.name || plannedExercise.name || "";
+          const exerciseKey = normalizeExerciseKey(exerciseName);
+          const trainingDayTitle = session.title || "Training day";
+          if (!exerciseKey) {
             return;
           }
+          const key = `${trainingDayTitle}::${exerciseKey}`;
           const snapshot = buildActualExerciseSnapshot(actualExercise);
-          const weekIndex = Number(session.phaseWeekIndex);
+          const weekIndex = Number(session.effectivePhaseWeekIndex);
           const existing = entriesByName.get(key) || {
-            name: actualExercise.name || plannedExercise.name || "Exercise",
+            name: exerciseName || "Exercise",
             code: actualExercise.code || plannedExercise.code || "",
+            trainingDayTitle,
             firstSessionDate: session.date || "",
             firstSessionTitle: session.title || "",
-            firstWeekIndex: isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : durationWeeks,
+            firstWeekIndex: isNumber(session.effectivePhaseWeekIndex) ? Number(session.effectivePhaseWeekIndex) : Number.MAX_SAFE_INTEGER,
             firstBlockIndex: blockIndex,
             firstExerciseIndex: exerciseIndex,
-            weeks: Array.from({ length: durationWeeks }, () => []),
+            exposures: [],
           };
           const currentOrder = buildProgramOrderTuple(session, blockIndex, exerciseIndex);
           const existingOrder = buildProgramOrderTuple(
@@ -7071,13 +7087,16 @@ function buildProgramExerciseRows(sessions, durationWeeks) {
           if (compareProgramOrderTuples(currentOrder, existingOrder) < 0) {
             existing.firstSessionDate = session.date || "";
             existing.firstSessionTitle = session.title || "";
-            existing.firstWeekIndex = isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : durationWeeks;
+            existing.firstWeekIndex = isNumber(session.effectivePhaseWeekIndex) ? Number(session.effectivePhaseWeekIndex) : Number.MAX_SAFE_INTEGER;
             existing.firstBlockIndex = blockIndex;
             existing.firstExerciseIndex = exerciseIndex;
           }
-          if (weekIndex >= 0 && weekIndex < durationWeeks) {
-            existing.weeks[weekIndex].push(snapshot);
-          }
+          existing.exposures.push({
+            snapshot,
+            date: session.date || "",
+            title: session.title || "",
+            weekIndex,
+          });
           entriesByName.set(key, existing);
         });
       });
@@ -7086,27 +7105,52 @@ function buildProgramExerciseRows(sessions, durationWeeks) {
   const rows = [...entriesByName.values()]
     .map((row) => {
       let previous = null;
-      const weeks = row.weeks.map((snapshots) => {
-        const combined = combineActualExerciseSnapshots(snapshots);
+      const exposures = row.exposures.map((exposure) => {
+        const combined = combineActualExerciseSnapshots([exposure.snapshot]);
         const status = combined ? evaluateImprovementStatus(previous, combined).label : "";
         if (combined) {
           previous = combined;
         }
-        return { snapshot: combined, status };
+        return {
+          snapshot: combined,
+          status,
+          date: exposure.date,
+          title: exposure.title,
+          weekIndex: exposure.weekIndex,
+        };
       });
       return {
         ...row,
-        weeks,
-        sortMeta: buildProgramExerciseSortMeta(row, weeks, durationWeeks),
+        exposures,
+        sortMeta: buildProgramExerciseSortMeta(row, exposures),
       };
     });
 
   return sortProgramExerciseRows(rows, programExerciseSortMode);
 }
 
+function groupProgramExerciseRows(rows) {
+  const groupsByTitle = new Map();
+  rows.forEach((row) => {
+    const title = row.trainingDayTitle || "Training day";
+    const existing = groupsByTitle.get(title) || {
+      title,
+      orderTuple: [row.firstWeekIndex, row.firstSessionDate, row.firstSessionTitle, row.firstBlockIndex],
+      rows: [],
+    };
+    const currentOrder = [row.firstWeekIndex, row.firstSessionDate, row.firstSessionTitle, row.firstBlockIndex];
+    if (compareProgramOrderTuples(currentOrder, existing.orderTuple) < 0) {
+      existing.orderTuple = currentOrder;
+    }
+    existing.rows.push(row);
+    groupsByTitle.set(title, existing);
+  });
+  return [...groupsByTitle.values()].sort((a, b) => compareProgramOrderTuples(a.orderTuple, b.orderTuple));
+}
+
 function buildProgramOrderTuple(session, blockIndex, exerciseIndex) {
   return [
-    isNumber(session.phaseWeekIndex) ? Number(session.phaseWeekIndex) : Number.MAX_SAFE_INTEGER,
+    isNumber(session.effectivePhaseWeekIndex) ? Number(session.effectivePhaseWeekIndex) : Number.MAX_SAFE_INTEGER,
     session.date || "",
     session.title || "",
     blockIndex,
@@ -7126,31 +7170,24 @@ function compareProgramOrderTuples(a, b) {
   return 0;
 }
 
-function buildProgramExerciseSortMeta(row, weeks, durationWeeks) {
-  const loggedWeeks = weeks
-    .map((week, index) => ({ ...week, index }))
-    .filter((week) => week.snapshot);
-  const latest = loggedWeeks[loggedWeeks.length - 1] || null;
-  const previous = loggedWeeks.length > 1 ? loggedWeeks[loggedWeeks.length - 2] : null;
+function buildProgramExerciseSortMeta(row, exposures) {
+  const latest = exposures[exposures.length - 1] || null;
+  const previous = exposures.length > 1 ? exposures[exposures.length - 2] : null;
   const latestSnapshot = latest?.snapshot || null;
   const previousSnapshot = previous?.snapshot || null;
   const weightDelta = latestSnapshot && previousSnapshot ? getBestSetWeightImprovement(latestSnapshot, previousSnapshot) : 0;
   const repsDelta = latestSnapshot && previousSnapshot ? getBestSameWeightRepImprovement(latestSnapshot, previousSnapshot) : 0;
   const setsDelta = latestSnapshot && previousSnapshot ? (latestSnapshot.totalSets || 0) - (previousSnapshot.totalSets || 0) : 0;
   const latestStatus = latest?.status || "";
-  const missingWeekCount = weeks.filter((week) => !week.snapshot).length;
-  const latestProgramWeekMissing = durationWeeks > 0 && !weeks[durationWeeks - 1]?.snapshot;
 
   return {
     orderTuple: [row.firstWeekIndex, row.firstSessionDate, row.firstSessionTitle, row.firstBlockIndex, row.firstExerciseIndex, row.name],
     latestStatus,
-    missingWeekCount,
-    latestProgramWeekMissing,
+    exposureCount: exposures.length,
     improvementScore: (weightDelta * 1000) + (repsDelta * 10) + setsDelta,
     attentionScore:
       (latestStatus === "Below previous" ? 10000 : 0) +
-      (latestProgramWeekMissing ? 5000 : 0) +
-      (missingWeekCount * 100) +
+      (exposures.length <= 1 ? 500 : 0) +
       (latestStatus === "Matched" || latestStatus === "Partial / mixed" ? 25 : 0) +
       (!latestStatus || latestStatus === "First logged week" ? 10 : 0),
   };
@@ -7218,17 +7255,33 @@ function combineActualExerciseSnapshots(snapshots) {
 
 function renderProgramExerciseProgressTable(model) {
   if (!model.exerciseRows.length) {
-    return "<p class=\"planner-empty\">Complete generated strength sessions in this program to see exercise-by-week progress.</p>";
+    return "<p class=\"planner-empty\">Complete generated strength sessions in this program to compare each exercise against its previous logged session.</p>";
   }
 
-  const weekHeadings = Array.from({ length: model.durationWeeks }, (_, index) => `<th>Week ${index + 1}</th>`).join("");
-  const rows = model.exerciseRows
-    .map((row) => `
-      <tr>
-        <th>${escapeHtml(row.name)}${row.code ? `<div class="phase-meta">${escapeHtml(row.code)}</div>` : ""}</th>
-        ${row.weeks.map((week) => renderProgramExerciseWeekCell(week)).join("")}
-      </tr>
-    `)
+  const groupedRows = groupProgramExerciseRows(model.exerciseRows);
+  const maxExposureCount = model.exerciseRows.reduce((max, row) => Math.max(max, row.exposures.length), 0);
+  const exposureHeadings = Array.from({ length: maxExposureCount }, (_, index) => `<th>Session ${index + 1}</th>`).join("");
+  const rows = groupedRows
+    .map((group) => {
+      const trainingDayMeta = `${group.rows.length} exercise${group.rows.length === 1 ? "" : "s"}`;
+      const groupRows = group.rows
+        .map((row) => `
+          <tr>
+            <th>${escapeHtml(row.name)}${row.code ? `<div class="phase-meta">${escapeHtml(row.code)}</div>` : ""}</th>
+            ${Array.from({ length: maxExposureCount }, (_, index) => renderProgramExerciseWeekCell(row.exposures[index] || null)).join("")}
+          </tr>
+        `)
+        .join("");
+      return `
+        <tr class="program-progress-group-row">
+          <th colspan="${maxExposureCount + 1}">
+            <div class="program-progress-group-title">${escapeHtml(group.title)}</div>
+            <div class="phase-meta">${escapeHtml(trainingDayMeta)}</div>
+          </th>
+        </tr>
+        ${groupRows}
+      `;
+    })
     .join("");
 
   return `
@@ -7236,7 +7289,7 @@ function renderProgramExerciseProgressTable(model) {
       <thead>
         <tr>
           <th>Exercise</th>
-          ${weekHeadings}
+          ${exposureHeadings}
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -7245,7 +7298,7 @@ function renderProgramExerciseProgressTable(model) {
 }
 
 function renderProgramExerciseWeekCell(week) {
-  if (!week.snapshot) {
+  if (!week?.snapshot) {
     return "<td class=\"is-empty\">Not logged</td>";
   }
   const statusClass = programProgressStatusClass(week.status);
