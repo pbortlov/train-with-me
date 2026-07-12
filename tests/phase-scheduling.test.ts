@@ -4,6 +4,7 @@ import {
   getAnchoredPhaseOccurrenceDate,
   getDateShiftDelta,
   getPhaseOccurrenceSchedule,
+  getProgramWeekIndexForDate,
   normalizePhaseSlotDayShifts,
 } from "../src/domain/phase-scheduling";
 
@@ -144,5 +145,13 @@ describe("phase scheduling", () => {
 
     expect(movedSlot.effectiveDate).toBe("2026-07-10");
     expect(existingSlot.effectiveDate).toBe("2026-07-10");
+  });
+
+  it("derives calendar week index from the visible scheduled date", () => {
+    expect(getProgramWeekIndexForDate("2026-07-06", "2026-07-07")).toBe(0);
+    expect(getProgramWeekIndexForDate("2026-07-06", "2026-07-10")).toBe(0);
+    expect(getProgramWeekIndexForDate("2026-07-06", "2026-07-13")).toBe(1);
+    expect(getProgramWeekIndexForDate("2026-07-06", "2026-07-31")).toBe(3);
+    expect(getProgramWeekIndexForDate("2026-07-06", "2026-07-04")).toBe(0);
   });
 });
