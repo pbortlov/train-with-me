@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   buildPhaseSlotId,
   getAnchoredPhaseOccurrenceDate,
+  getCompletedPhaseFinishDate,
   getDateShiftDelta,
+  getExpectedPhaseEndDate,
   getPhaseOccurrenceSchedule,
+  getPlannedPhaseEndDate,
   getProgramWeekIndexForDate,
   normalizePhaseSlotDayShifts,
 } from "../src/domain/phase-scheduling";
@@ -153,5 +156,36 @@ describe("phase scheduling", () => {
     expect(getProgramWeekIndexForDate("2026-07-06", "2026-07-13")).toBe(1);
     expect(getProgramWeekIndexForDate("2026-07-06", "2026-07-31")).toBe(3);
     expect(getProgramWeekIndexForDate("2026-07-06", "2026-07-04")).toBe(0);
+  });
+
+  it("derives planned and expected finish dates from the current schedule", () => {
+    expect(getPlannedPhaseEndDate("2026-07-06", 4)).toBe("2026-08-02");
+    expect(
+      getExpectedPhaseEndDate("2026-07-06", 4, ["2026-07-07", "2026-08-05"]),
+    ).toBe("2026-08-05");
+    expect(
+      getExpectedPhaseEndDate("2026-07-06", 4, ["2026-07-07", "2026-07-29"]),
+    ).toBe("2026-08-02");
+  });
+
+  it("sets a real finish date when every generated session is closed", () => {
+    expect(
+      getCompletedPhaseFinishDate([
+        { date: "2026-07-07", status: "completed" },
+        { date: "2026-07-14", status: "modified" },
+      ]),
+    ).toBe("2026-07-14");
+    expect(
+      getCompletedPhaseFinishDate([
+        { date: "2026-07-07", status: "completed" },
+        { date: "2026-07-14", status: "missed" },
+      ]),
+    ).toBe("2026-07-14");
+    expect(
+      getCompletedPhaseFinishDate([
+        { date: "2026-07-07", status: "completed" },
+        { date: "2026-07-14", status: "planned" },
+      ]),
+    ).toBe("");
   });
 });

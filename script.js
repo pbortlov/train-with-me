@@ -16,8 +16,11 @@ import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src
 import {
   buildPhaseSlotId,
   getDateShiftDelta,
+  getExpectedPhaseEndDate,
   getPhaseOccurrenceSchedule,
+  getPlannedPhaseEndDate,
   getProgramWeekIndexForDate,
+  getCompletedPhaseFinishDate,
   normalizePhaseSlotDayShifts,
 } from "./src/domain/phase-scheduling";
 import { buildProgressHubModel } from "./src/domain/progress";
@@ -5990,13 +5993,17 @@ function renderPhaseInstances() {
   }
   phaseInstanceListEl.innerHTML = phaseInstances
     .map((instance) => {
-      const endDate = formatDateInput(addDays(instance.startDate, (instance.durationWeeks * 7) - 1));
+      const lifecycle = buildPhaseInstanceLifecycle(instance);
+      const statusLine = lifecycle.actualFinishDate
+        ? `Finished on ${formatHumanDate(lifecycle.actualFinishDate)}`
+        : "In progress";
       return `
         <article class="phase-card">
           <header>
             <div>
               <h4>${escapeHtml(instance.templateName || "Phase")}</h4>
-              <div class="phase-meta">${formatHumanDate(instance.startDate)} to ${formatHumanDate(endDate)} • ${instance.generatedSessionIds.length} sessions</div>
+              <div class="phase-meta">Start ${formatHumanDate(lifecycle.startDate)} • Expected finish ${formatHumanDate(lifecycle.expectedFinishDate)} • ${statusLine}</div>
+              <div class="phase-meta">${instance.generatedSessionIds.length} sessions • Planned finish ${formatHumanDate(lifecycle.plannedEndDate)}</div>
             </div>
           </header>
           <div class="phase-actions">
@@ -6931,8 +6938,8 @@ function renderProgramProgress() {
 
   programProgressSelect.innerHTML = phaseInstances
     .map((instance) => {
-      const endDate = formatDateInput(addDays(instance.startDate, (instance.durationWeeks * 7) - 1));
-      return `<option value="${escapeHtml(instance.id)}"${instance.id === selectedProgramProgressInstanceId ? " selected" : ""}>${escapeHtml(instance.templateName || "Strength program")} • ${formatHumanDate(instance.startDate)}-${formatHumanDate(endDate)}</option>`;
+      const lifecycle = buildPhaseInstanceLifecycle(instance);
+      return `<option value="${escapeHtml(instance.id)}"${instance.id === selectedProgramProgressInstanceId ? " selected" : ""}>${escapeHtml(instance.templateName || "Strength program")} • ${formatHumanDate(lifecycle.startDate)}-${formatHumanDate(lifecycle.expectedFinishDate)}</option>`;
     })
     .join("");
 
@@ -6949,7 +6956,19 @@ function renderProgramProgress() {
 
   programProgressSummaryEl.innerHTML = `
     <article class="badge">
-      <span class="label">Program length</span>
+      <span class="label">Program start</span>
+      <span class="value">${formatHumanDate(model.startDate)}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Expected finish</span>
+      <span class="value">${formatHumanDate(model.expectedFinishDate)}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Real finish</span>
+      <span class="value">${model.actualFinishDate ? formatHumanDate(model.actualFinishDate) : "In progress"}</span>
+    </article>
+    <article class="badge">
+      <span class="label">Visible length</span>
       <span class="value">${model.visibleDurationWeeks} weeks</span>
     </article>
     <article class="badge">
@@ -6963,7 +6982,7 @@ function renderProgramProgress() {
       </div>
     </article>
   `;
-  programProgressStatusEl.textContent = `${model.name} runs from ${formatHumanDate(model.startDate)} to ${formatHumanDate(model.endDate)}. Run and sprint are intentionally excluded from this program view.`;
+  programProgressStatusEl.textContent = `${model.name} starts on ${formatHumanDate(model.startDate)}, is expected to finish by ${formatHumanDate(model.expectedFinishDate)}, and ${model.actualFinishDate ? `finished on ${formatHumanDate(model.actualFinishDate)}` : "is still in progress"}. Run and sprint are intentionally excluded from this program view.`;
 
   programCompletionChart = createOrUpdateProgramCompletionChart(
     programCompletionChart,
@@ -6982,8 +7001,8 @@ function buildProgramProgressModel(instanceId) {
   }
 
   const durationWeeks = Math.max(1, toNumberOrNull(instance.durationWeeks) || 1);
-  const startDate = normalizeDateInput(instance.startDate);
-  const endDate = formatDateInput(addDays(startDate, (durationWeeks * 7) - 1));
+  const lifecycle = buildPhaseInstanceLifecycle(instance);
+  const startDate = lifecycle.startDate;
   const sessions = plannedSessions
     .filter((session) => session.type === "strength" && session.phaseInstanceId === instance.id)
     .map((session) => ensurePhaseOccurrenceMetadata(session))
@@ -7027,7 +7046,9 @@ function buildProgramProgressModel(instanceId) {
     durationWeeks,
     visibleDurationWeeks,
     startDate,
-    endDate,
+    endDate: lifecycle.plannedEndDate,
+    expectedFinishDate: lifecycle.expectedFinishDate,
+    actualFinishDate: lifecycle.actualFinishDate,
     sessions,
     weekRows,
     total,
@@ -7036,6 +7057,22 @@ function buildProgramProgressModel(instanceId) {
     remaining,
     completionPercent,
     exerciseRows: buildProgramExerciseRows(sessions),
+  };
+}
+
+function buildPhaseInstanceLifecycle(instance) {
+  const durationWeeks = Math.max(1, toNumberOrNull(instance?.durationWeeks) || 1);
+  const startDate = normalizeDateInput(instance?.startDate) || formatDateInput(new Date());
+  const sessions = plannedSessions.filter((session) => session.type === "strength" && session.phaseInstanceId === instance?.id);
+  return {
+    startDate,
+    plannedEndDate: getPlannedPhaseEndDate(startDate, durationWeeks),
+    expectedFinishDate: getExpectedPhaseEndDate(
+      startDate,
+      durationWeeks,
+      sessions.map((session) => session.date),
+    ),
+    actualFinishDate: getCompletedPhaseFinishDate(sessions),
   };
 }
 

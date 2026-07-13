@@ -263,6 +263,17 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('Reusable templates you can duplicate, edit, or load into the builder.');
   });
 
+  it("shows lifecycle dates for scheduled programs and stats progress", () => {
+    expect(script).toContain("function buildPhaseInstanceLifecycle(instance)");
+    expect(script).toContain("Start ${formatHumanDate(lifecycle.startDate)}");
+    expect(script).toContain("Expected finish ${formatHumanDate(lifecycle.expectedFinishDate)}");
+    expect(script).toContain('Finished on ${formatHumanDate(lifecycle.actualFinishDate)}');
+    expect(script).toContain('<span class="label">Program start</span>');
+    expect(script).toContain('<span class="label">Expected finish</span>');
+    expect(script).toContain('<span class="label">Real finish</span>');
+    expect(script).toContain("starts on ${formatHumanDate(model.startDate)}, is expected to finish by");
+  });
+
   it("offers a duplicate action for saved program templates", () => {
     expect(script).toContain('data-role="duplicate-phase-template"');
     expect(script).toContain("Load copy");
