@@ -53,6 +53,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - schedule a template onto real dates
   - show each scheduled program's anchored start date, current expected finish date, and actual finish date when the full program is completed
   - label scheduled programs as on track, shifted, finished on time, or finished late so lifecycle dates are easier to read
+  - explain those lifecycle labels inline in Programs and Stats so the meaning stays visible without external documentation
   - keep create/import tools in a collapsible section after scheduled programs and saved templates
   - preview imported program text as readable program basics, training days, blocks, and exercises before saving
   - show a plain-language summary of days, blocks, and exercises above the preview

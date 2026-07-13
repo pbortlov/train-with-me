@@ -1603,6 +1603,20 @@ textarea:focus-visible {
   content: "Close";
 }
 
+.lifecycle-guide-disclosure {
+  margin-bottom: 0.9rem;
+}
+
+.lifecycle-guide-list {
+  display: grid;
+  gap: 0.55rem;
+  color: var(--text);
+}
+
+.lifecycle-guide-list p {
+  margin: 0;
+}
+
 .phase-template-details {
   border: 1px solid var(--border);
   border-radius: 10px;

@@ -283,6 +283,20 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("starts on ${formatHumanDate(model.startDate)}, is expected to finish by");
   });
 
+  it("explains lifecycle statuses next to program progress", () => {
+    expect(index).toContain('id="program-lifecycle-guide"');
+    expect(index).toContain("<summary>What these statuses mean</summary>");
+    expect(index).toContain("Status guide: On track means the program still fits the original length");
+    expect(index).toContain("<strong>On track:</strong>");
+    expect(index).toContain("<strong>Shifted:</strong>");
+    expect(index).toContain("<strong>Finished on time:</strong>");
+    expect(index).toContain("<strong>Finished late:</strong>");
+    expect(index).toContain("<strong>In progress:</strong>");
+    expect(index).toContain("<strong>Real finish:</strong>");
+    expect(styles).toContain(".lifecycle-guide-disclosure");
+    expect(styles).toContain(".lifecycle-guide-list");
+  });
+
   it("offers a duplicate action for saved program templates", () => {
     expect(script).toContain('data-role="duplicate-phase-template"');
     expect(script).toContain("Load copy");
