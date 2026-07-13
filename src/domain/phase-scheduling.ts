@@ -162,3 +162,47 @@ export function getProgramWeekIndexForDate(startDate: string, sessionDate: strin
   }
   return Math.max(0, Math.floor(dayDelta / 7));
 }
+
+export function getPlannedPhaseEndDate(startDate: string, durationWeeks: number): string {
+  const normalizedStartDate = normalizeDate(startDate);
+  if (!normalizedStartDate) {
+    return "";
+  }
+  const normalizedDurationWeeks = Math.max(1, Number(durationWeeks) || 1);
+  return formatDate(addDays(normalizedStartDate, (normalizedDurationWeeks * 7) - 1));
+}
+
+export function getExpectedPhaseEndDate(
+  startDate: string,
+  durationWeeks: number,
+  scheduledDates: string[],
+): string {
+  const plannedEndDate = getPlannedPhaseEndDate(startDate, durationWeeks);
+  const latestScheduledDate = (scheduledDates || [])
+    .map((date) => normalizeDate(date))
+    .filter(Boolean)
+    .sort()
+    .at(-1) || "";
+  if (!plannedEndDate) {
+    return latestScheduledDate;
+  }
+  if (!latestScheduledDate) {
+    return plannedEndDate;
+  }
+  return latestScheduledDate > plannedEndDate ? latestScheduledDate : plannedEndDate;
+}
+
+export function getCompletedPhaseFinishDate(sessions: Array<{ date?: string; status?: string }>): string {
+  if (!Array.isArray(sessions) || !sessions.length) {
+    return "";
+  }
+  const closedStatuses = new Set(["completed", "modified", "missed"]);
+  if (sessions.some((session) => !closedStatuses.has(String(session?.status || "")))) {
+    return "";
+  }
+  return sessions
+    .map((session) => normalizeDate(session?.date))
+    .filter(Boolean)
+    .sort()
+    .at(-1) || "";
+}
