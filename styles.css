@@ -1142,6 +1142,26 @@ textarea:focus-visible {
   color: #cfe2ff;
 }
 
+.phase-badge-lifecycle {
+  width: fit-content;
+  margin-right: 0.45rem;
+  border: 1px solid transparent;
+}
+
+.phase-badge-lifecycle-on-track,
+.phase-badge-lifecycle-finished-on-time {
+  background: rgb(109 255 92 / 14%);
+  border-color: rgb(109 255 92 / 28%);
+  color: #dfffe1;
+}
+
+.phase-badge-lifecycle-shifted,
+.phase-badge-lifecycle-finished-late {
+  background: rgb(255 216 77 / 14%);
+  border-color: rgb(255 216 77 / 28%);
+  color: #fff3bf;
+}
+
 .planned-session-card.is-selected {
   box-shadow:
     0 0 0 1px #00e5ff66 inset,
@@ -2968,6 +2988,12 @@ dialog::backdrop {
 .badge .value {
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.program-lifecycle-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
 }
 
 .program-completion-chart-wrap {

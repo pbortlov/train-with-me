@@ -52,6 +52,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - inspect the workout structure inside each saved template
   - schedule a template onto real dates
   - show each scheduled program's anchored start date, current expected finish date, and actual finish date when the full program is completed
+  - label scheduled programs as on track, shifted, finished on time, or finished late so lifecycle dates are easier to read
   - keep create/import tools in a collapsible section after scheduled programs and saved templates
   - preview imported program text as readable program basics, training days, blocks, and exercises before saving
   - show a plain-language summary of days, blocks, and exercises above the preview
@@ -103,6 +104,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - program completion doughnut for the selected strength phase instance
   - program-duration strength progress for scheduled phase instances
   - scheduled-program stats show start date, current expected finish, and real finish when all generated strength sessions are closed as completed, modified, or missed
+  - scheduled-program stats derive a lifecycle status from those dates instead of adding a separate stored state
   - Strength Insights summarize strength workouts, unique exercises, total sets, kg/bodyweight/band load mix, top kg lift, and most-trained exercise
   - Running Insights summarize run count, total distance, weighted average pace, latest run, longest run, best pace, total time, and recent valid-distance runs
   - Sprint Insights summarize sprint workouts, total reps, unique distances, latest sprint, fastest rep, distance-specific bests, recent sessions, and feeling mix

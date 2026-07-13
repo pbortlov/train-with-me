@@ -18,6 +18,7 @@ import {
   getDateShiftDelta,
   getExpectedPhaseEndDate,
   getPhaseOccurrenceSchedule,
+  getPhaseLifecycleStatus,
   getPlannedPhaseEndDate,
   getProgramWeekIndexForDate,
   getCompletedPhaseFinishDate,
@@ -6002,7 +6003,10 @@ function renderPhaseInstances() {
           <header>
             <div>
               <h4>${escapeHtml(instance.templateName || "Phase")}</h4>
-              <div class="phase-meta">Start ${formatHumanDate(lifecycle.startDate)} • Expected finish ${formatHumanDate(lifecycle.expectedFinishDate)} • ${statusLine}</div>
+              <div class="phase-meta">
+                <span class="phase-badge phase-badge-lifecycle phase-badge-lifecycle-${escapeHtml(lifecycle.status.code)}">${escapeHtml(lifecycle.status.label)}</span>
+                Start ${formatHumanDate(lifecycle.startDate)} • Expected finish ${formatHumanDate(lifecycle.expectedFinishDate)} • ${statusLine}
+              </div>
               <div class="phase-meta">${instance.generatedSessionIds.length} sessions • Planned finish ${formatHumanDate(lifecycle.plannedEndDate)}</div>
             </div>
           </header>
@@ -6956,6 +6960,12 @@ function renderProgramProgress() {
 
   programProgressSummaryEl.innerHTML = `
     <article class="badge">
+      <span class="label">Lifecycle status</span>
+      <span class="value program-lifecycle-status">
+        <span class="phase-badge phase-badge-lifecycle phase-badge-lifecycle-${escapeHtml(model.lifecycleStatus.code)}">${escapeHtml(model.lifecycleStatus.label)}</span>
+      </span>
+    </article>
+    <article class="badge">
       <span class="label">Program start</span>
       <span class="value">${formatHumanDate(model.startDate)}</span>
     </article>
@@ -6982,7 +6992,7 @@ function renderProgramProgress() {
       </div>
     </article>
   `;
-  programProgressStatusEl.textContent = `${model.name} starts on ${formatHumanDate(model.startDate)}, is expected to finish by ${formatHumanDate(model.expectedFinishDate)}, and ${model.actualFinishDate ? `finished on ${formatHumanDate(model.actualFinishDate)}` : "is still in progress"}. Run and sprint are intentionally excluded from this program view.`;
+  programProgressStatusEl.textContent = `${model.name} is ${model.lifecycleStatus.label.toLowerCase()}, starts on ${formatHumanDate(model.startDate)}, is expected to finish by ${formatHumanDate(model.expectedFinishDate)}, and ${model.actualFinishDate ? `finished on ${formatHumanDate(model.actualFinishDate)}` : "is still in progress"}. Run and sprint are intentionally excluded from this program view.`;
 
   programCompletionChart = createOrUpdateProgramCompletionChart(
     programCompletionChart,
@@ -7049,6 +7059,7 @@ function buildProgramProgressModel(instanceId) {
     endDate: lifecycle.plannedEndDate,
     expectedFinishDate: lifecycle.expectedFinishDate,
     actualFinishDate: lifecycle.actualFinishDate,
+    lifecycleStatus: lifecycle.status,
     sessions,
     weekRows,
     total,
@@ -7073,6 +7084,15 @@ function buildPhaseInstanceLifecycle(instance) {
       sessions.map((session) => session.date),
     ),
     actualFinishDate: getCompletedPhaseFinishDate(sessions),
+    status: getPhaseLifecycleStatus({
+      plannedEndDate: getPlannedPhaseEndDate(startDate, durationWeeks),
+      expectedFinishDate: getExpectedPhaseEndDate(
+        startDate,
+        durationWeeks,
+        sessions.map((session) => session.date),
+      ),
+      actualFinishDate: getCompletedPhaseFinishDate(sessions),
+    }),
   };
 }
 

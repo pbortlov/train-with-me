@@ -265,12 +265,21 @@ describe("local-first UX guidance", () => {
 
   it("shows lifecycle dates for scheduled programs and stats progress", () => {
     expect(script).toContain("function buildPhaseInstanceLifecycle(instance)");
+    expect(script).toContain("phase-badge-lifecycle");
+    expect(script).toContain("Lifecycle status");
     expect(script).toContain("Start ${formatHumanDate(lifecycle.startDate)}");
     expect(script).toContain("Expected finish ${formatHumanDate(lifecycle.expectedFinishDate)}");
     expect(script).toContain('Finished on ${formatHumanDate(lifecycle.actualFinishDate)}');
+    expect(script).toContain("is ${model.lifecycleStatus.label.toLowerCase()}");
     expect(script).toContain('<span class="label">Program start</span>');
+    expect(script).toContain('<span class="label">Lifecycle status</span>');
     expect(script).toContain('<span class="label">Expected finish</span>');
     expect(script).toContain('<span class="label">Real finish</span>');
+    expect(styles).toContain(".phase-badge-lifecycle-on-track");
+    expect(styles).toContain(".phase-badge-lifecycle-shifted");
+    expect(styles).toContain(".phase-badge-lifecycle-finished-on-time");
+    expect(styles).toContain(".phase-badge-lifecycle-finished-late");
+    expect(styles).toContain(".program-lifecycle-status");
     expect(script).toContain("starts on ${formatHumanDate(model.startDate)}, is expected to finish by");
   });
 

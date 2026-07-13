@@ -5,6 +5,11 @@ export interface PhaseSlotDayShift {
   createdAt: number;
 }
 
+export interface PhaseLifecycleStatus {
+  code: "on-track" | "shifted" | "finished-on-time" | "finished-late";
+  label: string;
+}
+
 function normalizeDate(value: unknown): string {
   if (typeof value !== "string" || !value) {
     return "";
@@ -205,4 +210,27 @@ export function getCompletedPhaseFinishDate(sessions: Array<{ date?: string; sta
     .filter(Boolean)
     .sort()
     .at(-1) || "";
+}
+
+export function getPhaseLifecycleStatus(input: {
+  plannedEndDate: string;
+  expectedFinishDate: string;
+  actualFinishDate?: string;
+}): PhaseLifecycleStatus {
+  const plannedEndDate = normalizeDate(input.plannedEndDate);
+  const expectedFinishDate = normalizeDate(input.expectedFinishDate);
+  const actualFinishDate = normalizeDate(input.actualFinishDate || "");
+
+  if (actualFinishDate) {
+    if (plannedEndDate && actualFinishDate <= plannedEndDate) {
+      return { code: "finished-on-time", label: "Finished on time" };
+    }
+    return { code: "finished-late", label: "Finished late" };
+  }
+
+  if (plannedEndDate && expectedFinishDate && expectedFinishDate > plannedEndDate) {
+    return { code: "shifted", label: "Shifted" };
+  }
+
+  return { code: "on-track", label: "On track" };
 }

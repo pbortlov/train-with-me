@@ -5,6 +5,7 @@ import {
   getCompletedPhaseFinishDate,
   getDateShiftDelta,
   getExpectedPhaseEndDate,
+  getPhaseLifecycleStatus,
   getPhaseOccurrenceSchedule,
   getPlannedPhaseEndDate,
   getProgramWeekIndexForDate,
@@ -187,5 +188,36 @@ describe("phase scheduling", () => {
         { date: "2026-07-14", status: "planned" },
       ]),
     ).toBe("");
+  });
+
+  it("derives lifecycle status from planned expected and actual finish dates", () => {
+    expect(
+      getPhaseLifecycleStatus({
+        plannedEndDate: "2026-08-02",
+        expectedFinishDate: "2026-08-02",
+        actualFinishDate: "",
+      }),
+    ).toEqual({ code: "on-track", label: "On track" });
+    expect(
+      getPhaseLifecycleStatus({
+        plannedEndDate: "2026-08-02",
+        expectedFinishDate: "2026-08-05",
+        actualFinishDate: "",
+      }),
+    ).toEqual({ code: "shifted", label: "Shifted" });
+    expect(
+      getPhaseLifecycleStatus({
+        plannedEndDate: "2026-08-02",
+        expectedFinishDate: "2026-08-05",
+        actualFinishDate: "2026-08-01",
+      }),
+    ).toEqual({ code: "finished-on-time", label: "Finished on time" });
+    expect(
+      getPhaseLifecycleStatus({
+        plannedEndDate: "2026-08-02",
+        expectedFinishDate: "2026-08-05",
+        actualFinishDate: "2026-08-05",
+      }),
+    ).toEqual({ code: "finished-late", label: "Finished late" });
   });
 });
