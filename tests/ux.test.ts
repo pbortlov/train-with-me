@@ -287,16 +287,17 @@ describe("local-first UX guidance", () => {
   it("explains lifecycle statuses next to program progress", () => {
     expect(index).toContain('id="program-lifecycle-guide"');
     expect(index).toContain("<summary>What these statuses mean</summary>");
-    expect(index).toContain('class="program-status-guide"');
-    expect(index).toContain('class="program-status-guide-label" id="program-status-guide-heading">Status guide</p>');
-    expect(index).toContain("<strong>On track:</strong>");
-    expect(index).toContain("<strong>Shifted:</strong>");
-    expect(index).toContain("<strong>Finished on time:</strong>");
-    expect(index).toContain("<strong>Finished late:</strong>");
-    expect(index).toContain('<div class="program-status-guide-list">');
+    expect(index).toContain("<strong>On track</strong>");
+    expect(index).toContain("<strong>Shifted</strong>");
+    expect(index).toContain("<strong>Finished on time</strong>");
+    expect(index).toContain("<strong>Finished late</strong>");
+    expect(index).toContain("<strong>In progress</strong>");
+    expect(index).toContain("<strong>Date note</strong>");
+    expect(index).toContain("`Real finish` appears once all generated program sessions are closed");
     expect(styles).toContain(".lifecycle-guide-disclosure");
     expect(styles).toContain(".lifecycle-guide-list");
-    expect(styles).toContain(".program-status-guide");
+    expect(styles).toContain(".lifecycle-guide-item");
+    expect(styles).toContain(".lifecycle-guide-note");
     expect(styles).toContain(".program-status-guide-label");
     expect(styles).toContain(".program-status-guide-list");
     expect(styles).toContain(".program-status-guide-list strong");
