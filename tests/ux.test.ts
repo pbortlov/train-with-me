@@ -265,13 +265,40 @@ describe("local-first UX guidance", () => {
 
   it("shows lifecycle dates for scheduled programs and stats progress", () => {
     expect(script).toContain("function buildPhaseInstanceLifecycle(instance)");
+    expect(script).toContain("phase-badge-lifecycle");
+    expect(script).toContain("Lifecycle status");
     expect(script).toContain("Start ${formatHumanDate(lifecycle.startDate)}");
     expect(script).toContain("Expected finish ${formatHumanDate(lifecycle.expectedFinishDate)}");
     expect(script).toContain('Finished on ${formatHumanDate(lifecycle.actualFinishDate)}');
+    expect(script).toContain("is ${model.lifecycleStatus.label.toLowerCase()}");
     expect(script).toContain('<span class="label">Program start</span>');
+    expect(script).toContain('<span class="label">Lifecycle status</span>');
     expect(script).toContain('<span class="label">Expected finish</span>');
     expect(script).toContain('<span class="label">Real finish</span>');
+    expect(styles).toContain(".phase-badge-lifecycle-on-track");
+    expect(styles).toContain(".phase-badge-lifecycle-shifted");
+    expect(styles).toContain(".phase-badge-lifecycle-finished-on-time");
+    expect(styles).toContain(".phase-badge-lifecycle-finished-late");
+    expect(styles).toContain(".program-lifecycle-status");
     expect(script).toContain("starts on ${formatHumanDate(model.startDate)}, is expected to finish by");
+  });
+
+  it("explains lifecycle statuses next to program progress", () => {
+    expect(index).toContain('id="program-lifecycle-guide"');
+    expect(index).toContain("<summary>What these statuses mean</summary>");
+    expect(index).toContain('class="program-status-guide"');
+    expect(index).toContain('class="program-status-guide-label" id="program-status-guide-heading">Status guide</p>');
+    expect(index).toContain("<strong>On track:</strong>");
+    expect(index).toContain("<strong>Shifted:</strong>");
+    expect(index).toContain("<strong>Finished on time:</strong>");
+    expect(index).toContain("<strong>Finished late:</strong>");
+    expect(index).toContain('<div class="program-status-guide-list">');
+    expect(styles).toContain(".lifecycle-guide-disclosure");
+    expect(styles).toContain(".lifecycle-guide-list");
+    expect(styles).toContain(".program-status-guide");
+    expect(styles).toContain(".program-status-guide-label");
+    expect(styles).toContain(".program-status-guide-list");
+    expect(styles).toContain(".program-status-guide-list strong");
   });
 
   it("offers a duplicate action for saved program templates", () => {

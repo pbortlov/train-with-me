@@ -18,6 +18,9 @@ The athlete needs three dates to stay visible:
 
 This must remain local-first and compatible with existing backups.
 
+The athlete also needs a simple interpretation layer so those dates answer
+whether a program is still on track or has slipped.
+
 ## Decision
 
 Keep lifecycle dates derived from existing scheduled program data instead of
@@ -32,6 +35,11 @@ adding new persisted fields.
 - real finish date is shown only when every generated strength session in the
   instance is closed as `completed`, `modified`, or `missed`, using the latest
   session date in that closed set
+- lifecycle status is presentation-only and derived from those dates:
+  - `On track`: no visible shift beyond the planned finish and no real finish yet
+  - `Shifted`: expected finish moved later than planned finish and no real finish yet
+  - `Finished on time`: real finish is on or before planned finish
+  - `Finished late`: real finish is after planned finish
 
 ## Consequences
 
@@ -41,6 +49,8 @@ Positive:
 - no localStorage migration
 - expected finish automatically follows session reschedules
 - real finish updates automatically after logging corrections or end-of-program misses
+- lifecycle status stays deterministic and testable because it does not depend
+  on the current day
 
 Tradeoffs:
 

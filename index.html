@@ -333,6 +333,15 @@
           <h3>Scheduled programs</h3>
           <p class="hint">Programs already placed on the calendar for upcoming work.</p>
           <div id="phase-instance-list" class="phase-list"></div>
+          <div class="program-status-guide" aria-labelledby="program-status-guide-heading">
+            <p class="program-status-guide-label" id="program-status-guide-heading">Status guide</p>
+            <div class="program-status-guide-list">
+              <p><strong>On track:</strong> still inside the original planned length.</p>
+              <p><strong>Shifted:</strong> expected finish moved later.</p>
+              <p><strong>Finished on time:</strong> closed on or before planned finish.</p>
+              <p><strong>Finished late:</strong> closed after planned finish.</p>
+            </div>
+          </div>
         </article>
 
         <article class="card">
@@ -523,6 +532,18 @@
         <article class="card">
           <h3>Program Strength Progress</h3>
           <p class="hint">Compares generated strength sessions across the selected program duration. Run and sprint stay separate as progress over time.</p>
+          <details class="card review-disclosure lifecycle-guide-disclosure" id="program-lifecycle-guide">
+            <summary>What these statuses mean</summary>
+            <p class="hint">Use these labels to read whether the program is still inside its original length or has already slipped later.</p>
+            <div class="lifecycle-guide-list">
+              <p><strong>On track:</strong> expected finish is still inside the original planned program length.</p>
+              <p><strong>Shifted:</strong> one or more future generated sessions moved the expected finish later than planned.</p>
+              <p><strong>Finished on time:</strong> the full program was closed on or before the planned finish date.</p>
+              <p><strong>Finished late:</strong> the full program was closed after the planned finish date.</p>
+              <p><strong>In progress:</strong> at least one generated program session is still planned.</p>
+              <p><strong>Real finish:</strong> appears once all generated program sessions are closed as completed, modified, or missed.</p>
+            </div>
+          </details>
           <div class="program-progress-controls">
             <label>
               Strength program
