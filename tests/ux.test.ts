@@ -267,9 +267,10 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("function buildPhaseInstanceLifecycle(instance)");
     expect(script).toContain("phase-badge-lifecycle");
     expect(script).toContain("Lifecycle status");
-    expect(script).toContain("Start ${formatHumanDate(lifecycle.startDate)}");
-    expect(script).toContain("Expected finish ${formatHumanDate(lifecycle.expectedFinishDate)}");
-    expect(script).toContain('Finished on ${formatHumanDate(lifecycle.actualFinishDate)}');
+    expect(script).toContain("Program start");
+    expect(script).toContain("Expected finish");
+    expect(script).toContain("Real finish");
+    expect(script).toContain('const realFinishLabel = lifecycle.actualFinishDate');
     expect(script).toContain("is ${model.lifecycleStatus.label.toLowerCase()}");
     expect(script).toContain('<span class="label">Program start</span>');
     expect(script).toContain('<span class="label">Lifecycle status</span>');
@@ -539,6 +540,15 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('#phase-instance-list .phase-card');
     expect(styles).toContain('linear-gradient(180deg, rgb(255 216 77 / 8%)');
     expect(styles).toContain('#phase-instance-list .phase-card header');
+    expect(script).toContain('class="phase-instance-header"');
+    expect(script).toContain('class="phase-instance-dates"');
+    expect(script).toContain('Program start');
+    expect(script).toContain('Expected finish');
+    expect(script).toContain('Real finish');
+    expect(styles).toContain('.phase-instance-dates');
+    expect(styles).toContain('.phase-instance-date-item');
+    expect(styles).toContain('.phase-instance-date-label');
+    expect(styles).toContain('.phase-instance-date-value');
   });
 
   it("makes the saved-template filter read like a control strip", () => {
