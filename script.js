@@ -6020,7 +6020,13 @@ function renderPhaseInstances() {
           </div>
           <div class="phase-meta phase-instance-support">${instance.generatedSessionIds.length} sessions • Planned finish ${formatHumanDate(lifecycle.plannedEndDate)}</div>
           <div class="phase-actions">
-            <button type="button" class="ghost-button danger-button" data-role="delete-phase-instance" data-id="${instance.id}">Remove scheduled phase</button>
+            <div class="phase-actions-primary">
+              <button type="button" class="button-secondary" data-role="open-phase-instance-stats" data-id="${instance.id}">Open stats</button>
+              <button type="button" class="ghost-button" data-role="open-phase-instance-calendar" data-id="${instance.id}">Open calendar</button>
+            </div>
+            <div class="phase-actions-danger">
+              <button type="button" class="ghost-button danger-button" data-role="delete-phase-instance" data-id="${instance.id}">Remove scheduled phase</button>
+            </div>
           </div>
         </article>
       `;
@@ -6033,11 +6039,26 @@ function handlePhaseInstanceAction(event) {
   if (!(target instanceof HTMLElement)) {
     return;
   }
-  if (target.dataset.role !== "delete-phase-instance" || !target.dataset.id) {
+  if (!target.dataset.role || !target.dataset.id) {
     return;
   }
   const instance = phaseInstances.find((item) => item.id === target.dataset.id);
   if (!instance) {
+    return;
+  }
+  if (target.dataset.role === "open-phase-instance-stats") {
+    selectedProgramProgressInstanceId = instance.id;
+    setCurrentView("stats");
+    render();
+    return;
+  }
+  if (target.dataset.role === "open-phase-instance-calendar") {
+    uiSettings.currentWeekStart = formatDateInput(startOfWeek(instance.startDate));
+    setCurrentView("calendar");
+    render();
+    return;
+  }
+  if (target.dataset.role !== "delete-phase-instance") {
     return;
   }
   const removedSessions = plannedSessions.filter((session) => instance.generatedSessionIds.includes(session.id));

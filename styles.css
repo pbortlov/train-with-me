@@ -1406,6 +1406,30 @@ textarea:focus-visible {
   gap: 0.45rem;
 }
 
+#phase-instance-list .phase-actions {
+  display: grid;
+  gap: 0.45rem;
+}
+
+#phase-instance-list .phase-actions-primary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+#phase-instance-list .phase-actions-primary .button-secondary,
+#phase-instance-list .phase-actions-primary .ghost-button {
+  flex: 1 1 10rem;
+}
+
+#phase-instance-list .phase-actions-danger {
+  display: flex;
+}
+
+#phase-instance-list .phase-actions-danger .danger-button {
+  flex: 1 1 100%;
+}
+
 .phase-list,
 .review-list {
   display: grid;
