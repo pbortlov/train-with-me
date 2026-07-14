@@ -5995,21 +5995,30 @@ function renderPhaseInstances() {
   phaseInstanceListEl.innerHTML = phaseInstances
     .map((instance) => {
       const lifecycle = buildPhaseInstanceLifecycle(instance);
-      const statusLine = lifecycle.actualFinishDate
-        ? `Finished on ${formatHumanDate(lifecycle.actualFinishDate)}`
+      const realFinishLabel = lifecycle.actualFinishDate
+        ? formatHumanDate(lifecycle.actualFinishDate)
         : "In progress";
       return `
         <article class="phase-card">
-          <header>
-            <div>
-              <h4>${escapeHtml(instance.templateName || "Phase")}</h4>
-              <div class="phase-meta">
-                <span class="phase-badge phase-badge-lifecycle phase-badge-lifecycle-${escapeHtml(lifecycle.status.code)}">${escapeHtml(lifecycle.status.label)}</span>
-                Start ${formatHumanDate(lifecycle.startDate)} • Expected finish ${formatHumanDate(lifecycle.expectedFinishDate)} • ${statusLine}
-              </div>
-              <div class="phase-meta">${instance.generatedSessionIds.length} sessions • Planned finish ${formatHumanDate(lifecycle.plannedEndDate)}</div>
-            </div>
+          <header class="phase-instance-header">
+            <h4>${escapeHtml(instance.templateName || "Phase")}</h4>
+            <span class="phase-badge phase-badge-lifecycle phase-badge-lifecycle-${escapeHtml(lifecycle.status.code)}">${escapeHtml(lifecycle.status.label)}</span>
           </header>
+          <div class="phase-instance-dates" aria-label="Scheduled program lifecycle dates">
+            <div class="phase-instance-date-item">
+              <span class="phase-instance-date-label">Program start</span>
+              <span class="phase-instance-date-value">${formatHumanDate(lifecycle.startDate)}</span>
+            </div>
+            <div class="phase-instance-date-item">
+              <span class="phase-instance-date-label">Expected finish</span>
+              <span class="phase-instance-date-value">${formatHumanDate(lifecycle.expectedFinishDate)}</span>
+            </div>
+            <div class="phase-instance-date-item">
+              <span class="phase-instance-date-label">Real finish</span>
+              <span class="phase-instance-date-value">${realFinishLabel}</span>
+            </div>
+          </div>
+          <div class="phase-meta phase-instance-support">${instance.generatedSessionIds.length} sessions • Planned finish ${formatHumanDate(lifecycle.plannedEndDate)}</div>
           <div class="phase-actions">
             <button type="button" class="ghost-button danger-button" data-role="delete-phase-instance" data-id="${instance.id}">Remove scheduled phase</button>
           </div>

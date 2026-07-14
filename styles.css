@@ -1435,12 +1435,53 @@ textarea:focus-visible {
 }
 
 #phase-instance-list .phase-card header {
-  padding-bottom: 0.35rem;
-  border-bottom: 1px solid rgb(255 216 77 / 16%);
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 #phase-instance-list .phase-card .phase-meta:last-of-type {
   color: #ffe59c;
+}
+
+.phase-instance-header {
+  align-items: center;
+}
+
+.phase-instance-header h4 {
+  flex: 1 1 auto;
+}
+
+.phase-instance-dates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.phase-instance-date-item {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid rgb(255 216 77 / 14%);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgb(255 216 77 / 4%), rgb(8 17 33 / 70%));
+}
+
+.phase-instance-date-label {
+  color: #bcd7e8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.phase-instance-date-value {
+  color: #f7fbff;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.phase-instance-support {
+  padding-top: 0.05rem;
 }
 
 .view-panel[data-view="phases"] > .card {
