@@ -286,15 +286,19 @@ describe("local-first UX guidance", () => {
   it("explains lifecycle statuses next to program progress", () => {
     expect(index).toContain('id="program-lifecycle-guide"');
     expect(index).toContain("<summary>What these statuses mean</summary>");
-    expect(index).toContain("Status guide: On track means the program still fits the original length");
+    expect(index).toContain('class="program-status-guide"');
+    expect(index).toContain('class="program-status-guide-label" id="program-status-guide-heading">Status guide</p>');
     expect(index).toContain("<strong>On track:</strong>");
     expect(index).toContain("<strong>Shifted:</strong>");
     expect(index).toContain("<strong>Finished on time:</strong>");
     expect(index).toContain("<strong>Finished late:</strong>");
-    expect(index).toContain("<strong>In progress:</strong>");
-    expect(index).toContain("<strong>Real finish:</strong>");
+    expect(index).toContain('<div class="program-status-guide-list">');
     expect(styles).toContain(".lifecycle-guide-disclosure");
     expect(styles).toContain(".lifecycle-guide-list");
+    expect(styles).toContain(".program-status-guide");
+    expect(styles).toContain(".program-status-guide-label");
+    expect(styles).toContain(".program-status-guide-list");
+    expect(styles).toContain(".program-status-guide-list strong");
   });
 
   it("offers a duplicate action for saved program templates", () => {

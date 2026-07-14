@@ -332,8 +332,16 @@
         <article class="card">
           <h3>Scheduled programs</h3>
           <p class="hint">Programs already placed on the calendar for upcoming work.</p>
-          <p class="hint">Status guide: On track means the program still fits the original length, Shifted means the expected finish moved later, and Real finish appears once every generated session is closed.</p>
           <div id="phase-instance-list" class="phase-list"></div>
+          <div class="program-status-guide" aria-labelledby="program-status-guide-heading">
+            <p class="program-status-guide-label" id="program-status-guide-heading">Status guide</p>
+            <div class="program-status-guide-list">
+              <p><strong>On track:</strong> still inside the original planned length.</p>
+              <p><strong>Shifted:</strong> expected finish moved later.</p>
+              <p><strong>Finished on time:</strong> closed on or before planned finish.</p>
+              <p><strong>Finished late:</strong> closed after planned finish.</p>
+            </div>
+          </div>
         </article>
 
         <article class="card">
