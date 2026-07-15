@@ -770,21 +770,11 @@
     <datalist id="exercise-suggestions"></datalist>
 
     <dialog id="delete-confirm-dialog">
-      <p>Delete this workout?</p>
+      <h3 id="delete-confirm-title">Delete workout</h3>
+      <p id="delete-confirm-message" class="hint">Delete this workout?</p>
       <div class="dialog-actions">
         <button type="button" id="confirm-delete-workout" class="danger-button">Delete</button>
-        <button type="button" id="cancel-delete-workout">Cancel</button>
-      </div>
-    </dialog>
-
-    <dialog id="phase-instance-delete-dialog">
-      <h3>Remove scheduled program</h3>
-      <p class="hint">
-        This removes the scheduled program and its generated training days from the calendar. Logged completions linked to those generated sessions are removed too.
-      </p>
-      <div class="dialog-actions">
-        <button type="button" id="confirm-delete-phase-instance" class="danger-button">Remove scheduled program</button>
-        <button type="button" id="cancel-delete-phase-instance" class="ghost-button">Cancel</button>
+        <button type="button" id="cancel-delete-workout" class="ghost-button">Cancel</button>
       </div>
     </dialog>
 

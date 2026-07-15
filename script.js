@@ -132,11 +132,10 @@ const workoutFormStatusEl = document.getElementById("workout-form-status");
 const installAppButton = document.getElementById("install-app");
 const installHelpEl = document.getElementById("install-help");
 const deleteConfirmDialog = document.getElementById("delete-confirm-dialog");
+const deleteConfirmTitleEl = document.getElementById("delete-confirm-title");
+const deleteConfirmMessageEl = document.getElementById("delete-confirm-message");
 const confirmDeleteWorkoutButton = document.getElementById("confirm-delete-workout");
 const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout");
-const phaseInstanceDeleteDialog = document.getElementById("phase-instance-delete-dialog");
-const confirmDeletePhaseInstanceButton = document.getElementById("confirm-delete-phase-instance");
-const cancelDeletePhaseInstanceButton = document.getElementById("cancel-delete-phase-instance");
 const editWorkoutDialog = document.getElementById("edit-workout-dialog");
 const editDateInput = document.getElementById("edit-date");
 const editActivityInput = document.getElementById("edit-activity");
@@ -336,8 +335,7 @@ let phaseTemplateFilterQuery = "";
 let completionStrengthDraft = [];
 let completionSprintDraft = [];
 let selectedCalendarSessionId = "";
-let pendingDeleteWorkoutId = null;
-let pendingDeletePhaseInstanceId = null;
+let pendingDestructiveAction = null;
 let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
 let editDraftCurrentStrengthSets = [];
@@ -526,8 +524,6 @@ exportDataButton.addEventListener("click", exportBackupData);
 importDataFileInput.addEventListener("change", importBackupData);
 confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
 cancelDeleteWorkoutButton.addEventListener("click", cancelDeleteWorkout);
-addSafeEventListener(confirmDeletePhaseInstanceButton, "click", confirmDeletePhaseInstance);
-addSafeEventListener(cancelDeletePhaseInstanceButton, "click", cancelDeletePhaseInstance);
 addSafeEventListener(saveEditWorkoutButton, "click", saveEditedWorkout);
 addSafeEventListener(cancelEditWorkoutButton, "click", closeEditWorkoutDialog);
 addSafeEventListener(editDistanceInput, "input", () => {
@@ -1779,18 +1775,37 @@ function removeLinkedWorkoutsForSessions(sessions) {
   return workouts.length !== originalCount;
 }
 
-function openDeleteConfirm(workoutId) {
-  pendingDeleteWorkoutId = workoutId;
-  if (typeof deleteConfirmDialog.showModal === "function") {
+function openDestructiveActionDialog({ title, message, confirmLabel = "Delete", fallbackMessage = "", onConfirm }) {
+  pendingDestructiveAction = typeof onConfirm === "function" ? onConfirm : null;
+  if (deleteConfirmTitleEl) {
+    deleteConfirmTitleEl.textContent = title || "Confirm action";
+  }
+  if (deleteConfirmMessageEl) {
+    deleteConfirmMessageEl.textContent = message || "This action cannot be undone.";
+  }
+  if (confirmDeleteWorkoutButton) {
+    confirmDeleteWorkoutButton.textContent = confirmLabel;
+  }
+  if (deleteConfirmDialog && typeof deleteConfirmDialog.showModal === "function") {
     deleteConfirmDialog.showModal();
     return;
   }
 
-  const shouldDelete = confirm("Delete this workout?");
-  if (shouldDelete) {
-    deleteWorkout(workoutId);
+  const shouldConfirm = confirm(fallbackMessage || message || title || "Confirm this action?");
+  if (shouldConfirm && pendingDestructiveAction) {
+    pendingDestructiveAction();
   }
-  pendingDeleteWorkoutId = null;
+  pendingDestructiveAction = null;
+}
+
+function openDeleteConfirm(workoutId) {
+  openDestructiveActionDialog({
+    title: "Delete workout",
+    message: "Delete this workout?",
+    confirmLabel: "Delete workout",
+    fallbackMessage: "Delete this workout?",
+    onConfirm: () => deleteWorkout(workoutId),
+  });
 }
 
 function deletePhaseInstance(instanceId) {
@@ -1812,17 +1827,73 @@ function deletePhaseInstance(instanceId) {
 }
 
 function openPhaseInstanceDeleteDialog(instanceId) {
-  pendingDeletePhaseInstanceId = instanceId;
-  if (phaseInstanceDeleteDialog && typeof phaseInstanceDeleteDialog.showModal === "function") {
-    phaseInstanceDeleteDialog.showModal();
+  openDestructiveActionDialog({
+    title: "Remove scheduled program",
+    message: "This removes the scheduled program, its generated training days, and any logged completions linked to those generated sessions.",
+    confirmLabel: "Remove scheduled program",
+    fallbackMessage: "Remove this scheduled program and its generated training days?",
+    onConfirm: () => deletePhaseInstance(instanceId),
+  });
+}
+
+function deleteExerciseLibraryEntry(name) {
+  exerciseLibrary = exerciseLibrary.filter((item) => item !== name);
+  save(STORAGE_KEY_EXERCISES, exerciseLibrary);
+  renderExerciseLibrary();
+}
+
+function deletePlannedSession(sessionId) {
+  const removedSession = plannedSessions.find((item) => item.id === sessionId);
+  const removedLinkedWorkouts = removeLinkedWorkoutsForSessions(removedSession ? [removedSession] : []);
+  plannedSessions = plannedSessions.filter((item) => item.id !== sessionId);
+  if (selectedCalendarSessionId === sessionId) {
+    selectedCalendarSessionId = "";
+  }
+  if (removedLinkedWorkouts) {
+    syncExerciseLibraryFromWorkouts();
+    renderExerciseLibrary();
+    save(STORAGE_KEY_WORKOUTS, workouts);
+  }
+  savePlannerCollections();
+  render();
+}
+
+function missPlannedSession(sessionId) {
+  const session = plannedSessions.find((item) => item.id === sessionId);
+  if (!session) {
     return;
   }
+  session.status = "missed";
+  session.actual = null;
+  session.linkedWorkoutId = "";
+  savePlannerCollections();
+  render();
+}
 
-  const shouldDelete = confirm("Remove this scheduled program and its generated training days?");
-  if (shouldDelete) {
-    deletePhaseInstance(instanceId);
+function resetPlannedSession(sessionId) {
+  const session = plannedSessions.find((item) => item.id === sessionId);
+  if (!session) {
+    return;
   }
-  pendingDeletePhaseInstanceId = null;
+  if (session.linkedWorkoutId) {
+    workouts = workouts.filter((workout) => workout.id !== session.linkedWorkoutId);
+    save(STORAGE_KEY_WORKOUTS, workouts);
+  }
+  session.status = "planned";
+  session.actual = null;
+  session.linkedWorkoutId = "";
+  session.modificationNote = "";
+  savePlannerCollections();
+  render();
+}
+
+function deletePhaseTemplate(templateId) {
+  phaseTemplates = phaseTemplates.filter((template) => template.id !== templateId);
+  if (editingPhaseTemplateId === templateId) {
+    resetPhaseImportForm();
+  }
+  savePlannerCollections();
+  render();
 }
 
 function openEditWorkoutDialog(workoutId) {
@@ -1958,29 +2029,16 @@ function saveEditedWorkout() {
 }
 
 function confirmDeleteWorkout() {
-  if (pendingDeleteWorkoutId) {
-    deleteWorkout(pendingDeleteWorkoutId);
+  if (pendingDestructiveAction) {
+    pendingDestructiveAction();
   }
-  pendingDeleteWorkoutId = null;
+  pendingDestructiveAction = null;
   deleteConfirmDialog.close();
 }
 
 function cancelDeleteWorkout() {
-  pendingDeleteWorkoutId = null;
+  pendingDestructiveAction = null;
   deleteConfirmDialog.close();
-}
-
-function confirmDeletePhaseInstance() {
-  if (pendingDeletePhaseInstanceId) {
-    deletePhaseInstance(pendingDeletePhaseInstanceId);
-  }
-  pendingDeletePhaseInstanceId = null;
-  phaseInstanceDeleteDialog?.close();
-}
-
-function cancelDeletePhaseInstance() {
-  pendingDeletePhaseInstanceId = null;
-  phaseInstanceDeleteDialog?.close();
 }
 
 function resetWorkoutForm() {
@@ -3367,9 +3425,13 @@ function handleExerciseLibraryClick(event) {
   if (!name) {
     return;
   }
-  exerciseLibrary = exerciseLibrary.filter((item) => item !== name);
-  save(STORAGE_KEY_EXERCISES, exerciseLibrary);
-  renderExerciseLibrary();
+  openDestructiveActionDialog({
+    title: "Delete saved exercise",
+    message: `Delete "${name}" from the exercise library? Existing workouts will stay unchanged.`,
+    confirmLabel: "Delete exercise",
+    fallbackMessage: `Delete "${name}" from the exercise library?`,
+    onConfirm: () => deleteExerciseLibraryEntry(name),
+  });
 }
 
 function strengthBestWeight(workout) {
@@ -4319,38 +4381,31 @@ function handleCalendarAction(event) {
   }
   if (role === "delete-planned-session") {
     closeCalendarSessionDialog();
-    const removedSession = plannedSessions.find((item) => item.id === sessionId);
-    const removedLinkedWorkouts = removeLinkedWorkoutsForSessions(removedSession ? [removedSession] : []);
-    plannedSessions = plannedSessions.filter((item) => item.id !== sessionId);
-    if (selectedCalendarSessionId === sessionId) {
-      selectedCalendarSessionId = "";
-    }
-    if (removedLinkedWorkouts) {
-      syncExerciseLibraryFromWorkouts();
-      renderExerciseLibrary();
-      save(STORAGE_KEY_WORKOUTS, workouts);
-    }
-    savePlannerCollections();
-    render();
+    openDestructiveActionDialog({
+      title: "Delete planned session",
+      message: "Delete this planned session? Any linked logged workout will be removed too.",
+      confirmLabel: "Delete session",
+      fallbackMessage: "Delete this planned session?",
+      onConfirm: () => deletePlannedSession(sessionId),
+    });
   }
   if (role === "miss-planned-session") {
-    session.status = "missed";
-    session.actual = null;
-    session.linkedWorkoutId = "";
-    savePlannerCollections();
-    render();
+    openDestructiveActionDialog({
+      title: "Mark session as missed",
+      message: "Mark this planned session as missed? This clears any linked completion log for the session.",
+      confirmLabel: "Mark as missed",
+      fallbackMessage: "Mark this planned session as missed?",
+      onConfirm: () => missPlannedSession(sessionId),
+    });
   }
   if (role === "reset-planned-session") {
-    if (session.linkedWorkoutId) {
-      workouts = workouts.filter((workout) => workout.id !== session.linkedWorkoutId);
-      save(STORAGE_KEY_WORKOUTS, workouts);
-    }
-    session.status = "planned";
-    session.actual = null;
-    session.linkedWorkoutId = "";
-    session.modificationNote = "";
-    savePlannerCollections();
-    render();
+    openDestructiveActionDialog({
+      title: "Reset planned session",
+      message: "Reset this session back to planned? Any linked completion log will be removed.",
+      confirmLabel: "Reset session",
+      fallbackMessage: "Reset this session back to planned?",
+      onConfirm: () => resetPlannedSession(sessionId),
+    });
   }
   if (role === "complete-planned-session") {
     closeCalendarSessionDialog();
@@ -5976,12 +6031,13 @@ function handlePhaseTemplateAction(event) {
   }
 
   if (role === "delete-phase-template") {
-    phaseTemplates = phaseTemplates.filter((template) => template.id !== id);
-    if (editingPhaseTemplateId === id) {
-      resetPhaseImportForm();
-    }
-    savePlannerCollections();
-    render();
+    openDestructiveActionDialog({
+      title: "Delete saved program template",
+      message: "Delete this saved program template? Scheduled programs already placed on the calendar will stay unchanged.",
+      confirmLabel: "Delete template",
+      fallbackMessage: "Delete this saved program template?",
+      onConfirm: () => deletePhaseTemplate(id),
+    });
     return;
   }
 

@@ -7,6 +7,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
 - complete
 - review
 - measure
+- destructive actions that change saved plan, log, program, or exercise-library data confirm in a shared dialog before applying
 
 ## Main Entities
 - `plannedSession`: a dated session on the calendar
