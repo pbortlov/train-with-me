@@ -158,12 +158,14 @@ describe("local-first UX guidance", () => {
   it("keeps Stats reward-first with a momentum highlight", () => {
     expect(index).toContain('id="progress-hub-highlight"');
     expect(index).toContain('<h2 id="progress-hub-heading">Progress Hub</h2>');
-    expect(index).toContain('<h2>Weekly scorecard</h2>');
+    expect(index).toContain('<h3>Weekly scorecard</h3>');
     expect(index).toContain('data-progress-jump="review"');
-    expect(index).toContain('<details class="card review-disclosure" id="review-disclosure">');
+    expect(index).toContain('<details class="card review-disclosure stats-secondary-section" id="review-disclosure">');
     expect(index).toContain('<summary>Review sessions</summary>');
     expect(index).toContain('id="review-summary"');
     expect(index).toContain('id="review-session-list"');
+    expect(index).toContain('class="card stats-detail-section stats-program-section"');
+    expect(index).toContain('<details class="review-disclosure lifecycle-guide-disclosure" id="program-lifecycle-guide">');
     expect(script).toContain('effectivePhaseWeekIndex');
     expect(script).toContain('visibleDurationWeeks');
     expect(script).toContain('Session ${index + 1}');
@@ -171,11 +173,15 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('groupProgramExerciseRows');
     expect(styles).toContain('.program-progress-group-row th');
     expect(styles).toContain('.progress-hub-highlight-card');
+    expect(styles).toContain('.view-panel[data-view="stats"] > .card h3');
+    expect(styles).toContain('.stats-detail-section');
+    expect(styles).toContain('.stats-program-section');
     expect(styles).toContain('.strength-insights-card');
     expect(styles).toContain('.running-insights-card');
     expect(styles).toContain('.sprint-insights-card');
     expect(styles).toContain('.review-disclosure summary');
     expect(styles).toContain('.review-disclosure[open] summary');
+    expect(styles).toContain('.lifecycle-guide-disclosure > .hint');
   });
 
   it("keeps Data and dialogs in a quieter utility style", () => {
