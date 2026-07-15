@@ -548,18 +548,50 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('Real finish');
     expect(script).toContain('data-role="open-phase-instance-stats"');
     expect(script).toContain('data-role="open-phase-instance-calendar"');
+    expect(script).toContain('data-role="delete-phase-instance"');
     expect(script).toContain('class="phase-actions-primary"');
     expect(script).toContain('class="phase-actions-danger"');
     expect(script).toContain("selectedProgramProgressInstanceId = instance.id;");
     expect(script).toContain("setCurrentView(\"stats\")");
     expect(script).toContain("uiSettings.currentWeekStart = formatDateInput(startOfWeek(instance.startDate));");
     expect(script).toContain("setCurrentView(\"calendar\")");
+    expect(script).toContain("openPhaseInstanceDeleteDialog(instance.id);");
+    expect(script).toContain("function deletePhaseInstance(instanceId) {");
     expect(styles).toContain('.phase-instance-dates');
     expect(styles).toContain('.phase-instance-date-item');
     expect(styles).toContain('.phase-instance-date-label');
     expect(styles).toContain('.phase-instance-date-value');
     expect(styles).toContain('#phase-instance-list .phase-actions-primary');
     expect(styles).toContain('#phase-instance-list .phase-actions-danger');
+  });
+
+  it("confirms destructive actions through one shared dialog", () => {
+    expect(index).toContain('id="delete-confirm-title"');
+    expect(index).toContain('id="delete-confirm-message"');
+    expect(index).toContain('id="cancel-delete-workout"');
+    expect(script).toContain('const deleteConfirmTitleEl = document.getElementById("delete-confirm-title");');
+    expect(script).toContain('const deleteConfirmMessageEl = document.getElementById("delete-confirm-message");');
+    expect(script).toContain('const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout");');
+    expect(script).toContain("function openDestructiveActionDialog({ title, message, confirmLabel = \"Delete\", fallbackMessage = \"\", onConfirm }) {");
+    expect(script).toContain("title: \"Remove scheduled program\"");
+    expect(script).toContain("confirmLabel: \"Remove scheduled program\"");
+  });
+
+  it("routes saved-data destructive actions through the shared confirmation dialog", () => {
+    expect(script).toContain("title: \"Delete saved exercise\"");
+    expect(script).toContain("confirmLabel: \"Delete exercise\"");
+    expect(script).toContain("title: \"Delete planned session\"");
+    expect(script).toContain("confirmLabel: \"Delete session\"");
+    expect(script).toContain("title: \"Mark session as missed\"");
+    expect(script).toContain("confirmLabel: \"Mark as missed\"");
+    expect(script).toContain("title: \"Reset planned session\"");
+    expect(script).toContain("confirmLabel: \"Reset session\"");
+    expect(script).toContain("title: \"Delete saved program template\"");
+    expect(script).toContain("confirmLabel: \"Delete template\"");
+    expect(script).toContain("function deletePhaseTemplate(templateId) {");
+    expect(script).toContain("function deletePlannedSession(sessionId) {");
+    expect(script).toContain("function resetPlannedSession(sessionId) {");
+    expect(script).toContain("function missPlannedSession(sessionId) {");
   });
 
   it("makes the saved-template filter read like a control strip", () => {
