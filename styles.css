@@ -617,12 +617,23 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(5.75rem, 1fr));
   gap: 0.35rem;
-  min-width: min(100%, 24rem);
+  min-width: min(100%, 26rem);
 }
 
 .progress-hub-actions .ghost-button {
   padding: 0.45rem 0.55rem;
   font-size: 0.78rem;
+}
+
+.progress-hub-actions .progress-jump-primary {
+  border-color: var(--button-program-secondary-border);
+  background: var(--button-program-secondary-bg);
+  color: var(--button-program-secondary-text);
+}
+
+.progress-hub-actions .progress-jump-secondary {
+  border-color: rgb(169 189 203 / 18%);
+  color: #a9bdcb;
 }
 
 .progress-hub-summary {

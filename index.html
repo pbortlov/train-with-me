@@ -454,13 +454,14 @@
               <p id="progress-hub-status" class="hint"></p>
             </div>
             <div class="progress-hub-actions" aria-label="Progress shortcuts">
-              <button type="button" class="ghost-button" data-progress-jump="goals">Goals</button>
-              <button type="button" class="ghost-button" data-progress-jump="adherence">Adherence</button>
-              <button type="button" class="ghost-button" data-progress-jump="review">Review</button>
-              <button type="button" class="ghost-button" data-progress-jump="strength">Strength</button>
-              <button type="button" class="ghost-button" data-progress-jump="running">Running</button>
-              <button type="button" class="ghost-button" data-progress-jump="sprint">Sprint</button>
-              <button type="button" class="ghost-button" data-progress-jump="activity">Activity charts</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="adherence">Scorecard</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="program">Program</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="strength">Strength</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="running">Running</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="sprint">Sprint</button>
+              <button type="button" class="ghost-button progress-jump-secondary" data-progress-jump="goals">Goals</button>
+              <button type="button" class="ghost-button progress-jump-secondary" data-progress-jump="review">Review</button>
+              <button type="button" class="ghost-button progress-jump-secondary" data-progress-jump="activity">Evidence</button>
             </div>
           </div>
           <div id="progress-hub-highlight" class="progress-hub-highlight"></div>
@@ -529,7 +530,7 @@
           <div id="adherence-breakdown" class="goal-progress"></div>
         </article>
 
-        <article class="card stats-detail-section stats-program-section">
+        <article class="card stats-detail-section stats-program-section" id="program-progress-section">
           <h3>Program Strength Progress</h3>
           <p class="hint">Compares generated strength sessions across the selected program duration. Run and sprint stay separate as progress over time.</p>
           <div class="program-progress-controls">

@@ -1265,11 +1265,17 @@ function scrollToProgressSection(target) {
   const sectionByTarget = {
     adherence: document.getElementById("adherence-section"),
     goals: document.getElementById("goals-section"),
+    program: document.getElementById("program-progress-section"),
     review: reviewDisclosureEl,
     strength: document.getElementById("strength-insights-section"),
     running: document.getElementById("running-insights-section"),
     sprint: document.getElementById("sprint-insights-section"),
     activity: document.getElementById("activity-charts-section"),
+  };
+  const detailByTarget = {
+    strength: document.querySelector("#strength-insights-section .stats-insight-details"),
+    running: document.querySelector("#running-insights-section .stats-insight-details"),
+    sprint: document.querySelector("#sprint-insights-section .stats-insight-details"),
   };
   const section = sectionByTarget[target];
   if (section instanceof HTMLElement) {
@@ -1277,6 +1283,10 @@ function scrollToProgressSection(target) {
       setCurrentView("stats");
       render();
       reviewDisclosureEl?.setAttribute("open", "");
+    }
+    const detail = detailByTarget[target];
+    if (detail instanceof HTMLDetailsElement) {
+      detail.setAttribute("open", "");
     }
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   }

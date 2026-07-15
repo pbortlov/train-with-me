@@ -160,6 +160,10 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('<h2 id="progress-hub-heading">Progress Hub</h2>');
     expect(index).toContain('<h3>Weekly scorecard</h3>');
     expect(index).toContain('data-progress-jump="review"');
+    expect(index).toContain('data-progress-jump="program"');
+    expect(index).toContain('class="ghost-button progress-jump-primary" data-progress-jump="adherence"');
+    expect(index).toContain('class="ghost-button progress-jump-secondary" data-progress-jump="review"');
+    expect(index).toContain('id="program-progress-section"');
     expect(index).toContain('<details class="card review-disclosure stats-secondary-section" id="review-disclosure">');
     expect(index).toContain('<summary>Review sessions</summary>');
     expect(index).toContain('id="review-summary"');
@@ -185,6 +189,8 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('function buildStrengthExerciseSnapshotMap(workout)');
     expect(script).toContain('function formatProgressHubStrengthSnapshot(snapshot)');
     expect(script).toContain('${improvement.current.name} improved');
+    expect(script).toContain('program: document.getElementById("program-progress-section")');
+    expect(script).toContain('detailByTarget[target]');
     expect(script).toContain('Done this week');
     expect(script).toContain('Progress proof');
     expect(script).toContain('Log a run, sprint, or strength workout to build activity evidence.');
@@ -201,6 +207,8 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.progress-hub-highlight-card');
     expect(styles).toContain('.progress-hub-highlight-card-muted');
     expect(styles).toContain('.progress-hub-actions .ghost-button');
+    expect(styles).toContain('.progress-hub-actions .progress-jump-primary');
+    expect(styles).toContain('.progress-hub-actions .progress-jump-secondary');
     expect(styles).toContain('.view-panel[data-view="stats"] > .card h3');
     expect(styles).toContain('.stats-detail-section');
     expect(styles).toContain('.stats-program-section');
