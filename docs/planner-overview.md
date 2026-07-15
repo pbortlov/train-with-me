@@ -96,6 +96,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - includes a shortcut into the secondary review drawer for planned-vs-actual inspection
   - reward-first top section with a momentum highlight before the detailed cards
   - phone-first hierarchy where Progress Hub and current program data are visually stronger than guides and helper text
+  - Progress Hub leads with execution done, this-week completion, and latest derived improvement before deeper analysis
   - Progress Hub summarizes total workouts, plan completion, active goals, achieved goals, training mix, and planned-session completion
   - Progress Hub shortcuts scroll to goals, adherence, and activity chart details without changing metric semantics
   - adherence summaries

@@ -615,9 +615,14 @@ body {
 
 .progress-hub-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
-  gap: 0.5rem;
-  min-width: min(100%, 28rem);
+  grid-template-columns: repeat(auto-fit, minmax(5.75rem, 1fr));
+  gap: 0.35rem;
+  min-width: min(100%, 24rem);
+}
+
+.progress-hub-actions .ghost-button {
+  padding: 0.45rem 0.55rem;
+  font-size: 0.78rem;
 }
 
 .progress-hub-summary {
@@ -633,7 +638,7 @@ body {
 
 .progress-hub-highlight {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 0.6rem;
 }
 
@@ -641,7 +646,7 @@ body {
   display: grid;
   gap: 0.25rem;
   border: 1px solid #6dff5c44;
-  border-radius: 12px;
+  border-radius: 8px;
   background:
     linear-gradient(180deg, rgb(109 255 92 / 6%), rgb(8 17 33 / 95%)),
     #081121;
@@ -652,6 +657,13 @@ body {
   border-color: #00e5ff55;
   background:
     linear-gradient(180deg, rgb(0 229 255 / 7%), rgb(8 17 33 / 95%)),
+    #081121;
+}
+
+.progress-hub-highlight-card-muted {
+  border-color: rgb(169 189 203 / 18%);
+  background:
+    linear-gradient(180deg, rgb(169 189 203 / 4%), rgb(8 17 33 / 92%)),
     #081121;
 }
 

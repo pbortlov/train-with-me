@@ -1073,6 +1073,8 @@ function renderProgressHub() {
   const achievedGoals = (goals.history || [])
     .filter((goal) => goal.achievedAt)
     .sort((left, right) => (right.achievedAt || "").localeCompare(left.achievedAt || ""));
+  const latestWorkout = workouts.slice().sort(compareWorkoutsByRecentDate)[0] || null;
+  const latestImprovement = buildProgressHubImprovement(workouts);
   progressHubStatusEl.textContent = model.lastWorkoutDate
     ? `Last workout logged ${formatHumanDate(model.lastWorkoutDate)}.`
     : "Log your first workout to start building progress history.";
@@ -1080,11 +1082,33 @@ function renderProgressHub() {
     const latestGoal = achievedGoals[0];
     progressHubHighlightEl.innerHTML = `
       <article class="progress-hub-highlight-card is-accent">
-        <span class="label">Momentum</span>
-        <span class="value">${model.completionRate}% plan completion</span>
+        <span class="label">Executed</span>
+        <span class="value">${latestWorkout ? `${capitalize(latestWorkout.activity || "Workout")} done` : "No workout logged yet"}</span>
+        <span class="detail">${latestWorkout?.date ? formatHumanDate(latestWorkout.date) : "Log a session to start the proof."}</span>
+      </article>
+      <article class="progress-hub-highlight-card">
+        <span class="label">Done this week</span>
+        <span class="value">${weekStats.completed}/${weekStats.total || 0} sessions</span>
         <span class="detail">${weekStats.completed}/${weekStats.total || 0} planned sessions done this week</span>
       </article>
       <article class="progress-hub-highlight-card">
+        <span class="label">Progress proof</span>
+        <span class="value">${
+          latestImprovement
+            ? latestImprovement.title
+            : latestGoal?.achievedAt
+              ? `Goal achieved ${formatHumanDate(latestGoal.achievedAt)}`
+              : "Build your next comparison"
+        }</span>
+        <span class="detail">${
+          latestImprovement
+            ? latestImprovement.detail
+            : latestGoal?.achievedAt
+              ? `${daysBetween(latestGoal.setAt, latestGoal.achievedAt)} day(s) to reach it`
+              : "Log the same activity again to show improvement."
+        }</span>
+      </article>
+      <article class="progress-hub-highlight-card progress-hub-highlight-card-muted">
         <span class="label">Latest win</span>
         <span class="value">${
           latestGoal?.achievedAt
@@ -1103,7 +1127,7 @@ function renderProgressHub() {
   }
   progressHubSummaryEl.innerHTML = `
     <article class="badge">
-      <span class="label">Workouts</span>
+      <span class="label">Total logged</span>
       <span class="value">${model.totalWorkouts}</span>
     </article>
     <article class="badge">
@@ -1121,7 +1145,7 @@ function renderProgressHub() {
   `;
   progressHubBreakdownEl.innerHTML = `
     <div class="progress-hub-row">
-      <strong>Training mix</strong>
+      <strong>Activity mix</strong>
       <span>${model.workoutCounts.strength} strength · ${model.workoutCounts.run} run · ${model.workoutCounts.sprint} sprint</span>
     </div>
     <div class="progress-hub-row">
@@ -1129,6 +1153,59 @@ function renderProgressHub() {
       <span>${model.completedSessions}/${model.plannedSessions || 0} completed or modified</span>
     </div>
   `;
+}
+
+function buildProgressHubImprovement(allWorkouts) {
+  const improvements = [
+    buildRunProgressProof(allWorkouts),
+    buildSprintProgressProof(allWorkouts),
+    buildStrengthProgressProof(allWorkouts),
+  ].filter(Boolean);
+  return improvements.sort((left, right) => compareWorkoutsByRecentDate(left.workout, right.workout))[0] || null;
+}
+
+function buildRunProgressProof(allWorkouts) {
+  const runs = allWorkouts
+    .filter((workout) => workout.activity === "run" && isNumber(workout.pace))
+    .sort(compareWorkoutsByRecentDate);
+  if (runs.length < 2 || runs[0].pace >= runs[1].pace) {
+    return null;
+  }
+  return {
+    workout: runs[0],
+    title: `Run pace improved`,
+    detail: `${formatRunPace(runs[1].pace)} to ${formatRunPace(runs[0].pace)} min/km`,
+  };
+}
+
+function buildSprintProgressProof(allWorkouts) {
+  const sprints = allWorkouts
+    .map((workout) => ({ workout, bestTime: workout.activity === "sprint" ? sprintBestTime(workout) : null }))
+    .filter((entry) => isNumber(entry.bestTime))
+    .sort((left, right) => compareWorkoutsByRecentDate(left.workout, right.workout));
+  if (sprints.length < 2 || sprints[0].bestTime >= sprints[1].bestTime) {
+    return null;
+  }
+  return {
+    workout: sprints[0].workout,
+    title: `Sprint time improved`,
+    detail: `${formatNumber(sprints[1].bestTime)}s to ${formatNumber(sprints[0].bestTime)}s`,
+  };
+}
+
+function buildStrengthProgressProof(allWorkouts) {
+  const strengthEntries = allWorkouts
+    .map((workout) => ({ workout, bestWeight: workout.activity === "strength" ? strengthBestWeight(workout) : null }))
+    .filter((entry) => isNumber(entry.bestWeight))
+    .sort((left, right) => compareWorkoutsByRecentDate(left.workout, right.workout));
+  if (strengthEntries.length < 2 || strengthEntries[0].bestWeight <= strengthEntries[1].bestWeight) {
+    return null;
+  }
+  return {
+    workout: strengthEntries[0].workout,
+    title: `Strength improved`,
+    detail: `${formatNumber(strengthEntries[1].bestWeight)} kg to ${formatNumber(strengthEntries[0].bestWeight)} kg`,
+  };
 }
 
 function scrollToProgressSection(target) {
