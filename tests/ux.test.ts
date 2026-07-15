@@ -171,7 +171,11 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('buildProgressHubImprovement(workouts)');
     expect(script).toContain('Run pace improved');
     expect(script).toContain('Sprint time improved');
-    expect(script).toContain('Strength improved');
+    expect(script).toContain('Previous to latest: ${formatRunPace(runs[1].pace)} to ${formatRunPace(runs[0].pace)} min/km');
+    expect(script).toContain('Previous to latest: ${formatNumber(sprints[1].bestTime)}s to ${formatNumber(sprints[0].bestTime)}s');
+    expect(script).toContain('function buildStrengthExerciseSnapshotMap(workout)');
+    expect(script).toContain('function formatProgressHubStrengthSnapshot(snapshot)');
+    expect(script).toContain('${improvement.current.name} improved');
     expect(script).toContain('Done this week');
     expect(script).toContain('Progress proof');
     expect(script).toContain('Session ${index + 1}');

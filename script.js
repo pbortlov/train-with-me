@@ -1174,7 +1174,7 @@ function buildRunProgressProof(allWorkouts) {
   return {
     workout: runs[0],
     title: `Run pace improved`,
-    detail: `${formatRunPace(runs[1].pace)} to ${formatRunPace(runs[0].pace)} min/km`,
+    detail: `Previous to latest: ${formatRunPace(runs[1].pace)} to ${formatRunPace(runs[0].pace)} min/km`,
   };
 }
 
@@ -1189,23 +1189,76 @@ function buildSprintProgressProof(allWorkouts) {
   return {
     workout: sprints[0].workout,
     title: `Sprint time improved`,
-    detail: `${formatNumber(sprints[1].bestTime)}s to ${formatNumber(sprints[0].bestTime)}s`,
+    detail: `Previous to latest: ${formatNumber(sprints[1].bestTime)}s to ${formatNumber(sprints[0].bestTime)}s`,
   };
 }
 
 function buildStrengthProgressProof(allWorkouts) {
   const strengthEntries = allWorkouts
-    .map((workout) => ({ workout, bestWeight: workout.activity === "strength" ? strengthBestWeight(workout) : null }))
-    .filter((entry) => isNumber(entry.bestWeight))
-    .sort((left, right) => compareWorkoutsByRecentDate(left.workout, right.workout));
-  if (strengthEntries.length < 2 || strengthEntries[0].bestWeight <= strengthEntries[1].bestWeight) {
-    return null;
+    .filter((workout) => workout.activity === "strength")
+    .sort(compareWorkoutsByRecentDate);
+  for (const currentWorkout of strengthEntries) {
+    const currentExercises = buildStrengthExerciseSnapshotMap(currentWorkout);
+    const previousWorkout = strengthEntries.find((workout) =>
+      workout.id !== currentWorkout.id && [...currentExercises.keys()].some((exerciseKey) =>
+        buildStrengthExerciseSnapshotMap(workout).has(exerciseKey),
+      ),
+    );
+    if (!previousWorkout) {
+      continue;
+    }
+    const previousExercises = buildStrengthExerciseSnapshotMap(previousWorkout);
+    const improvement = [...currentExercises.entries()]
+      .map(([exerciseKey, current]) => ({
+        exerciseKey,
+        current,
+        previous: previousExercises.get(exerciseKey),
+      }))
+      .filter(({ previous }) => Boolean(previous))
+      .map(({ current, previous }) => ({
+        current,
+        previous,
+        status: evaluateImprovementStatus(previous.snapshot, current.snapshot),
+      }))
+      .find(({ status }) => status.label === "Improved");
+    if (!improvement) {
+      continue;
+    }
+    return {
+      workout: currentWorkout,
+      title: `${improvement.current.name} improved`,
+      detail: `Previous to latest: ${formatProgressHubStrengthSnapshot(improvement.previous.snapshot)} to ${formatProgressHubStrengthSnapshot(improvement.current.snapshot)}`,
+    };
   }
-  return {
-    workout: strengthEntries[0].workout,
-    title: `Strength improved`,
-    detail: `${formatNumber(strengthEntries[1].bestWeight)} kg to ${formatNumber(strengthEntries[0].bestWeight)} kg`,
-  };
+  return null;
+}
+
+function buildStrengthExerciseSnapshotMap(workout) {
+  const snapshots = new Map();
+  normalizeStrengthExercises(workout.strengthExercises).forEach((exercise) => {
+    const exerciseKey = normalizeExerciseKey(exercise.name || "");
+    if (!exerciseKey || !exercise.completed) {
+      return;
+    }
+    snapshots.set(exerciseKey, {
+      name: exercise.name || "Strength exercise",
+      snapshot: buildActualExerciseSnapshot(exercise),
+    });
+  });
+  return snapshots;
+}
+
+function formatProgressHubStrengthSnapshot(snapshot) {
+  const bestSet = comparableKgSets(snapshot).sort((left, right) => {
+    if (right.weight !== left.weight) {
+      return right.weight - left.weight;
+    }
+    return right.reps - left.reps;
+  })[0];
+  if (bestSet) {
+    return `${formatNumber(bestSet.weight)} kg x ${formatNumber(bestSet.reps)}`;
+  }
+  return formatActualProgressSnapshot(snapshot) || "logged";
 }
 
 function scrollToProgressSection(target) {
