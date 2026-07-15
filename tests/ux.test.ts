@@ -166,6 +166,10 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="review-session-list"');
     expect(index).toContain('class="card stats-detail-section stats-program-section"');
     expect(index).toContain('<details class="review-disclosure lifecycle-guide-disclosure" id="program-lifecycle-guide">');
+    expect(index).toContain('<details class="stats-insight-details">');
+    expect(index).toContain('<summary>Strength details</summary>');
+    expect(index).toContain('<summary>Running details</summary>');
+    expect(index).toContain('<summary>Sprint details</summary>');
     expect(script).toContain('effectivePhaseWeekIndex');
     expect(script).toContain('visibleDurationWeeks');
     expect(script).toContain('buildProgressHubImprovement(workouts)');
@@ -191,6 +195,8 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.strength-insights-card');
     expect(styles).toContain('.running-insights-card');
     expect(styles).toContain('.sprint-insights-card');
+    expect(styles).toContain('.stats-insight-details summary');
+    expect(styles).toContain('.stats-insight-details[open] summary');
     expect(styles).toContain('.review-disclosure summary');
     expect(styles).toContain('.review-disclosure[open] summary');
     expect(styles).toContain('.lifecycle-guide-disclosure > .hint');

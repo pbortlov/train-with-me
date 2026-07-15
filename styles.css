@@ -733,6 +733,49 @@ body {
   gap: 0.5rem;
 }
 
+.stats-insight-details {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.stats-insight-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--surface-program-summary-border);
+  border-radius: 8px;
+  background: var(--surface-program-summary-bg);
+  padding: 0.6rem 0.7rem;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 800;
+  list-style: none;
+}
+
+.stats-insight-details summary::after {
+  content: "Open";
+  color: #d7f8ff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.stats-insight-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.stats-insight-details[open] summary {
+  border-color: var(--surface-program-summary-open-border);
+  background: var(--surface-program-summary-open-bg);
+  color: #f3feff;
+}
+
+.stats-insight-details[open] summary::after {
+  content: "Close";
+}
+
 .is-hidden {
   display: none !important;
 }

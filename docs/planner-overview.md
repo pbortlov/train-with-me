@@ -113,6 +113,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - Strength Insights summarize strength workouts, unique exercises, total sets, kg/bodyweight/band load mix, top kg lift, and most-trained exercise
   - Running Insights summarize run count, total distance, weighted average pace, latest run, longest run, best pace, total time, and recent valid-distance runs
   - Sprint Insights summarize sprint workouts, total reps, unique distances, latest sprint, fastest rep, distance-specific bests, recent sessions, and feeling mix
+  - Strength, Running, and Sprint insight summaries stay visible while detailed tables open on demand
   - per-entry strength, run, and sprint charts separate from strength phases
 - `Data`
   - quiet maintenance surface for backup export/import and maintenance
