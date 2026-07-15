@@ -7573,8 +7573,6 @@ function renderProgramExerciseProgressTable(model) {
   }
 
   const groupedRows = groupProgramExerciseRows(model.exerciseRows);
-  const maxExposureCount = model.exerciseRows.reduce((max, row) => Math.max(max, row.exposures.length), 0);
-  const exposureHeadings = Array.from({ length: maxExposureCount }, (_, index) => `<th>Session ${index + 1}</th>`).join("");
   const rows = groupedRows
     .map((group) => {
       const trainingDayMeta = `${group.rows.length} exercise${group.rows.length === 1 ? "" : "s"}`;
@@ -7582,13 +7580,15 @@ function renderProgramExerciseProgressTable(model) {
         .map((row) => `
           <tr>
             <th>${escapeHtml(row.name)}${row.code ? `<div class="phase-meta">${escapeHtml(row.code)}</div>` : ""}</th>
-            ${Array.from({ length: maxExposureCount }, (_, index) => renderProgramExerciseWeekCell(row.exposures[index] || null)).join("")}
+            ${renderProgramExerciseStatusCell(row)}
+            ${renderProgramExerciseComparisonCell(getPreviousProgramExposure(row))}
+            ${renderProgramExerciseComparisonCell(getLatestProgramExposure(row))}
           </tr>
         `)
         .join("");
       return `
         <tr class="program-progress-group-row">
-          <th colspan="${maxExposureCount + 1}">
+          <th colspan="4">
             <div class="program-progress-group-title">${escapeHtml(group.title)}</div>
             <div class="phase-meta">${escapeHtml(trainingDayMeta)}</div>
           </th>
@@ -7603,7 +7603,9 @@ function renderProgramExerciseProgressTable(model) {
       <thead>
         <tr>
           <th>Exercise</th>
-          ${exposureHeadings}
+          <th>Latest status</th>
+          <th>Previous logged session</th>
+          <th>Latest logged session</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -7611,15 +7613,37 @@ function renderProgramExerciseProgressTable(model) {
   `;
 }
 
-function renderProgramExerciseWeekCell(week) {
-  if (!week?.snapshot) {
+function getLatestProgramExposure(row) {
+  return row.exposures[row.exposures.length - 1] || null;
+}
+
+function getPreviousProgramExposure(row) {
+  return row.exposures.length > 1 ? row.exposures[row.exposures.length - 2] : null;
+}
+
+function renderProgramExerciseStatusCell(row) {
+  const latest = getLatestProgramExposure(row);
+  if (!latest?.snapshot) {
     return "<td class=\"is-empty\">Not logged</td>";
   }
-  const statusClass = programProgressStatusClass(week.status);
+  const statusClass = programProgressStatusClass(latest.status);
+  const comparisonLabel = getPreviousProgramExposure(row) ? "Compared with previous logged session" : "First completed log";
   return `
     <td class="${statusClass}">
-      <strong>${escapeHtml(week.status)}</strong><br />
-      ${escapeHtml(formatActualProgressSnapshot(week.snapshot))}
+      <strong>${escapeHtml(latest.status)}</strong>
+      <div class="phase-meta">${escapeHtml(comparisonLabel)}</div>
+    </td>
+  `;
+}
+
+function renderProgramExerciseComparisonCell(exposure) {
+  if (!exposure?.snapshot) {
+    return "<td class=\"is-empty\">No previous logged session</td>";
+  }
+  return `
+    <td>
+      ${escapeHtml(formatActualProgressSnapshot(exposure.snapshot))}
+      <div class="phase-meta">Session ${Number(exposure.weekIndex) + 1 || "-"} • ${escapeHtml(formatHumanDate(exposure.date))}</div>
     </td>
   `;
 }

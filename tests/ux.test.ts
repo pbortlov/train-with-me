@@ -182,10 +182,15 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('${improvement.current.name} improved');
     expect(script).toContain('Done this week');
     expect(script).toContain('Progress proof');
-    expect(script).toContain('Session ${index + 1}');
+    expect(script).toContain('<th>Previous logged session</th>');
+    expect(script).toContain('<th>Latest logged session</th>');
+    expect(script).toContain('function getLatestProgramExposure(row)');
+    expect(script).toContain('function getPreviousProgramExposure(row)');
+    expect(script).toContain('Compared with previous logged session');
     expect(script).toContain('compare each exercise against its previous logged session');
     expect(script).toContain('groupProgramExerciseRows');
     expect(styles).toContain('.program-progress-group-row th');
+    expect(styles).toContain('.program-progress-table td .phase-meta');
     expect(styles).toContain('.progress-hub-highlight-card');
     expect(styles).toContain('.progress-hub-highlight-card-muted');
     expect(styles).toContain('.progress-hub-actions .ghost-button');

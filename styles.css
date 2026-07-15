@@ -2956,7 +2956,7 @@ textarea:focus-visible {
 
 .program-progress-table {
   width: 100%;
-  min-width: 720px;
+  min-width: 680px;
   border-collapse: collapse;
   margin-top: 0.8rem;
 }
@@ -2980,6 +2980,11 @@ textarea:focus-visible {
   background: #0a1326;
   font-size: 0.84rem;
   line-height: 1.35;
+}
+
+.program-progress-table td .phase-meta {
+  margin-top: 0.25rem;
+  white-space: normal;
 }
 
 .program-progress-group-row th {
