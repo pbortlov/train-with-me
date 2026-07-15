@@ -546,10 +546,20 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('Program start');
     expect(script).toContain('Expected finish');
     expect(script).toContain('Real finish');
+    expect(script).toContain('data-role="open-phase-instance-stats"');
+    expect(script).toContain('data-role="open-phase-instance-calendar"');
+    expect(script).toContain('class="phase-actions-primary"');
+    expect(script).toContain('class="phase-actions-danger"');
+    expect(script).toContain("selectedProgramProgressInstanceId = instance.id;");
+    expect(script).toContain("setCurrentView(\"stats\")");
+    expect(script).toContain("uiSettings.currentWeekStart = formatDateInput(startOfWeek(instance.startDate));");
+    expect(script).toContain("setCurrentView(\"calendar\")");
     expect(styles).toContain('.phase-instance-dates');
     expect(styles).toContain('.phase-instance-date-item');
     expect(styles).toContain('.phase-instance-date-label');
     expect(styles).toContain('.phase-instance-date-value');
+    expect(styles).toContain('#phase-instance-list .phase-actions-primary');
+    expect(styles).toContain('#phase-instance-list .phase-actions-danger');
   });
 
   it("makes the saved-template filter read like a control strip", () => {
