@@ -170,6 +170,11 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('<summary>Strength details</summary>');
     expect(index).toContain('<summary>Running details</summary>');
     expect(index).toContain('<summary>Sprint details</summary>');
+    expect(index).toContain('<h3>Activity Evidence</h3>');
+    expect(index).toContain('<summary>Chart filters</summary>');
+    expect(index).toContain('<h4>Running pace by entry</h4>');
+    expect(index).toContain('<h4>Sprint times by rep</h4>');
+    expect(index).toContain('<h4>Strength highest kg by exercise</h4>');
     expect(script).toContain('effectivePhaseWeekIndex');
     expect(script).toContain('visibleDurationWeeks');
     expect(script).toContain('buildProgressHubImprovement(workouts)');
@@ -182,6 +187,8 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('${improvement.current.name} improved');
     expect(script).toContain('Done this week');
     expect(script).toContain('Progress proof');
+    expect(script).toContain('Log a run, sprint, or strength workout to build activity evidence.');
+    expect(script).toContain('No chartable entries match the current filters.');
     expect(script).toContain('<th>Previous logged session</th>');
     expect(script).toContain('<th>Latest logged session</th>');
     expect(script).toContain('function getLatestProgramExposure(row)');
@@ -202,6 +209,8 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.sprint-insights-card');
     expect(styles).toContain('.stats-insight-details summary');
     expect(styles).toContain('.stats-insight-details[open] summary');
+    expect(styles).toContain('.stats-chart-filters summary');
+    expect(styles).toContain('.stats-chart-filters[open] summary');
     expect(styles).toContain('.review-disclosure summary');
     expect(styles).toContain('.review-disclosure[open] summary');
     expect(styles).toContain('.lifecycle-guide-disclosure > .hint');

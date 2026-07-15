@@ -2348,15 +2348,13 @@ function renderCharts() {
   }
 
   if (!workouts.length) {
-    chartsStatusEl.textContent = workouts.length
-      ? "No charts to show for the current filters."
-      : "Charts will appear after you log your first workout.";
+    chartsStatusEl.textContent = "Log a run, sprint, or strength workout to build activity evidence.";
     return;
   }
 
   chartsStatusEl.textContent = hasVisibleCharts
     ? ""
-    : "No chartable data is available for the current filters.";
+    : "No chartable entries match the current filters.";
 }
 
 function renderStrengthHighestWeights(rows) {

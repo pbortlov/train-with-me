@@ -105,7 +105,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - run goals target a distance plus total time
   - sprint goals are tied to a target distance and time
   - achieved goals show set/achieved dates in goal history
-  - activity charts
+  - activity evidence charts with compact summary first and filters hidden until needed
   - program completion doughnut for the selected strength phase instance
   - program-duration strength progress for scheduled phase instances
   - program progress shows completion and done sessions before timing/lifecycle metadata

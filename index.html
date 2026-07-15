@@ -658,53 +658,57 @@
         </article>
 
         <article class="card stats-detail-section" id="activity-charts-section">
-          <h3>Activity Charts</h3>
-          <div class="grid" id="progress-filters">
-            <label>
-              Filter activity
-              <select id="filter-activity">
-                <option value="all">All</option>
-                <option value="strength">Strength</option>
-                <option value="run">Run</option>
-                <option value="sprint">Sprint</option>
-              </select>
-            </label>
-            <label>
-              From date
-              <input type="date" id="filter-from-date" />
-            </label>
-            <label>
-              To date
-              <input type="date" id="filter-to-date" />
-            </label>
-            <label>
-              Strength load
-              <select id="filter-strength-load">
-                <option value="all">All</option>
-                <option value="kg">kg only</option>
-                <option value="bodyweight">Body weight only</option>
-                <option value="band">Band only</option>
-              </select>
-            </label>
-            <button type="button" id="clear-filters">Clear Filters</button>
-          </div>
+          <h3>Activity Evidence</h3>
+          <p class="hint">Charts support the progress proof above when you want the entry-by-entry view.</p>
           <div id="summary" class="summary"></div>
+          <details class="stats-chart-filters">
+            <summary>Chart filters</summary>
+            <div class="grid" id="progress-filters">
+              <label>
+                Filter activity
+                <select id="filter-activity">
+                  <option value="all">All</option>
+                  <option value="strength">Strength</option>
+                  <option value="run">Run</option>
+                  <option value="sprint">Sprint</option>
+                </select>
+              </label>
+              <label>
+                From date
+                <input type="date" id="filter-from-date" />
+              </label>
+              <label>
+                To date
+                <input type="date" id="filter-to-date" />
+              </label>
+              <label>
+                Strength load
+                <select id="filter-strength-load">
+                  <option value="all">All</option>
+                  <option value="kg">kg only</option>
+                  <option value="bodyweight">Body weight only</option>
+                  <option value="band">Band only</option>
+                </select>
+              </label>
+              <button type="button" id="clear-filters">Clear Filters</button>
+            </div>
+          </details>
           <p id="charts-status" class="hint"></p>
           <div class="charts-grid">
             <article class="chart-card activity-chart-card">
-              <h4>Run Pace</h4>
+              <h4>Running pace by entry</h4>
               <div class="chart-viewport">
                 <canvas id="run-distance-chart" height="220"></canvas>
               </div>
             </article>
             <article class="chart-card activity-chart-card">
-              <h4>Sprint</h4>
+              <h4>Sprint times by rep</h4>
               <div class="chart-viewport">
                 <canvas id="sprint-chart" height="220"></canvas>
               </div>
             </article>
             <article class="chart-card strength-stats-card">
-              <h4>Strength Highest Weights</h4>
+              <h4>Strength highest kg by exercise</h4>
               <div class="strength-table-viewport">
                 <table class="strength-highest-table">
                   <thead>
