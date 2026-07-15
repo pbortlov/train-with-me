@@ -134,6 +134,9 @@ const installHelpEl = document.getElementById("install-help");
 const deleteConfirmDialog = document.getElementById("delete-confirm-dialog");
 const confirmDeleteWorkoutButton = document.getElementById("confirm-delete-workout");
 const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout");
+const phaseInstanceDeleteDialog = document.getElementById("phase-instance-delete-dialog");
+const confirmDeletePhaseInstanceButton = document.getElementById("confirm-delete-phase-instance");
+const cancelDeletePhaseInstanceButton = document.getElementById("cancel-delete-phase-instance");
 const editWorkoutDialog = document.getElementById("edit-workout-dialog");
 const editDateInput = document.getElementById("edit-date");
 const editActivityInput = document.getElementById("edit-activity");
@@ -334,6 +337,7 @@ let completionStrengthDraft = [];
 let completionSprintDraft = [];
 let selectedCalendarSessionId = "";
 let pendingDeleteWorkoutId = null;
+let pendingDeletePhaseInstanceId = null;
 let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
 let editDraftCurrentStrengthSets = [];
@@ -522,6 +526,8 @@ exportDataButton.addEventListener("click", exportBackupData);
 importDataFileInput.addEventListener("change", importBackupData);
 confirmDeleteWorkoutButton.addEventListener("click", confirmDeleteWorkout);
 cancelDeleteWorkoutButton.addEventListener("click", cancelDeleteWorkout);
+addSafeEventListener(confirmDeletePhaseInstanceButton, "click", confirmDeletePhaseInstance);
+addSafeEventListener(cancelDeletePhaseInstanceButton, "click", cancelDeletePhaseInstance);
 addSafeEventListener(saveEditWorkoutButton, "click", saveEditedWorkout);
 addSafeEventListener(cancelEditWorkoutButton, "click", closeEditWorkoutDialog);
 addSafeEventListener(editDistanceInput, "input", () => {
@@ -1787,6 +1793,38 @@ function openDeleteConfirm(workoutId) {
   pendingDeleteWorkoutId = null;
 }
 
+function deletePhaseInstance(instanceId) {
+  const instance = phaseInstances.find((item) => item.id === instanceId);
+  if (!instance) {
+    return;
+  }
+  const removedSessions = plannedSessions.filter((session) => instance.generatedSessionIds.includes(session.id));
+  const removedLinkedWorkouts = removeLinkedWorkoutsForSessions(removedSessions);
+  plannedSessions = plannedSessions.filter((session) => !instance.generatedSessionIds.includes(session.id));
+  phaseInstances = phaseInstances.filter((item) => item.id !== instance.id);
+  if (removedLinkedWorkouts) {
+    syncExerciseLibraryFromWorkouts();
+    renderExerciseLibrary();
+    save(STORAGE_KEY_WORKOUTS, workouts);
+  }
+  savePlannerCollections();
+  render();
+}
+
+function openPhaseInstanceDeleteDialog(instanceId) {
+  pendingDeletePhaseInstanceId = instanceId;
+  if (phaseInstanceDeleteDialog && typeof phaseInstanceDeleteDialog.showModal === "function") {
+    phaseInstanceDeleteDialog.showModal();
+    return;
+  }
+
+  const shouldDelete = confirm("Remove this scheduled program and its generated training days?");
+  if (shouldDelete) {
+    deletePhaseInstance(instanceId);
+  }
+  pendingDeletePhaseInstanceId = null;
+}
+
 function openEditWorkoutDialog(workoutId) {
   if (
     !editWorkoutDialog ||
@@ -1930,6 +1968,19 @@ function confirmDeleteWorkout() {
 function cancelDeleteWorkout() {
   pendingDeleteWorkoutId = null;
   deleteConfirmDialog.close();
+}
+
+function confirmDeletePhaseInstance() {
+  if (pendingDeletePhaseInstanceId) {
+    deletePhaseInstance(pendingDeletePhaseInstanceId);
+  }
+  pendingDeletePhaseInstanceId = null;
+  phaseInstanceDeleteDialog?.close();
+}
+
+function cancelDeletePhaseInstance() {
+  pendingDeletePhaseInstanceId = null;
+  phaseInstanceDeleteDialog?.close();
 }
 
 function resetWorkoutForm() {
@@ -6061,17 +6112,7 @@ function handlePhaseInstanceAction(event) {
   if (target.dataset.role !== "delete-phase-instance") {
     return;
   }
-  const removedSessions = plannedSessions.filter((session) => instance.generatedSessionIds.includes(session.id));
-  const removedLinkedWorkouts = removeLinkedWorkoutsForSessions(removedSessions);
-  plannedSessions = plannedSessions.filter((session) => !instance.generatedSessionIds.includes(session.id));
-  phaseInstances = phaseInstances.filter((item) => item.id !== instance.id);
-  if (removedLinkedWorkouts) {
-    syncExerciseLibraryFromWorkouts();
-    renderExerciseLibrary();
-    save(STORAGE_KEY_WORKOUTS, workouts);
-  }
-  savePlannerCollections();
-  render();
+  openPhaseInstanceDeleteDialog(instance.id);
 }
 
 function openCompletionDialog(session) {

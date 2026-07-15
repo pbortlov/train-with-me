@@ -548,18 +548,35 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('Real finish');
     expect(script).toContain('data-role="open-phase-instance-stats"');
     expect(script).toContain('data-role="open-phase-instance-calendar"');
+    expect(script).toContain('data-role="delete-phase-instance"');
     expect(script).toContain('class="phase-actions-primary"');
     expect(script).toContain('class="phase-actions-danger"');
     expect(script).toContain("selectedProgramProgressInstanceId = instance.id;");
     expect(script).toContain("setCurrentView(\"stats\")");
     expect(script).toContain("uiSettings.currentWeekStart = formatDateInput(startOfWeek(instance.startDate));");
     expect(script).toContain("setCurrentView(\"calendar\")");
+    expect(script).toContain("openPhaseInstanceDeleteDialog(instance.id);");
+    expect(script).toContain("function deletePhaseInstance(instanceId) {");
     expect(styles).toContain('.phase-instance-dates');
     expect(styles).toContain('.phase-instance-date-item');
     expect(styles).toContain('.phase-instance-date-label');
     expect(styles).toContain('.phase-instance-date-value');
     expect(styles).toContain('#phase-instance-list .phase-actions-primary');
     expect(styles).toContain('#phase-instance-list .phase-actions-danger');
+  });
+
+  it("confirms scheduled program removal with a dedicated dialog", () => {
+    expect(index).toContain('id="phase-instance-delete-dialog"');
+    expect(index).toContain('id="confirm-delete-phase-instance"');
+    expect(index).toContain('id="cancel-delete-phase-instance"');
+    expect(index).toContain("Remove scheduled program");
+    expect(script).toContain('const phaseInstanceDeleteDialog = document.getElementById("phase-instance-delete-dialog");');
+    expect(script).toContain('const confirmDeletePhaseInstanceButton = document.getElementById("confirm-delete-phase-instance");');
+    expect(script).toContain('const cancelDeletePhaseInstanceButton = document.getElementById("cancel-delete-phase-instance");');
+    expect(script).toContain("pendingDeletePhaseInstanceId = instanceId;");
+    expect(script).toContain('phaseInstanceDeleteDialog.showModal()');
+    expect(script).toContain('function confirmDeletePhaseInstance() {');
+    expect(script).toContain('function cancelDeletePhaseInstance() {');
   });
 
   it("makes the saved-template filter read like a control strip", () => {
