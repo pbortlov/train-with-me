@@ -108,6 +108,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - activity charts
   - program completion doughnut for the selected strength phase instance
   - program-duration strength progress for scheduled phase instances
+  - program progress shows completion and done sessions before timing/lifecycle metadata
   - scheduled-program stats show start date, current expected finish, and real finish when all generated strength sessions are closed as completed, modified, or missed
   - scheduled-program stats derive a lifecycle status from those dates instead of adding a separate stored state
   - Strength Insights summarize strength workouts, unique exercises, total sets, kg/bodyweight/band load mix, top kg lift, and most-trained exercise

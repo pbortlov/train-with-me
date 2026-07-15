@@ -2934,6 +2934,28 @@ textarea:focus-visible {
   margin-bottom: 0.75rem;
 }
 
+#program-progress-summary {
+  align-items: stretch;
+}
+
+#program-progress-summary .program-progress-primary {
+  border-color: rgb(109 255 92 / 34%);
+  background:
+    linear-gradient(180deg, rgb(109 255 92 / 5%), rgb(8 17 33 / 96%)),
+    #081121;
+}
+
+#program-progress-summary .program-progress-timing {
+  border-color: rgb(169 189 203 / 16%);
+  background:
+    linear-gradient(180deg, rgb(169 189 203 / 3%), rgb(8 17 33 / 92%)),
+    #081121;
+}
+
+#program-progress-summary .program-progress-timing .value {
+  font-size: 0.94rem;
+}
+
 .program-exercise-toolbar {
   display: flex;
   align-items: end;

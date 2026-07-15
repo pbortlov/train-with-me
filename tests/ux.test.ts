@@ -296,6 +296,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("function buildPhaseInstanceLifecycle(instance)");
     expect(script).toContain("phase-badge-lifecycle");
     expect(script).toContain("Lifecycle status");
+    expect(script).toContain("Done sessions");
     expect(script).toContain("Program start");
     expect(script).toContain("Expected finish");
     expect(script).toContain("Real finish");
@@ -303,6 +304,8 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("is ${model.lifecycleStatus.label.toLowerCase()}");
     expect(script).toContain('<span class="label">Program start</span>');
     expect(script).toContain('<span class="label">Lifecycle status</span>');
+    expect(script).toContain('class="badge program-progress-primary"');
+    expect(script).toContain('class="badge program-progress-timing"');
     expect(script).toContain('<span class="label">Expected finish</span>');
     expect(script).toContain('<span class="label">Real finish</span>');
     expect(styles).toContain(".phase-badge-lifecycle-on-track");
@@ -310,12 +313,14 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".phase-badge-lifecycle-finished-on-time");
     expect(styles).toContain(".phase-badge-lifecycle-finished-late");
     expect(styles).toContain(".program-lifecycle-status");
+    expect(styles).toContain("#program-progress-summary .program-progress-primary");
+    expect(styles).toContain("#program-progress-summary .program-progress-timing");
     expect(script).toContain("starts on ${formatHumanDate(model.startDate)}, is expected to finish by");
   });
 
   it("explains lifecycle statuses next to program progress", () => {
     expect(index).toContain('id="program-lifecycle-guide"');
-    expect(index).toContain("<summary>What these statuses mean</summary>");
+    expect(index).toContain("<summary>Status guide</summary>");
     expect(index).toContain("<strong>On track</strong>");
     expect(index).toContain("<strong>Shifted</strong>");
     expect(index).toContain("<strong>Finished on time</strong>");

@@ -532,9 +532,21 @@
         <article class="card stats-detail-section stats-program-section">
           <h3>Program Strength Progress</h3>
           <p class="hint">Compares generated strength sessions across the selected program duration. Run and sprint stay separate as progress over time.</p>
+          <div class="program-progress-controls">
+            <label>
+              Strength program
+              <select id="program-progress-select"></select>
+            </label>
+          </div>
+          <div id="program-progress-summary" class="summary"></div>
+          <p id="program-progress-status" class="hint"></p>
+          <div class="chart-card" id="program-adherence-chart-card">
+            <h4>Program Weekly Adherence</h4>
+            <canvas id="program-adherence-chart" height="180"></canvas>
+          </div>
           <details class="review-disclosure lifecycle-guide-disclosure" id="program-lifecycle-guide">
-            <summary>What these statuses mean</summary>
-            <p class="hint">Use these labels to read whether the program is still inside its original length or has already slipped later.</p>
+            <summary>Status guide</summary>
+            <p class="hint">Use these labels only when the program timing needs context.</p>
             <div class="lifecycle-guide-list">
               <div class="lifecycle-guide-item">
                 <strong>On track</strong>
@@ -562,18 +574,6 @@
               <span>`Real finish` appears once all generated program sessions are closed as completed, modified, or missed.</span>
             </div>
           </details>
-          <div class="program-progress-controls">
-            <label>
-              Strength program
-              <select id="program-progress-select"></select>
-            </label>
-          </div>
-          <div id="program-progress-summary" class="summary"></div>
-          <p id="program-progress-status" class="hint"></p>
-          <div class="chart-card" id="program-adherence-chart-card">
-            <h4>Program Weekly Adherence</h4>
-            <canvas id="program-adherence-chart" height="180"></canvas>
-          </div>
           <div class="program-exercise-toolbar">
             <h4>Exercise Progress</h4>
             <label>

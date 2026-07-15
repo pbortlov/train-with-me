@@ -7216,37 +7216,37 @@ function renderProgramProgress() {
   }
 
   programProgressSummaryEl.innerHTML = `
-    <article class="badge">
+    <article class="badge badge-chart program-progress-primary">
+      <span class="label">Program completion</span>
+      <div class="program-completion-chart-wrap">
+        <canvas id="program-completion-chart" width="140" height="140" aria-label="Program completion chart"></canvas>
+      </div>
+    </article>
+    <article class="badge program-progress-primary">
+      <span class="label">Done sessions</span>
+      <span class="value">${model.completed}/${model.total || 0}</span>
+    </article>
+    <article class="badge program-progress-timing">
       <span class="label">Lifecycle status</span>
       <span class="value program-lifecycle-status">
         <span class="phase-badge phase-badge-lifecycle phase-badge-lifecycle-${escapeHtml(model.lifecycleStatus.code)}">${escapeHtml(model.lifecycleStatus.label)}</span>
       </span>
     </article>
-    <article class="badge">
+    <article class="badge program-progress-timing">
       <span class="label">Program start</span>
       <span class="value">${formatHumanDate(model.startDate)}</span>
     </article>
-    <article class="badge">
+    <article class="badge program-progress-timing">
       <span class="label">Expected finish</span>
       <span class="value">${formatHumanDate(model.expectedFinishDate)}</span>
     </article>
-    <article class="badge">
+    <article class="badge program-progress-timing">
       <span class="label">Real finish</span>
       <span class="value">${model.actualFinishDate ? formatHumanDate(model.actualFinishDate) : "In progress"}</span>
     </article>
-    <article class="badge">
+    <article class="badge program-progress-timing">
       <span class="label">Visible length</span>
       <span class="value">${model.visibleDurationWeeks} weeks</span>
-    </article>
-    <article class="badge">
-      <span class="label">Adherence</span>
-      <span class="value">${model.completed}/${model.total || 0}</span>
-    </article>
-    <article class="badge badge-chart">
-      <span class="label">Program completion</span>
-      <div class="program-completion-chart-wrap">
-        <canvas id="program-completion-chart" width="140" height="140" aria-label="Program completion chart"></canvas>
-      </div>
     </article>
   `;
   programProgressStatusEl.textContent = `${model.name} is ${model.lifecycleStatus.label.toLowerCase()}, starts on ${formatHumanDate(model.startDate)}, is expected to finish by ${formatHumanDate(model.expectedFinishDate)}, and ${model.actualFinishDate ? `finished on ${formatHumanDate(model.actualFinishDate)}` : "is still in progress"}. Run and sprint are intentionally excluded from this program view.`;
