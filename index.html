@@ -450,7 +450,7 @@
           <div class="progress-hub-header">
             <div>
               <p class="today-eyebrow">Progress</p>
-              <h2 id="progress-hub-heading">Progress Hub</h2>
+              <h2 id="progress-hub-heading">Progress Proof</h2>
               <p id="progress-hub-status" class="hint"></p>
             </div>
             <div class="progress-hub-actions" aria-label="Progress shortcuts">
@@ -470,8 +470,8 @@
         </article>
 
         <details class="card review-disclosure stats-secondary-section" id="review-disclosure">
-          <summary>Review sessions</summary>
-          <p class="hint">Compare what was planned with what was actually done. Modified sessions stay visible here.</p>
+          <summary>Plan vs actual</summary>
+          <p class="hint">Use this when you want to inspect what changed.</p>
           <div id="review-summary" class="summary"></div>
           <div id="review-session-list" class="review-list"></div>
         </details>
@@ -524,15 +524,15 @@
         </article>
 
         <article class="card stats-detail-section" id="adherence-section">
-          <h3>Weekly scorecard</h3>
-          <p class="hint">A quick read on plan completion before the deeper analysis cards below.</p>
+          <h3>Week Done</h3>
+          <p class="hint">How much of the plan is closed right now.</p>
           <div id="adherence-summary" class="summary"></div>
           <div id="adherence-breakdown" class="goal-progress"></div>
         </article>
 
         <article class="card stats-detail-section stats-program-section" id="program-progress-section">
-          <h3>Program Strength Progress</h3>
-          <p class="hint">Compares generated strength sessions across the selected program duration. Run and sprint stay separate as progress over time.</p>
+          <h3>Program Progress</h3>
+          <p class="hint">Strength program completion and exercise improvement.</p>
           <div class="program-progress-controls">
             <label>
               Strength program
@@ -542,7 +542,7 @@
           <div id="program-progress-summary" class="summary"></div>
           <p id="program-progress-status" class="hint"></p>
           <div class="chart-card" id="program-adherence-chart-card">
-            <h4>Program Weekly Adherence</h4>
+            <h4>Program weeks done</h4>
             <canvas id="program-adherence-chart" height="180"></canvas>
           </div>
           <details class="review-disclosure lifecycle-guide-disclosure" id="program-lifecycle-guide">
@@ -576,7 +576,7 @@
             </div>
           </details>
           <div class="program-exercise-toolbar">
-            <h4>Exercise Progress</h4>
+            <h4>Exercise improvement</h4>
             <label>
               Exercise sort
               <select id="program-exercise-sort">
@@ -590,8 +590,8 @@
         </article>
 
         <article class="card stats-detail-section strength-insights-card" id="strength-insights-section">
-          <h3>Strength Insights</h3>
-          <p class="hint">Strength-only summary that keeps kg, bodyweight, and band sets separate.</p>
+          <h3>Strength</h3>
+          <p class="hint">Sets, exercises, and strongest kg work.</p>
           <div id="strength-insights-summary" class="summary"></div>
           <details class="stats-insight-details">
             <summary>Strength details</summary>
@@ -614,8 +614,8 @@
         </article>
 
         <article class="card stats-detail-section running-insights-card" id="running-insights-section">
-          <h3>Running Insights</h3>
-          <p class="hint">Run-only summary using valid distance, duration, and pace data.</p>
+          <h3>Running</h3>
+          <p class="hint">Distance, pace, and recent run proof.</p>
           <div id="running-insights-summary" class="summary"></div>
           <details class="stats-insight-details">
             <summary>Running details</summary>
@@ -637,8 +637,8 @@
         </article>
 
         <article class="card stats-detail-section sprint-insights-card" id="sprint-insights-section">
-          <h3>Sprint Insights</h3>
-          <p class="hint">Sprint-only summary with distance-specific bests and session feeling counts.</p>
+          <h3>Sprint</h3>
+          <p class="hint">Best reps, sprint volume, and feeling mix.</p>
           <div id="sprint-insights-summary" class="summary"></div>
           <details class="stats-insight-details">
             <summary>Sprint details</summary>
@@ -659,8 +659,8 @@
         </article>
 
         <article class="card stats-detail-section" id="activity-charts-section">
-          <h3>Activity Evidence</h3>
-          <p class="hint">Charts support the progress proof above when you want the entry-by-entry view.</p>
+          <h3>Entry Evidence</h3>
+          <p class="hint">Open this when you want the chart-level proof.</p>
           <div id="summary" class="summary"></div>
           <details class="stats-chart-filters">
             <summary>Chart filters</summary>

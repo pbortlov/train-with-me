@@ -1131,7 +1131,7 @@ function renderProgressHub() {
       <span class="value">${model.totalWorkouts}</span>
     </article>
     <article class="badge">
-      <span class="label">Plan completion</span>
+      <span class="label">Done overall</span>
       <span class="value">${model.completionRate}%</span>
     </article>
     <article class="badge">
@@ -1145,11 +1145,11 @@ function renderProgressHub() {
   `;
   progressHubBreakdownEl.innerHTML = `
     <div class="progress-hub-row">
-      <strong>Activity mix</strong>
+      <strong>Training mix</strong>
       <span>${model.workoutCounts.strength} strength · ${model.workoutCounts.run} run · ${model.workoutCounts.sprint} sprint</span>
     </div>
     <div class="progress-hub-row">
-      <strong>Planned sessions</strong>
+      <strong>Plan done</strong>
       <span>${model.completedSessions}/${model.plannedSessions || 0} completed or modified</span>
     </div>
   `;
@@ -2358,13 +2358,13 @@ function renderCharts() {
   }
 
   if (!workouts.length) {
-    chartsStatusEl.textContent = "Log a run, sprint, or strength workout to build activity evidence.";
+    chartsStatusEl.textContent = "Log one run, sprint, or strength workout to build entry evidence.";
     return;
   }
 
   chartsStatusEl.textContent = hasVisibleCharts
     ? ""
-    : "No chartable entries match the current filters.";
+    : "No entries match these filters.";
 }
 
 function renderStrengthHighestWeights(rows) {
@@ -7151,11 +7151,11 @@ function renderAdherenceStats() {
   const completionRate = allSessions ? Math.round((completedSessions / allSessions) * 100) : 0;
   adherenceSummaryEl.innerHTML = `
     <article class="badge">
-      <span class="label">Weekly adherence</span>
+      <span class="label">Done this week</span>
       <span class="value">${weekStats.completed}/${weekStats.total || 0}</span>
     </article>
     <article class="badge">
-      <span class="label">Overall completion</span>
+      <span class="label">Done overall</span>
       <span class="value">${completionRate}%</span>
     </article>
     <article class="badge">
@@ -7173,7 +7173,7 @@ function renderAdherenceStats() {
     .map(
       ({ type, planned, completed }) => `
         <div class="goal-item">
-          <strong>${capitalize(type)} adherence:</strong> ${completed}/${planned || 0}
+          <strong>${capitalize(type)} done:</strong> ${completed}/${planned || 0}
           <div class="progress-bar"><span style="width:${planned ? Math.round((completed / planned) * 100) : 0}%"></span></div>
         </div>
       `,
@@ -7225,7 +7225,7 @@ function renderProgramProgress() {
 
   programProgressSummaryEl.innerHTML = `
     <article class="badge badge-chart program-progress-primary">
-      <span class="label">Program completion</span>
+      <span class="label">Program done</span>
       <div class="program-completion-chart-wrap">
         <canvas id="program-completion-chart" width="140" height="140" aria-label="Program completion chart"></canvas>
       </div>
@@ -7235,7 +7235,7 @@ function renderProgramProgress() {
       <span class="value">${model.completed}/${model.total || 0}</span>
     </article>
     <article class="badge program-progress-timing">
-      <span class="label">Lifecycle status</span>
+      <span class="label">Program status</span>
       <span class="value program-lifecycle-status">
         <span class="phase-badge phase-badge-lifecycle phase-badge-lifecycle-${escapeHtml(model.lifecycleStatus.code)}">${escapeHtml(model.lifecycleStatus.label)}</span>
       </span>
@@ -7253,7 +7253,7 @@ function renderProgramProgress() {
       <span class="value">${model.actualFinishDate ? formatHumanDate(model.actualFinishDate) : "In progress"}</span>
     </article>
     <article class="badge program-progress-timing">
-      <span class="label">Visible length</span>
+      <span class="label">Program length</span>
       <span class="value">${model.visibleDurationWeeks} weeks</span>
     </article>
   `;

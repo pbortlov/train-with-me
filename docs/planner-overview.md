@@ -94,7 +94,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - the main progress and motivation surface after logging
   - accessible from Today as a direct launchpad action
   - includes a shortcut into the secondary review drawer for planned-vs-actual inspection
-  - reward-first top section with a momentum highlight before the detailed cards
+  - reward-first top section named Progress Proof before the detailed cards
   - phone-first hierarchy where Progress Hub and current program data are visually stronger than guides and helper text
   - Progress Hub leads with execution done, this-week completion, and latest derived improvement before deeper analysis
   - Progress Hub summarizes total workouts, plan completion, active goals, achieved goals, training mix, and planned-session completion
@@ -105,7 +105,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - run goals target a distance plus total time
   - sprint goals are tied to a target distance and time
   - achieved goals show set/achieved dates in goal history
-  - activity evidence charts with compact summary first and filters hidden until needed
+  - entry evidence charts with compact summary first and filters hidden until needed
   - program completion doughnut for the selected strength phase instance
   - program-duration strength progress for scheduled phase instances
   - program progress shows completion and done sessions before timing/lifecycle metadata

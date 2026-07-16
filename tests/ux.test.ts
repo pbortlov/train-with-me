@@ -157,15 +157,15 @@ describe("local-first UX guidance", () => {
 
   it("keeps Stats reward-first with a momentum highlight", () => {
     expect(index).toContain('id="progress-hub-highlight"');
-    expect(index).toContain('<h2 id="progress-hub-heading">Progress Hub</h2>');
-    expect(index).toContain('<h3>Weekly scorecard</h3>');
+    expect(index).toContain('<h2 id="progress-hub-heading">Progress Proof</h2>');
+    expect(index).toContain('<h3>Week Done</h3>');
     expect(index).toContain('data-progress-jump="review"');
     expect(index).toContain('data-progress-jump="program"');
     expect(index).toContain('class="ghost-button progress-jump-primary" data-progress-jump="adherence"');
     expect(index).toContain('class="ghost-button progress-jump-secondary" data-progress-jump="review"');
     expect(index).toContain('id="program-progress-section"');
     expect(index).toContain('<details class="card review-disclosure stats-secondary-section" id="review-disclosure">');
-    expect(index).toContain('<summary>Review sessions</summary>');
+    expect(index).toContain('<summary>Plan vs actual</summary>');
     expect(index).toContain('id="review-summary"');
     expect(index).toContain('id="review-session-list"');
     expect(index).toContain('class="card stats-detail-section stats-program-section"');
@@ -174,7 +174,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('<summary>Strength details</summary>');
     expect(index).toContain('<summary>Running details</summary>');
     expect(index).toContain('<summary>Sprint details</summary>');
-    expect(index).toContain('<h3>Activity Evidence</h3>');
+    expect(index).toContain('<h3>Entry Evidence</h3>');
     expect(index).toContain('<summary>Chart filters</summary>');
     expect(index).toContain('<h4>Running pace by entry</h4>');
     expect(index).toContain('<h4>Sprint times by rep</h4>');
@@ -193,8 +193,8 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('detailByTarget[target]');
     expect(script).toContain('Done this week');
     expect(script).toContain('Progress proof');
-    expect(script).toContain('Log a run, sprint, or strength workout to build activity evidence.');
-    expect(script).toContain('No chartable entries match the current filters.');
+    expect(script).toContain('Log one run, sprint, or strength workout to build entry evidence.');
+    expect(script).toContain('No entries match these filters.');
     expect(script).toContain('<th>Previous logged session</th>');
     expect(script).toContain('<th>Latest logged session</th>');
     expect(script).toContain('function getLatestProgramExposure(row)');
@@ -312,7 +312,7 @@ describe("local-first UX guidance", () => {
   it("shows lifecycle dates for scheduled programs and stats progress", () => {
     expect(script).toContain("function buildPhaseInstanceLifecycle(instance)");
     expect(script).toContain("phase-badge-lifecycle");
-    expect(script).toContain("Lifecycle status");
+    expect(script).toContain("Program status");
     expect(script).toContain("Done sessions");
     expect(script).toContain("Program start");
     expect(script).toContain("Expected finish");
@@ -320,7 +320,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('const realFinishLabel = lifecycle.actualFinishDate');
     expect(script).toContain("is ${model.lifecycleStatus.label.toLowerCase()}");
     expect(script).toContain('<span class="label">Program start</span>');
-    expect(script).toContain('<span class="label">Lifecycle status</span>');
+    expect(script).toContain('<span class="label">Program status</span>');
     expect(script).toContain('class="badge program-progress-primary"');
     expect(script).toContain('class="badge program-progress-timing"');
     expect(script).toContain('<span class="label">Expected finish</span>');
