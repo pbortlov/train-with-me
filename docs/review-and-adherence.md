@@ -59,8 +59,9 @@ Program Strength Progress compares:
 - top weight, max reps, completed sets, and logged set summaries
 
 Exercise progress stays grouped by training day title so the athlete can still
-see where each exercise belongs in the program while comparing one logged
-session with the next.
+see where each exercise belongs in the program. The default table compares the
+previous logged session with the latest logged session for each exercise, rather
+than stretching the row across every historical session.
 
 Exercise improvement labels compare the current logged session with the previous logged session for the same exercise:
 - `Improved`: any current-week kg set has higher weight than any previous-week kg set, even if reps are lower

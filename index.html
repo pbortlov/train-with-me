@@ -450,17 +450,18 @@
           <div class="progress-hub-header">
             <div>
               <p class="today-eyebrow">Progress</p>
-              <h2 id="progress-hub-heading">Progress Hub</h2>
+              <h2 id="progress-hub-heading">Progress Proof</h2>
               <p id="progress-hub-status" class="hint"></p>
             </div>
             <div class="progress-hub-actions" aria-label="Progress shortcuts">
-              <button type="button" class="ghost-button" data-progress-jump="goals">Goals</button>
-              <button type="button" class="ghost-button" data-progress-jump="adherence">Adherence</button>
-              <button type="button" class="ghost-button" data-progress-jump="review">Review</button>
-              <button type="button" class="ghost-button" data-progress-jump="strength">Strength</button>
-              <button type="button" class="ghost-button" data-progress-jump="running">Running</button>
-              <button type="button" class="ghost-button" data-progress-jump="sprint">Sprint</button>
-              <button type="button" class="ghost-button" data-progress-jump="activity">Activity charts</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="adherence">Scorecard</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="program">Program</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="strength">Strength</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="running">Running</button>
+              <button type="button" class="ghost-button progress-jump-primary" data-progress-jump="sprint">Sprint</button>
+              <button type="button" class="ghost-button progress-jump-secondary" data-progress-jump="goals">Goals</button>
+              <button type="button" class="ghost-button progress-jump-secondary" data-progress-jump="review">Review</button>
+              <button type="button" class="ghost-button progress-jump-secondary" data-progress-jump="activity">Evidence</button>
             </div>
           </div>
           <div id="progress-hub-highlight" class="progress-hub-highlight"></div>
@@ -468,14 +469,14 @@
           <div id="progress-hub-breakdown" class="progress-hub-breakdown"></div>
         </article>
 
-        <details class="card review-disclosure" id="review-disclosure">
-          <summary>Review sessions</summary>
-          <p class="hint">Compare what was planned with what was actually done. Modified sessions stay visible here.</p>
+        <details class="card review-disclosure stats-secondary-section" id="review-disclosure">
+          <summary>Plan vs actual</summary>
+          <p class="hint">Use this when you want to inspect what changed.</p>
           <div id="review-summary" class="summary"></div>
           <div id="review-session-list" class="review-list"></div>
         </details>
 
-        <article class="card" id="goals-section">
+        <article class="card stats-detail-section" id="goals-section">
           <h3>Goals</h3>
           <form id="goals-form" class="grid">
             <div class="goal-activity-toggle" aria-label="Goal activity">
@@ -522,19 +523,31 @@
           <div id="goal-history" class="goal-progress"></div>
         </article>
 
-        <article class="card" id="adherence-section">
-          <h2>Weekly scorecard</h2>
-          <p class="hint">A quick read on plan completion before the deeper analysis cards below.</p>
+        <article class="card stats-detail-section" id="adherence-section">
+          <h3>Week Done</h3>
+          <p class="hint">How much of the plan is closed right now.</p>
           <div id="adherence-summary" class="summary"></div>
           <div id="adherence-breakdown" class="goal-progress"></div>
         </article>
 
-        <article class="card">
-          <h3>Program Strength Progress</h3>
-          <p class="hint">Compares generated strength sessions across the selected program duration. Run and sprint stay separate as progress over time.</p>
-          <details class="card review-disclosure lifecycle-guide-disclosure" id="program-lifecycle-guide">
-            <summary>What these statuses mean</summary>
-            <p class="hint">Use these labels to read whether the program is still inside its original length or has already slipped later.</p>
+        <article class="card stats-detail-section stats-program-section" id="program-progress-section">
+          <h3>Program Progress</h3>
+          <p class="hint">Strength program completion and exercise improvement.</p>
+          <div class="program-progress-controls">
+            <label>
+              Strength program
+              <select id="program-progress-select"></select>
+            </label>
+          </div>
+          <div id="program-progress-summary" class="summary"></div>
+          <p id="program-progress-status" class="hint"></p>
+          <div class="chart-card" id="program-adherence-chart-card">
+            <h4>Program weeks done</h4>
+            <canvas id="program-adherence-chart" height="180"></canvas>
+          </div>
+          <details class="review-disclosure lifecycle-guide-disclosure" id="program-lifecycle-guide">
+            <summary>Status guide</summary>
+            <p class="hint">Use these labels only when the program timing needs context.</p>
             <div class="lifecycle-guide-list">
               <div class="lifecycle-guide-item">
                 <strong>On track</strong>
@@ -562,20 +575,8 @@
               <span>`Real finish` appears once all generated program sessions are closed as completed, modified, or missed.</span>
             </div>
           </details>
-          <div class="program-progress-controls">
-            <label>
-              Strength program
-              <select id="program-progress-select"></select>
-            </label>
-          </div>
-          <div id="program-progress-summary" class="summary"></div>
-          <p id="program-progress-status" class="hint"></p>
-          <div class="chart-card" id="program-adherence-chart-card">
-            <h4>Program Weekly Adherence</h4>
-            <canvas id="program-adherence-chart" height="180"></canvas>
-          </div>
           <div class="program-exercise-toolbar">
-            <h4>Exercise Progress</h4>
+            <h4>Exercise improvement</h4>
             <label>
               Exercise sort
               <select id="program-exercise-sort">
@@ -588,114 +589,127 @@
           <div id="program-exercise-progress" class="program-progress-table-wrap"></div>
         </article>
 
-        <article class="card strength-insights-card" id="strength-insights-section">
-          <h3>Strength Insights</h3>
-          <p class="hint">Strength-only summary that keeps kg, bodyweight, and band sets separate.</p>
+        <article class="card stats-detail-section strength-insights-card" id="strength-insights-section">
+          <h3>Strength</h3>
+          <p class="hint">Sets, exercises, and strongest kg work.</p>
           <div id="strength-insights-summary" class="summary"></div>
-          <div id="strength-insights-details" class="strength-insights-details"></div>
-          <div class="strength-table-viewport">
-            <table class="strength-highest-table">
-              <thead>
-                <tr>
-                  <th>Exercise</th>
-                  <th>Sets</th>
-                  <th>Workouts</th>
-                  <th>Best kg</th>
-                  <th>Load types</th>
-                </tr>
-              </thead>
-              <tbody id="strength-insights-body"></tbody>
-            </table>
-          </div>
+          <details class="stats-insight-details">
+            <summary>Strength details</summary>
+            <div id="strength-insights-details" class="strength-insights-details"></div>
+            <div class="strength-table-viewport">
+              <table class="strength-highest-table">
+                <thead>
+                  <tr>
+                    <th>Exercise</th>
+                    <th>Sets</th>
+                    <th>Workouts</th>
+                    <th>Best kg</th>
+                    <th>Load types</th>
+                  </tr>
+                </thead>
+                <tbody id="strength-insights-body"></tbody>
+              </table>
+            </div>
+          </details>
         </article>
 
-        <article class="card running-insights-card" id="running-insights-section">
-          <h3>Running Insights</h3>
-          <p class="hint">Run-only summary using valid distance, duration, and pace data.</p>
+        <article class="card stats-detail-section running-insights-card" id="running-insights-section">
+          <h3>Running</h3>
+          <p class="hint">Distance, pace, and recent run proof.</p>
           <div id="running-insights-summary" class="summary"></div>
-          <div id="running-insights-details" class="strength-insights-details"></div>
-          <div class="strength-table-viewport">
-            <table class="strength-highest-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Distance</th>
-                  <th>Duration</th>
-                  <th>Pace</th>
-                </tr>
-              </thead>
-              <tbody id="running-insights-body"></tbody>
-            </table>
-          </div>
+          <details class="stats-insight-details">
+            <summary>Running details</summary>
+            <div id="running-insights-details" class="strength-insights-details"></div>
+            <div class="strength-table-viewport">
+              <table class="strength-highest-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Distance</th>
+                    <th>Duration</th>
+                    <th>Pace</th>
+                  </tr>
+                </thead>
+                <tbody id="running-insights-body"></tbody>
+              </table>
+            </div>
+          </details>
         </article>
 
-        <article class="card sprint-insights-card" id="sprint-insights-section">
-          <h3>Sprint Insights</h3>
-          <p class="hint">Sprint-only summary with distance-specific bests and session feeling counts.</p>
+        <article class="card stats-detail-section sprint-insights-card" id="sprint-insights-section">
+          <h3>Sprint</h3>
+          <p class="hint">Best reps, sprint volume, and feeling mix.</p>
           <div id="sprint-insights-summary" class="summary"></div>
-          <div id="sprint-insights-details" class="strength-insights-details"></div>
-          <div class="strength-table-viewport">
-            <table class="strength-highest-table">
-              <thead>
-                <tr>
-                  <th>Distance</th>
-                  <th>Best time</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody id="sprint-insights-body"></tbody>
-            </table>
-          </div>
+          <details class="stats-insight-details">
+            <summary>Sprint details</summary>
+            <div id="sprint-insights-details" class="strength-insights-details"></div>
+            <div class="strength-table-viewport">
+              <table class="strength-highest-table">
+                <thead>
+                  <tr>
+                    <th>Distance</th>
+                    <th>Best time</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="sprint-insights-body"></tbody>
+              </table>
+            </div>
+          </details>
         </article>
 
-        <article class="card" id="activity-charts-section">
-          <h3>Activity Charts</h3>
-          <div class="grid" id="progress-filters">
-            <label>
-              Filter activity
-              <select id="filter-activity">
-                <option value="all">All</option>
-                <option value="strength">Strength</option>
-                <option value="run">Run</option>
-                <option value="sprint">Sprint</option>
-              </select>
-            </label>
-            <label>
-              From date
-              <input type="date" id="filter-from-date" />
-            </label>
-            <label>
-              To date
-              <input type="date" id="filter-to-date" />
-            </label>
-            <label>
-              Strength load
-              <select id="filter-strength-load">
-                <option value="all">All</option>
-                <option value="kg">kg only</option>
-                <option value="bodyweight">Body weight only</option>
-                <option value="band">Band only</option>
-              </select>
-            </label>
-            <button type="button" id="clear-filters">Clear Filters</button>
-          </div>
+        <article class="card stats-detail-section" id="activity-charts-section">
+          <h3>Entry Evidence</h3>
+          <p class="hint">Open this when you want the chart-level proof.</p>
           <div id="summary" class="summary"></div>
+          <details class="stats-chart-filters">
+            <summary>Chart filters</summary>
+            <div class="grid" id="progress-filters">
+              <label>
+                Filter activity
+                <select id="filter-activity">
+                  <option value="all">All</option>
+                  <option value="strength">Strength</option>
+                  <option value="run">Run</option>
+                  <option value="sprint">Sprint</option>
+                </select>
+              </label>
+              <label>
+                From date
+                <input type="date" id="filter-from-date" />
+              </label>
+              <label>
+                To date
+                <input type="date" id="filter-to-date" />
+              </label>
+              <label>
+                Strength load
+                <select id="filter-strength-load">
+                  <option value="all">All</option>
+                  <option value="kg">kg only</option>
+                  <option value="bodyweight">Body weight only</option>
+                  <option value="band">Band only</option>
+                </select>
+              </label>
+              <button type="button" id="clear-filters">Clear Filters</button>
+            </div>
+          </details>
           <p id="charts-status" class="hint"></p>
           <div class="charts-grid">
             <article class="chart-card activity-chart-card">
-              <h4>Run Pace</h4>
+              <h4>Running pace by entry</h4>
               <div class="chart-viewport">
                 <canvas id="run-distance-chart" height="220"></canvas>
               </div>
             </article>
             <article class="chart-card activity-chart-card">
-              <h4>Sprint</h4>
+              <h4>Sprint times by rep</h4>
               <div class="chart-viewport">
                 <canvas id="sprint-chart" height="220"></canvas>
               </div>
             </article>
             <article class="chart-card strength-stats-card">
-              <h4>Strength Highest Weights</h4>
+              <h4>Strength highest kg by exercise</h4>
               <div class="strength-table-viewport">
                 <table class="strength-highest-table">
                   <thead>

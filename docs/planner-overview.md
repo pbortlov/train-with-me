@@ -94,23 +94,27 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - the main progress and motivation surface after logging
   - accessible from Today as a direct launchpad action
   - includes a shortcut into the secondary review drawer for planned-vs-actual inspection
-  - reward-first top section with a momentum highlight before the detailed cards
+  - reward-first top section named Progress Proof before the detailed cards
+  - phone-first hierarchy where Progress Hub and current program data are visually stronger than guides and helper text
+  - Progress Hub leads with execution done, this-week completion, and latest derived improvement before deeper analysis
   - Progress Hub summarizes total workouts, plan completion, active goals, achieved goals, training mix, and planned-session completion
-  - Progress Hub shortcuts scroll to goals, adherence, and activity chart details without changing metric semantics
+  - Progress Hub shortcuts prioritize scorecard, program, and activity progress, with review and evidence kept secondary
   - adherence summaries
   - goals
   - goal setup uses compact Run, Sprint, and Strength buttons and only shows fields for the selected activity
   - run goals target a distance plus total time
   - sprint goals are tied to a target distance and time
   - achieved goals show set/achieved dates in goal history
-  - activity charts
+  - entry evidence charts with compact summary first and filters hidden until needed
   - program completion doughnut for the selected strength phase instance
   - program-duration strength progress for scheduled phase instances
+  - program progress shows completion and done sessions before timing/lifecycle metadata
   - scheduled-program stats show start date, current expected finish, and real finish when all generated strength sessions are closed as completed, modified, or missed
   - scheduled-program stats derive a lifecycle status from those dates instead of adding a separate stored state
   - Strength Insights summarize strength workouts, unique exercises, total sets, kg/bodyweight/band load mix, top kg lift, and most-trained exercise
   - Running Insights summarize run count, total distance, weighted average pace, latest run, longest run, best pace, total time, and recent valid-distance runs
   - Sprint Insights summarize sprint workouts, total reps, unique distances, latest sprint, fastest rep, distance-specific bests, recent sessions, and feeling mix
+  - Strength, Running, and Sprint insight summaries stay visible while detailed tables open on demand
   - per-entry strength, run, and sprint charts separate from strength phases
 - `Data`
   - quiet maintenance surface for backup export/import and maintenance

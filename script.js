@@ -1073,6 +1073,8 @@ function renderProgressHub() {
   const achievedGoals = (goals.history || [])
     .filter((goal) => goal.achievedAt)
     .sort((left, right) => (right.achievedAt || "").localeCompare(left.achievedAt || ""));
+  const latestWorkout = workouts.slice().sort(compareWorkoutsByRecentDate)[0] || null;
+  const latestImprovement = buildProgressHubImprovement(workouts);
   progressHubStatusEl.textContent = model.lastWorkoutDate
     ? `Last workout logged ${formatHumanDate(model.lastWorkoutDate)}.`
     : "Log your first workout to start building progress history.";
@@ -1080,11 +1082,33 @@ function renderProgressHub() {
     const latestGoal = achievedGoals[0];
     progressHubHighlightEl.innerHTML = `
       <article class="progress-hub-highlight-card is-accent">
-        <span class="label">Momentum</span>
-        <span class="value">${model.completionRate}% plan completion</span>
+        <span class="label">Executed</span>
+        <span class="value">${latestWorkout ? `${capitalize(latestWorkout.activity || "Workout")} done` : "No workout logged yet"}</span>
+        <span class="detail">${latestWorkout?.date ? formatHumanDate(latestWorkout.date) : "Log a session to start the proof."}</span>
+      </article>
+      <article class="progress-hub-highlight-card">
+        <span class="label">Done this week</span>
+        <span class="value">${weekStats.completed}/${weekStats.total || 0} sessions</span>
         <span class="detail">${weekStats.completed}/${weekStats.total || 0} planned sessions done this week</span>
       </article>
       <article class="progress-hub-highlight-card">
+        <span class="label">Progress proof</span>
+        <span class="value">${
+          latestImprovement
+            ? latestImprovement.title
+            : latestGoal?.achievedAt
+              ? `Goal achieved ${formatHumanDate(latestGoal.achievedAt)}`
+              : "Build your next comparison"
+        }</span>
+        <span class="detail">${
+          latestImprovement
+            ? latestImprovement.detail
+            : latestGoal?.achievedAt
+              ? `${daysBetween(latestGoal.setAt, latestGoal.achievedAt)} day(s) to reach it`
+              : "Log the same activity again to show improvement."
+        }</span>
+      </article>
+      <article class="progress-hub-highlight-card progress-hub-highlight-card-muted">
         <span class="label">Latest win</span>
         <span class="value">${
           latestGoal?.achievedAt
@@ -1103,11 +1127,11 @@ function renderProgressHub() {
   }
   progressHubSummaryEl.innerHTML = `
     <article class="badge">
-      <span class="label">Workouts</span>
+      <span class="label">Total logged</span>
       <span class="value">${model.totalWorkouts}</span>
     </article>
     <article class="badge">
-      <span class="label">Plan completion</span>
+      <span class="label">Done overall</span>
       <span class="value">${model.completionRate}%</span>
     </article>
     <article class="badge">
@@ -1125,21 +1149,133 @@ function renderProgressHub() {
       <span>${model.workoutCounts.strength} strength · ${model.workoutCounts.run} run · ${model.workoutCounts.sprint} sprint</span>
     </div>
     <div class="progress-hub-row">
-      <strong>Planned sessions</strong>
+      <strong>Plan done</strong>
       <span>${model.completedSessions}/${model.plannedSessions || 0} completed or modified</span>
     </div>
   `;
+}
+
+function buildProgressHubImprovement(allWorkouts) {
+  const improvements = [
+    buildRunProgressProof(allWorkouts),
+    buildSprintProgressProof(allWorkouts),
+    buildStrengthProgressProof(allWorkouts),
+  ].filter(Boolean);
+  return improvements.sort((left, right) => compareWorkoutsByRecentDate(left.workout, right.workout))[0] || null;
+}
+
+function buildRunProgressProof(allWorkouts) {
+  const runs = allWorkouts
+    .filter((workout) => workout.activity === "run" && isNumber(workout.pace))
+    .sort(compareWorkoutsByRecentDate);
+  if (runs.length < 2 || runs[0].pace >= runs[1].pace) {
+    return null;
+  }
+  return {
+    workout: runs[0],
+    title: `Run pace improved`,
+    detail: `Previous to latest: ${formatRunPace(runs[1].pace)} to ${formatRunPace(runs[0].pace)} min/km`,
+  };
+}
+
+function buildSprintProgressProof(allWorkouts) {
+  const sprints = allWorkouts
+    .map((workout) => ({ workout, bestTime: workout.activity === "sprint" ? sprintBestTime(workout) : null }))
+    .filter((entry) => isNumber(entry.bestTime))
+    .sort((left, right) => compareWorkoutsByRecentDate(left.workout, right.workout));
+  if (sprints.length < 2 || sprints[0].bestTime >= sprints[1].bestTime) {
+    return null;
+  }
+  return {
+    workout: sprints[0].workout,
+    title: `Sprint time improved`,
+    detail: `Previous to latest: ${formatNumber(sprints[1].bestTime)}s to ${formatNumber(sprints[0].bestTime)}s`,
+  };
+}
+
+function buildStrengthProgressProof(allWorkouts) {
+  const strengthEntries = allWorkouts
+    .filter((workout) => workout.activity === "strength")
+    .sort(compareWorkoutsByRecentDate);
+  for (const currentWorkout of strengthEntries) {
+    const currentExercises = buildStrengthExerciseSnapshotMap(currentWorkout);
+    const previousWorkout = strengthEntries.find((workout) =>
+      workout.id !== currentWorkout.id && [...currentExercises.keys()].some((exerciseKey) =>
+        buildStrengthExerciseSnapshotMap(workout).has(exerciseKey),
+      ),
+    );
+    if (!previousWorkout) {
+      continue;
+    }
+    const previousExercises = buildStrengthExerciseSnapshotMap(previousWorkout);
+    const improvement = [...currentExercises.entries()]
+      .map(([exerciseKey, current]) => ({
+        exerciseKey,
+        current,
+        previous: previousExercises.get(exerciseKey),
+      }))
+      .filter(({ previous }) => Boolean(previous))
+      .map(({ current, previous }) => ({
+        current,
+        previous,
+        status: evaluateImprovementStatus(previous.snapshot, current.snapshot),
+      }))
+      .find(({ status }) => status.label === "Improved");
+    if (!improvement) {
+      continue;
+    }
+    return {
+      workout: currentWorkout,
+      title: `${improvement.current.name} improved`,
+      detail: `Previous to latest: ${formatProgressHubStrengthSnapshot(improvement.previous.snapshot)} to ${formatProgressHubStrengthSnapshot(improvement.current.snapshot)}`,
+    };
+  }
+  return null;
+}
+
+function buildStrengthExerciseSnapshotMap(workout) {
+  const snapshots = new Map();
+  normalizeStrengthExercises(workout.strengthExercises).forEach((exercise) => {
+    const exerciseKey = normalizeExerciseKey(exercise.name || "");
+    if (!exerciseKey || !exercise.completed) {
+      return;
+    }
+    snapshots.set(exerciseKey, {
+      name: exercise.name || "Strength exercise",
+      snapshot: buildActualExerciseSnapshot(exercise),
+    });
+  });
+  return snapshots;
+}
+
+function formatProgressHubStrengthSnapshot(snapshot) {
+  const bestSet = comparableKgSets(snapshot).sort((left, right) => {
+    if (right.weight !== left.weight) {
+      return right.weight - left.weight;
+    }
+    return right.reps - left.reps;
+  })[0];
+  if (bestSet) {
+    return `${formatNumber(bestSet.weight)} kg x ${formatNumber(bestSet.reps)}`;
+  }
+  return formatActualProgressSnapshot(snapshot) || "logged";
 }
 
 function scrollToProgressSection(target) {
   const sectionByTarget = {
     adherence: document.getElementById("adherence-section"),
     goals: document.getElementById("goals-section"),
+    program: document.getElementById("program-progress-section"),
     review: reviewDisclosureEl,
     strength: document.getElementById("strength-insights-section"),
     running: document.getElementById("running-insights-section"),
     sprint: document.getElementById("sprint-insights-section"),
     activity: document.getElementById("activity-charts-section"),
+  };
+  const detailByTarget = {
+    strength: document.querySelector("#strength-insights-section .stats-insight-details"),
+    running: document.querySelector("#running-insights-section .stats-insight-details"),
+    sprint: document.querySelector("#sprint-insights-section .stats-insight-details"),
   };
   const section = sectionByTarget[target];
   if (section instanceof HTMLElement) {
@@ -1147,6 +1283,10 @@ function scrollToProgressSection(target) {
       setCurrentView("stats");
       render();
       reviewDisclosureEl?.setAttribute("open", "");
+    }
+    const detail = detailByTarget[target];
+    if (detail instanceof HTMLDetailsElement) {
+      detail.setAttribute("open", "");
     }
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -2218,15 +2358,13 @@ function renderCharts() {
   }
 
   if (!workouts.length) {
-    chartsStatusEl.textContent = workouts.length
-      ? "No charts to show for the current filters."
-      : "Charts will appear after you log your first workout.";
+    chartsStatusEl.textContent = "Log one run, sprint, or strength workout to build entry evidence.";
     return;
   }
 
   chartsStatusEl.textContent = hasVisibleCharts
     ? ""
-    : "No chartable data is available for the current filters.";
+    : "No entries match these filters.";
 }
 
 function renderStrengthHighestWeights(rows) {
@@ -7013,11 +7151,11 @@ function renderAdherenceStats() {
   const completionRate = allSessions ? Math.round((completedSessions / allSessions) * 100) : 0;
   adherenceSummaryEl.innerHTML = `
     <article class="badge">
-      <span class="label">Weekly adherence</span>
+      <span class="label">Done this week</span>
       <span class="value">${weekStats.completed}/${weekStats.total || 0}</span>
     </article>
     <article class="badge">
-      <span class="label">Overall completion</span>
+      <span class="label">Done overall</span>
       <span class="value">${completionRate}%</span>
     </article>
     <article class="badge">
@@ -7035,7 +7173,7 @@ function renderAdherenceStats() {
     .map(
       ({ type, planned, completed }) => `
         <div class="goal-item">
-          <strong>${capitalize(type)} adherence:</strong> ${completed}/${planned || 0}
+          <strong>${capitalize(type)} done:</strong> ${completed}/${planned || 0}
           <div class="progress-bar"><span style="width:${planned ? Math.round((completed / planned) * 100) : 0}%"></span></div>
         </div>
       `,
@@ -7086,37 +7224,37 @@ function renderProgramProgress() {
   }
 
   programProgressSummaryEl.innerHTML = `
-    <article class="badge">
-      <span class="label">Lifecycle status</span>
+    <article class="badge badge-chart program-progress-primary">
+      <span class="label">Program done</span>
+      <div class="program-completion-chart-wrap">
+        <canvas id="program-completion-chart" width="140" height="140" aria-label="Program completion chart"></canvas>
+      </div>
+    </article>
+    <article class="badge program-progress-primary">
+      <span class="label">Done sessions</span>
+      <span class="value">${model.completed}/${model.total || 0}</span>
+    </article>
+    <article class="badge program-progress-timing">
+      <span class="label">Program status</span>
       <span class="value program-lifecycle-status">
         <span class="phase-badge phase-badge-lifecycle phase-badge-lifecycle-${escapeHtml(model.lifecycleStatus.code)}">${escapeHtml(model.lifecycleStatus.label)}</span>
       </span>
     </article>
-    <article class="badge">
+    <article class="badge program-progress-timing">
       <span class="label">Program start</span>
       <span class="value">${formatHumanDate(model.startDate)}</span>
     </article>
-    <article class="badge">
+    <article class="badge program-progress-timing">
       <span class="label">Expected finish</span>
       <span class="value">${formatHumanDate(model.expectedFinishDate)}</span>
     </article>
-    <article class="badge">
+    <article class="badge program-progress-timing">
       <span class="label">Real finish</span>
       <span class="value">${model.actualFinishDate ? formatHumanDate(model.actualFinishDate) : "In progress"}</span>
     </article>
-    <article class="badge">
-      <span class="label">Visible length</span>
+    <article class="badge program-progress-timing">
+      <span class="label">Program length</span>
       <span class="value">${model.visibleDurationWeeks} weeks</span>
-    </article>
-    <article class="badge">
-      <span class="label">Adherence</span>
-      <span class="value">${model.completed}/${model.total || 0}</span>
-    </article>
-    <article class="badge badge-chart">
-      <span class="label">Program completion</span>
-      <div class="program-completion-chart-wrap">
-        <canvas id="program-completion-chart" width="140" height="140" aria-label="Program completion chart"></canvas>
-      </div>
     </article>
   `;
   programProgressStatusEl.textContent = `${model.name} is ${model.lifecycleStatus.label.toLowerCase()}, starts on ${formatHumanDate(model.startDate)}, is expected to finish by ${formatHumanDate(model.expectedFinishDate)}, and ${model.actualFinishDate ? `finished on ${formatHumanDate(model.actualFinishDate)}` : "is still in progress"}. Run and sprint are intentionally excluded from this program view.`;
@@ -7443,8 +7581,6 @@ function renderProgramExerciseProgressTable(model) {
   }
 
   const groupedRows = groupProgramExerciseRows(model.exerciseRows);
-  const maxExposureCount = model.exerciseRows.reduce((max, row) => Math.max(max, row.exposures.length), 0);
-  const exposureHeadings = Array.from({ length: maxExposureCount }, (_, index) => `<th>Session ${index + 1}</th>`).join("");
   const rows = groupedRows
     .map((group) => {
       const trainingDayMeta = `${group.rows.length} exercise${group.rows.length === 1 ? "" : "s"}`;
@@ -7452,13 +7588,15 @@ function renderProgramExerciseProgressTable(model) {
         .map((row) => `
           <tr>
             <th>${escapeHtml(row.name)}${row.code ? `<div class="phase-meta">${escapeHtml(row.code)}</div>` : ""}</th>
-            ${Array.from({ length: maxExposureCount }, (_, index) => renderProgramExerciseWeekCell(row.exposures[index] || null)).join("")}
+            ${renderProgramExerciseStatusCell(row)}
+            ${renderProgramExerciseComparisonCell(getPreviousProgramExposure(row))}
+            ${renderProgramExerciseComparisonCell(getLatestProgramExposure(row))}
           </tr>
         `)
         .join("");
       return `
         <tr class="program-progress-group-row">
-          <th colspan="${maxExposureCount + 1}">
+          <th colspan="4">
             <div class="program-progress-group-title">${escapeHtml(group.title)}</div>
             <div class="phase-meta">${escapeHtml(trainingDayMeta)}</div>
           </th>
@@ -7473,7 +7611,9 @@ function renderProgramExerciseProgressTable(model) {
       <thead>
         <tr>
           <th>Exercise</th>
-          ${exposureHeadings}
+          <th>Latest status</th>
+          <th>Previous logged session</th>
+          <th>Latest logged session</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -7481,15 +7621,37 @@ function renderProgramExerciseProgressTable(model) {
   `;
 }
 
-function renderProgramExerciseWeekCell(week) {
-  if (!week?.snapshot) {
+function getLatestProgramExposure(row) {
+  return row.exposures[row.exposures.length - 1] || null;
+}
+
+function getPreviousProgramExposure(row) {
+  return row.exposures.length > 1 ? row.exposures[row.exposures.length - 2] : null;
+}
+
+function renderProgramExerciseStatusCell(row) {
+  const latest = getLatestProgramExposure(row);
+  if (!latest?.snapshot) {
     return "<td class=\"is-empty\">Not logged</td>";
   }
-  const statusClass = programProgressStatusClass(week.status);
+  const statusClass = programProgressStatusClass(latest.status);
+  const comparisonLabel = getPreviousProgramExposure(row) ? "Compared with previous logged session" : "First completed log";
   return `
     <td class="${statusClass}">
-      <strong>${escapeHtml(week.status)}</strong><br />
-      ${escapeHtml(formatActualProgressSnapshot(week.snapshot))}
+      <strong>${escapeHtml(latest.status)}</strong>
+      <div class="phase-meta">${escapeHtml(comparisonLabel)}</div>
+    </td>
+  `;
+}
+
+function renderProgramExerciseComparisonCell(exposure) {
+  if (!exposure?.snapshot) {
+    return "<td class=\"is-empty\">No previous logged session</td>";
+  }
+  return `
+    <td>
+      ${escapeHtml(formatActualProgressSnapshot(exposure.snapshot))}
+      <div class="phase-meta">Session ${Number(exposure.weekIndex) + 1 || "-"} • ${escapeHtml(formatHumanDate(exposure.date))}</div>
     </td>
   `;
 }
