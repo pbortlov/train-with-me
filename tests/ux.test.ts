@@ -157,6 +157,9 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('function getStrengthSessionMoveAffectedSessions(session)');
     expect(script).toContain('addSafeEventListener(strengthSessionNewDateInput, "input", updateStrengthSessionMovePreview)');
     expect(script).toContain('This will shift ${affectedSessions.length} planned');
+    expect(script).toContain('function isGeneratedSessionOverdue(session)');
+    expect(script).toContain('session-attention-badge');
+    expect(script).toContain('Needs attention');
     expect(script).toContain('program-week-mixed');
     expect(script).toContain('program-session-identity');
     expect(script).toContain('From phase template • ${programIdentity.detailLabel}');
@@ -164,6 +167,8 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.program-session-identity');
     expect(styles).toContain('.strength-session-move-preview');
     expect(styles).toContain('.move-preview-card');
+    expect(styles).toContain('.planned-session-card.is-overdue-generated-session');
+    expect(styles).toContain('.session-attention-badge');
     expect(styles).toContain('.calendar-day.has-program-week.program-week-mixed');
     expect(styles).toContain('.program-week-badge.program-week-mixed');
     expect(script).toContain('if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId))');
