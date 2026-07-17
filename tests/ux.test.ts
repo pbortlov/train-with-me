@@ -148,7 +148,17 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('session-action-danger');
     expect(script).toContain('slotDayShifts');
     expect(script).toContain('getProgramWeekIndexForDate');
+    expect(script).toContain('function programOccurrenceIdentityForSession(session)');
+    expect(script).toContain('label: trainingNumber ? `W${weekNumber} · T${trainingNumber}` : `W${weekNumber}`');
+    expect(script).toContain('dayLabel: `W${weekNumber}`');
+    expect(script).toContain('programWeekColorClass(weekIndex)');
+    expect(script).toContain('program-week-mixed');
+    expect(script).toContain('program-session-identity');
+    expect(script).toContain('From phase template • ${programIdentity.detailLabel}');
     expect(styles).toContain('.planned-session-card.is-selected {\n  box-shadow:');
+    expect(styles).toContain('.program-session-identity');
+    expect(styles).toContain('.calendar-day.has-program-week.program-week-mixed');
+    expect(styles).toContain('.program-week-badge.program-week-mixed');
     expect(script).toContain('if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId))');
     expect(styles).toContain('.session-detail-close-button');
     expect(styles).toContain('.session-action-primary');

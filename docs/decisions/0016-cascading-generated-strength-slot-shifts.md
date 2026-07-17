@@ -38,5 +38,12 @@ planned sessions remain readable and protected for backward compatibility.
   `slotDayShifts` field.
 - Old backups remain compatible because missing `slotDayShifts` normalize to an
   empty list.
-- Later MVPs can align Calendar week colors and Stats week semantics with the
-  same scheduling rules instead of introducing separate logic.
+- Calendar generated-session cards use `phaseWeekIndex` and `phaseSlotId` to
+  display the original program occurrence identity, such as `W2 · T3`, even
+  after a session is moved.
+- Calendar generated-session card colors follow the original program week. If
+  one calendar date contains sessions from multiple original program weeks, the
+  day badge uses a neutral mixed-week marker while each card remains the source
+  of truth.
+- Later MVPs can align Stats week semantics with the same scheduling rules
+  instead of introducing separate logic.
