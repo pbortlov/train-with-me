@@ -3171,6 +3171,71 @@ dialog::backdrop {
   justify-content: flex-end;
 }
 
+.strength-session-move-preview {
+  min-height: 3rem;
+}
+
+.move-preview-card {
+  border: 1px solid #00e5ff44;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgb(0 229 255 / 10%), rgb(8 17 33 / 92%)),
+    #081121;
+  color: var(--text);
+  padding: 0.75rem 0.85rem;
+}
+
+.move-preview-card p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.move-preview-muted {
+  border-color: #cbd5e133;
+  background:
+    linear-gradient(180deg, rgb(203 213 225 / 8%), rgb(8 17 33 / 92%)),
+    #081121;
+  color: var(--muted);
+}
+
+.move-preview-heading {
+  color: #d7f8ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.move-preview-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.move-preview-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-top: 1px solid #d7f8ff18;
+  padding-top: 0.35rem;
+}
+
+.move-preview-session {
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.move-preview-dates {
+  color: var(--muted);
+  font-size: 0.84rem;
+  text-align: right;
+}
+
 .metric-line {
   margin-bottom: 0.25rem;
 }

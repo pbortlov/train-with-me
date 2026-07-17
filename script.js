@@ -194,6 +194,7 @@ const strengthSessionMoveIdInput = document.getElementById("strength-session-mov
 const strengthSessionMoveTitleEl = document.getElementById("strength-session-move-title");
 const strengthSessionCurrentDateInput = document.getElementById("strength-session-current-date");
 const strengthSessionNewDateInput = document.getElementById("strength-session-new-date");
+const strengthSessionMovePreviewEl = document.getElementById("strength-session-move-preview");
 const strengthSessionMoveStatusEl = document.getElementById("strength-session-move-status");
 const cancelStrengthSessionMoveButton = document.getElementById("cancel-strength-session-move");
 const prevWeekButton = document.getElementById("prev-week");
@@ -3669,6 +3670,8 @@ function bindV2Events() {
     }
   });
   addSafeEventListener(strengthSessionMoveForm, "submit", saveStrengthSessionMove);
+  addSafeEventListener(strengthSessionNewDateInput, "input", updateStrengthSessionMovePreview);
+  addSafeEventListener(strengthSessionNewDateInput, "change", updateStrengthSessionMovePreview);
   addSafeEventListener(cancelStrengthSessionMoveButton, "click", closeStrengthSessionMoveDialog);
   addSafeEventListener(strengthSessionMoveDialog, "click", (event) => {
     if (event.target === strengthSessionMoveDialog) {
@@ -4703,6 +4706,125 @@ function isMovableGeneratedStrengthSession(session) {
   return session?.type === "strength" && session.source === "phase-generated" && session.status === "planned";
 }
 
+function resolveStrengthSessionMoveContext(session) {
+  if (!isMovableGeneratedStrengthSession(session)) {
+    return null;
+  }
+  ensurePhaseOccurrenceMetadata(session);
+  const instance = phaseInstances.find((item) => item.id === session.phaseInstanceId);
+  const template = phaseTemplates.find((item) => item.id === session.phaseTemplateId || item.id === instance?.templateId);
+  if (!instance || !template || !session.phaseSlotId || !isNumber(session.phaseWeekIndex)) {
+    return null;
+  }
+  const templateSlot = findTemplateSlotByPhaseSlotId(template, session.phaseSlotId);
+  if (!templateSlot) {
+    return null;
+  }
+  return { instance, template, templateSlot };
+}
+
+function getStrengthSessionMoveAffectedSessions(session) {
+  if (!session?.phaseInstanceId || !session.phaseSlotId || !isNumber(session.phaseWeekIndex)) {
+    return [];
+  }
+  return plannedSessions
+    .filter((item) => {
+      if (
+        item.type !== "strength" ||
+        item.source !== "phase-generated" ||
+        item.phaseInstanceId !== session.phaseInstanceId ||
+        item.status !== "planned"
+      ) {
+        return false;
+      }
+      ensurePhaseOccurrenceMetadata(item);
+      return (
+        item.phaseSlotId === session.phaseSlotId &&
+        isNumber(item.phaseWeekIndex) &&
+        Number(item.phaseWeekIndex) >= Number(session.phaseWeekIndex) &&
+        (!item.dateMovedManually || item.id === session.id)
+      );
+    })
+    .sort((left, right) => Number(left.phaseWeekIndex) - Number(right.phaseWeekIndex) || left.date.localeCompare(right.date));
+}
+
+function renderStrengthSessionMovePreview(session, newDate) {
+  const context = resolveStrengthSessionMoveContext(session);
+  if (!context) {
+    return `
+      <div class="move-preview-card move-preview-muted">
+        Preview unavailable because this session is missing program scheduling details.
+      </div>
+    `;
+  }
+  if (!newDate) {
+    return `
+      <div class="move-preview-card move-preview-muted">
+        Choose a new date to preview which future program sessions will move.
+      </div>
+    `;
+  }
+  const currentVisibleDate = normalizeDateInput(session.date);
+  const dayDelta = getDateShiftDelta(currentVisibleDate, newDate);
+  if (dayDelta === null) {
+    return `
+      <div class="move-preview-card move-preview-muted">
+        Choose a valid new date to preview the move.
+      </div>
+    `;
+  }
+  if (dayDelta === 0) {
+    return `
+      <div class="move-preview-card move-preview-muted">
+        No date change. Future program sessions will stay where they are.
+      </div>
+    `;
+  }
+
+  const affectedSessions = getStrengthSessionMoveAffectedSessions(session);
+  const deltaLabel = dayDelta > 0 ? `+${dayDelta}` : `${dayDelta}`;
+  const overflowCount = Math.max(affectedSessions.length - 5, 0);
+  const previewItems = affectedSessions
+    .slice(0, 5)
+    .map((item) => {
+      const identity = programOccurrenceIdentityForSession(item);
+      const shiftedDate = formatDateInput(addDays(item.date, dayDelta));
+      return `
+        <li>
+          <span class="move-preview-session">${escapeHtml(identity?.label || item.title)}</span>
+          <span class="move-preview-dates">${escapeHtml(formatHumanDate(item.date))} to ${escapeHtml(formatHumanDate(shiftedDate))}</span>
+        </li>
+      `;
+    })
+    .join("");
+
+  return `
+    <div class="move-preview-card">
+      <div class="move-preview-heading">Move preview</div>
+      <p>This will shift ${affectedSessions.length} planned ${affectedSessions.length === 1 ? "session" : "sessions"} in this training slot by ${deltaLabel} ${Math.abs(dayDelta) === 1 ? "day" : "days"}.</p>
+      <ul class="move-preview-list">
+        ${previewItems}
+        ${overflowCount ? `<li><span class="move-preview-session">+${overflowCount} more future ${overflowCount === 1 ? "session" : "sessions"}</span></li>` : ""}
+      </ul>
+    </div>
+  `;
+}
+
+function updateStrengthSessionMovePreview() {
+  if (!strengthSessionMovePreviewEl) {
+    return;
+  }
+  const session = plannedSessions.find((item) => item.id === strengthSessionMoveIdInput.value);
+  if (!session) {
+    strengthSessionMovePreviewEl.innerHTML = "";
+    return;
+  }
+  strengthSessionMovePreviewEl.innerHTML = renderStrengthSessionMovePreview(
+    session,
+    normalizeDateInput(strengthSessionNewDateInput.value),
+  );
+}
+
 function openStrengthSessionMoveDialog(session) {
   if (!strengthSessionMoveDialog || !strengthSessionMoveForm || !isMovableGeneratedStrengthSession(session)) {
     return;
@@ -4713,6 +4835,7 @@ function openStrengthSessionMoveDialog(session) {
   strengthSessionCurrentDateInput.value = session.date;
   strengthSessionNewDateInput.value = session.date;
   strengthSessionMoveStatusEl.textContent = "";
+  updateStrengthSessionMovePreview();
 
   if (typeof strengthSessionMoveDialog.showModal === "function") {
     strengthSessionMoveDialog.showModal();
@@ -4806,15 +4929,9 @@ function saveStrengthSessionMove(event) {
     return;
   }
   ensurePhaseOccurrenceMetadata(session);
-  const instance = phaseInstances.find((item) => item.id === session.phaseInstanceId);
-  const template = phaseTemplates.find((item) => item.id === session.phaseTemplateId || item.id === instance?.templateId);
-  if (!instance || !template || !session.phaseSlotId || !isNumber(session.phaseWeekIndex)) {
+  const moveContext = resolveStrengthSessionMoveContext(session);
+  if (!moveContext) {
     strengthSessionMoveStatusEl.textContent = "This generated session is missing its program scheduling details.";
-    return;
-  }
-  const templateSlot = findTemplateSlotByPhaseSlotId(template, session.phaseSlotId);
-  if (!templateSlot) {
-    strengthSessionMoveStatusEl.textContent = "Could not match this generated session to its training day.";
     return;
   }
   const currentVisibleDate = normalizeDateInput(session.date);
@@ -4836,7 +4953,7 @@ function saveStrengthSessionMove(event) {
       createdAt: Date.now(),
     },
   ]);
-  syncPhaseInstancePlannedSessionDates(instance, template, session.id);
+  syncPhaseInstancePlannedSessionDates(moveContext.instance, moveContext.template, session.id);
   savePlannerCollections();
   closeStrengthSessionMoveDialog();
   render();

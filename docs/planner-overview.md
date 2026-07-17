@@ -36,6 +36,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - planned run editing opens in a popup instead of reusing the in-page creation form
   - generated strength sessions
   - generated strength sessions can shift future matching training days by the same day offset while still planned, without changing the phase template
+  - moving a generated strength session previews the affected future same-slot sessions before the cascade is confirmed
   - generated strength cards show compact original program identity such as `W2 · T3`, so moved sessions remain distinguishable when multiple training days share one calendar date
   - program week tints and week badges follow the original generated-session program week; mixed days use a neutral combined week badge
   - today's calendar day keeps a rounded accent outline and date pill above program-week tinting

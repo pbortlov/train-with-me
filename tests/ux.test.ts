@@ -137,6 +137,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('<details class="add-training-plan-details" id="planned-session-drawer">');
     expect(index).toContain('<summary>Plan session</summary>');
     expect(index).toContain("Moves this training day and future matching program days by the same day offset.");
+    expect(index).toContain('id="strength-session-move-preview"');
     expect(styles).toContain('.calendar-launchpad');
     expect(styles).toContain('.calendar-momentum-card');
     expect(styles).toContain('.calendar-nav #current-week');
@@ -152,11 +153,17 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('label: trainingNumber ? `W${weekNumber} · T${trainingNumber}` : `W${weekNumber}`');
     expect(script).toContain('dayLabel: `W${weekNumber}`');
     expect(script).toContain('programWeekColorClass(weekIndex)');
+    expect(script).toContain('function renderStrengthSessionMovePreview(session, newDate)');
+    expect(script).toContain('function getStrengthSessionMoveAffectedSessions(session)');
+    expect(script).toContain('addSafeEventListener(strengthSessionNewDateInput, "input", updateStrengthSessionMovePreview)');
+    expect(script).toContain('This will shift ${affectedSessions.length} planned');
     expect(script).toContain('program-week-mixed');
     expect(script).toContain('program-session-identity');
     expect(script).toContain('From phase template • ${programIdentity.detailLabel}');
     expect(styles).toContain('.planned-session-card.is-selected {\n  box-shadow:');
     expect(styles).toContain('.program-session-identity');
+    expect(styles).toContain('.strength-session-move-preview');
+    expect(styles).toContain('.move-preview-card');
     expect(styles).toContain('.calendar-day.has-program-week.program-week-mixed');
     expect(styles).toContain('.program-week-badge.program-week-mixed');
     expect(script).toContain('if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId))');
