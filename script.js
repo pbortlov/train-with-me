@@ -3897,6 +3897,14 @@ function programWeekMarkerForSession(session) {
   return programOccurrenceIdentityForSession(session);
 }
 
+function isGeneratedSessionOverdue(session) {
+  return (
+    session.source === "phase-generated" &&
+    session.status === "planned" &&
+    normalizeDateInput(session.date) < formatDateInput(new Date())
+  );
+}
+
 function computeWeeklyAdherence(weekStart) {
   const sessions = getPlannedSessionsForWeek(weekStart);
   const completed = sessions.filter((session) => ["completed", "modified"].includes(session.status)).length;
@@ -4001,9 +4009,11 @@ function renderPlannedSessionCard(session) {
     ? formatStrengthSessionTotalDuration(session)
     : `${capitalize(session.type)} • ${formatPlannedSessionSummary(session)}`;
   const programIdentity = programOccurrenceIdentityForSession(session);
+  const isOverdueGeneratedSession = isGeneratedSessionOverdue(session);
   return `
-    <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}${programIdentity ? ` program-session-card ${programIdentity.colorClass}` : ""}">
+    <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}${programIdentity ? ` program-session-card ${programIdentity.colorClass}` : ""}${isOverdueGeneratedSession ? " is-overdue-generated-session" : ""}">
       ${programIdentity ? `<div class="program-session-identity ${programIdentity.colorClass}">${escapeHtml(programIdentity.label)}</div>` : ""}
+      ${isOverdueGeneratedSession ? '<div class="session-attention-badge">Needs attention</div>' : ""}
       <div class="planned-session-title">${escapeHtml(session.title)}</div>
       <div class="planned-session-time">${escapeHtml(primaryMeta)}</div>
       <div class="planned-session-footer">
