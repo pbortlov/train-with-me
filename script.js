@@ -3832,32 +3832,66 @@ function programWeekColorClass(weekIndex) {
   return `program-week-color-${(Number(weekIndex) % 5) + 1}`;
 }
 
+function getPhaseInstanceForSession(session) {
+  return phaseInstances.find((item) => item.id === session.phaseInstanceId) || null;
+}
+
+function getPhaseTemplateForSession(session, instance = null) {
+  return (
+    phaseTemplates.find((template) => template.id === session.phaseTemplateId || template.id === instance?.templateId) ||
+    null
+  );
+}
+
+function programOccurrenceIdentityForSession(session) {
+  if (session.source !== "phase-generated" || !isNumber(session.phaseWeekIndex)) {
+    return null;
+  }
+  const instance = getPhaseInstanceForSession(session);
+  const template = getPhaseTemplateForSession(session, instance);
+  const templateSlot = findTemplateSlotByPhaseSlotId(template, session.phaseSlotId);
+  const weekIndex = Number(session.phaseWeekIndex);
+  const weekNumber = weekIndex + 1;
+  const trainingNumber = templateSlot ? templateSlot.slotIndex + 1 : null;
+
+  return {
+    phaseInstanceId: session.phaseInstanceId || "",
+    weekIndex,
+    weekNumber,
+    trainingNumber,
+    label: trainingNumber ? `W${weekNumber} · T${trainingNumber}` : `W${weekNumber}`,
+    dayLabel: `W${weekNumber}`,
+    detailLabel: trainingNumber ? `Program week ${weekNumber} · Training ${trainingNumber}` : `Program week ${weekNumber}`,
+    colorClass: programWeekColorClass(weekIndex),
+  };
+}
+
 function programWeekMarkerForDay(markers) {
   if (!markers?.length) {
     return null;
   }
-  const [primaryMarker] = markers;
+  const uniqueMarkers = Array.from(
+    new Map(markers.map((marker) => [`${marker.phaseInstanceId}:${marker.weekIndex}`, marker])).values(),
+  );
+  const [primaryMarker] = uniqueMarkers;
+  if (uniqueMarkers.length === 1) {
+    return {
+      ...primaryMarker,
+      label: primaryMarker.dayLabel,
+    };
+  }
   return {
     ...primaryMarker,
-    label: `${primaryMarker.label}${markers.length > 1 ? ` +${markers.length - 1}` : ""}`,
+    label: `${uniqueMarkers
+      .slice(0, 2)
+      .map((marker) => marker.dayLabel)
+      .join(" + ")}${uniqueMarkers.length > 2 ? ` +${uniqueMarkers.length - 2}` : ""}`,
+    colorClass: "program-week-mixed",
   };
 }
 
 function programWeekMarkerForSession(session) {
-  if (session.source !== "phase-generated") {
-    return null;
-  }
-  const instance = phaseInstances.find((item) => item.id === session.phaseInstanceId);
-  const weekIndex = instance ? getProgramWeekIndexForDate(instance.startDate, session.date) : null;
-  if (!instance || !isNumber(weekIndex)) {
-    return null;
-  }
-  return {
-    phaseInstanceId: session.phaseInstanceId || "",
-    weekIndex: Number(weekIndex),
-    label: `Week ${Number(weekIndex) + 1}`,
-    colorClass: programWeekColorClass(weekIndex),
-  };
+  return programOccurrenceIdentityForSession(session);
 }
 
 function computeWeeklyAdherence(weekStart) {
@@ -3963,9 +3997,10 @@ function renderPlannedSessionCard(session) {
   const primaryMeta = session.type === "strength"
     ? formatStrengthSessionTotalDuration(session)
     : `${capitalize(session.type)} • ${formatPlannedSessionSummary(session)}`;
-  const programWeekMarker = programWeekMarkerForSession(session);
+  const programIdentity = programOccurrenceIdentityForSession(session);
   return `
-    <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}${programWeekMarker ? ` program-session-card ${programWeekMarker.colorClass}` : ""}">
+    <article class="planned-session-card${session.id === selectedCalendarSessionId ? " is-selected" : ""}${programIdentity ? ` program-session-card ${programIdentity.colorClass}` : ""}">
+      ${programIdentity ? `<div class="program-session-identity ${programIdentity.colorClass}">${escapeHtml(programIdentity.label)}</div>` : ""}
       <div class="planned-session-title">${escapeHtml(session.title)}</div>
       <div class="planned-session-time">${escapeHtml(primaryMeta)}</div>
       <div class="planned-session-footer">
@@ -4040,6 +4075,10 @@ function renderCalendarSessionDetail() {
   if (session.type === "strength") {
     headerMeta.push(formatStrengthSessionTotalDuration(session));
   }
+  const programIdentity = programOccurrenceIdentityForSession(session);
+  const generatedSourceMeta = programIdentity
+    ? `From phase template • ${programIdentity.detailLabel}`
+    : "From phase template";
 
   calendarSessionDetailEl.innerHTML = `
     <article class="card session-detail-card session-detail-modal-card">
@@ -4054,7 +4093,7 @@ function renderCalendarSessionDetail() {
           <button type="button" class="ghost-button session-detail-close-button" data-role="close-calendar-session-dialog">Close</button>
         </div>
       </header>
-      ${session.source === "phase-generated" ? `<div class="session-meta">From phase template</div>` : ""}
+      ${session.source === "phase-generated" ? `<div class="session-meta">${escapeHtml(generatedSourceMeta)}</div>` : ""}
       ${session.notes ? `<div class="session-meta">${escapeHtml(session.notes)}</div>` : ""}
       <div class="session-detail-body">
         ${renderSessionStructure(session, "planned")}

@@ -1130,6 +1130,11 @@ textarea:focus-visible {
   border-color: #ff9caf55;
 }
 
+.calendar-day.has-program-week.program-week-mixed {
+  background: linear-gradient(180deg, #cbd5e11a, #0a1326 58%);
+  border-color: #cbd5e155;
+}
+
 .calendar-day.is-today {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px #00e5ff99 inset, 0 0 0 1px #00e5ff55;
@@ -1175,33 +1180,44 @@ textarea:focus-visible {
 }
 
 .program-week-badge.program-week-color-1,
-.program-session-card.program-week-color-1 {
+.program-session-card.program-week-color-1,
+.program-session-identity.program-week-color-1 {
   border-color: #00e5ff66;
   background: #00e5ff12;
 }
 
 .program-week-badge.program-week-color-2,
-.program-session-card.program-week-color-2 {
+.program-session-card.program-week-color-2,
+.program-session-identity.program-week-color-2 {
   border-color: #6dff5c66;
   background: #6dff5c12;
 }
 
 .program-week-badge.program-week-color-3,
-.program-session-card.program-week-color-3 {
+.program-session-card.program-week-color-3,
+.program-session-identity.program-week-color-3 {
   border-color: #ffd37a66;
   background: #ffd37a12;
 }
 
 .program-week-badge.program-week-color-4,
-.program-session-card.program-week-color-4 {
+.program-session-card.program-week-color-4,
+.program-session-identity.program-week-color-4 {
   border-color: #7dd3fc66;
   background: #7dd3fc12;
 }
 
 .program-week-badge.program-week-color-5,
-.program-session-card.program-week-color-5 {
+.program-session-card.program-week-color-5,
+.program-session-identity.program-week-color-5 {
   border-color: #ff9caf66;
   background: #ff9caf12;
+}
+
+.program-week-badge.program-week-mixed {
+  border-color: #cbd5e166;
+  background: #cbd5e112;
+  color: #e5edf8;
 }
 
 .calendar-day-date {
@@ -1267,6 +1283,19 @@ textarea:focus-visible {
   min-width: 0;
   align-content: start;
   overflow: hidden;
+}
+
+.program-session-identity {
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.12rem 0.48rem;
+  color: var(--text);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  text-transform: uppercase;
 }
 
 .planned-session-card header,
