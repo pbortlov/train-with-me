@@ -4954,8 +4954,8 @@ function saveStrengthSessionMove(event) {
     closeStrengthSessionMoveDialog();
     return;
   }
-  instance.slotDayShifts = normalizePhaseSlotDayShifts([
-    ...normalizePhaseSlotDayShifts(instance.slotDayShifts),
+  moveContext.instance.slotDayShifts = normalizePhaseSlotDayShifts([
+    ...normalizePhaseSlotDayShifts(moveContext.instance.slotDayShifts),
     {
       phaseSlotId: session.phaseSlotId,
       fromWeekIndex: session.phaseWeekIndex,
