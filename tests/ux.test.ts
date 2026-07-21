@@ -157,6 +157,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('function getStrengthSessionMoveAffectedSessions(session)');
     expect(script).toContain('addSafeEventListener(strengthSessionNewDateInput, "input", updateStrengthSessionMovePreview)');
     expect(script).toContain('This will shift ${affectedSessions.length} planned');
+    expect(script).toContain('moveContext.instance.slotDayShifts = normalizePhaseSlotDayShifts');
     expect(script).toContain('function isGeneratedSessionOverdue(session)');
     expect(script).toContain('session-attention-badge');
     expect(script).toContain('Needs attention');
