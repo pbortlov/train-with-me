@@ -158,6 +158,9 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('addSafeEventListener(strengthSessionNewDateInput, "input", updateStrengthSessionMovePreview)');
     expect(script).toContain('This will shift ${affectedSessions.length} planned');
     expect(script).toContain('moveContext.instance.slotDayShifts = normalizePhaseSlotDayShifts');
+    expect(script).toContain('blockIndex,');
+    expect(script).toContain('const blockAttribute = blockIndex === null ? "" : ` data-block-index="${blockIndex}"`;');
+    expect(script).toContain('role === "completion-set-band-color" && Number.isInteger(blockIndex)');
     expect(script).toContain('function isGeneratedSessionOverdue(session)');
     expect(script).toContain('session-attention-badge');
     expect(script).toContain('Needs attention');
