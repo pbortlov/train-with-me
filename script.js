@@ -1646,11 +1646,12 @@ function valueOf(id) {
 }
 
 function renderBandColorDots(selectedColor, options = {}) {
-  const { role = null, exerciseIndex = null, setIndex = null, disabled = false } = options;
+  const { role = null, blockIndex = null, exerciseIndex = null, setIndex = null, disabled = false } = options;
   return BAND_COLOR_OPTIONS.map((color) => {
     const isSelected = color === selectedColor;
     const resistanceLabel = BAND_COLOR_LABELS[color] || color;
-    const roleAttributes = role ? ` data-role="${role}" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}"` : "";
+    const blockAttribute = blockIndex === null ? "" : ` data-block-index="${blockIndex}"`;
+    const roleAttributes = role ? ` data-role="${role}"${blockAttribute} data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}"` : "";
     return `<button type="button" class="band-color-dot${isSelected ? " is-selected" : ""}" data-band-color="${color}" data-resistance-label="${resistanceLabel}" aria-label="${capitalize(color)} band, ${resistanceLabel}" title="${capitalize(color)} - ${resistanceLabel}" aria-pressed="${isSelected ? "true" : "false"}"${disabled ? " disabled" : ""}${roleAttributes}></button>`;
   }).join("");
 }
@@ -6777,6 +6778,7 @@ function renderCompletionStrengthBlocks() {
                                 <input type="hidden" value="${escapeHtml(set.bandColor || "")}" />
                                 <div class="band-color-picker${set.loadType === "band" ? "" : " is-disabled"}">${renderBandColorDots(set.bandColor || "", {
                                   role: "completion-set-band-color",
+                                  blockIndex,
                                   exerciseIndex,
                                   setIndex,
                                   disabled: set.loadType !== "band",
