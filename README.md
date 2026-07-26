@@ -118,6 +118,7 @@ The Vite/PWA architecture and compatibility contracts are documented in:
 
 - [Vite and GitHub Pages ADR](docs/decisions/0005-v1-vite-github-pages-compatibility.md)
 - [V1 backup compatibility contract](docs/compatibility/v1-backup-contract.md)
+- [Contribution workflow](CONTRIBUTING.md)
 
 The independent cloud application is maintained at
 [`pbortlov/train-with-me-cloud`](https://github.com/pbortlov/train-with-me-cloud).
