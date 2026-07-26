@@ -147,6 +147,10 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('session-detail-close-button');
     expect(script).toContain('session-action-primary');
     expect(script).toContain('session-action-danger');
+    expect(script).toContain('eventTarget.closest("[data-role]")');
+    expect(script).toContain('function renderCalendar(options = {})');
+    expect(script).toContain('const { preserveSelectedSession = false } = options;');
+    expect(script).toContain('renderCalendar({ preserveSelectedSession: true });');
     expect(script).toContain('slotDayShifts');
     expect(script).toContain('getProgramWeekIndexForDate');
     expect(script).toContain('function programOccurrenceIdentityForSession(session)');
@@ -175,7 +179,7 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.session-attention-badge');
     expect(styles).toContain('.calendar-day.has-program-week.program-week-mixed');
     expect(styles).toContain('.program-week-badge.program-week-mixed');
-    expect(script).toContain('if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId))');
+    expect(script).toContain('if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId) && !preserveSelectedSession)');
     expect(styles).toContain('.session-detail-close-button');
     expect(styles).toContain('.session-action-primary');
     expect(styles).toContain('.session-action-danger');
