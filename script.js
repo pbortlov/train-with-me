@@ -3941,10 +3941,11 @@ function renderPlannerSummary() {
   `;
 }
 
-function renderCalendar() {
+function renderCalendar(options = {}) {
   if (!calendarGridEl || !calendarWeekLabelEl) {
     return;
   }
+  const { preserveSelectedSession = false } = options;
   const weekDates = getWeekDates(uiSettings.currentWeekStart);
   const weekSessions = getPlannedSessionsForWeek(uiSettings.currentWeekStart);
   const weekWorkouts = getStandaloneWorkoutsForWeek(uiSettings.currentWeekStart);
@@ -3952,7 +3953,7 @@ function renderCalendar() {
   const programWeekMap = buildCalendarProgramWeekMap(weekDates);
   const orderedWeekSessions = [...weekSessions].sort((left, right) => left.date.localeCompare(right.date));
   const availableSessionIds = new Set(weekSessions.map((session) => session.id));
-  if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId)) {
+  if (selectedCalendarSessionId && !availableSessionIds.has(selectedCalendarSessionId) && !preserveSelectedSession) {
     selectedCalendarSessionId = "";
   }
   calendarWeekLabelEl.textContent = `Week of ${formatHumanDate(weekDates[0])} to ${formatHumanDate(weekDates[6])}`;
@@ -4525,7 +4526,11 @@ function getPlannedSprintReferenceTime(block) {
 }
 
 function handleCalendarAction(event) {
-  const target = event.target;
+  const eventTarget = event.target;
+  if (!(eventTarget instanceof HTMLElement)) {
+    return;
+  }
+  const target = eventTarget.closest("[data-role]");
   if (!(target instanceof HTMLElement)) {
     return;
   }
@@ -4619,7 +4624,7 @@ function handleCalendarSessionDialogClick(event) {
 
 function openCalendarSessionDialog(sessionId) {
   selectedCalendarSessionId = sessionId;
-  renderCalendar();
+  renderCalendar({ preserveSelectedSession: true });
   renderCalendarSessionDetail();
   if (!calendarSessionDialog) {
     return;
