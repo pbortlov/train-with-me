@@ -9,6 +9,10 @@ import {
 } from "./src/domain/run";
 import {
   normalizeSprintSets as normalizeSprintSetsCore,
+  normalizeSprintProfile as normalizeSprintProfileCore,
+  normalizeSprintSlope as normalizeSprintSlopeCore,
+  normalizeSprintSurface as normalizeSprintSurfaceCore,
+  normalizeSprintText as normalizeSprintTextCore,
   normalizeStrengthExercises as normalizeStrengthExercisesCore,
 } from "./src/domain/normalization";
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
@@ -91,6 +95,9 @@ const activityFieldGroups = document.querySelectorAll(".activity-fields");
 const addSprintSetButton = document.getElementById("add-sprint-set");
 const sprintSetsList = document.getElementById("sprint-sets-list");
 const sprintFeelingInput = document.getElementById("sprint-feeling");
+const sprintProfileInput = document.getElementById("sprint-profile");
+const sprintProfileCustomInput = document.getElementById("sprint-profile-custom");
+const sprintProfileCustomField = document.getElementById("sprint-profile-custom-field");
 const addStrengthSetButton = document.getElementById("add-strength-set");
 const addStrengthExerciseButton = document.getElementById("add-strength-exercise");
 const currentStrengthSetsList = document.getElementById("current-strength-sets");
@@ -145,6 +152,13 @@ const editTimeInput = document.getElementById("edit-time");
 const editPaceInput = document.getElementById("edit-pace");
 const editSprintSetsInput = document.getElementById("edit-sprint-sets");
 const editSprintFeelingInput = document.getElementById("edit-sprint-feeling");
+const editSprintProfileInput = document.getElementById("edit-sprint-profile");
+const editSprintProfileCustomInput = document.getElementById("edit-sprint-profile-custom");
+const editSprintProfileCustomField = document.getElementById("edit-sprint-profile-custom-field");
+const editSprintSurfaceInput = document.getElementById("edit-sprint-surface");
+const editSprintSlopeInput = document.getElementById("edit-sprint-slope");
+const editSprintWarmupCompletedInput = document.getElementById("edit-sprint-warmup-completed");
+const editSprintWarmupNoteInput = document.getElementById("edit-sprint-warmup-note");
 const editExerciseNameInput = document.getElementById("edit-exercise-name");
 const editStrengthRepsInput = document.getElementById("edit-strength-reps");
 const editStrengthLoadTypeInput = document.getElementById("edit-strength-load-type");
@@ -215,6 +229,11 @@ const plannedSprintRepsInput = document.getElementById("planned-sprint-reps");
 const plannedSprintDistanceInput = document.getElementById("planned-sprint-distance");
 const plannedSprintTargetTimeInput = document.getElementById("planned-sprint-target-time");
 const plannedSprintRestInput = document.getElementById("planned-sprint-rest");
+const plannedSprintProfileInput = document.getElementById("planned-sprint-profile");
+const plannedSprintProfileCustomInput = document.getElementById("planned-sprint-profile-custom");
+const plannedSprintProfileCustomField = document.getElementById("planned-sprint-profile-custom-field");
+const plannedSprintSurfaceInput = document.getElementById("planned-sprint-surface");
+const plannedSprintSlopeInput = document.getElementById("planned-sprint-slope");
 const addPlannedSprintBlockButton = document.getElementById("add-planned-sprint-block");
 const plannedSprintBlocksListEl = document.getElementById("planned-sprint-blocks-list");
 const plannedSessionStatusEl = document.getElementById("planned-session-status");
@@ -274,6 +293,9 @@ const completionRunPaceInput = document.getElementById("completion-run-pace");
 const completionSprintFields = document.getElementById("completion-sprint-fields");
 const completionSprintBlocksEl = document.getElementById("completion-sprint-blocks");
 const completionSprintFeelingInput = document.getElementById("completion-sprint-feeling");
+const completionSprintContextEl = document.getElementById("completion-sprint-context");
+const completionSprintWarmupCompletedInput = document.getElementById("completion-sprint-warmup-completed");
+const completionSprintWarmupNoteInput = document.getElementById("completion-sprint-warmup-note");
 const completionStrengthFields = document.getElementById("completion-strength-fields");
 const completionStrengthBlocksEl = document.getElementById("completion-strength-blocks");
 const completionNoteInput = document.getElementById("completion-note");
@@ -295,6 +317,14 @@ const SPRINT_FEELING_OPTIONS = [
   { value: "flat", label: "Flat 🪫" },
   { value: "sluggish", label: "Sluggish 🐢" },
   { value: "pain", label: "Pain ⚠️" },
+];
+const SPRINT_PROFILE_OPTIONS = [
+  { value: "acceleration", label: "Acceleration", description: "First-step, chase, and short-space speed." },
+  { value: "max-velocity", label: "Max velocity", description: "Top-speed exposure after acceleration." },
+  { value: "speed-endurance", label: "Speed endurance", description: "Sustain high speed over longer efforts." },
+  { value: "repeat-sprint", label: "Repeat sprint", description: "Repeated high-intensity efforts with incomplete recovery." },
+  { value: "hill-sprint", label: "Hill sprint", description: "Resisted acceleration or conditioning; use slope to record terrain." },
+  { value: "custom", label: "Custom", description: "Your own named sprint session." },
 ];
 const GOAL_VERSION = 2;
 
@@ -422,6 +452,12 @@ workoutForm.addEventListener("submit", (event) => {
     pace: selectedActivity === "run" ? runPace : toNumberOrNull(valueOf("pace")),
     sprintSets: selectedActivity === "sprint" ? normalizeSprintSets(draftSprintSets) : [],
     sprintFeeling: selectedActivity === "sprint" ? sprintFeelingInput?.value || "" : "",
+    sprintProfile: selectedActivity === "sprint" ? normalizeSprintProfile(sprintProfileInput?.value) : "",
+    sprintProfileCustom: selectedActivity === "sprint" ? normalizeSprintText(sprintProfileCustomInput?.value) : "",
+    sprintSurface: selectedActivity === "sprint" ? normalizeSprintSurface(valueOf("sprint-surface")) : "",
+    sprintSlope: selectedActivity === "sprint" ? normalizeSprintSlope(valueOf("sprint-slope")) : "",
+    sprintWarmupCompleted: selectedActivity === "sprint" && Boolean(document.getElementById("sprint-warmup-completed")?.checked),
+    sprintWarmupNote: selectedActivity === "sprint" ? normalizeSprintText(valueOf("sprint-warmup-note")) : "",
     notes: valueOf("notes")?.trim() || "",
     createdAt: Date.now(),
   };
@@ -468,6 +504,16 @@ workoutForm.addEventListener("submit", (event) => {
 activityInput.addEventListener("change", () => {
   updateVisibleFields();
   syncLoggingActivityButtons();
+});
+
+addSafeEventListener(sprintProfileInput, "change", () => {
+  syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
+});
+addSafeEventListener(editSprintProfileInput, "change", () => {
+  syncSprintProfileCustomField(editSprintProfileInput, editSprintProfileCustomField);
+});
+addSafeEventListener(plannedSprintProfileInput, "change", () => {
+  syncSprintProfileCustomField(plannedSprintProfileInput, plannedSprintProfileCustomField);
 });
 dateInput.addEventListener("change", syncLogDateButtons);
 logActivityButtons.forEach((button) => {
@@ -2072,6 +2118,17 @@ function openEditWorkoutDialog(workoutId) {
   if (editSprintFeelingInput) {
     editSprintFeelingInput.value = workout.sprintFeeling || "";
   }
+  if (editSprintProfileInput) {
+    editSprintProfileInput.value = normalizeSprintProfile(workout.sprintProfile);
+  }
+  if (editSprintProfileCustomInput) {
+    editSprintProfileCustomInput.value = workout.sprintProfileCustom || "";
+  }
+  if (editSprintSurfaceInput) editSprintSurfaceInput.value = normalizeSprintSurface(workout.sprintSurface);
+  if (editSprintSlopeInput) editSprintSlopeInput.value = normalizeSprintSlope(workout.sprintSlope);
+  if (editSprintWarmupCompletedInput) editSprintWarmupCompletedInput.checked = Boolean(workout.sprintWarmupCompleted);
+  if (editSprintWarmupNoteInput) editSprintWarmupNoteInput.value = workout.sprintWarmupNote || "";
+  syncSprintProfileCustomField(editSprintProfileInput, editSprintProfileCustomField);
   editDraftStrengthExercises = normalizeStrengthExercises(workout.strengthExercises);
   editDraftCurrentStrengthSets = [];
   if (editExerciseNameInput) {
@@ -2147,6 +2204,12 @@ function saveEditedWorkout() {
       pace: editPaceInput.value,
       sprintSets: parseSprintSetsFromEditor(editSprintSetsInput.value),
       sprintFeeling: existingWorkout.activity === "sprint" ? editSprintFeelingInput?.value || "" : "",
+      sprintProfile: existingWorkout.activity === "sprint" ? normalizeSprintProfile(editSprintProfileInput?.value) : "",
+      sprintProfileCustom: existingWorkout.activity === "sprint" ? normalizeSprintText(editSprintProfileCustomInput?.value) : "",
+      sprintSurface: existingWorkout.activity === "sprint" ? normalizeSprintSurface(editSprintSurfaceInput?.value) : "",
+      sprintSlope: existingWorkout.activity === "sprint" ? normalizeSprintSlope(editSprintSlopeInput?.value) : "",
+      sprintWarmupCompleted: existingWorkout.activity === "sprint" && Boolean(editSprintWarmupCompletedInput?.checked),
+      sprintWarmupNote: existingWorkout.activity === "sprint" ? normalizeSprintText(editSprintWarmupNoteInput?.value) : "",
       strengthExercises: editDraftStrengthExercises,
     });
     if (normalized.activity === "run" && (!isNumber(normalized.distance) || normalized.distance <= 0 || !normalized.time || !isNumber(normalized.pace))) {
@@ -2197,6 +2260,7 @@ function resetWorkoutForm() {
   renderCurrentStrengthSets();
   renderStrengthExercises();
   renderSprintSets();
+  syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
   updateVisibleFields();
   syncLogDateButtons();
   clearFieldError(runDistanceInput);
@@ -3399,9 +3463,49 @@ function normalizeSprintSets(sprintSets) {
   return normalizeSprintSetsCore(sprintSets);
 }
 
+function normalizeSprintProfile(value) {
+  return normalizeSprintProfileCore(value);
+}
+
+function normalizeSprintSurface(value) {
+  return normalizeSprintSurfaceCore(value);
+}
+
+function normalizeSprintSlope(value) {
+  return normalizeSprintSlopeCore(value);
+}
+
+function normalizeSprintText(value) {
+  return normalizeSprintTextCore(value);
+}
+
+function syncSprintProfileCustomField(profileInput, customField) {
+  if (!customField) return;
+  customField.classList.toggle("is-hidden", profileInput?.value !== "custom");
+}
+
 function formatSprintFeeling(value) {
   const option = SPRINT_FEELING_OPTIONS.find((item) => item.value === value);
   return option ? option.label : "";
+}
+
+function formatSprintContext(context) {
+  const profile = SPRINT_PROFILE_OPTIONS.find((option) => option.value === normalizeSprintProfile(context?.sprintProfile));
+  const customProfile = normalizeSprintText(context?.sprintProfileCustom);
+  const surfaceLabels = {
+    "natural-grass": "Natural grass / field",
+    "artificial-turf": "Artificial turf / 3G",
+    "hybrid-grass": "Hybrid grass",
+    "synthetic-track": "Synthetic track / tartan",
+    "indoor-synthetic-track": "Indoor synthetic track",
+    other: "Other surface",
+  };
+  const slopeLabels = { flat: "Flat", uphill: "Uphill", downhill: "Downhill" };
+  return [
+    customProfile || profile?.label || "Unclassified",
+    surfaceLabels[normalizeSprintSurface(context?.sprintSurface)] || "Unknown surface",
+    slopeLabels[normalizeSprintSlope(context?.sprintSlope)] || "Unknown slope",
+  ].join(" • ");
 }
 
 function sprintBestTime(workout) {
@@ -3465,6 +3569,12 @@ function normalizeImportedWorkout(workout) {
     pace: normalizedPace,
     sprintSets: normalizeSprintSets(workout.sprintSets),
     sprintFeeling: typeof workout.sprintFeeling === "string" ? workout.sprintFeeling : "",
+    sprintProfile: normalizeSprintProfile(workout.sprintProfile),
+    sprintProfileCustom: normalizeSprintText(workout.sprintProfileCustom),
+    sprintSurface: normalizeSprintSurface(workout.sprintSurface),
+    sprintSlope: normalizeSprintSlope(workout.sprintSlope),
+    sprintWarmupCompleted: Boolean(workout.sprintWarmupCompleted),
+    sprintWarmupNote: normalizeSprintText(workout.sprintWarmupNote),
     notes: typeof workout.notes === "string" ? workout.notes : "",
     createdAt: isNumber(workout.createdAt) ? workout.createdAt : Date.now(),
   };
@@ -4373,6 +4483,7 @@ function resetPlannedSessionForm() {
   plannedSessionIdInput.value = "";
   plannedSessionDateInput.value = formatDateInput(new Date());
   plannedSessionTypeInput.value = "run";
+  syncSprintProfileCustomField(plannedSprintProfileInput, plannedSprintProfileCustomField);
   updatePlannedTypeFields();
   plannedSessionStatusEl.textContent = "";
   renderPlannedSprintBlocks();
@@ -4396,6 +4507,10 @@ function savePlannedSessionFromForm(event) {
         }
       : {
           blocks: normalizePlannedSprintBlocks(draftPlannedSprintBlocks),
+          sprintProfile: normalizeSprintProfile(plannedSprintProfileInput?.value),
+          sprintProfileCustom: normalizeSprintText(plannedSprintProfileCustomInput?.value),
+          sprintSurface: normalizeSprintSurface(plannedSprintSurfaceInput?.value),
+          sprintSlope: normalizeSprintSlope(plannedSprintSlopeInput?.value),
         },
   };
 
@@ -4989,6 +5104,11 @@ function fillPlannedSessionForm(session) {
     plannedRunPaceInput.value = isNumber(session.details?.paceGoal) ? formatGoalPace(session.details.paceGoal) : "";
   } else {
     draftPlannedSprintBlocks = normalizePlannedSprintBlocks(session.details?.blocks || []);
+    if (plannedSprintProfileInput) plannedSprintProfileInput.value = normalizeSprintProfile(session.details?.sprintProfile);
+    if (plannedSprintProfileCustomInput) plannedSprintProfileCustomInput.value = session.details?.sprintProfileCustom || "";
+    if (plannedSprintSurfaceInput) plannedSprintSurfaceInput.value = normalizeSprintSurface(session.details?.sprintSurface);
+    if (plannedSprintSlopeInput) plannedSprintSlopeInput.value = normalizeSprintSlope(session.details?.sprintSlope);
+    syncSprintProfileCustomField(plannedSprintProfileInput, plannedSprintProfileCustomField);
     renderPlannedSprintBlocks();
   }
   updatePlannedTypeFields();
@@ -6515,6 +6635,15 @@ function openCompletionDialog(session) {
     if (completionSprintFeelingInput) {
       completionSprintFeelingInput.value = session.actual?.feeling || "";
     }
+    if (completionSprintContextEl) {
+      completionSprintContextEl.textContent = formatSprintContext(session.details);
+    }
+    if (completionSprintWarmupCompletedInput) {
+      completionSprintWarmupCompletedInput.checked = Boolean(session.actual?.warmupCompleted);
+    }
+    if (completionSprintWarmupNoteInput) {
+      completionSprintWarmupNoteInput.value = session.actual?.warmupNote || "";
+    }
     renderCompletionSprintBlocks();
   }
   if (session.type === "strength") {
@@ -7078,6 +7207,8 @@ function saveCompletedSession(event) {
       actual = {
         sprintSets,
         feeling: completionSprintFeelingInput?.value || "",
+        warmupCompleted: Boolean(completionSprintWarmupCompletedInput?.checked),
+        warmupNote: normalizeSprintText(completionSprintWarmupNoteInput?.value),
       };
     }
     if (session.type === "strength") {
@@ -7176,6 +7307,12 @@ function createWorkoutFromPlannedSession(session, actual, modificationNote) {
       activity: "sprint",
       sprintSets: actual.sprintSets,
       sprintFeeling: actual.feeling || "",
+      sprintProfile: normalizeSprintProfile(session.details?.sprintProfile),
+      sprintProfileCustom: normalizeSprintText(session.details?.sprintProfileCustom),
+      sprintSurface: normalizeSprintSurface(session.details?.sprintSurface),
+      sprintSlope: normalizeSprintSlope(session.details?.sprintSlope),
+      sprintWarmupCompleted: Boolean(actual.warmupCompleted),
+      sprintWarmupNote: normalizeSprintText(actual.warmupNote),
       distance: null,
       time: null,
       pace: null,
@@ -8213,6 +8350,10 @@ function normalizePlannedDetails(type, details) {
       blocks: Array.isArray(details?.blocks)
         ? normalizePlannedSprintBlocks(details.blocks)
         : [],
+      sprintProfile: normalizeSprintProfile(details?.sprintProfile),
+      sprintProfileCustom: normalizeSprintText(details?.sprintProfileCustom),
+      sprintSurface: normalizeSprintSurface(details?.sprintSurface),
+      sprintSlope: normalizeSprintSlope(details?.sprintSlope),
     };
   }
   return {

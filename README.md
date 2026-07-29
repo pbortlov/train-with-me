@@ -35,7 +35,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions, plus a week-launchpad header and a compact next-up/progress strip
 - Completed planned sessions can be edited after `Log & Complete` to correct weights, reps, sets, times, or notes
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
-- Sprint logging and sprint workout editing include a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
+- Sprint logging and sprint workout editing include a warm-up check/note, session profile, surface, slope, and a feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
+- Sprint logging explains the rugby session profiles, surface/slope meanings, and post-session feeling emojis so athletes do not have to guess
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
@@ -111,6 +112,7 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0008-strength-insights-summary-metrics.md](docs/decisions/0008-strength-insights-summary-metrics.md)
 - [docs/decisions/0009-running-insights-summary-metrics.md](docs/decisions/0009-running-insights-summary-metrics.md)
 - [docs/decisions/0010-sprint-insights-summary-metrics.md](docs/decisions/0010-sprint-insights-summary-metrics.md)
+- [docs/decisions/0018-sprint-session-context.md](docs/decisions/0018-sprint-session-context.md)
 - [docs/decisions/0011-local-first-onboarding-and-backup-ux.md](docs/decisions/0011-local-first-onboarding-and-backup-ux.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 

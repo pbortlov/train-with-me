@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { normalizeSprintSets, normalizeStrengthExercises } from "../src/domain/normalization";
+import {
+  normalizeSprintProfile,
+  normalizeSprintSlope,
+  normalizeSprintSurface,
+  normalizeSprintText,
+  normalizeSprintSets,
+  normalizeStrengthExercises,
+} from "../src/domain/normalization";
 
 describe("workout normalization", () => {
   it("filters invalid sprint sets and restores order", () => {
@@ -33,5 +40,15 @@ describe("workout normalization", () => {
         ],
       },
     ]);
+  });
+
+  it("keeps only supported sprint context values while preserving optional text", () => {
+    expect(normalizeSprintProfile("acceleration")).toBe("acceleration");
+    expect(normalizeSprintProfile("unknown")).toBe("");
+    expect(normalizeSprintSurface("synthetic-track")).toBe("synthetic-track");
+    expect(normalizeSprintSurface("sand")).toBe("");
+    expect(normalizeSprintSlope("uphill")).toBe("uphill");
+    expect(normalizeSprintSlope("sideways")).toBe("");
+    expect(normalizeSprintText("  Warm-up drills  ")).toBe("Warm-up drills");
   });
 });

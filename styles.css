@@ -918,6 +918,48 @@ textarea:focus-visible {
   color: var(--muted);
 }
 
+.sprint-setup,
+.sprint-warmup {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.9rem 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: rgb(255 255 255 / 3%);
+}
+
+.sprint-setup h4,
+.sprint-warmup h4 {
+  margin: 0;
+}
+
+.sprint-legend {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sprint-legend ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.sprint-feeling-legend {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.check-label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-weight: 700;
+}
+
 .detail-list {
   margin: 0.5rem 0 0;
   padding-left: 1.15rem;
