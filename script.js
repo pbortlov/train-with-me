@@ -62,6 +62,7 @@ import {
 } from "./src/domain/program-template-export";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
+import { buildSprintPerformance, listSprintDistances, listSprintProfileOptions } from "./src/domain/sprint-performance";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
@@ -122,6 +123,17 @@ const runningInsightsBodyEl = document.getElementById("running-insights-body");
 const sprintInsightsSummaryEl = document.getElementById("sprint-insights-summary");
 const sprintInsightsDetailsEl = document.getElementById("sprint-insights-details");
 const sprintInsightsBodyEl = document.getElementById("sprint-insights-body");
+const openSprintPerformanceButton = document.getElementById("open-sprint-performance");
+const sprintPerformanceDialog = document.getElementById("sprint-performance-dialog");
+const closeSprintPerformanceButton = document.getElementById("close-sprint-performance");
+const sprintPerformanceProfileInput = document.getElementById("sprint-performance-profile");
+const sprintPerformanceDistanceInput = document.getElementById("sprint-performance-distance");
+const sprintPerformanceSurfaceInput = document.getElementById("sprint-performance-surface");
+const sprintPerformanceSlopeInput = document.getElementById("sprint-performance-slope");
+const sprintPerformanceStatusEl = document.getElementById("sprint-performance-status");
+const sprintPerformanceSummaryEl = document.getElementById("sprint-performance-summary");
+const sprintPerformanceSessionsEl = document.getElementById("sprint-performance-sessions");
+const sprintPerformanceChartCanvas = document.getElementById("sprint-performance-chart");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
 const runPaceInput = document.getElementById("pace");
@@ -357,6 +369,8 @@ let progressFilters = {
 };
 let runDistanceChart = null;
 let sprintChart = null;
+let sprintPerformanceChart = null;
+let sprintPerformanceSelection = { profileKey: "", distance: 0, surface: "all", slope: "all" };
 let programAdherenceChart = null;
 let programCompletionChart = null;
 let selectedProgramProgressInstanceId = "";
@@ -2652,6 +2666,158 @@ function renderSprintInsights() {
         )
         .join("")
     : "";
+  if (openSprintPerformanceButton) {
+    openSprintPerformanceButton.disabled = insights.workoutCount === 0;
+  }
+}
+
+function openSprintPerformanceDialog() {
+  if (!sprintPerformanceDialog || !sprintPerformanceProfileInput || !sprintPerformanceDistanceInput) {
+    return;
+  }
+  syncSprintPerformanceProfileOptions();
+  syncSprintPerformanceDistanceOptions();
+  renderSprintPerformance();
+  if (typeof sprintPerformanceDialog.showModal === "function") {
+    sprintPerformanceDialog.showModal();
+  } else {
+    sprintPerformanceDialog.setAttribute("open", "true");
+  }
+}
+
+function closeSprintPerformanceDialog() {
+  if (!sprintPerformanceDialog) return;
+  if (typeof sprintPerformanceDialog.close === "function") {
+    sprintPerformanceDialog.close();
+  } else {
+    sprintPerformanceDialog.removeAttribute("open");
+  }
+}
+
+function syncSprintPerformanceProfileOptions() {
+  if (!sprintPerformanceProfileInput) return;
+  const profiles = listSprintProfileOptions(workouts);
+  if (!profiles.some((profile) => profile.key === sprintPerformanceSelection.profileKey)) {
+    sprintPerformanceSelection.profileKey = profiles[0]?.key || "";
+  }
+  sprintPerformanceProfileInput.innerHTML = profiles.length
+    ? profiles.map((profile) => `<option value="${escapeHtml(profile.key)}">${escapeHtml(profile.label)}</option>`).join("")
+    : '<option value="">No sprint profiles yet</option>';
+  sprintPerformanceProfileInput.value = sprintPerformanceSelection.profileKey;
+}
+
+function syncSprintPerformanceDistanceOptions() {
+  if (!sprintPerformanceDistanceInput) return;
+  const distances = listSprintDistances(workouts, sprintPerformanceSelection.profileKey);
+  if (!distances.includes(sprintPerformanceSelection.distance)) {
+    sprintPerformanceSelection.distance = distances[0] || 0;
+  }
+  sprintPerformanceDistanceInput.innerHTML = distances.length
+    ? distances.map((distance) => `<option value="${distance}">${formatNumber(distance)} m</option>`).join("")
+    : '<option value="0">No distances yet</option>';
+  sprintPerformanceDistanceInput.value = String(sprintPerformanceSelection.distance);
+}
+
+function renderSprintPerformance() {
+  if (!sprintPerformanceStatusEl || !sprintPerformanceSummaryEl || !sprintPerformanceSessionsEl) return;
+  const model = buildSprintPerformance(workouts, sprintPerformanceSelection);
+  const latestChange = model.latest && model.previous ? model.latest.bestTime - model.previous.bestTime : null;
+  sprintPerformanceSummaryEl.innerHTML = model.latest
+    ? `
+      <article class="badge"><span class="label">Latest best</span><span class="value">${formatNumber(model.latest.bestTime)} s</span></article>
+      <article class="badge"><span class="label">Vs previous</span><span class="value ${latestChange != null && latestChange < 0 ? "is-improved" : ""}">${formatSprintTimeChange(latestChange)}</span></article>
+      <article class="badge"><span class="label">All-time best</span><span class="value">${formatNumber(model.allTimeBest?.bestTime)} s</span></article>
+    `
+    : "";
+  sprintPerformanceStatusEl.textContent = !model.sessions.length
+    ? "No valid sprint sessions match this profile, distance, surface, and slope."
+    : model.contextIsMixed
+      ? "Mixed surface or slope context: use the filters to make a like-for-like comparison."
+      : "Session-best times only. Lower is faster.";
+  sprintPerformanceSessionsEl.innerHTML = model.sessions.length
+    ? model.sessions
+        .slice()
+        .reverse()
+        .map((session) => `
+          <tr>
+            <td>${escapeHtml(session.date)}</td>
+            <td>${formatNumber(session.bestTime)} s</td>
+            <td>${session.repCount}</td>
+            <td>${escapeHtml(formatSprintSurface(session.surface))}</td>
+            <td>${escapeHtml(formatSprintSlope(session.slope))}</td>
+          </tr>`)
+        .join("")
+    : '<tr><td colspan="5">No matching session-best data.</td></tr>';
+  sprintPerformanceChart = createOrUpdateSprintPerformanceChart(sprintPerformanceChart, sprintPerformanceChartCanvas, model.sessions);
+}
+
+function formatSprintTimeChange(value) {
+  if (!isNumber(value)) return "—";
+  const sign = value < 0 ? "" : value > 0 ? "+" : "";
+  return `${sign}${formatNumber(value)} s`;
+}
+
+function formatSprintSurface(value) {
+  return {
+    "natural-grass": "Natural grass / field",
+    "artificial-turf": "Artificial turf / 3G",
+    "hybrid-grass": "Hybrid grass",
+    "synthetic-track": "Synthetic track / tartan",
+    "indoor-synthetic-track": "Indoor synthetic track",
+    other: "Other surface",
+    unknown: "Unknown surface",
+  }[value] || "Unknown surface";
+}
+
+function formatSprintSlope(value) {
+  return { flat: "Flat", uphill: "Uphill", downhill: "Downhill", unknown: "Unknown slope" }[value] || "Unknown slope";
+}
+
+function createOrUpdateSprintPerformanceChart(existingChart, canvas, sessions) {
+  if (!canvas) return existingChart;
+  if (existingChart) existingChart.destroy();
+  if (!sessions.length) return null;
+  const points = sessions.map((session, index) => ({
+    x: `${session.date}:${index + 1}`,
+    y: session.bestTime,
+    xLabel: session.date,
+    tooltip: `${session.date} • best ${formatNumber(session.bestTime)} sec • ${session.repCount} rep${session.repCount === 1 ? "" : "s"} • ${formatSprintSurface(session.surface)} • ${formatSprintSlope(session.slope)}`,
+  }));
+  sizeActivityChartCanvas(canvas, points);
+  return new Chart(canvas, {
+    type: "line",
+    data: {
+      datasets: [{
+        label: "Session best",
+        data: points,
+        borderColor: "#ffd84d",
+        backgroundColor: "#ffd84d33",
+        pointBackgroundColor: "#ffd84d",
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.2,
+      }],
+    },
+    options: {
+      parsing: { xAxisKey: "x", yAxisKey: "y" },
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label(context) { return context.raw?.tooltip || ""; } } },
+      },
+      scales: {
+        x: {
+          type: "category",
+          ticks: { autoSkip: false, maxRotation: 60, minRotation: 45, font: { size: 9 }, callback(value) {
+            const matchingPoint = points.find((point) => point.x === this.getLabelForValue(value));
+            return matchingPoint?.xLabel || this.getLabelForValue(value);
+          } },
+        },
+        y: { title: { display: true, text: "sec (lower is faster)" }, ...activityChartSprintSecondBounds(points) },
+      },
+    },
+  });
 }
 
 function formatSprintFeelingCounts(counts) {
@@ -3723,6 +3889,28 @@ function bindV2Events() {
     render();
   });
   addSafeEventListener(plannedSessionTypeInput, "change", updatePlannedTypeFields);
+  addSafeEventListener(openSprintPerformanceButton, "click", openSprintPerformanceDialog);
+  addSafeEventListener(closeSprintPerformanceButton, "click", closeSprintPerformanceDialog);
+  addSafeEventListener(sprintPerformanceDialog, "click", (event) => {
+    if (event.target === sprintPerformanceDialog) closeSprintPerformanceDialog();
+  });
+  addSafeEventListener(sprintPerformanceProfileInput, "change", () => {
+    sprintPerformanceSelection.profileKey = sprintPerformanceProfileInput.value;
+    syncSprintPerformanceDistanceOptions();
+    renderSprintPerformance();
+  });
+  addSafeEventListener(sprintPerformanceDistanceInput, "change", () => {
+    sprintPerformanceSelection.distance = Number(sprintPerformanceDistanceInput.value);
+    renderSprintPerformance();
+  });
+  addSafeEventListener(sprintPerformanceSurfaceInput, "change", () => {
+    sprintPerformanceSelection.surface = sprintPerformanceSurfaceInput.value || "all";
+    renderSprintPerformance();
+  });
+  addSafeEventListener(sprintPerformanceSlopeInput, "change", () => {
+    sprintPerformanceSelection.slope = sprintPerformanceSlopeInput.value || "all";
+    renderSprintPerformance();
+  });
   addSafeEventListener(plannedSessionForm, "submit", savePlannedSessionFromForm);
   addSafeEventListener(cancelPlannedSessionButton, "click", resetPlannedSessionForm);
   addSafeEventListener(addPlannedSprintBlockButton, "click", addPlannedSprintBlock);

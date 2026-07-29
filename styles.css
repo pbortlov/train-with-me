@@ -739,6 +739,40 @@ body {
     #081121;
 }
 
+.sprint-performance-open {
+  width: fit-content;
+}
+
+#sprint-performance-dialog {
+  width: min(96vw, 900px);
+  max-width: 900px;
+}
+
+.sprint-performance-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.sprint-performance-header h2,
+.sprint-performance-chart-card h3 {
+  margin: 0;
+}
+
+.sprint-performance-controls {
+  margin-bottom: 0.5rem;
+}
+
+.sprint-performance-chart-card {
+  margin: 1rem 0;
+}
+
+.is-improved {
+  color: #6dff5c;
+}
+
 .strength-insights-details {
   display: grid;
   gap: 0.5rem;
@@ -3773,6 +3807,11 @@ textarea {
 }
 
 @media (max-width: 640px) {
+  .sprint-performance-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .app-header-top,
   .calendar-toolbar {
     flex-direction: column;

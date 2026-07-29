@@ -15,6 +15,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength Insights for strength workout count, exercise coverage, load mix, top kg lift, and most trained exercises
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
 - Sprint Insights for sprint workouts, rep volume, distance-specific bests, fastest rep, and feeling mix
+- Sprint Performance dialog for like-for-like session-best progression by sprint profile and distance, with surface and slope filters
 - Local-first onboarding, keyboard skip link, and backup safety guidance
 - Today-first quick navigation with Calendar for weekly planning and Stats for quick progress checks
 - Manual planned sessions for:
@@ -113,6 +114,7 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0009-running-insights-summary-metrics.md](docs/decisions/0009-running-insights-summary-metrics.md)
 - [docs/decisions/0010-sprint-insights-summary-metrics.md](docs/decisions/0010-sprint-insights-summary-metrics.md)
 - [docs/decisions/0018-sprint-session-context.md](docs/decisions/0018-sprint-session-context.md)
+- [docs/decisions/0019-sprint-performance-comparison.md](docs/decisions/0019-sprint-performance-comparison.md)
 - [docs/decisions/0011-local-first-onboarding-and-backup-ux.md](docs/decisions/0011-local-first-onboarding-and-backup-ux.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 

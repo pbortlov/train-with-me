@@ -764,6 +764,7 @@
           <h3>Sprint</h3>
           <p class="hint">Best reps, sprint volume, and feeling mix.</p>
           <div id="sprint-insights-summary" class="summary"></div>
+          <button type="button" id="open-sprint-performance" class="ghost-button sprint-performance-open">View Sprint Performance</button>
           <details class="stats-insight-details">
             <summary>Sprint details</summary>
             <div id="sprint-insights-details" class="strength-insights-details"></div>
@@ -850,6 +851,67 @@
           </div>
         </article>
       </section>
+
+      <dialog id="sprint-performance-dialog" aria-labelledby="sprint-performance-heading">
+        <header class="sprint-performance-header">
+          <div>
+            <p class="today-eyebrow">Sprint analysis</p>
+            <h2 id="sprint-performance-heading">Sprint Performance</h2>
+            <p class="hint">Compare session-best times only within the same profile and distance.</p>
+          </div>
+          <button type="button" id="close-sprint-performance" class="ghost-button" aria-label="Close Sprint Performance">Close</button>
+        </header>
+        <div class="grid sprint-performance-controls">
+          <label>
+            Session profile
+            <select id="sprint-performance-profile"></select>
+          </label>
+          <label>
+            Sprint distance
+            <select id="sprint-performance-distance"></select>
+          </label>
+          <label>
+            Surface
+            <select id="sprint-performance-surface">
+              <option value="all">All surfaces</option>
+              <option value="natural-grass">Natural grass / field</option>
+              <option value="artificial-turf">Artificial turf / 3G</option>
+              <option value="hybrid-grass">Hybrid grass</option>
+              <option value="synthetic-track">Synthetic track / tartan</option>
+              <option value="indoor-synthetic-track">Indoor synthetic track</option>
+              <option value="other">Other</option>
+              <option value="unknown">Unknown surface</option>
+            </select>
+          </label>
+          <label>
+            Slope
+            <select id="sprint-performance-slope">
+              <option value="all">All slopes</option>
+              <option value="flat">Flat</option>
+              <option value="uphill">Uphill</option>
+              <option value="downhill">Downhill</option>
+              <option value="unknown">Unknown slope</option>
+            </select>
+          </label>
+        </div>
+        <p id="sprint-performance-status" class="hint" aria-live="polite"></p>
+        <div id="sprint-performance-summary" class="summary"></div>
+        <article class="chart-card sprint-performance-chart-card">
+          <h3>Session-best progression</h3>
+          <p class="hint">Lower is faster. Each point is the best rep from that session at the selected distance.</p>
+          <div class="chart-viewport">
+            <canvas id="sprint-performance-chart" height="220"></canvas>
+          </div>
+        </article>
+        <div class="strength-table-viewport">
+          <table class="strength-highest-table">
+            <thead>
+              <tr><th>Date</th><th>Best</th><th>Reps</th><th>Surface</th><th>Slope</th></tr>
+            </thead>
+            <tbody id="sprint-performance-sessions"></tbody>
+          </table>
+        </div>
+      </dialog>
 
       <section class="view-panel" data-view="data">
         <article class="card data-utility-card">

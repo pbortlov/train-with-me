@@ -15,7 +15,9 @@
 ## Incremental delivery
 
 1. Capture and explain sprint context, warm-up, and feelings.
-2. Add distance/profile session-best progression.
+2. Add distance/profile session-best progression. Delivered as a focused Stats
+   dialog with all-surface/all-slope defaults, visible context badges, and no
+   cross-distance comparison.
 3. Add within-session rep consistency.
 4. Add optional actual rest per rep and evidence-based recovery guidance.
 
