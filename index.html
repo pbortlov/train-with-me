@@ -857,7 +857,7 @@
           <div>
             <p class="today-eyebrow">Sprint analysis</p>
             <h2 id="sprint-performance-heading">Sprint Performance</h2>
-            <p class="hint">Compare session-best times only within the same profile and distance.</p>
+            <p class="hint">Start broad with all profiles and distances, then choose one profile and one distance for a like-for-like trend.</p>
           </div>
           <button type="button" id="close-sprint-performance" class="ghost-button" aria-label="Close Sprint Performance">Close</button>
         </header>
@@ -896,17 +896,25 @@
         </div>
         <p id="sprint-performance-status" class="hint" aria-live="polite"></p>
         <div id="sprint-performance-summary" class="summary"></div>
-        <article class="chart-card sprint-performance-chart-card">
+        <article class="chart-card sprint-performance-chart-card" id="sprint-performance-progression">
           <h3>Session-best progression</h3>
           <p class="hint">Lower is faster. Each point is the best rep from that session at the selected distance.</p>
           <div class="chart-viewport">
             <canvas id="sprint-performance-chart" height="220"></canvas>
           </div>
         </article>
+        <article class="chart-card sprint-performance-chart-card" id="sprint-consistency-card">
+          <h3>Rep consistency</h3>
+          <p class="hint">The latest matching session is shown in rep order. Lower is faster; compare first, best, and last to spot warm-up or fatigue patterns.</p>
+          <div class="chart-viewport">
+            <canvas id="sprint-consistency-chart" height="220"></canvas>
+          </div>
+          <div id="sprint-consistency-sessions" class="sprint-consistency-sessions"></div>
+        </article>
         <div class="strength-table-viewport">
           <table class="strength-highest-table">
             <thead>
-              <tr><th>Date</th><th>Best</th><th>Reps</th><th>Surface</th><th>Slope</th></tr>
+              <tr><th>Profile</th><th>Distance</th><th>Best</th><th>Date</th><th>Surface</th><th>Slope</th></tr>
             </thead>
             <tbody id="sprint-performance-sessions"></tbody>
           </table>

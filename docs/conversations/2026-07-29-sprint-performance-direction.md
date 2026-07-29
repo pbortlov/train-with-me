@@ -18,7 +18,12 @@
 2. Add distance/profile session-best progression. Delivered as a focused Stats
    dialog with all-surface/all-slope defaults, visible context badges, and no
    cross-distance comparison.
-3. Add within-session rep consistency.
-4. Add optional actual rest per rep and evidence-based recovery guidance.
+3. Add within-session rep consistency. Delivered with an ordered latest-session
+   chart and expandable first/best/last summaries for matching sessions.
+4. Add a record explorer improvement: default to all profiles and all distances,
+   show profile-and-distance-specific bests, and require a single profile plus
+   distance only for the comparison charts. Simplify ordered rep labels so the
+   list number is not duplicated by `Rep N` text.
+5. Add optional actual rest per rep and evidence-based recovery guidance.
 
 Each step is independently testable and reversible.

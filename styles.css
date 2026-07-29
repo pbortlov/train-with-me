@@ -769,6 +769,38 @@ body {
   margin: 1rem 0;
 }
 
+.sprint-consistency-sessions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.sprint-consistency-session {
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.7rem;
+}
+
+.sprint-consistency-session summary {
+  display: grid;
+  gap: 0.3rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.sprint-consistency-session summary span:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.sprint-consistency-reps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  margin: 0.65rem 0 0;
+  padding-left: 1.2rem;
+}
+
 .is-improved {
   color: #6dff5c;
 }

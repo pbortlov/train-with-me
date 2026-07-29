@@ -62,7 +62,13 @@ import {
 } from "./src/domain/program-template-export";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
-import { buildSprintPerformance, listSprintDistances, listSprintProfileOptions } from "./src/domain/sprint-performance";
+import {
+  buildSprintPerformance,
+  buildSprintRepConsistency,
+  buildSprintRecordGroups,
+  listSprintDistances,
+  listSprintProfileOptions,
+} from "./src/domain/sprint-performance";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
@@ -134,6 +140,10 @@ const sprintPerformanceStatusEl = document.getElementById("sprint-performance-st
 const sprintPerformanceSummaryEl = document.getElementById("sprint-performance-summary");
 const sprintPerformanceSessionsEl = document.getElementById("sprint-performance-sessions");
 const sprintPerformanceChartCanvas = document.getElementById("sprint-performance-chart");
+const sprintPerformanceProgressCard = document.getElementById("sprint-performance-progression");
+const sprintConsistencyChartCanvas = document.getElementById("sprint-consistency-chart");
+const sprintConsistencySessionsEl = document.getElementById("sprint-consistency-sessions");
+const sprintConsistencyCard = document.getElementById("sprint-consistency-card");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
 const runPaceInput = document.getElementById("pace");
@@ -370,7 +380,8 @@ let progressFilters = {
 let runDistanceChart = null;
 let sprintChart = null;
 let sprintPerformanceChart = null;
-let sprintPerformanceSelection = { profileKey: "", distance: 0, surface: "all", slope: "all" };
+let sprintConsistencyChart = null;
+let sprintPerformanceSelection = { profileKey: "all", distance: 0, surface: "all", slope: "all" };
 let programAdherenceChart = null;
 let programCompletionChart = null;
 let selectedProgramProgressInstanceId = "";
@@ -2696,7 +2707,7 @@ function closeSprintPerformanceDialog() {
 
 function syncSprintPerformanceProfileOptions() {
   if (!sprintPerformanceProfileInput) return;
-  const profiles = listSprintProfileOptions(workouts);
+  const profiles = [{ key: "all", label: "All profiles" }, ...listSprintProfileOptions(workouts)];
   if (!profiles.some((profile) => profile.key === sprintPerformanceSelection.profileKey)) {
     sprintPerformanceSelection.profileKey = profiles[0]?.key || "";
   }
@@ -2709,46 +2720,75 @@ function syncSprintPerformanceProfileOptions() {
 function syncSprintPerformanceDistanceOptions() {
   if (!sprintPerformanceDistanceInput) return;
   const distances = listSprintDistances(workouts, sprintPerformanceSelection.profileKey);
-  if (!distances.includes(sprintPerformanceSelection.distance)) {
-    sprintPerformanceSelection.distance = distances[0] || 0;
+  if (sprintPerformanceSelection.distance !== 0 && !distances.includes(sprintPerformanceSelection.distance)) {
+    sprintPerformanceSelection.distance = 0;
   }
-  sprintPerformanceDistanceInput.innerHTML = distances.length
-    ? distances.map((distance) => `<option value="${distance}">${formatNumber(distance)} m</option>`).join("")
-    : '<option value="0">No distances yet</option>';
+  sprintPerformanceDistanceInput.innerHTML = [
+    '<option value="0">All distances</option>',
+    ...distances.map((distance) => `<option value="${distance}">${formatNumber(distance)} m</option>`),
+  ].join("");
   sprintPerformanceDistanceInput.value = String(sprintPerformanceSelection.distance);
 }
 
 function renderSprintPerformance() {
   if (!sprintPerformanceStatusEl || !sprintPerformanceSummaryEl || !sprintPerformanceSessionsEl) return;
   const model = buildSprintPerformance(workouts, sprintPerformanceSelection);
+  const records = buildSprintRecordGroups(workouts, sprintPerformanceSelection);
+  const hasSingleFocus = sprintPerformanceSelection.profileKey !== "all" && sprintPerformanceSelection.distance > 0;
   const latestChange = model.latest && model.previous ? model.latest.bestTime - model.previous.bestTime : null;
-  sprintPerformanceSummaryEl.innerHTML = model.latest
+  sprintPerformanceSummaryEl.innerHTML = hasSingleFocus && model.latest
     ? `
       <article class="badge"><span class="label">Latest best</span><span class="value">${formatNumber(model.latest.bestTime)} s</span></article>
       <article class="badge"><span class="label">Vs previous</span><span class="value ${latestChange != null && latestChange < 0 ? "is-improved" : ""}">${formatSprintTimeChange(latestChange)}</span></article>
       <article class="badge"><span class="label">All-time best</span><span class="value">${formatNumber(model.allTimeBest?.bestTime)} s</span></article>
     `
     : "";
-  sprintPerformanceStatusEl.textContent = !model.sessions.length
-    ? "No valid sprint sessions match this profile, distance, surface, and slope."
-    : model.contextIsMixed
-      ? "Mixed surface or slope context: use the filters to make a like-for-like comparison."
-      : "Session-best times only. Lower is faster.";
-  sprintPerformanceSessionsEl.innerHTML = model.sessions.length
-    ? model.sessions
-        .slice()
-        .reverse()
-        .map((session) => `
+  sprintPerformanceStatusEl.textContent = !records.length
+    ? "No valid sprint records match these filters."
+    : !hasSingleFocus
+      ? "Showing distance-specific records. Choose one profile and one distance to unlock like-for-like progression and rep consistency."
+      : model.contextIsMixed
+        ? "Mixed surface or slope context: use the filters to make a like-for-like comparison."
+        : "Session-best times only. Lower is faster.";
+  sprintPerformanceSessionsEl.innerHTML = records.length
+    ? records.map((record) => `
           <tr>
-            <td>${escapeHtml(session.date)}</td>
-            <td>${formatNumber(session.bestTime)} s</td>
-            <td>${session.repCount}</td>
-            <td>${escapeHtml(formatSprintSurface(session.surface))}</td>
-            <td>${escapeHtml(formatSprintSlope(session.slope))}</td>
+            <td>${escapeHtml(record.profileLabel)}</td>
+            <td>${formatNumber(record.distance)} m</td>
+            <td>${formatNumber(record.bestTime)} s</td>
+            <td>${escapeHtml(record.date)}</td>
+            <td>${escapeHtml(formatSprintSurface(record.surface))}</td>
+            <td>${escapeHtml(formatSprintSlope(record.slope))}</td>
           </tr>`)
         .join("")
-    : '<tr><td colspan="5">No matching session-best data.</td></tr>';
+    : '<tr><td colspan="6">No matching sprint records.</td></tr>';
+  sprintPerformanceProgressCard?.classList.toggle("is-hidden", !hasSingleFocus);
+  sprintConsistencyCard?.classList.toggle("is-hidden", !hasSingleFocus);
   sprintPerformanceChart = createOrUpdateSprintPerformanceChart(sprintPerformanceChart, sprintPerformanceChartCanvas, model.sessions);
+  renderSprintRepConsistency();
+}
+
+function renderSprintRepConsistency() {
+  if (!sprintConsistencySessionsEl) return;
+  const sessions = buildSprintRepConsistency(workouts, sprintPerformanceSelection);
+  const latestSession = sessions.at(-1) || null;
+  sprintConsistencyChart = createOrUpdateSprintConsistencyChart(sprintConsistencyChart, sprintConsistencyChartCanvas, latestSession);
+  sprintConsistencySessionsEl.innerHTML = sessions.length
+    ? sessions
+        .slice()
+        .reverse()
+        .map((session, index) => `
+          <details class="sprint-consistency-session" ${index === 0 ? "open" : ""}>
+            <summary>
+              <span>${escapeHtml(session.date)} · ${formatSprintSurface(session.surface)} · ${formatSprintSlope(session.slope)}</span>
+              <span>First ${formatNumber(session.firstTime)}s · Best ${formatNumber(session.bestTime)}s · Last ${formatNumber(session.lastTime)}s · ${formatSprintTimeChange(session.firstToLastChange)}</span>
+            </summary>
+            <ol class="sprint-consistency-reps">
+              ${session.reps.map((rep) => `<li><strong>${formatNumber(rep.time)} s</strong></li>`).join("")}
+            </ol>
+          </details>`)
+        .join("")
+    : '<p class="planner-empty">No matching reps to inspect yet.</p>';
 }
 
 function formatSprintTimeChange(value) {
@@ -2814,6 +2854,47 @@ function createOrUpdateSprintPerformanceChart(existingChart, canvas, sessions) {
             return matchingPoint?.xLabel || this.getLabelForValue(value);
           } },
         },
+        y: { title: { display: true, text: "sec (lower is faster)" }, ...activityChartSprintSecondBounds(points) },
+      },
+    },
+  });
+}
+
+function createOrUpdateSprintConsistencyChart(existingChart, canvas, session) {
+  if (!canvas) return existingChart;
+  if (existingChart) existingChart.destroy();
+  if (!session) return null;
+  const points = session.reps.map((rep) => ({
+    x: `Rep ${rep.order}`,
+    y: rep.time,
+    xLabel: `Rep ${rep.order}`,
+    tooltip: `${session.date} • Rep ${rep.order} • ${formatNumber(rep.time)} sec`,
+  }));
+  sizeActivityChartCanvas(canvas, points);
+  return new Chart(canvas, {
+    type: "line",
+    data: {
+      datasets: [{
+        label: "Latest session reps",
+        data: points,
+        borderColor: "#4da3ff",
+        backgroundColor: "#4da3ff33",
+        pointBackgroundColor: "#4da3ff",
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.2,
+      }],
+    },
+    options: {
+      parsing: { xAxisKey: "x", yAxisKey: "y" },
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label(context) { return context.raw?.tooltip || ""; } } },
+      },
+      scales: {
+        x: { type: "category", ticks: { autoSkip: false } },
         y: { title: { display: true, text: "sec (lower is faster)" }, ...activityChartSprintSecondBounds(points) },
       },
     },

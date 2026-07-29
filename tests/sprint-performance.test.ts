@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSprintPerformance, listSprintDistances, listSprintProfileOptions } from "../src/domain/sprint-performance";
+import {
+  buildSprintPerformance,
+  buildSprintRepConsistency,
+  buildSprintRecordGroups,
+  listSprintDistances,
+  listSprintProfileOptions,
+} from "../src/domain/sprint-performance";
 
 const workouts = [
   {
@@ -69,5 +75,45 @@ describe("sprint performance", () => {
 
     expect(model.sessions.map((session) => session.id)).toEqual(["three"]);
     expect(model.contextIsMixed).toBe(false);
+  });
+
+  it("keeps selected-distance reps in order for within-session consistency", () => {
+    const sessions = buildSprintRepConsistency(workouts, {
+      profileKey: "acceleration",
+      distance: 40,
+      surface: "natural-grass",
+      slope: "flat",
+    });
+
+    expect(sessions).toEqual([
+      {
+        id: "one",
+        date: "2026-07-01",
+        bestTime: 5.1,
+        repCount: 2,
+        surface: "natural-grass",
+        slope: "flat",
+        reps: [{ order: 1, time: 5.2 }, { order: 2, time: 5.1 }],
+        firstTime: 5.2,
+        lastTime: 5.1,
+        firstToLastChange: -0.1,
+      },
+    ]);
+  });
+
+  it("explores all profiles and distances as separate records", () => {
+    const records = buildSprintRecordGroups(workouts, {
+      profileKey: "all",
+      distance: 0,
+      surface: "all",
+      slope: "all",
+    });
+
+    expect(records).toEqual([
+      { profileKey: "acceleration", profileLabel: "Acceleration", distance: 10, bestTime: 1.9, date: "2026-07-01", surface: "natural-grass", slope: "flat" },
+      { profileKey: "acceleration", profileLabel: "Acceleration", distance: 40, bestTime: 4.95, date: "2026-07-08", surface: "synthetic-track", slope: "flat" },
+      { profileKey: "hill-sprint", profileLabel: "Hill sprint", distance: 40, bestTime: 5.5, date: "2026-07-15", surface: "natural-grass", slope: "uphill" },
+    ]);
+    expect(listSprintDistances(workouts, "all")).toEqual([10, 40]);
   });
 });
