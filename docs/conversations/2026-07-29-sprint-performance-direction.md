@@ -24,6 +24,11 @@
    show profile-and-distance-specific bests, and require a single profile plus
    distance only for the comparison charts. Simplify ordered rep labels so the
    list number is not duplicated by `Rep N` text.
-5. Add optional actual rest per rep and evidence-based recovery guidance.
+5. Replace the inline rep list with a compact mobile-friendly `Rep | Time`
+   grid so the seconds unit stays visually separated from the next rep.
+6. Make exact rep values secondary: show the chart and first/best/last summary
+   first, then a centered `Rep times (n)` disclosure with fixed two-decimal
+   seconds.
+7. Add optional actual rest per rep and evidence-based recovery guidance.
 
 Each step is independently testable and reversible.

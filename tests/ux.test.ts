@@ -23,6 +23,15 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="main-content"');
   });
 
+  it("keeps exact sprint reps as a compact optional detail list", () => {
+    expect(script).toContain('class="sprint-consistency-rep-details"');
+    expect(script).toContain("Rep times (${session.repCount})");
+    expect(script).toContain('class="sprint-consistency-rep-list"');
+    expect(script).toContain("formatSprintSeconds(rep.time)");
+    expect(styles).toContain("width: min(100%, 11rem)");
+    expect(styles).toContain("font-variant-numeric: tabular-nums");
+  });
+
   it("shows local-first onboarding and backup safety guidance", () => {
     expect(index).toContain("Train locally, protect your history");
     expect(index).toContain("Backup safety checklist");

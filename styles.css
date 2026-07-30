@@ -793,12 +793,45 @@ body {
   font-weight: 700;
 }
 
-.sprint-consistency-reps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 0.9rem;
-  margin: 0.65rem 0 0;
-  padding-left: 1.2rem;
+.sprint-consistency-rep-details {
+  width: min(100%, 11rem);
+  margin: 0.7rem auto 0;
+  text-align: center;
+}
+
+.sprint-consistency-rep-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.sprint-consistency-rep-list {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sprint-consistency-rep-list li {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr;
+  min-height: 1.8rem;
+  align-items: center;
+  border-bottom: 1px solid rgb(148 163 184 / 14%);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sprint-consistency-rep-list li:last-child {
+  border-bottom: 0;
+}
+
+.sprint-consistency-rep-list strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .is-improved {

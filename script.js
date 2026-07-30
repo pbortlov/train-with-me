@@ -2738,9 +2738,9 @@ function renderSprintPerformance() {
   const latestChange = model.latest && model.previous ? model.latest.bestTime - model.previous.bestTime : null;
   sprintPerformanceSummaryEl.innerHTML = hasSingleFocus && model.latest
     ? `
-      <article class="badge"><span class="label">Latest best</span><span class="value">${formatNumber(model.latest.bestTime)} s</span></article>
+      <article class="badge"><span class="label">Latest best</span><span class="value">${formatSprintSeconds(model.latest.bestTime)}</span></article>
       <article class="badge"><span class="label">Vs previous</span><span class="value ${latestChange != null && latestChange < 0 ? "is-improved" : ""}">${formatSprintTimeChange(latestChange)}</span></article>
-      <article class="badge"><span class="label">All-time best</span><span class="value">${formatNumber(model.allTimeBest?.bestTime)} s</span></article>
+      <article class="badge"><span class="label">All-time best</span><span class="value">${formatSprintSeconds(model.allTimeBest?.bestTime)}</span></article>
     `
     : "";
   sprintPerformanceStatusEl.textContent = !records.length
@@ -2755,7 +2755,7 @@ function renderSprintPerformance() {
           <tr>
             <td>${escapeHtml(record.profileLabel)}</td>
             <td>${formatNumber(record.distance)} m</td>
-            <td>${formatNumber(record.bestTime)} s</td>
+            <td>${formatSprintSeconds(record.bestTime)}</td>
             <td>${escapeHtml(record.date)}</td>
             <td>${escapeHtml(formatSprintSurface(record.surface))}</td>
             <td>${escapeHtml(formatSprintSlope(record.slope))}</td>
@@ -2781,11 +2781,14 @@ function renderSprintRepConsistency() {
           <details class="sprint-consistency-session" ${index === 0 ? "open" : ""}>
             <summary>
               <span>${escapeHtml(session.date)} · ${formatSprintSurface(session.surface)} · ${formatSprintSlope(session.slope)}</span>
-              <span>First ${formatNumber(session.firstTime)}s · Best ${formatNumber(session.bestTime)}s · Last ${formatNumber(session.lastTime)}s · ${formatSprintTimeChange(session.firstToLastChange)}</span>
+              <span>First ${formatSprintSeconds(session.firstTime)} · Best ${formatSprintSeconds(session.bestTime)} · Last ${formatSprintSeconds(session.lastTime)} · ${formatSprintTimeChange(session.firstToLastChange)}</span>
             </summary>
-            <ol class="sprint-consistency-reps">
-              ${session.reps.map((rep) => `<li><strong>${formatNumber(rep.time)} s</strong></li>`).join("")}
-            </ol>
+            <details class="sprint-consistency-rep-details">
+              <summary>Rep times (${session.repCount})</summary>
+              <ol class="sprint-consistency-rep-list" aria-label="${escapeHtml(session.date)} sprint rep times">
+                ${session.reps.map((rep) => `<li><span>#${rep.order}</span><strong>${formatSprintSeconds(rep.time)}</strong></li>`).join("")}
+              </ol>
+            </details>
           </details>`)
         .join("")
     : '<p class="planner-empty">No matching reps to inspect yet.</p>';
@@ -2793,8 +2796,12 @@ function renderSprintRepConsistency() {
 
 function formatSprintTimeChange(value) {
   if (!isNumber(value)) return "—";
-  const sign = value < 0 ? "" : value > 0 ? "+" : "";
-  return `${sign}${formatNumber(value)} s`;
+  const sign = value < 0 ? "-" : value > 0 ? "+" : "";
+  return `${sign}${Math.abs(value).toFixed(2)} s`;
+}
+
+function formatSprintSeconds(value) {
+  return isNumber(value) ? `${Number(value).toFixed(2)} s` : "—";
 }
 
 function formatSprintSurface(value) {
@@ -2821,7 +2828,7 @@ function createOrUpdateSprintPerformanceChart(existingChart, canvas, sessions) {
     x: `${session.date}:${index + 1}`,
     y: session.bestTime,
     xLabel: session.date,
-    tooltip: `${session.date} • best ${formatNumber(session.bestTime)} sec • ${session.repCount} rep${session.repCount === 1 ? "" : "s"} • ${formatSprintSurface(session.surface)} • ${formatSprintSlope(session.slope)}`,
+    tooltip: `${session.date} • best ${formatSprintSeconds(session.bestTime)} • ${session.repCount} rep${session.repCount === 1 ? "" : "s"} • ${formatSprintSurface(session.surface)} • ${formatSprintSlope(session.slope)}`,
   }));
   sizeActivityChartCanvas(canvas, points);
   return new Chart(canvas, {
@@ -2868,7 +2875,7 @@ function createOrUpdateSprintConsistencyChart(existingChart, canvas, session) {
     x: `Rep ${rep.order}`,
     y: rep.time,
     xLabel: `Rep ${rep.order}`,
-    tooltip: `${session.date} • Rep ${rep.order} • ${formatNumber(rep.time)} sec`,
+    tooltip: `${session.date} • Rep ${rep.order} • ${formatSprintSeconds(rep.time)}`,
   }));
   sizeActivityChartCanvas(canvas, points);
   return new Chart(canvas, {
