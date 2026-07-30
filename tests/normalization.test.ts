@@ -20,6 +20,18 @@ describe("workout normalization", () => {
     ]);
   });
 
+  it("preserves optional actual rest before a valid sprint rep", () => {
+    expect(normalizeSprintSets([
+      { time: 5.1, distance: 40 },
+      { time: 5.05, distance: 40, restBeforeSec: 180 },
+      { time: 5.2, distance: 40, restBeforeSec: -1 },
+    ])).toEqual([
+      { order: 1, time: 5.1, distance: 40 },
+      { order: 2, time: 5.05, distance: 40, restBeforeSec: 180 },
+      { order: 3, time: 5.2, distance: 40 },
+    ]);
+  });
+
   it("normalizes kg, bodyweight, and band strength sets", () => {
     expect(normalizeStrengthExercises([
       {

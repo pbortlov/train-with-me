@@ -56,6 +56,14 @@ describe("local-first UX guidance", () => {
     });
   });
 
+  it("keeps actual sprint-rest entry on a text keyboard so athletes can type m:ss", () => {
+    const restInputMatch = index.match(/<input[^>]*id="sprint-rest-before-sec"[^>]*>/);
+    expect(restInputMatch?.[0]).toContain('type="text"');
+    expect(restInputMatch?.[0]).not.toContain('inputmode="numeric"');
+    expect(restInputMatch?.[0]).not.toContain("disabled");
+    expect(script).toContain('type="text" data-role="completion-sprint-rest-before"');
+  });
+
   it("orders Programs around scheduled programs, templates, then create/import", () => {
     const scheduledIndex = index.indexOf('id="phase-instance-list"');
     const templatesIndex = index.indexOf('id="phase-template-list"');

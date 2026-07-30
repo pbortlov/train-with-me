@@ -2,6 +2,7 @@ export interface SprintSet {
   order: number;
   time: number;
   distance: number;
+  restBeforeSec?: number;
 }
 
 export type SprintProfile = "acceleration" | "max-velocity" | "speed-endurance" | "repeat-sprint" | "hill-sprint" | "custom" | "";
@@ -43,6 +44,7 @@ export function normalizeSprintSets(value: unknown): SprintSet[] {
       order: index + 1,
       time: Number(set.time),
       distance: Number(set.distance),
+      ...(isNumber(set.restBeforeSec) && set.restBeforeSec >= 0 ? { restBeforeSec: Number(set.restBeforeSec) } : {}),
     }));
 }
 

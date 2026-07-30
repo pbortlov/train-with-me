@@ -287,6 +287,11 @@
                   Sprint distance (m)
                   <input type="number" id="sprint-distance-m" min="0" step="1" placeholder="e.g. 100" />
                 </label>
+                <label>
+                  Actual rest before this rep (optional)
+                  <input type="text" id="sprint-rest-before-sec" aria-describedby="sprint-rest-before-hint" placeholder="e.g. 1:30 or 90" />
+                  <span id="sprint-rest-before-hint" class="hint">Leave blank for the first rep; enter seconds or m:ss from rep 2.</span>
+                </label>
                 <button type="button" id="add-sprint-set">Add Sprint Set</button>
               </div>
               <label>
@@ -1036,7 +1041,7 @@
               <input type="text" id="completion-sprint-warmup-note" placeholder="e.g. mobility, drills, build-ups" />
             </label>
           </section>
-          <p class="hint">Main sprints: rows are generated from planned reps and meters. Enter only the actual time for each rep.</p>
+          <p class="hint">Main sprints: enter actual time for every rep and optional actual rest before each rep after the first. Planned rest remains a separate prescription.</p>
           <div id="completion-sprint-blocks"></div>
           <label>
             Sprint feeling
@@ -1215,7 +1220,7 @@
             </label>
           </section>
           <label>
-            Sprint sets (one per line: timeSec,distanceM)
+            Sprint sets (one per line: timeSec,distanceM,actualRestBeforeSec or m:ss optional)
             <textarea id="edit-sprint-sets" rows="4"></textarea>
           </label>
           <label>

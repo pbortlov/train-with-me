@@ -29,6 +29,10 @@
 6. Make exact rep values secondary: show the chart and first/best/last summary
    first, then a centered `Rep times (n)` disclosure with fixed two-decimal
    seconds.
-7. Add optional actual rest per rep and evidence-based recovery guidance.
+7. Add optional actual rest before each rep after the first. Delivered as an
+   optional actual value, separate from planned rest, with compatibility for
+   older sprint records. Athlete entry accepts seconds or `m:ss` while storage
+   stays normalized to seconds.
+8. Add evidence-based recovery guidance once enough actual-rest data exists.
 
 Each step is independently testable and reversible.

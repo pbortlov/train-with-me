@@ -39,6 +39,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Completed planned sessions can be edited after `Log & Complete` to correct weights, reps, sets, times, or notes
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
 - Sprint logging and sprint workout editing include a warm-up check/note, session profile, surface, slope, and a feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
+- Sprint logging can optionally record actual rest before every rep after the first as seconds or `m:ss`; planned rest remains a prescription
 - Sprint logging explains the rugby session profiles, surface/slope meanings, and post-session feeling emojis so athletes do not have to guess
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
@@ -121,6 +122,7 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0021-sprint-record-explorer.md](docs/decisions/0021-sprint-record-explorer.md)
 - [docs/decisions/0022-compact-sprint-rep-grid.md](docs/decisions/0022-compact-sprint-rep-grid.md)
 - [docs/decisions/0023-secondary-sprint-rep-detail.md](docs/decisions/0023-secondary-sprint-rep-detail.md)
+- [docs/decisions/0024-actual-sprint-rest.md](docs/decisions/0024-actual-sprint-rest.md)
 - [docs/decisions/0011-local-first-onboarding-and-backup-ux.md](docs/decisions/0011-local-first-onboarding-and-backup-ux.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 

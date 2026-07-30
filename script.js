@@ -62,6 +62,7 @@ import {
 } from "./src/domain/program-template-export";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
+import { formatSprintRest, formatSprintRestForInput, parseSprintRest } from "./src/domain/sprint-rest";
 import {
   buildSprintPerformance,
   buildSprintRepConsistency,
@@ -101,6 +102,8 @@ const logDateButtons = document.querySelectorAll("[data-log-date]");
 const activityFieldGroups = document.querySelectorAll(".activity-fields");
 const addSprintSetButton = document.getElementById("add-sprint-set");
 const sprintSetsList = document.getElementById("sprint-sets-list");
+const sprintRestBeforeInput = document.getElementById("sprint-rest-before-sec");
+const sprintRestBeforeHintEl = document.getElementById("sprint-rest-before-hint");
 const sprintFeelingInput = document.getElementById("sprint-feeling");
 const sprintProfileInput = document.getElementById("sprint-profile");
 const sprintProfileCustomInput = document.getElementById("sprint-profile-custom");
@@ -665,9 +668,18 @@ if (editStrengthLoadTypeInput) {
 addSprintSetButton.addEventListener("click", () => {
   const sprintTime = toNumberOrNull(valueOf("sprint-time-sec"));
   const sprintDistance = toNumberOrNull(valueOf("sprint-distance-m"));
+  const sprintRestResult = parseSprintRest(sprintRestBeforeInput?.value || "");
 
   if (!isNumber(sprintTime) || !isNumber(sprintDistance)) {
     setWorkoutFormStatus("Sprint set needs both time (sec) and distance (m).");
+    return;
+  }
+  if (sprintRestResult.error) {
+    setWorkoutFormStatus(sprintRestResult.error);
+    return;
+  }
+  if (draftSprintSets.length === 0 && isNumber(sprintRestResult.seconds)) {
+    setWorkoutFormStatus("Rest starts before rep 2. Add the first rep without rest.");
     return;
   }
 
@@ -675,10 +687,12 @@ addSprintSetButton.addEventListener("click", () => {
     order: draftSprintSets.length + 1,
     time: sprintTime,
     distance: sprintDistance,
+    ...(draftSprintSets.length > 0 && isNumber(sprintRestResult.seconds) ? { restBeforeSec: sprintRestResult.seconds } : {}),
   });
 
   document.getElementById("sprint-time-sec").value = "";
   document.getElementById("sprint-distance-m").value = "";
+  if (sprintRestBeforeInput) sprintRestBeforeInput.value = "";
   renderSprintSets();
   setWorkoutFormStatus("Sprint set added.");
 });
@@ -3469,7 +3483,9 @@ function toggleEditDialogFields(activity) {
 
 function formatSprintSetsForEditor(sprintSets) {
   const normalized = normalizeSprintSets(sprintSets);
-  return normalized.map((set) => `${set.time},${set.distance}`).join("\n");
+  return normalized
+    .map((set) => isNumber(set.restBeforeSec) ? `${set.time},${set.distance},${formatSprintRestForInput(set.restBeforeSec)}` : `${set.time},${set.distance}`)
+    .join("\n");
 }
 
 function parseSprintSetsFromEditor(text) {
@@ -3482,11 +3498,19 @@ function parseSprintSetsFromEditor(text) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [timeValue, distanceValue] = line.split(",").map((value) => Number(value.trim()));
-      if (!Number.isFinite(timeValue) || !Number.isFinite(distanceValue)) {
+      const values = line.split(",").map((value) => value.trim());
+      const timeValue = Number(values[0]);
+      const distanceValue = Number(values[1]);
+      const restResult = parseSprintRest(values[2] || "");
+      if (
+        values.length > 3 ||
+        !Number.isFinite(timeValue) ||
+        !Number.isFinite(distanceValue) ||
+        restResult.error
+      ) {
         throw new Error("Invalid sprint line");
       }
-      return { time: timeValue, distance: distanceValue };
+      return { time: timeValue, distance: distanceValue, ...(isNumber(restResult.seconds) ? { restBeforeSec: restResult.seconds } : {}) };
     });
 }
 
@@ -3705,12 +3729,22 @@ function handleInlineStrengthDelete(event) {
 function renderSprintSets() {
   if (!draftSprintSets.length) {
     sprintSetsList.innerHTML = "<li>No sprint sets yet.</li>";
+    syncSprintRestBeforeInput();
     return;
   }
 
   sprintSetsList.innerHTML = draftSprintSets
-    .map((set) => `<li>#${set.order}: ${formatNumber(set.time)} sec • ${formatNumber(set.distance)} m</li>`)
+    .map((set) => `<li>#${set.order}: ${formatNumber(set.time)} sec • ${formatNumber(set.distance)} m${isNumber(set.restBeforeSec) ? ` • ${formatSprintRest(set.restBeforeSec)} actual rest` : ""}</li>`)
     .join("");
+  syncSprintRestBeforeInput();
+}
+
+function syncSprintRestBeforeInput() {
+  if (sprintRestBeforeHintEl) {
+    sprintRestBeforeHintEl.textContent = draftSprintSets.length > 0
+      ? "Optional: enter seconds or m:ss, for example 90 or 1:30."
+      : "Leave blank for the first rep; enter seconds or m:ss from rep 2.";
+  }
 }
 
 function normalizeSprintSets(sprintSets) {
@@ -6964,6 +6998,7 @@ function buildCompletionSprintDraft(session) {
       distance: Number(block.distance),
       targetTime: isNumber(block.targetTime) ? Number(block.targetTime) : null,
       actualTime: null,
+      actualRestBeforeRaw: "",
     })),
   }));
 }
@@ -6977,6 +7012,7 @@ function applyActualSprintToCompletionDraft(actual) {
   rows.forEach((row, index) => {
     if (actualSets[index]) {
       row.actualTime = toNumberOrNull(actualSets[index].time);
+      row.actualRestBeforeRaw = formatSprintRestForInput(toNumberOrNull(actualSets[index].restBeforeSec));
     }
   });
 }
@@ -7000,6 +7036,7 @@ function renderCompletionSprintBlocks() {
             <div class="completion-sprint-grid-header">Meters</div>
             <div class="completion-sprint-grid-header">Reference</div>
             <div class="completion-sprint-grid-header">Actual time (sec)</div>
+            <div class="completion-sprint-grid-header">Actual rest before rep</div>
             ${(block.rows || [])
               .map(
                 (row, rowIndex) => `
@@ -7008,7 +7045,12 @@ function renderCompletionSprintBlocks() {
                   <div class="completion-sprint-cell">${formatSprintReferenceCell(row, block)}</div>
                   <label class="completion-sprint-input">
                     <input type="number" min="0" step="0.01" data-role="completion-sprint-time" data-block-index="${blockIndex}" data-row-index="${rowIndex}" value="${row.actualTime ?? ""}" />
-                  </label>`,
+                  </label>
+                  ${blockIndex === 0 && rowIndex === 0
+                    ? '<div class="completion-sprint-cell">—</div>'
+                    : `<label class="completion-sprint-input">
+                        <input type="text" data-role="completion-sprint-rest-before" data-block-index="${blockIndex}" data-row-index="${rowIndex}" value="${escapeHtml(row.actualRestBeforeRaw || "")}" placeholder="1:30 or 90" />
+                      </label>`}`,
               )
               .join("")}
           </div>
@@ -7032,7 +7074,7 @@ function handleCompletionSprintInput(event) {
   if (!(target instanceof HTMLInputElement)) {
     return;
   }
-  if (target.dataset.role !== "completion-sprint-time") {
+  if (!["completion-sprint-time", "completion-sprint-rest-before"].includes(target.dataset.role || "")) {
     return;
   }
   const blockIndex = Number(target.dataset.blockIndex);
@@ -7041,18 +7083,29 @@ function handleCompletionSprintInput(event) {
   if (!row) {
     return;
   }
-  row.actualTime = toNumberOrNull(target.value);
+  if (target.dataset.role === "completion-sprint-time") {
+    row.actualTime = toNumberOrNull(target.value);
+  } else {
+    row.actualRestBeforeRaw = target.value;
+  }
 }
 
 function collectCompletedSprintSets() {
   return (completionSprintDraft || [])
     .flatMap((block) => block.rows || [])
-    .map((row, index) => ({
-      order: index + 1,
-      time: toNumberOrNull(row.actualTime),
-      distance: toNumberOrNull(row.distance),
-      targetTime: toNumberOrNull(row.targetTime),
-    }))
+    .map((row, index) => {
+      const restResult = parseSprintRest(row.actualRestBeforeRaw || "");
+      if (restResult.error) {
+        throw new Error(restResult.error);
+      }
+      return {
+        order: index + 1,
+        time: toNumberOrNull(row.actualTime),
+        distance: toNumberOrNull(row.distance),
+        targetTime: toNumberOrNull(row.targetTime),
+        ...(index > 0 && isNumber(restResult.seconds) ? { restBeforeSec: restResult.seconds } : {}),
+      };
+    })
     .filter((set) => isNumber(set.time) && isNumber(set.distance));
 }
 
@@ -7512,8 +7565,11 @@ function saveCompletedSession(event) {
     closeCompletionDialog();
     evaluateGoals({ persist: true, celebrate: true });
     render();
-  } catch {
-    completionStatusMessageEl.textContent = "Could not save completion. Check the values and try again.";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    completionStatusMessageEl.textContent = message.startsWith("Enter rest") || message.startsWith("Seconds must be")
+      ? message
+      : "Could not save completion. Check the values and try again.";
   }
 }
 
