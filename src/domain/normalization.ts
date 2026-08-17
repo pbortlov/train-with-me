@@ -2,7 +2,16 @@ export interface SprintSet {
   order: number;
   time: number;
   distance: number;
+  restBeforeSec?: number;
 }
+
+export type SprintProfile = "acceleration" | "max-velocity" | "speed-endurance" | "repeat-sprint" | "hill-sprint" | "custom" | "";
+export type SprintSurface = "natural-grass" | "artificial-turf" | "hybrid-grass" | "synthetic-track" | "indoor-synthetic-track" | "other" | "";
+export type SprintSlope = "flat" | "uphill" | "downhill" | "";
+
+const SPRINT_PROFILES: SprintProfile[] = ["acceleration", "max-velocity", "speed-endurance", "repeat-sprint", "hill-sprint", "custom", ""];
+const SPRINT_SURFACES: SprintSurface[] = ["natural-grass", "artificial-turf", "hybrid-grass", "synthetic-track", "indoor-synthetic-track", "other", ""];
+const SPRINT_SLOPES: SprintSlope[] = ["flat", "uphill", "downhill", ""];
 
 export interface StrengthSet {
   order: number;
@@ -35,7 +44,30 @@ export function normalizeSprintSets(value: unknown): SprintSet[] {
       order: index + 1,
       time: Number(set.time),
       distance: Number(set.distance),
+      ...(isNumber(set.restBeforeSec) && set.restBeforeSec >= 0 ? { restBeforeSec: Number(set.restBeforeSec) } : {}),
     }));
+}
+
+export function normalizeSprintProfile(value: unknown): SprintProfile {
+  return typeof value === "string" && SPRINT_PROFILES.includes(value as SprintProfile)
+    ? value as SprintProfile
+    : "";
+}
+
+export function normalizeSprintSurface(value: unknown): SprintSurface {
+  return typeof value === "string" && SPRINT_SURFACES.includes(value as SprintSurface)
+    ? value as SprintSurface
+    : "";
+}
+
+export function normalizeSprintSlope(value: unknown): SprintSlope {
+  return typeof value === "string" && SPRINT_SLOPES.includes(value as SprintSlope)
+    ? value as SprintSlope
+    : "";
+}
+
+export function normalizeSprintText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 export function normalizeStrengthExercises(value: unknown): StrengthExercise[] {

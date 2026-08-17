@@ -23,6 +23,24 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="main-content"');
   });
 
+  it("keeps exact sprint reps as a compact optional detail list", () => {
+    expect(script).toContain('class="sprint-consistency-rep-details"');
+    expect(script).toContain("Rep details (${session.repCount})");
+    expect(script).toContain('class="sprint-consistency-rep-list"');
+    expect(script).toContain('class="sprint-consistency-rep-heading"');
+    expect(script).toContain("formatSprintSeconds(rep.time)");
+    expect(script).toContain("formatSprintRest(rep.restBeforeSec)");
+    expect(styles).toContain("width: min(100%, 15rem)");
+    expect(styles).toContain("font-variant-numeric: tabular-nums");
+  });
+
+  it("keeps sprint recovery guidance in the focused performance view with its evidence available on demand", () => {
+    expect(index).toContain('id="sprint-recovery-insight"');
+    expect(script).toContain("function renderSprintRecoveryInsight(insight)");
+    expect(script).toContain("See the evidence (${insight.pairCount} reps, ${insight.sessionCount} sessions)");
+    expect(styles).toContain(".sprint-recovery-evidence");
+  });
+
   it("shows local-first onboarding and backup safety guidance", () => {
     expect(index).toContain("Train locally, protect your history");
     expect(index).toContain("Backup safety checklist");
@@ -45,6 +63,14 @@ describe("local-first UX guidance", () => {
       expect(inputMatch?.[0], `${id} should stay a text field`).toContain('type="text"');
       expect(inputMatch?.[0], `${id} must allow ":" entry on phones`).not.toContain('inputmode="numeric"');
     });
+  });
+
+  it("keeps actual sprint-rest entry on a text keyboard so athletes can type m:ss", () => {
+    const restInputMatch = index.match(/<input[^>]*id="sprint-rest-before-sec"[^>]*>/);
+    expect(restInputMatch?.[0]).toContain('type="text"');
+    expect(restInputMatch?.[0]).not.toContain('inputmode="numeric"');
+    expect(restInputMatch?.[0]).not.toContain("disabled");
+    expect(script).toContain('type="text" data-role="completion-sprint-rest-before"');
   });
 
   it("orders Programs around scheduled programs, templates, then create/import", () => {

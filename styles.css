@@ -739,6 +739,169 @@ body {
     #081121;
 }
 
+.sprint-performance-open {
+  width: fit-content;
+}
+
+#sprint-performance-dialog {
+  width: min(96vw, 900px);
+  max-width: 900px;
+}
+
+.sprint-performance-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.sprint-performance-header h2,
+.sprint-performance-chart-card h3 {
+  margin: 0;
+}
+
+.sprint-performance-controls {
+  margin-bottom: 0.5rem;
+}
+
+.sprint-performance-chart-card {
+  margin: 1rem 0;
+}
+
+.sprint-recovery-card {
+  margin: 1rem 0;
+}
+
+.sprint-recovery-card h3 {
+  margin: 0;
+}
+
+.sprint-recovery-result {
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  padding: 0.7rem;
+  color: var(--muted);
+}
+
+.sprint-recovery-result.is-ready {
+  border-color: #6dff5c66;
+}
+
+.sprint-recovery-result strong {
+  color: var(--text);
+}
+
+.sprint-recovery-result p {
+  margin: 0.4rem 0 0;
+}
+
+.sprint-recovery-evidence {
+  margin-top: 0.65rem;
+}
+
+.sprint-recovery-evidence summary {
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.sprint-recovery-evidence ul {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sprint-consistency-sessions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.sprint-consistency-session {
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.7rem;
+}
+
+.sprint-consistency-session summary {
+  display: grid;
+  gap: 0.3rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.sprint-consistency-session summary span:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.sprint-consistency-rep-details {
+  width: min(100%, 15rem);
+  margin: 0.7rem auto 0;
+  text-align: center;
+}
+
+.sprint-consistency-rep-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.sprint-consistency-rep-list {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sprint-consistency-rep-heading {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr 1fr;
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sprint-consistency-rep-heading span:not(:first-child) {
+  text-align: right;
+}
+
+.sprint-consistency-rep-list li {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr 1fr;
+  min-height: 1.8rem;
+  align-items: center;
+  border-bottom: 1px solid rgb(148 163 184 / 14%);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sprint-consistency-rep-list li:last-child {
+  border-bottom: 0;
+}
+
+.sprint-consistency-rep-list strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.sprint-consistency-rep-list li span:last-child {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.is-improved {
+  color: #6dff5c;
+}
+
 .strength-insights-details {
   display: grid;
   gap: 0.5rem;
@@ -916,6 +1079,48 @@ textarea:focus-visible {
   margin: 0.5rem 0 0;
   padding-left: 1.15rem;
   color: var(--muted);
+}
+
+.sprint-setup,
+.sprint-warmup {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.9rem 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: rgb(255 255 255 / 3%);
+}
+
+.sprint-setup h4,
+.sprint-warmup h4 {
+  margin: 0;
+}
+
+.sprint-legend {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sprint-legend ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.sprint-feeling-legend {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.check-label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-weight: 700;
 }
 
 .detail-list {
@@ -2835,7 +3040,7 @@ textarea:focus-visible {
 .completion-sprint-grid {
   display: grid;
   gap: 0.45rem;
-  grid-template-columns: 0.6fr 0.9fr 1.1fr 1.4fr;
+  grid-template-columns: 0.5fr 0.75fr 1fr 1.2fr 1.2fr;
   align-items: center;
 }
 
@@ -3731,6 +3936,11 @@ textarea {
 }
 
 @media (max-width: 640px) {
+  .sprint-performance-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .app-header-top,
   .calendar-toolbar {
     flex-direction: column;

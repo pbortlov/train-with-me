@@ -9,6 +9,10 @@ import {
 } from "./src/domain/run";
 import {
   normalizeSprintSets as normalizeSprintSetsCore,
+  normalizeSprintProfile as normalizeSprintProfileCore,
+  normalizeSprintSlope as normalizeSprintSlopeCore,
+  normalizeSprintSurface as normalizeSprintSurfaceCore,
+  normalizeSprintText as normalizeSprintTextCore,
   normalizeStrengthExercises as normalizeStrengthExercisesCore,
 } from "./src/domain/normalization";
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
@@ -58,6 +62,19 @@ import {
 } from "./src/domain/program-template-export";
 import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
+import { formatSprintRest, formatSprintRestForInput, parseSprintRest } from "./src/domain/sprint-rest";
+import {
+  SPRINT_RECOVERY_MIN_PAIRS,
+  SPRINT_RECOVERY_MIN_SESSIONS,
+  buildSprintRecoveryInsight,
+} from "./src/domain/sprint-recovery";
+import {
+  buildSprintPerformance,
+  buildSprintRepConsistency,
+  buildSprintRecordGroups,
+  listSprintDistances,
+  listSprintProfileOptions,
+} from "./src/domain/sprint-performance";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
@@ -90,7 +107,12 @@ const logDateButtons = document.querySelectorAll("[data-log-date]");
 const activityFieldGroups = document.querySelectorAll(".activity-fields");
 const addSprintSetButton = document.getElementById("add-sprint-set");
 const sprintSetsList = document.getElementById("sprint-sets-list");
+const sprintRestBeforeInput = document.getElementById("sprint-rest-before-sec");
+const sprintRestBeforeHintEl = document.getElementById("sprint-rest-before-hint");
 const sprintFeelingInput = document.getElementById("sprint-feeling");
+const sprintProfileInput = document.getElementById("sprint-profile");
+const sprintProfileCustomInput = document.getElementById("sprint-profile-custom");
+const sprintProfileCustomField = document.getElementById("sprint-profile-custom-field");
 const addStrengthSetButton = document.getElementById("add-strength-set");
 const addStrengthExerciseButton = document.getElementById("add-strength-exercise");
 const currentStrengthSetsList = document.getElementById("current-strength-sets");
@@ -115,6 +137,22 @@ const runningInsightsBodyEl = document.getElementById("running-insights-body");
 const sprintInsightsSummaryEl = document.getElementById("sprint-insights-summary");
 const sprintInsightsDetailsEl = document.getElementById("sprint-insights-details");
 const sprintInsightsBodyEl = document.getElementById("sprint-insights-body");
+const openSprintPerformanceButton = document.getElementById("open-sprint-performance");
+const sprintPerformanceDialog = document.getElementById("sprint-performance-dialog");
+const closeSprintPerformanceButton = document.getElementById("close-sprint-performance");
+const sprintPerformanceProfileInput = document.getElementById("sprint-performance-profile");
+const sprintPerformanceDistanceInput = document.getElementById("sprint-performance-distance");
+const sprintPerformanceSurfaceInput = document.getElementById("sprint-performance-surface");
+const sprintPerformanceSlopeInput = document.getElementById("sprint-performance-slope");
+const sprintPerformanceStatusEl = document.getElementById("sprint-performance-status");
+const sprintPerformanceSummaryEl = document.getElementById("sprint-performance-summary");
+const sprintPerformanceSessionsEl = document.getElementById("sprint-performance-sessions");
+const sprintPerformanceChartCanvas = document.getElementById("sprint-performance-chart");
+const sprintPerformanceProgressCard = document.getElementById("sprint-performance-progression");
+const sprintRecoveryInsightEl = document.getElementById("sprint-recovery-insight");
+const sprintConsistencyChartCanvas = document.getElementById("sprint-consistency-chart");
+const sprintConsistencySessionsEl = document.getElementById("sprint-consistency-sessions");
+const sprintConsistencyCard = document.getElementById("sprint-consistency-card");
 const runDistanceInput = document.getElementById("distance");
 const runTimeInput = document.getElementById("time");
 const runPaceInput = document.getElementById("pace");
@@ -145,6 +183,13 @@ const editTimeInput = document.getElementById("edit-time");
 const editPaceInput = document.getElementById("edit-pace");
 const editSprintSetsInput = document.getElementById("edit-sprint-sets");
 const editSprintFeelingInput = document.getElementById("edit-sprint-feeling");
+const editSprintProfileInput = document.getElementById("edit-sprint-profile");
+const editSprintProfileCustomInput = document.getElementById("edit-sprint-profile-custom");
+const editSprintProfileCustomField = document.getElementById("edit-sprint-profile-custom-field");
+const editSprintSurfaceInput = document.getElementById("edit-sprint-surface");
+const editSprintSlopeInput = document.getElementById("edit-sprint-slope");
+const editSprintWarmupCompletedInput = document.getElementById("edit-sprint-warmup-completed");
+const editSprintWarmupNoteInput = document.getElementById("edit-sprint-warmup-note");
 const editExerciseNameInput = document.getElementById("edit-exercise-name");
 const editStrengthRepsInput = document.getElementById("edit-strength-reps");
 const editStrengthLoadTypeInput = document.getElementById("edit-strength-load-type");
@@ -215,6 +260,11 @@ const plannedSprintRepsInput = document.getElementById("planned-sprint-reps");
 const plannedSprintDistanceInput = document.getElementById("planned-sprint-distance");
 const plannedSprintTargetTimeInput = document.getElementById("planned-sprint-target-time");
 const plannedSprintRestInput = document.getElementById("planned-sprint-rest");
+const plannedSprintProfileInput = document.getElementById("planned-sprint-profile");
+const plannedSprintProfileCustomInput = document.getElementById("planned-sprint-profile-custom");
+const plannedSprintProfileCustomField = document.getElementById("planned-sprint-profile-custom-field");
+const plannedSprintSurfaceInput = document.getElementById("planned-sprint-surface");
+const plannedSprintSlopeInput = document.getElementById("planned-sprint-slope");
 const addPlannedSprintBlockButton = document.getElementById("add-planned-sprint-block");
 const plannedSprintBlocksListEl = document.getElementById("planned-sprint-blocks-list");
 const plannedSessionStatusEl = document.getElementById("planned-session-status");
@@ -274,6 +324,9 @@ const completionRunPaceInput = document.getElementById("completion-run-pace");
 const completionSprintFields = document.getElementById("completion-sprint-fields");
 const completionSprintBlocksEl = document.getElementById("completion-sprint-blocks");
 const completionSprintFeelingInput = document.getElementById("completion-sprint-feeling");
+const completionSprintContextEl = document.getElementById("completion-sprint-context");
+const completionSprintWarmupCompletedInput = document.getElementById("completion-sprint-warmup-completed");
+const completionSprintWarmupNoteInput = document.getElementById("completion-sprint-warmup-note");
 const completionStrengthFields = document.getElementById("completion-strength-fields");
 const completionStrengthBlocksEl = document.getElementById("completion-strength-blocks");
 const completionNoteInput = document.getElementById("completion-note");
@@ -295,6 +348,14 @@ const SPRINT_FEELING_OPTIONS = [
   { value: "flat", label: "Flat 🪫" },
   { value: "sluggish", label: "Sluggish 🐢" },
   { value: "pain", label: "Pain ⚠️" },
+];
+const SPRINT_PROFILE_OPTIONS = [
+  { value: "acceleration", label: "Acceleration", description: "First-step, chase, and short-space speed." },
+  { value: "max-velocity", label: "Max velocity", description: "Top-speed exposure after acceleration." },
+  { value: "speed-endurance", label: "Speed endurance", description: "Sustain high speed over longer efforts." },
+  { value: "repeat-sprint", label: "Repeat sprint", description: "Repeated high-intensity efforts with incomplete recovery." },
+  { value: "hill-sprint", label: "Hill sprint", description: "Resisted acceleration or conditioning; use slope to record terrain." },
+  { value: "custom", label: "Custom", description: "Your own named sprint session." },
 ];
 const GOAL_VERSION = 2;
 
@@ -327,6 +388,9 @@ let progressFilters = {
 };
 let runDistanceChart = null;
 let sprintChart = null;
+let sprintPerformanceChart = null;
+let sprintConsistencyChart = null;
+let sprintPerformanceSelection = { profileKey: "all", distance: 0, surface: "all", slope: "all" };
 let programAdherenceChart = null;
 let programCompletionChart = null;
 let selectedProgramProgressInstanceId = "";
@@ -422,6 +486,12 @@ workoutForm.addEventListener("submit", (event) => {
     pace: selectedActivity === "run" ? runPace : toNumberOrNull(valueOf("pace")),
     sprintSets: selectedActivity === "sprint" ? normalizeSprintSets(draftSprintSets) : [],
     sprintFeeling: selectedActivity === "sprint" ? sprintFeelingInput?.value || "" : "",
+    sprintProfile: selectedActivity === "sprint" ? normalizeSprintProfile(sprintProfileInput?.value) : "",
+    sprintProfileCustom: selectedActivity === "sprint" ? normalizeSprintText(sprintProfileCustomInput?.value) : "",
+    sprintSurface: selectedActivity === "sprint" ? normalizeSprintSurface(valueOf("sprint-surface")) : "",
+    sprintSlope: selectedActivity === "sprint" ? normalizeSprintSlope(valueOf("sprint-slope")) : "",
+    sprintWarmupCompleted: selectedActivity === "sprint" && Boolean(document.getElementById("sprint-warmup-completed")?.checked),
+    sprintWarmupNote: selectedActivity === "sprint" ? normalizeSprintText(valueOf("sprint-warmup-note")) : "",
     notes: valueOf("notes")?.trim() || "",
     createdAt: Date.now(),
   };
@@ -468,6 +538,16 @@ workoutForm.addEventListener("submit", (event) => {
 activityInput.addEventListener("change", () => {
   updateVisibleFields();
   syncLoggingActivityButtons();
+});
+
+addSafeEventListener(sprintProfileInput, "change", () => {
+  syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
+});
+addSafeEventListener(editSprintProfileInput, "change", () => {
+  syncSprintProfileCustomField(editSprintProfileInput, editSprintProfileCustomField);
+});
+addSafeEventListener(plannedSprintProfileInput, "change", () => {
+  syncSprintProfileCustomField(plannedSprintProfileInput, plannedSprintProfileCustomField);
 });
 dateInput.addEventListener("change", syncLogDateButtons);
 logActivityButtons.forEach((button) => {
@@ -594,9 +674,18 @@ if (editStrengthLoadTypeInput) {
 addSprintSetButton.addEventListener("click", () => {
   const sprintTime = toNumberOrNull(valueOf("sprint-time-sec"));
   const sprintDistance = toNumberOrNull(valueOf("sprint-distance-m"));
+  const sprintRestResult = parseSprintRest(sprintRestBeforeInput?.value || "");
 
   if (!isNumber(sprintTime) || !isNumber(sprintDistance)) {
     setWorkoutFormStatus("Sprint set needs both time (sec) and distance (m).");
+    return;
+  }
+  if (sprintRestResult.error) {
+    setWorkoutFormStatus(sprintRestResult.error);
+    return;
+  }
+  if (draftSprintSets.length === 0 && isNumber(sprintRestResult.seconds)) {
+    setWorkoutFormStatus("Rest starts before rep 2. Add the first rep without rest.");
     return;
   }
 
@@ -604,10 +693,12 @@ addSprintSetButton.addEventListener("click", () => {
     order: draftSprintSets.length + 1,
     time: sprintTime,
     distance: sprintDistance,
+    ...(draftSprintSets.length > 0 && isNumber(sprintRestResult.seconds) ? { restBeforeSec: sprintRestResult.seconds } : {}),
   });
 
   document.getElementById("sprint-time-sec").value = "";
   document.getElementById("sprint-distance-m").value = "";
+  if (sprintRestBeforeInput) sprintRestBeforeInput.value = "";
   renderSprintSets();
   setWorkoutFormStatus("Sprint set added.");
 });
@@ -2072,6 +2163,17 @@ function openEditWorkoutDialog(workoutId) {
   if (editSprintFeelingInput) {
     editSprintFeelingInput.value = workout.sprintFeeling || "";
   }
+  if (editSprintProfileInput) {
+    editSprintProfileInput.value = normalizeSprintProfile(workout.sprintProfile);
+  }
+  if (editSprintProfileCustomInput) {
+    editSprintProfileCustomInput.value = workout.sprintProfileCustom || "";
+  }
+  if (editSprintSurfaceInput) editSprintSurfaceInput.value = normalizeSprintSurface(workout.sprintSurface);
+  if (editSprintSlopeInput) editSprintSlopeInput.value = normalizeSprintSlope(workout.sprintSlope);
+  if (editSprintWarmupCompletedInput) editSprintWarmupCompletedInput.checked = Boolean(workout.sprintWarmupCompleted);
+  if (editSprintWarmupNoteInput) editSprintWarmupNoteInput.value = workout.sprintWarmupNote || "";
+  syncSprintProfileCustomField(editSprintProfileInput, editSprintProfileCustomField);
   editDraftStrengthExercises = normalizeStrengthExercises(workout.strengthExercises);
   editDraftCurrentStrengthSets = [];
   if (editExerciseNameInput) {
@@ -2147,6 +2249,12 @@ function saveEditedWorkout() {
       pace: editPaceInput.value,
       sprintSets: parseSprintSetsFromEditor(editSprintSetsInput.value),
       sprintFeeling: existingWorkout.activity === "sprint" ? editSprintFeelingInput?.value || "" : "",
+      sprintProfile: existingWorkout.activity === "sprint" ? normalizeSprintProfile(editSprintProfileInput?.value) : "",
+      sprintProfileCustom: existingWorkout.activity === "sprint" ? normalizeSprintText(editSprintProfileCustomInput?.value) : "",
+      sprintSurface: existingWorkout.activity === "sprint" ? normalizeSprintSurface(editSprintSurfaceInput?.value) : "",
+      sprintSlope: existingWorkout.activity === "sprint" ? normalizeSprintSlope(editSprintSlopeInput?.value) : "",
+      sprintWarmupCompleted: existingWorkout.activity === "sprint" && Boolean(editSprintWarmupCompletedInput?.checked),
+      sprintWarmupNote: existingWorkout.activity === "sprint" ? normalizeSprintText(editSprintWarmupNoteInput?.value) : "",
       strengthExercises: editDraftStrengthExercises,
     });
     if (normalized.activity === "run" && (!isNumber(normalized.distance) || normalized.distance <= 0 || !normalized.time || !isNumber(normalized.pace))) {
@@ -2197,6 +2305,7 @@ function resetWorkoutForm() {
   renderCurrentStrengthSets();
   renderStrengthExercises();
   renderSprintSets();
+  syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
   updateVisibleFields();
   syncLogDateButtons();
   clearFieldError(runDistanceInput);
@@ -2588,6 +2697,272 @@ function renderSprintInsights() {
         )
         .join("")
     : "";
+  if (openSprintPerformanceButton) {
+    openSprintPerformanceButton.disabled = insights.workoutCount === 0;
+  }
+}
+
+function openSprintPerformanceDialog() {
+  if (!sprintPerformanceDialog || !sprintPerformanceProfileInput || !sprintPerformanceDistanceInput) {
+    return;
+  }
+  syncSprintPerformanceProfileOptions();
+  syncSprintPerformanceDistanceOptions();
+  renderSprintPerformance();
+  if (typeof sprintPerformanceDialog.showModal === "function") {
+    sprintPerformanceDialog.showModal();
+  } else {
+    sprintPerformanceDialog.setAttribute("open", "true");
+  }
+}
+
+function closeSprintPerformanceDialog() {
+  if (!sprintPerformanceDialog) return;
+  if (typeof sprintPerformanceDialog.close === "function") {
+    sprintPerformanceDialog.close();
+  } else {
+    sprintPerformanceDialog.removeAttribute("open");
+  }
+}
+
+function syncSprintPerformanceProfileOptions() {
+  if (!sprintPerformanceProfileInput) return;
+  const profiles = [{ key: "all", label: "All profiles" }, ...listSprintProfileOptions(workouts)];
+  if (!profiles.some((profile) => profile.key === sprintPerformanceSelection.profileKey)) {
+    sprintPerformanceSelection.profileKey = profiles[0]?.key || "";
+  }
+  sprintPerformanceProfileInput.innerHTML = profiles.length
+    ? profiles.map((profile) => `<option value="${escapeHtml(profile.key)}">${escapeHtml(profile.label)}</option>`).join("")
+    : '<option value="">No sprint profiles yet</option>';
+  sprintPerformanceProfileInput.value = sprintPerformanceSelection.profileKey;
+}
+
+function syncSprintPerformanceDistanceOptions() {
+  if (!sprintPerformanceDistanceInput) return;
+  const distances = listSprintDistances(workouts, sprintPerformanceSelection.profileKey);
+  if (sprintPerformanceSelection.distance !== 0 && !distances.includes(sprintPerformanceSelection.distance)) {
+    sprintPerformanceSelection.distance = 0;
+  }
+  sprintPerformanceDistanceInput.innerHTML = [
+    '<option value="0">All distances</option>',
+    ...distances.map((distance) => `<option value="${distance}">${formatNumber(distance)} m</option>`),
+  ].join("");
+  sprintPerformanceDistanceInput.value = String(sprintPerformanceSelection.distance);
+}
+
+function renderSprintPerformance() {
+  if (!sprintPerformanceStatusEl || !sprintPerformanceSummaryEl || !sprintPerformanceSessionsEl) return;
+  const model = buildSprintPerformance(workouts, sprintPerformanceSelection);
+  const records = buildSprintRecordGroups(workouts, sprintPerformanceSelection);
+  const recoveryInsight = buildSprintRecoveryInsight(workouts, sprintPerformanceSelection);
+  const hasSingleFocus = sprintPerformanceSelection.profileKey !== "all" && sprintPerformanceSelection.distance > 0;
+  const latestChange = model.latest && model.previous ? model.latest.bestTime - model.previous.bestTime : null;
+  sprintPerformanceSummaryEl.innerHTML = hasSingleFocus && model.latest
+    ? `
+      <article class="badge"><span class="label">Latest best</span><span class="value">${formatSprintSeconds(model.latest.bestTime)}</span></article>
+      <article class="badge"><span class="label">Vs previous</span><span class="value ${latestChange != null && latestChange < 0 ? "is-improved" : ""}">${formatSprintTimeChange(latestChange)}</span></article>
+      <article class="badge"><span class="label">All-time best</span><span class="value">${formatSprintSeconds(model.allTimeBest?.bestTime)}</span></article>
+    `
+    : "";
+  sprintPerformanceStatusEl.textContent = !records.length
+    ? "No valid sprint records match these filters."
+    : !hasSingleFocus
+      ? "Showing distance-specific records. Choose one profile and one distance to unlock like-for-like progression and rep consistency."
+      : model.contextIsMixed
+        ? "Mixed surface or slope context: use the filters to make a like-for-like comparison."
+        : "Session-best times only. Lower is faster.";
+  sprintPerformanceSessionsEl.innerHTML = records.length
+    ? records.map((record) => `
+          <tr>
+            <td>${escapeHtml(record.profileLabel)}</td>
+            <td>${formatNumber(record.distance)} m</td>
+            <td>${formatSprintSeconds(record.bestTime)}</td>
+            <td>${escapeHtml(record.date)}</td>
+            <td>${escapeHtml(formatSprintSurface(record.surface))}</td>
+            <td>${escapeHtml(formatSprintSlope(record.slope))}</td>
+          </tr>`)
+        .join("")
+    : '<tr><td colspan="6">No matching sprint records.</td></tr>';
+  sprintPerformanceProgressCard?.classList.toggle("is-hidden", !hasSingleFocus);
+  sprintConsistencyCard?.classList.toggle("is-hidden", !hasSingleFocus);
+  sprintPerformanceChart = createOrUpdateSprintPerformanceChart(sprintPerformanceChart, sprintPerformanceChartCanvas, model.sessions);
+  renderSprintRecoveryInsight(recoveryInsight);
+  renderSprintRepConsistency();
+}
+
+function renderSprintRecoveryInsight(insight) {
+  if (!sprintRecoveryInsightEl) return;
+  if (insight.status === "choose-context") {
+    sprintRecoveryInsightEl.innerHTML = "<p class=\"planner-empty\">Choose one profile, distance, surface, and slope to analyse recovery without mixing conditions.</p>";
+    return;
+  }
+  if (insight.status === "collecting") {
+    sprintRecoveryInsightEl.innerHTML = `<p class="planner-empty"><strong>${insight.pairCount}/${SPRINT_RECOVERY_MIN_PAIRS} recorded rests</strong> across ${insight.sessionCount}/${SPRINT_RECOVERY_MIN_SESSIONS} sessions. Log actual rest before matching reps to unlock a recovery signal.</p>`;
+    return;
+  }
+  if (insight.status === "needs-variety") {
+    sprintRecoveryInsightEl.innerHTML = `<p class="planner-empty">${insight.pairCount} recorded rests across ${insight.sessionCount} sessions, but not enough repeat data at two different rest durations. Repeat at least two rest durations to compare them.</p>`;
+    return;
+  }
+  const best = insight.bestBand;
+  const comparison = insight.comparisonBand;
+  if (!best || !comparison || insight.medianDifference == null) {
+    sprintRecoveryInsightEl.innerHTML = "<p class=\"planner-empty\">Keep logging actual rest to build a recovery signal.</p>";
+    return;
+  }
+  const result = insight.status === "ready"
+    ? `<strong>Around ${formatSprintRest(best.restSeconds)} is the best-supported recovery signal.</strong><p>Median rep time: ${formatSprintSeconds(best.medianTime)} across ${best.pairCount} reps in ${best.sessionCount} sessions — ${insight.medianDifference.toFixed(2)} s faster than around ${formatSprintRest(comparison.restSeconds)} (${formatSprintSeconds(comparison.medianTime)}).</p>`
+    : `<strong>No clear recovery edge yet.</strong><p>The supported rest durations are only ${insight.medianDifference.toFixed(2)} s apart. Keep recording actual rest before changing your plan.</p>`;
+  sprintRecoveryInsightEl.innerHTML = `
+    <div class="sprint-recovery-result ${insight.status === "ready" ? "is-ready" : ""}">
+      ${result}
+      <details class="sprint-recovery-evidence">
+        <summary>See the evidence (${insight.pairCount} reps, ${insight.sessionCount} sessions)</summary>
+        <ul>${insight.supportedBands.map((band) => `<li>Around ${formatSprintRest(band.restSeconds)}: ${formatSprintSeconds(band.medianTime)} median · ${band.pairCount} reps / ${band.sessionCount} sessions</li>`).join("")}</ul>
+      </details>
+      <p class="hint">This is an observed signal, not a prescription: readiness, timing method, weather, and wind can also affect a sprint.</p>
+    </div>`;
+}
+
+function renderSprintRepConsistency() {
+  if (!sprintConsistencySessionsEl) return;
+  const sessions = buildSprintRepConsistency(workouts, sprintPerformanceSelection);
+  const latestSession = sessions.at(-1) || null;
+  sprintConsistencyChart = createOrUpdateSprintConsistencyChart(sprintConsistencyChart, sprintConsistencyChartCanvas, latestSession);
+  sprintConsistencySessionsEl.innerHTML = sessions.length
+    ? sessions
+        .slice()
+        .reverse()
+        .map((session, index) => `
+          <details class="sprint-consistency-session" ${index === 0 ? "open" : ""}>
+            <summary>
+              <span>${escapeHtml(session.date)} · ${formatSprintSurface(session.surface)} · ${formatSprintSlope(session.slope)}</span>
+              <span>First ${formatSprintSeconds(session.firstTime)} · Best ${formatSprintSeconds(session.bestTime)} · Last ${formatSprintSeconds(session.lastTime)} · ${formatSprintTimeChange(session.firstToLastChange)}</span>
+            </summary>
+            <details class="sprint-consistency-rep-details">
+              <summary>Rep details (${session.repCount})</summary>
+              <div class="sprint-consistency-rep-heading" aria-hidden="true"><span>Rep</span><span>Time</span><span>Rest</span></div>
+              <ol class="sprint-consistency-rep-list" aria-label="${escapeHtml(session.date)} sprint rep times">
+                ${session.reps.map((rep) => `<li><span>#${rep.order}</span><strong>${formatSprintSeconds(rep.time)}</strong><span>${formatSprintRest(rep.restBeforeSec) || "—"}</span></li>`).join("")}
+              </ol>
+            </details>
+          </details>`)
+        .join("")
+    : '<p class="planner-empty">No matching reps to inspect yet.</p>';
+}
+
+function formatSprintTimeChange(value) {
+  if (!isNumber(value)) return "—";
+  const sign = value < 0 ? "-" : value > 0 ? "+" : "";
+  return `${sign}${Math.abs(value).toFixed(2)} s`;
+}
+
+function formatSprintSeconds(value) {
+  return isNumber(value) ? `${Number(value).toFixed(2)} s` : "—";
+}
+
+function formatSprintSurface(value) {
+  return {
+    "natural-grass": "Natural grass / field",
+    "artificial-turf": "Artificial turf / 3G",
+    "hybrid-grass": "Hybrid grass",
+    "synthetic-track": "Synthetic track / tartan",
+    "indoor-synthetic-track": "Indoor synthetic track",
+    other: "Other surface",
+    unknown: "Unknown surface",
+  }[value] || "Unknown surface";
+}
+
+function formatSprintSlope(value) {
+  return { flat: "Flat", uphill: "Uphill", downhill: "Downhill", unknown: "Unknown slope" }[value] || "Unknown slope";
+}
+
+function createOrUpdateSprintPerformanceChart(existingChart, canvas, sessions) {
+  if (!canvas) return existingChart;
+  if (existingChart) existingChart.destroy();
+  if (!sessions.length) return null;
+  const points = sessions.map((session, index) => ({
+    x: `${session.date}:${index + 1}`,
+    y: session.bestTime,
+    xLabel: session.date,
+    tooltip: `${session.date} • best ${formatSprintSeconds(session.bestTime)} • ${session.repCount} rep${session.repCount === 1 ? "" : "s"} • ${formatSprintSurface(session.surface)} • ${formatSprintSlope(session.slope)}`,
+  }));
+  sizeActivityChartCanvas(canvas, points);
+  return new Chart(canvas, {
+    type: "line",
+    data: {
+      datasets: [{
+        label: "Session best",
+        data: points,
+        borderColor: "#ffd84d",
+        backgroundColor: "#ffd84d33",
+        pointBackgroundColor: "#ffd84d",
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.2,
+      }],
+    },
+    options: {
+      parsing: { xAxisKey: "x", yAxisKey: "y" },
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label(context) { return context.raw?.tooltip || ""; } } },
+      },
+      scales: {
+        x: {
+          type: "category",
+          ticks: { autoSkip: false, maxRotation: 60, minRotation: 45, font: { size: 9 }, callback(value) {
+            const matchingPoint = points.find((point) => point.x === this.getLabelForValue(value));
+            return matchingPoint?.xLabel || this.getLabelForValue(value);
+          } },
+        },
+        y: { title: { display: true, text: "sec (lower is faster)" }, ...activityChartSprintSecondBounds(points) },
+      },
+    },
+  });
+}
+
+function createOrUpdateSprintConsistencyChart(existingChart, canvas, session) {
+  if (!canvas) return existingChart;
+  if (existingChart) existingChart.destroy();
+  if (!session) return null;
+  const points = session.reps.map((rep) => ({
+    x: `Rep ${rep.order}`,
+    y: rep.time,
+    xLabel: `Rep ${rep.order}`,
+    tooltip: `${session.date} • Rep ${rep.order} • ${formatSprintSeconds(rep.time)}`,
+  }));
+  sizeActivityChartCanvas(canvas, points);
+  return new Chart(canvas, {
+    type: "line",
+    data: {
+      datasets: [{
+        label: "Latest session reps",
+        data: points,
+        borderColor: "#4da3ff",
+        backgroundColor: "#4da3ff33",
+        pointBackgroundColor: "#4da3ff",
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.2,
+      }],
+    },
+    options: {
+      parsing: { xAxisKey: "x", yAxisKey: "y" },
+      responsive: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label(context) { return context.raw?.tooltip || ""; } } },
+      },
+      scales: {
+        x: { type: "category", ticks: { autoSkip: false } },
+        y: { title: { display: true, text: "sec (lower is faster)" }, ...activityChartSprintSecondBounds(points) },
+      },
+    },
+  });
 }
 
 function formatSprintFeelingCounts(counts) {
@@ -3151,7 +3526,9 @@ function toggleEditDialogFields(activity) {
 
 function formatSprintSetsForEditor(sprintSets) {
   const normalized = normalizeSprintSets(sprintSets);
-  return normalized.map((set) => `${set.time},${set.distance}`).join("\n");
+  return normalized
+    .map((set) => isNumber(set.restBeforeSec) ? `${set.time},${set.distance},${formatSprintRestForInput(set.restBeforeSec)}` : `${set.time},${set.distance}`)
+    .join("\n");
 }
 
 function parseSprintSetsFromEditor(text) {
@@ -3164,11 +3541,19 @@ function parseSprintSetsFromEditor(text) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [timeValue, distanceValue] = line.split(",").map((value) => Number(value.trim()));
-      if (!Number.isFinite(timeValue) || !Number.isFinite(distanceValue)) {
+      const values = line.split(",").map((value) => value.trim());
+      const timeValue = Number(values[0]);
+      const distanceValue = Number(values[1]);
+      const restResult = parseSprintRest(values[2] || "");
+      if (
+        values.length > 3 ||
+        !Number.isFinite(timeValue) ||
+        !Number.isFinite(distanceValue) ||
+        restResult.error
+      ) {
         throw new Error("Invalid sprint line");
       }
-      return { time: timeValue, distance: distanceValue };
+      return { time: timeValue, distance: distanceValue, ...(isNumber(restResult.seconds) ? { restBeforeSec: restResult.seconds } : {}) };
     });
 }
 
@@ -3387,21 +3772,71 @@ function handleInlineStrengthDelete(event) {
 function renderSprintSets() {
   if (!draftSprintSets.length) {
     sprintSetsList.innerHTML = "<li>No sprint sets yet.</li>";
+    syncSprintRestBeforeInput();
     return;
   }
 
   sprintSetsList.innerHTML = draftSprintSets
-    .map((set) => `<li>#${set.order}: ${formatNumber(set.time)} sec • ${formatNumber(set.distance)} m</li>`)
+    .map((set) => `<li>#${set.order}: ${formatNumber(set.time)} sec • ${formatNumber(set.distance)} m${isNumber(set.restBeforeSec) ? ` • ${formatSprintRest(set.restBeforeSec)} actual rest` : ""}</li>`)
     .join("");
+  syncSprintRestBeforeInput();
+}
+
+function syncSprintRestBeforeInput() {
+  if (sprintRestBeforeHintEl) {
+    sprintRestBeforeHintEl.textContent = draftSprintSets.length > 0
+      ? "Optional: enter seconds or m:ss with optional decimals, for example 90, 1:30, or 1:45.1."
+      : "Leave blank for the first rep; enter seconds or m:ss with optional decimals from rep 2.";
+  }
 }
 
 function normalizeSprintSets(sprintSets) {
   return normalizeSprintSetsCore(sprintSets);
 }
 
+function normalizeSprintProfile(value) {
+  return normalizeSprintProfileCore(value);
+}
+
+function normalizeSprintSurface(value) {
+  return normalizeSprintSurfaceCore(value);
+}
+
+function normalizeSprintSlope(value) {
+  return normalizeSprintSlopeCore(value);
+}
+
+function normalizeSprintText(value) {
+  return normalizeSprintTextCore(value);
+}
+
+function syncSprintProfileCustomField(profileInput, customField) {
+  if (!customField) return;
+  customField.classList.toggle("is-hidden", profileInput?.value !== "custom");
+}
+
 function formatSprintFeeling(value) {
   const option = SPRINT_FEELING_OPTIONS.find((item) => item.value === value);
   return option ? option.label : "";
+}
+
+function formatSprintContext(context) {
+  const profile = SPRINT_PROFILE_OPTIONS.find((option) => option.value === normalizeSprintProfile(context?.sprintProfile));
+  const customProfile = normalizeSprintText(context?.sprintProfileCustom);
+  const surfaceLabels = {
+    "natural-grass": "Natural grass / field",
+    "artificial-turf": "Artificial turf / 3G",
+    "hybrid-grass": "Hybrid grass",
+    "synthetic-track": "Synthetic track / tartan",
+    "indoor-synthetic-track": "Indoor synthetic track",
+    other: "Other surface",
+  };
+  const slopeLabels = { flat: "Flat", uphill: "Uphill", downhill: "Downhill" };
+  return [
+    customProfile || profile?.label || "Unclassified",
+    surfaceLabels[normalizeSprintSurface(context?.sprintSurface)] || "Unknown surface",
+    slopeLabels[normalizeSprintSlope(context?.sprintSlope)] || "Unknown slope",
+  ].join(" • ");
 }
 
 function sprintBestTime(workout) {
@@ -3465,6 +3900,12 @@ function normalizeImportedWorkout(workout) {
     pace: normalizedPace,
     sprintSets: normalizeSprintSets(workout.sprintSets),
     sprintFeeling: typeof workout.sprintFeeling === "string" ? workout.sprintFeeling : "",
+    sprintProfile: normalizeSprintProfile(workout.sprintProfile),
+    sprintProfileCustom: normalizeSprintText(workout.sprintProfileCustom),
+    sprintSurface: normalizeSprintSurface(workout.sprintSurface),
+    sprintSlope: normalizeSprintSlope(workout.sprintSlope),
+    sprintWarmupCompleted: Boolean(workout.sprintWarmupCompleted),
+    sprintWarmupNote: normalizeSprintText(workout.sprintWarmupNote),
     notes: typeof workout.notes === "string" ? workout.notes : "",
     createdAt: isNumber(workout.createdAt) ? workout.createdAt : Date.now(),
   };
@@ -3613,6 +4054,28 @@ function bindV2Events() {
     render();
   });
   addSafeEventListener(plannedSessionTypeInput, "change", updatePlannedTypeFields);
+  addSafeEventListener(openSprintPerformanceButton, "click", openSprintPerformanceDialog);
+  addSafeEventListener(closeSprintPerformanceButton, "click", closeSprintPerformanceDialog);
+  addSafeEventListener(sprintPerformanceDialog, "click", (event) => {
+    if (event.target === sprintPerformanceDialog) closeSprintPerformanceDialog();
+  });
+  addSafeEventListener(sprintPerformanceProfileInput, "change", () => {
+    sprintPerformanceSelection.profileKey = sprintPerformanceProfileInput.value;
+    syncSprintPerformanceDistanceOptions();
+    renderSprintPerformance();
+  });
+  addSafeEventListener(sprintPerformanceDistanceInput, "change", () => {
+    sprintPerformanceSelection.distance = Number(sprintPerformanceDistanceInput.value);
+    renderSprintPerformance();
+  });
+  addSafeEventListener(sprintPerformanceSurfaceInput, "change", () => {
+    sprintPerformanceSelection.surface = sprintPerformanceSurfaceInput.value || "all";
+    renderSprintPerformance();
+  });
+  addSafeEventListener(sprintPerformanceSlopeInput, "change", () => {
+    sprintPerformanceSelection.slope = sprintPerformanceSlopeInput.value || "all";
+    renderSprintPerformance();
+  });
   addSafeEventListener(plannedSessionForm, "submit", savePlannedSessionFromForm);
   addSafeEventListener(cancelPlannedSessionButton, "click", resetPlannedSessionForm);
   addSafeEventListener(addPlannedSprintBlockButton, "click", addPlannedSprintBlock);
@@ -4373,6 +4836,7 @@ function resetPlannedSessionForm() {
   plannedSessionIdInput.value = "";
   plannedSessionDateInput.value = formatDateInput(new Date());
   plannedSessionTypeInput.value = "run";
+  syncSprintProfileCustomField(plannedSprintProfileInput, plannedSprintProfileCustomField);
   updatePlannedTypeFields();
   plannedSessionStatusEl.textContent = "";
   renderPlannedSprintBlocks();
@@ -4396,6 +4860,10 @@ function savePlannedSessionFromForm(event) {
         }
       : {
           blocks: normalizePlannedSprintBlocks(draftPlannedSprintBlocks),
+          sprintProfile: normalizeSprintProfile(plannedSprintProfileInput?.value),
+          sprintProfileCustom: normalizeSprintText(plannedSprintProfileCustomInput?.value),
+          sprintSurface: normalizeSprintSurface(plannedSprintSurfaceInput?.value),
+          sprintSlope: normalizeSprintSlope(plannedSprintSlopeInput?.value),
         },
   };
 
@@ -4989,6 +5457,11 @@ function fillPlannedSessionForm(session) {
     plannedRunPaceInput.value = isNumber(session.details?.paceGoal) ? formatGoalPace(session.details.paceGoal) : "";
   } else {
     draftPlannedSprintBlocks = normalizePlannedSprintBlocks(session.details?.blocks || []);
+    if (plannedSprintProfileInput) plannedSprintProfileInput.value = normalizeSprintProfile(session.details?.sprintProfile);
+    if (plannedSprintProfileCustomInput) plannedSprintProfileCustomInput.value = session.details?.sprintProfileCustom || "";
+    if (plannedSprintSurfaceInput) plannedSprintSurfaceInput.value = normalizeSprintSurface(session.details?.sprintSurface);
+    if (plannedSprintSlopeInput) plannedSprintSlopeInput.value = normalizeSprintSlope(session.details?.sprintSlope);
+    syncSprintProfileCustomField(plannedSprintProfileInput, plannedSprintProfileCustomField);
     renderPlannedSprintBlocks();
   }
   updatePlannedTypeFields();
@@ -6515,6 +6988,15 @@ function openCompletionDialog(session) {
     if (completionSprintFeelingInput) {
       completionSprintFeelingInput.value = session.actual?.feeling || "";
     }
+    if (completionSprintContextEl) {
+      completionSprintContextEl.textContent = formatSprintContext(session.details);
+    }
+    if (completionSprintWarmupCompletedInput) {
+      completionSprintWarmupCompletedInput.checked = Boolean(session.actual?.warmupCompleted);
+    }
+    if (completionSprintWarmupNoteInput) {
+      completionSprintWarmupNoteInput.value = session.actual?.warmupNote || "";
+    }
     renderCompletionSprintBlocks();
   }
   if (session.type === "strength") {
@@ -6559,6 +7041,7 @@ function buildCompletionSprintDraft(session) {
       distance: Number(block.distance),
       targetTime: isNumber(block.targetTime) ? Number(block.targetTime) : null,
       actualTime: null,
+      actualRestBeforeRaw: "",
     })),
   }));
 }
@@ -6572,6 +7055,7 @@ function applyActualSprintToCompletionDraft(actual) {
   rows.forEach((row, index) => {
     if (actualSets[index]) {
       row.actualTime = toNumberOrNull(actualSets[index].time);
+      row.actualRestBeforeRaw = formatSprintRestForInput(toNumberOrNull(actualSets[index].restBeforeSec));
     }
   });
 }
@@ -6595,6 +7079,7 @@ function renderCompletionSprintBlocks() {
             <div class="completion-sprint-grid-header">Meters</div>
             <div class="completion-sprint-grid-header">Reference</div>
             <div class="completion-sprint-grid-header">Actual time (sec)</div>
+            <div class="completion-sprint-grid-header">Actual rest before rep</div>
             ${(block.rows || [])
               .map(
                 (row, rowIndex) => `
@@ -6603,7 +7088,12 @@ function renderCompletionSprintBlocks() {
                   <div class="completion-sprint-cell">${formatSprintReferenceCell(row, block)}</div>
                   <label class="completion-sprint-input">
                     <input type="number" min="0" step="0.01" data-role="completion-sprint-time" data-block-index="${blockIndex}" data-row-index="${rowIndex}" value="${row.actualTime ?? ""}" />
-                  </label>`,
+                  </label>
+                  ${blockIndex === 0 && rowIndex === 0
+                    ? '<div class="completion-sprint-cell">—</div>'
+                    : `<label class="completion-sprint-input">
+                        <input type="text" data-role="completion-sprint-rest-before" data-block-index="${blockIndex}" data-row-index="${rowIndex}" value="${escapeHtml(row.actualRestBeforeRaw || "")}" placeholder="1:45.1 or 90" />
+                      </label>`}`,
               )
               .join("")}
           </div>
@@ -6627,7 +7117,7 @@ function handleCompletionSprintInput(event) {
   if (!(target instanceof HTMLInputElement)) {
     return;
   }
-  if (target.dataset.role !== "completion-sprint-time") {
+  if (!["completion-sprint-time", "completion-sprint-rest-before"].includes(target.dataset.role || "")) {
     return;
   }
   const blockIndex = Number(target.dataset.blockIndex);
@@ -6636,18 +7126,29 @@ function handleCompletionSprintInput(event) {
   if (!row) {
     return;
   }
-  row.actualTime = toNumberOrNull(target.value);
+  if (target.dataset.role === "completion-sprint-time") {
+    row.actualTime = toNumberOrNull(target.value);
+  } else {
+    row.actualRestBeforeRaw = target.value;
+  }
 }
 
 function collectCompletedSprintSets() {
   return (completionSprintDraft || [])
     .flatMap((block) => block.rows || [])
-    .map((row, index) => ({
-      order: index + 1,
-      time: toNumberOrNull(row.actualTime),
-      distance: toNumberOrNull(row.distance),
-      targetTime: toNumberOrNull(row.targetTime),
-    }))
+    .map((row, index) => {
+      const restResult = parseSprintRest(row.actualRestBeforeRaw || "");
+      if (restResult.error) {
+        throw new Error(restResult.error);
+      }
+      return {
+        order: index + 1,
+        time: toNumberOrNull(row.actualTime),
+        distance: toNumberOrNull(row.distance),
+        targetTime: toNumberOrNull(row.targetTime),
+        ...(index > 0 && isNumber(restResult.seconds) ? { restBeforeSec: restResult.seconds } : {}),
+      };
+    })
     .filter((set) => isNumber(set.time) && isNumber(set.distance));
 }
 
@@ -7078,6 +7579,8 @@ function saveCompletedSession(event) {
       actual = {
         sprintSets,
         feeling: completionSprintFeelingInput?.value || "",
+        warmupCompleted: Boolean(completionSprintWarmupCompletedInput?.checked),
+        warmupNote: normalizeSprintText(completionSprintWarmupNoteInput?.value),
       };
     }
     if (session.type === "strength") {
@@ -7105,8 +7608,11 @@ function saveCompletedSession(event) {
     closeCompletionDialog();
     evaluateGoals({ persist: true, celebrate: true });
     render();
-  } catch {
-    completionStatusMessageEl.textContent = "Could not save completion. Check the values and try again.";
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    completionStatusMessageEl.textContent = message.startsWith("Enter rest") || message.startsWith("Seconds must be")
+      ? message
+      : "Could not save completion. Check the values and try again.";
   }
 }
 
@@ -7176,6 +7682,12 @@ function createWorkoutFromPlannedSession(session, actual, modificationNote) {
       activity: "sprint",
       sprintSets: actual.sprintSets,
       sprintFeeling: actual.feeling || "",
+      sprintProfile: normalizeSprintProfile(session.details?.sprintProfile),
+      sprintProfileCustom: normalizeSprintText(session.details?.sprintProfileCustom),
+      sprintSurface: normalizeSprintSurface(session.details?.sprintSurface),
+      sprintSlope: normalizeSprintSlope(session.details?.sprintSlope),
+      sprintWarmupCompleted: Boolean(actual.warmupCompleted),
+      sprintWarmupNote: normalizeSprintText(actual.warmupNote),
       distance: null,
       time: null,
       pace: null,
@@ -8213,6 +8725,10 @@ function normalizePlannedDetails(type, details) {
       blocks: Array.isArray(details?.blocks)
         ? normalizePlannedSprintBlocks(details.blocks)
         : [],
+      sprintProfile: normalizeSprintProfile(details?.sprintProfile),
+      sprintProfileCustom: normalizeSprintText(details?.sprintProfileCustom),
+      sprintSurface: normalizeSprintSurface(details?.sprintSurface),
+      sprintSlope: normalizeSprintSlope(details?.sprintSlope),
     };
   }
   return {

@@ -210,7 +210,74 @@
             </div>
 
             <div id="sprint-fields" class="activity-fields" data-activity="sprint">
-              <p class="hint">Add each sprint set in order (seconds + meters).</p>
+              <section class="sprint-setup" aria-labelledby="sprint-setup-heading">
+                <h4 id="sprint-setup-heading">Sprint setup</h4>
+                <p class="hint">Record the context before the main sprint reps so future comparisons stay honest.</p>
+                <div class="grid">
+                  <label>
+                    Sprint profile
+                    <select id="sprint-profile">
+                      <option value="">Unclassified</option>
+                      <option value="acceleration">Acceleration</option>
+                      <option value="max-velocity">Max velocity</option>
+                      <option value="speed-endurance">Speed endurance</option>
+                      <option value="repeat-sprint">Repeat sprint</option>
+                      <option value="hill-sprint">Hill sprint</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </label>
+                  <label id="sprint-profile-custom-field" class="is-hidden">
+                    Custom profile name
+                    <input type="text" id="sprint-profile-custom" placeholder="e.g. Back-three chase" />
+                  </label>
+                  <label>
+                    Surface
+                    <select id="sprint-surface">
+                      <option value="">Unknown surface</option>
+                      <option value="natural-grass">Natural grass / field</option>
+                      <option value="artificial-turf">Artificial turf / 3G</option>
+                      <option value="hybrid-grass">Hybrid grass</option>
+                      <option value="synthetic-track">Synthetic track / tartan</option>
+                      <option value="indoor-synthetic-track">Indoor synthetic track</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                  <label>
+                    Slope
+                    <select id="sprint-slope">
+                      <option value="">Unknown slope</option>
+                      <option value="flat">Flat</option>
+                      <option value="uphill">Uphill</option>
+                      <option value="downhill">Downhill</option>
+                    </select>
+                  </label>
+                </div>
+                <details class="sprint-legend">
+                  <summary>Profile, surface, and slope legend</summary>
+                  <ul>
+                    <li><strong>Acceleration:</strong> first-step, chase, and short-space speed.</li>
+                    <li><strong>Max velocity:</strong> top-speed exposure after acceleration.</li>
+                    <li><strong>Speed endurance:</strong> sustain high speed over longer efforts.</li>
+                    <li><strong>Repeat sprint:</strong> repeated high-intensity efforts with incomplete recovery.</li>
+                    <li><strong>Hill sprint:</strong> resisted acceleration or conditioning; record slope separately.</li>
+                    <li><strong>Natural grass / field:</strong> outdoor grass; firmness and moisture can vary.</li>
+                    <li><strong>Artificial turf / 3G:</strong> synthetic fibre pitch with infill.</li>
+                    <li><strong>Hybrid grass:</strong> natural grass reinforced with synthetic fibres.</li>
+                    <li><strong>Synthetic track / tartan:</strong> outdoor athletics synthetic surface.</li>
+                    <li><strong>Indoor synthetic track:</strong> synthetic track in an indoor environment.</li>
+                    <li><strong>Flat, Uphill, Downhill:</strong> terrain direction, recorded separately from surface.</li>
+                  </ul>
+                </details>
+              </section>
+              <section class="sprint-warmup" aria-labelledby="sprint-warmup-heading">
+                <h4 id="sprint-warmup-heading">Warm-up</h4>
+                <label class="check-label"><input type="checkbox" id="sprint-warmup-completed" /> Warm-up completed before main sprints</label>
+                <label>
+                  Warm-up note (optional)
+                  <input type="text" id="sprint-warmup-note" placeholder="e.g. mobility, drills, build-ups" />
+                </label>
+              </section>
+              <p class="hint">Main sprints: add each sprint set in order (seconds + meters).</p>
               <div class="grid">
                 <label>
                   Sprint time (sec)
@@ -219,6 +286,11 @@
                 <label>
                   Sprint distance (m)
                   <input type="number" id="sprint-distance-m" min="0" step="1" placeholder="e.g. 100" />
+                </label>
+                <label>
+                  Actual rest before this rep (optional)
+                  <input type="text" id="sprint-rest-before-sec" aria-describedby="sprint-rest-before-hint" placeholder="e.g. 1:45.1 or 90" />
+                  <span id="sprint-rest-before-hint" class="hint">Leave blank for the first rep; enter seconds or m:ss with optional decimals from rep 2.</span>
                 </label>
                 <button type="button" id="add-sprint-set">Add Sprint Set</button>
               </div>
@@ -233,6 +305,7 @@
                   <option value="pain">Pain ⚠️</option>
                 </select>
               </label>
+              <p class="sprint-feeling-legend"><strong>Feeling legend:</strong> Sharp ⚡ explosive and ready · Solid 🙂 dependable session · Flat 🪫 lower energy · Sluggish 🐢 heavy or slow · Pain ⚠️ pain or concerning discomfort.</p>
               <ol id="sprint-sets-list" class="sprint-sets-list"></ol>
             </div>
 
@@ -285,7 +358,63 @@
             </div>
 
             <div id="planned-sprint-fields" class="planned-type-fields" data-planned-type="sprint">
-              <p class="hint">Add sprint blocks with reps, meters, optional target time per rep, and optional rest.</p>
+              <p class="hint">Choose the sprint context before adding main sprint blocks.</p>
+              <div class="grid">
+                <label>
+                  Sprint profile
+                  <select id="planned-sprint-profile">
+                    <option value="">Unclassified</option>
+                    <option value="acceleration">Acceleration</option>
+                    <option value="max-velocity">Max velocity</option>
+                    <option value="speed-endurance">Speed endurance</option>
+                    <option value="repeat-sprint">Repeat sprint</option>
+                    <option value="hill-sprint">Hill sprint</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
+                <label id="planned-sprint-profile-custom-field" class="is-hidden">
+                  Custom profile name
+                  <input type="text" id="planned-sprint-profile-custom" placeholder="e.g. Back-three chase" />
+                </label>
+                <label>
+                  Surface
+                  <select id="planned-sprint-surface">
+                    <option value="">Unknown surface</option>
+                    <option value="natural-grass">Natural grass / field</option>
+                    <option value="artificial-turf">Artificial turf / 3G</option>
+                    <option value="hybrid-grass">Hybrid grass</option>
+                    <option value="synthetic-track">Synthetic track / tartan</option>
+                    <option value="indoor-synthetic-track">Indoor synthetic track</option>
+                    <option value="other">Other</option>
+                  </select>
+                </label>
+                <label>
+                  Slope
+                  <select id="planned-sprint-slope">
+                    <option value="">Unknown slope</option>
+                    <option value="flat">Flat</option>
+                    <option value="uphill">Uphill</option>
+                    <option value="downhill">Downhill</option>
+                  </select>
+                </label>
+              </div>
+              <details class="sprint-legend">
+                <summary>Profile, surface, and slope legend</summary>
+                <ul>
+                  <li><strong>Acceleration:</strong> first-step, chase, and short-space speed.</li>
+                  <li><strong>Max velocity:</strong> top-speed exposure after acceleration.</li>
+                  <li><strong>Speed endurance:</strong> sustain high speed over longer efforts.</li>
+                  <li><strong>Repeat sprint:</strong> repeated high-intensity efforts with incomplete recovery.</li>
+                  <li><strong>Hill sprint:</strong> resisted acceleration or conditioning; record slope separately.</li>
+                  <li><strong>Natural grass / field:</strong> outdoor grass; firmness and moisture can vary.</li>
+                  <li><strong>Artificial turf / 3G:</strong> synthetic fibre pitch with infill.</li>
+                  <li><strong>Hybrid grass:</strong> natural grass reinforced with synthetic fibres.</li>
+                  <li><strong>Synthetic track / tartan:</strong> outdoor athletics synthetic surface.</li>
+                  <li><strong>Indoor synthetic track:</strong> synthetic track in an indoor environment.</li>
+                  <li><strong>Flat, Uphill, Downhill:</strong> terrain direction, recorded separately from surface.</li>
+                </ul>
+              </details>
+              <p class="hint">Add main sprint blocks with reps, meters, optional target time per rep, and optional planned rest.</p>
               <div class="grid">
                 <label>
                   Reps
@@ -640,6 +769,7 @@
           <h3>Sprint</h3>
           <p class="hint">Best reps, sprint volume, and feeling mix.</p>
           <div id="sprint-insights-summary" class="summary"></div>
+          <button type="button" id="open-sprint-performance" class="ghost-button sprint-performance-open">View Sprint Performance</button>
           <details class="stats-insight-details">
             <summary>Sprint details</summary>
             <div id="sprint-insights-details" class="strength-insights-details"></div>
@@ -726,6 +856,80 @@
           </div>
         </article>
       </section>
+
+      <dialog id="sprint-performance-dialog" aria-labelledby="sprint-performance-heading">
+        <header class="sprint-performance-header">
+          <div>
+            <p class="today-eyebrow">Sprint analysis</p>
+            <h2 id="sprint-performance-heading">Sprint Performance</h2>
+            <p class="hint">Start broad with all profiles and distances, then choose one profile and one distance for a like-for-like trend.</p>
+          </div>
+          <button type="button" id="close-sprint-performance" class="ghost-button" aria-label="Close Sprint Performance">Close</button>
+        </header>
+        <div class="grid sprint-performance-controls">
+          <label>
+            Session profile
+            <select id="sprint-performance-profile"></select>
+          </label>
+          <label>
+            Sprint distance
+            <select id="sprint-performance-distance"></select>
+          </label>
+          <label>
+            Surface
+            <select id="sprint-performance-surface">
+              <option value="all">All surfaces</option>
+              <option value="natural-grass">Natural grass / field</option>
+              <option value="artificial-turf">Artificial turf / 3G</option>
+              <option value="hybrid-grass">Hybrid grass</option>
+              <option value="synthetic-track">Synthetic track / tartan</option>
+              <option value="indoor-synthetic-track">Indoor synthetic track</option>
+              <option value="other">Other</option>
+              <option value="unknown">Unknown surface</option>
+            </select>
+          </label>
+          <label>
+            Slope
+            <select id="sprint-performance-slope">
+              <option value="all">All slopes</option>
+              <option value="flat">Flat</option>
+              <option value="uphill">Uphill</option>
+              <option value="downhill">Downhill</option>
+              <option value="unknown">Unknown slope</option>
+            </select>
+          </label>
+        </div>
+        <p id="sprint-performance-status" class="hint" aria-live="polite"></p>
+        <div id="sprint-performance-summary" class="summary"></div>
+        <article class="chart-card sprint-recovery-card">
+          <h3>Recovery signal</h3>
+          <p class="hint">Uses actual rest before a rep. Compare only one exact training context.</p>
+          <div id="sprint-recovery-insight" aria-live="polite"></div>
+        </article>
+        <article class="chart-card sprint-performance-chart-card" id="sprint-performance-progression">
+          <h3>Session-best progression</h3>
+          <p class="hint">Lower is faster. Each point is the best rep from that session at the selected distance.</p>
+          <div class="chart-viewport">
+            <canvas id="sprint-performance-chart" height="220"></canvas>
+          </div>
+        </article>
+        <article class="chart-card sprint-performance-chart-card" id="sprint-consistency-card">
+          <h3>Rep consistency</h3>
+          <p class="hint">The latest matching session is shown in rep order. Lower is faster; compare first, best, and last to spot warm-up or fatigue patterns.</p>
+          <div class="chart-viewport">
+            <canvas id="sprint-consistency-chart" height="220"></canvas>
+          </div>
+          <div id="sprint-consistency-sessions" class="sprint-consistency-sessions"></div>
+        </article>
+        <div class="strength-table-viewport">
+          <table class="strength-highest-table">
+            <thead>
+              <tr><th>Profile</th><th>Distance</th><th>Best</th><th>Date</th><th>Surface</th><th>Slope</th></tr>
+            </thead>
+            <tbody id="sprint-performance-sessions"></tbody>
+          </table>
+        </div>
+      </dialog>
 
       <section class="view-panel" data-view="data">
         <article class="card data-utility-card">
@@ -833,7 +1037,16 @@
         </div>
 
         <div id="completion-sprint-fields" class="completion-type-fields">
-          <p class="hint">Sprint rows are generated from the planned reps and meters. Enter only the actual time for each rep.</p>
+          <p id="completion-sprint-context" class="phase-meta"></p>
+          <section class="sprint-warmup" aria-labelledby="completion-sprint-warmup-heading">
+            <h4 id="completion-sprint-warmup-heading">Warm-up</h4>
+            <label class="check-label"><input type="checkbox" id="completion-sprint-warmup-completed" /> Warm-up completed before main sprints</label>
+            <label>
+              Warm-up note (optional)
+              <input type="text" id="completion-sprint-warmup-note" placeholder="e.g. mobility, drills, build-ups" />
+            </label>
+          </section>
+          <p class="hint">Main sprints: enter actual time for every rep and optional actual rest before each rep after the first. Planned rest remains a separate prescription.</p>
           <div id="completion-sprint-blocks"></div>
           <label>
             Sprint feeling
@@ -846,6 +1059,7 @@
               <option value="pain">Pain ⚠️</option>
             </select>
           </label>
+          <p class="sprint-feeling-legend"><strong>Feeling legend:</strong> Sharp ⚡ explosive and ready · Solid 🙂 dependable session · Flat 🪫 lower energy · Sluggish 🐢 heavy or slow · Pain ⚠️ pain or concerning discomfort.</p>
         </div>
 
         <div id="completion-strength-fields" class="completion-type-fields">
@@ -963,8 +1177,55 @@
         </div>
 
         <div id="edit-sprint-fields">
+          <div class="grid">
+            <label>
+              Sprint profile
+              <select id="edit-sprint-profile">
+                <option value="">Unclassified</option>
+                <option value="acceleration">Acceleration</option>
+                <option value="max-velocity">Max velocity</option>
+                <option value="speed-endurance">Speed endurance</option>
+                <option value="repeat-sprint">Repeat sprint</option>
+                <option value="hill-sprint">Hill sprint</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label id="edit-sprint-profile-custom-field" class="is-hidden">
+              Custom profile name
+              <input type="text" id="edit-sprint-profile-custom" />
+            </label>
+            <label>
+              Surface
+              <select id="edit-sprint-surface">
+                <option value="">Unknown surface</option>
+                <option value="natural-grass">Natural grass / field</option>
+                <option value="artificial-turf">Artificial turf / 3G</option>
+                <option value="hybrid-grass">Hybrid grass</option>
+                <option value="synthetic-track">Synthetic track / tartan</option>
+                <option value="indoor-synthetic-track">Indoor synthetic track</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>
+              Slope
+              <select id="edit-sprint-slope">
+                <option value="">Unknown slope</option>
+                <option value="flat">Flat</option>
+                <option value="uphill">Uphill</option>
+                <option value="downhill">Downhill</option>
+              </select>
+            </label>
+          </div>
+          <section class="sprint-warmup">
+            <h4>Warm-up</h4>
+            <label class="check-label"><input type="checkbox" id="edit-sprint-warmup-completed" /> Warm-up completed before main sprints</label>
+            <label>
+              Warm-up note (optional)
+              <input type="text" id="edit-sprint-warmup-note" />
+            </label>
+          </section>
           <label>
-            Sprint sets (one per line: timeSec,distanceM)
+            Sprint sets (one per line: timeSec,distanceM,actualRestBeforeSec or m:ss with optional decimals)
             <textarea id="edit-sprint-sets" rows="4"></textarea>
           </label>
           <label>
@@ -978,6 +1239,7 @@
               <option value="pain">Pain ⚠️</option>
             </select>
           </label>
+          <p class="sprint-feeling-legend"><strong>Feeling legend:</strong> Sharp ⚡ explosive and ready · Solid 🙂 dependable session · Flat 🪫 lower energy · Sluggish 🐢 heavy or slow · Pain ⚠️ pain or concerning discomfort.</p>
         </div>
 
         <div id="edit-strength-fields">

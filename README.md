@@ -15,6 +15,9 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength Insights for strength workout count, exercise coverage, load mix, top kg lift, and most trained exercises
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
 - Sprint Insights for sprint workouts, rep volume, distance-specific bests, fastest rep, and feeling mix
+- Sprint Performance dialog for like-for-like session-best progression by sprint profile and distance, with surface and slope filters
+- Sprint Performance rep-consistency view for first, best, last, and optional exact two-decimal rep times within matching sessions
+- Sprint Performance record explorer defaults to all profiles and all distances, while charts remain limited to one selected profile and distance
 - Local-first onboarding, keyboard skip link, and backup safety guidance
 - Today-first quick navigation with Calendar for weekly planning and Stats for quick progress checks
 - Manual planned sessions for:
@@ -35,7 +38,9 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Calendar has one `Add Training` surface with modes for logging actual workouts or planning run/sprint sessions, plus a week-launchpad header and a compact next-up/progress strip
 - Completed planned sessions can be edited after `Log & Complete` to correct weights, reps, sets, times, or notes
 - Sprint plans use structured blocks with reps, meters, optional target time per rep, optional rest, and generated logging rows
-- Sprint logging and sprint workout editing include a session feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
+- Sprint logging and sprint workout editing include a warm-up check/note, session profile, surface, slope, and a feeling such as `Sharp ⚡`, `Solid 🙂`, `Flat 🪫`, `Sluggish 🐢`, or `Pain ⚠️`
+- Sprint logging can optionally record actual rest before every rep after the first as seconds or `m:ss`; planned rest remains a prescription
+- Sprint logging explains the rugby session profiles, surface/slope meanings, and post-session feeling emojis so athletes do not have to guess
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
 - Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
@@ -111,6 +116,13 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0008-strength-insights-summary-metrics.md](docs/decisions/0008-strength-insights-summary-metrics.md)
 - [docs/decisions/0009-running-insights-summary-metrics.md](docs/decisions/0009-running-insights-summary-metrics.md)
 - [docs/decisions/0010-sprint-insights-summary-metrics.md](docs/decisions/0010-sprint-insights-summary-metrics.md)
+- [docs/decisions/0018-sprint-session-context.md](docs/decisions/0018-sprint-session-context.md)
+- [docs/decisions/0019-sprint-performance-comparison.md](docs/decisions/0019-sprint-performance-comparison.md)
+- [docs/decisions/0020-sprint-rep-consistency.md](docs/decisions/0020-sprint-rep-consistency.md)
+- [docs/decisions/0021-sprint-record-explorer.md](docs/decisions/0021-sprint-record-explorer.md)
+- [docs/decisions/0022-compact-sprint-rep-grid.md](docs/decisions/0022-compact-sprint-rep-grid.md)
+- [docs/decisions/0023-secondary-sprint-rep-detail.md](docs/decisions/0023-secondary-sprint-rep-detail.md)
+- [docs/decisions/0024-actual-sprint-rest.md](docs/decisions/0024-actual-sprint-rest.md)
 - [docs/decisions/0011-local-first-onboarding-and-backup-ux.md](docs/decisions/0011-local-first-onboarding-and-backup-ux.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 
