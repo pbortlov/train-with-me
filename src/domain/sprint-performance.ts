@@ -42,7 +42,7 @@ export interface SprintPerformanceModel {
 }
 
 export interface SprintRepConsistencySession extends SprintPerformanceSession {
-  reps: Array<{ order: number; time: number }>;
+  reps: Array<{ order: number; time: number; restBeforeSec?: number }>;
   firstTime: number;
   lastTime: number;
   firstToLastChange: number;
@@ -194,7 +194,11 @@ export function buildSprintRepConsistency(
     .map((workout, index) => {
       const reps = normalizeSprintSets(workout.sprintSets)
         .filter((set) => set.distance === selection.distance && set.time > 0)
-        .map((set) => ({ order: set.order, time: set.time }));
+        .map((set) => ({
+          order: set.order,
+          time: set.time,
+          ...(set.restBeforeSec != null ? { restBeforeSec: set.restBeforeSec } : {}),
+        }));
       const firstTime = reps[0]?.time;
       const lastTime = reps.at(-1)?.time;
       const bestTime = reps.reduce<number | null>((best, rep) => best == null || rep.time < best ? rep.time : best, null);
@@ -220,7 +224,7 @@ export function buildSprintRepConsistency(
     .map(({ createdAt, ...session }) => session);
 }
 
-function getSprintProfileKey(workout: SprintPerformanceWorkout): string {
+export function getSprintProfileKey(workout: SprintPerformanceWorkout): string {
   if (workout.sprintProfile === "custom" && typeof workout.sprintProfileCustom === "string" && workout.sprintProfileCustom.trim()) {
     return `custom:${workout.sprintProfileCustom.trim()}`;
   }
@@ -233,10 +237,10 @@ function getSprintProfileLabel(key: string): string {
   return key.startsWith("custom:") ? key.slice("custom:".length) : PROFILE_LABELS[key] || "Unclassified";
 }
 
-function getSprintSurface(workout: SprintPerformanceWorkout): string {
+export function getSprintSurface(workout: SprintPerformanceWorkout): string {
   return typeof workout.sprintSurface === "string" && workout.sprintSurface ? workout.sprintSurface : "unknown";
 }
 
-function getSprintSlope(workout: SprintPerformanceWorkout): string {
+export function getSprintSlope(workout: SprintPerformanceWorkout): string {
   return typeof workout.sprintSlope === "string" && workout.sprintSlope ? workout.sprintSlope : "unknown";
 }

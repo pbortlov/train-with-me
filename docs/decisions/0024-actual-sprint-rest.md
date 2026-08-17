@@ -12,8 +12,9 @@ is needed before the app can later present recovery evidence.
 ## Decision
 
 - Add optional `restBeforeSec` to actual sprint reps after the first rep.
-- Accept athlete entry as either seconds (`90`) or minutes:seconds (`1:30`),
-  then normalize the stored value to seconds.
+- Accept athlete entry as either seconds (`90`) or minutes:seconds with
+  optional decimal seconds (`1:30`, `1:45.1`), then normalize the stored value
+  to seconds.
 - Do not require actual rest to save a workout or complete a planned sprint.
 - Keep planned block `restSec` unchanged and distinct from actual rest.
 - Direct sprint logging keeps rest typeable, but explains that it applies from

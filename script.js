@@ -64,6 +64,11 @@ import { buildRunningInsights } from "./src/domain/running-insights";
 import { buildSprintInsights } from "./src/domain/sprint-insights";
 import { formatSprintRest, formatSprintRestForInput, parseSprintRest } from "./src/domain/sprint-rest";
 import {
+  SPRINT_RECOVERY_MIN_PAIRS,
+  SPRINT_RECOVERY_MIN_SESSIONS,
+  buildSprintRecoveryInsight,
+} from "./src/domain/sprint-recovery";
+import {
   buildSprintPerformance,
   buildSprintRepConsistency,
   buildSprintRecordGroups,
@@ -144,6 +149,7 @@ const sprintPerformanceSummaryEl = document.getElementById("sprint-performance-s
 const sprintPerformanceSessionsEl = document.getElementById("sprint-performance-sessions");
 const sprintPerformanceChartCanvas = document.getElementById("sprint-performance-chart");
 const sprintPerformanceProgressCard = document.getElementById("sprint-performance-progression");
+const sprintRecoveryInsightEl = document.getElementById("sprint-recovery-insight");
 const sprintConsistencyChartCanvas = document.getElementById("sprint-consistency-chart");
 const sprintConsistencySessionsEl = document.getElementById("sprint-consistency-sessions");
 const sprintConsistencyCard = document.getElementById("sprint-consistency-card");
@@ -2748,6 +2754,7 @@ function renderSprintPerformance() {
   if (!sprintPerformanceStatusEl || !sprintPerformanceSummaryEl || !sprintPerformanceSessionsEl) return;
   const model = buildSprintPerformance(workouts, sprintPerformanceSelection);
   const records = buildSprintRecordGroups(workouts, sprintPerformanceSelection);
+  const recoveryInsight = buildSprintRecoveryInsight(workouts, sprintPerformanceSelection);
   const hasSingleFocus = sprintPerformanceSelection.profileKey !== "all" && sprintPerformanceSelection.distance > 0;
   const latestChange = model.latest && model.previous ? model.latest.bestTime - model.previous.bestTime : null;
   sprintPerformanceSummaryEl.innerHTML = hasSingleFocus && model.latest
@@ -2779,7 +2786,42 @@ function renderSprintPerformance() {
   sprintPerformanceProgressCard?.classList.toggle("is-hidden", !hasSingleFocus);
   sprintConsistencyCard?.classList.toggle("is-hidden", !hasSingleFocus);
   sprintPerformanceChart = createOrUpdateSprintPerformanceChart(sprintPerformanceChart, sprintPerformanceChartCanvas, model.sessions);
+  renderSprintRecoveryInsight(recoveryInsight);
   renderSprintRepConsistency();
+}
+
+function renderSprintRecoveryInsight(insight) {
+  if (!sprintRecoveryInsightEl) return;
+  if (insight.status === "choose-context") {
+    sprintRecoveryInsightEl.innerHTML = "<p class=\"planner-empty\">Choose one profile, distance, surface, and slope to analyse recovery without mixing conditions.</p>";
+    return;
+  }
+  if (insight.status === "collecting") {
+    sprintRecoveryInsightEl.innerHTML = `<p class="planner-empty"><strong>${insight.pairCount}/${SPRINT_RECOVERY_MIN_PAIRS} recorded rests</strong> across ${insight.sessionCount}/${SPRINT_RECOVERY_MIN_SESSIONS} sessions. Log actual rest before matching reps to unlock a recovery signal.</p>`;
+    return;
+  }
+  if (insight.status === "needs-variety") {
+    sprintRecoveryInsightEl.innerHTML = `<p class="planner-empty">${insight.pairCount} recorded rests across ${insight.sessionCount} sessions, but not enough repeat data at two different rest durations. Repeat at least two rest durations to compare them.</p>`;
+    return;
+  }
+  const best = insight.bestBand;
+  const comparison = insight.comparisonBand;
+  if (!best || !comparison || insight.medianDifference == null) {
+    sprintRecoveryInsightEl.innerHTML = "<p class=\"planner-empty\">Keep logging actual rest to build a recovery signal.</p>";
+    return;
+  }
+  const result = insight.status === "ready"
+    ? `<strong>Around ${formatSprintRest(best.restSeconds)} is the best-supported recovery signal.</strong><p>Median rep time: ${formatSprintSeconds(best.medianTime)} across ${best.pairCount} reps in ${best.sessionCount} sessions — ${insight.medianDifference.toFixed(2)} s faster than around ${formatSprintRest(comparison.restSeconds)} (${formatSprintSeconds(comparison.medianTime)}).</p>`
+    : `<strong>No clear recovery edge yet.</strong><p>The supported rest durations are only ${insight.medianDifference.toFixed(2)} s apart. Keep recording actual rest before changing your plan.</p>`;
+  sprintRecoveryInsightEl.innerHTML = `
+    <div class="sprint-recovery-result ${insight.status === "ready" ? "is-ready" : ""}">
+      ${result}
+      <details class="sprint-recovery-evidence">
+        <summary>See the evidence (${insight.pairCount} reps, ${insight.sessionCount} sessions)</summary>
+        <ul>${insight.supportedBands.map((band) => `<li>Around ${formatSprintRest(band.restSeconds)}: ${formatSprintSeconds(band.medianTime)} median · ${band.pairCount} reps / ${band.sessionCount} sessions</li>`).join("")}</ul>
+      </details>
+      <p class="hint">This is an observed signal, not a prescription: readiness, timing method, weather, and wind can also affect a sprint.</p>
+    </div>`;
 }
 
 function renderSprintRepConsistency() {
@@ -2798,9 +2840,10 @@ function renderSprintRepConsistency() {
               <span>First ${formatSprintSeconds(session.firstTime)} · Best ${formatSprintSeconds(session.bestTime)} · Last ${formatSprintSeconds(session.lastTime)} · ${formatSprintTimeChange(session.firstToLastChange)}</span>
             </summary>
             <details class="sprint-consistency-rep-details">
-              <summary>Rep times (${session.repCount})</summary>
+              <summary>Rep details (${session.repCount})</summary>
+              <div class="sprint-consistency-rep-heading" aria-hidden="true"><span>Rep</span><span>Time</span><span>Rest</span></div>
               <ol class="sprint-consistency-rep-list" aria-label="${escapeHtml(session.date)} sprint rep times">
-                ${session.reps.map((rep) => `<li><span>#${rep.order}</span><strong>${formatSprintSeconds(rep.time)}</strong></li>`).join("")}
+                ${session.reps.map((rep) => `<li><span>#${rep.order}</span><strong>${formatSprintSeconds(rep.time)}</strong><span>${formatSprintRest(rep.restBeforeSec) || "—"}</span></li>`).join("")}
               </ol>
             </details>
           </details>`)
@@ -3742,8 +3785,8 @@ function renderSprintSets() {
 function syncSprintRestBeforeInput() {
   if (sprintRestBeforeHintEl) {
     sprintRestBeforeHintEl.textContent = draftSprintSets.length > 0
-      ? "Optional: enter seconds or m:ss, for example 90 or 1:30."
-      : "Leave blank for the first rep; enter seconds or m:ss from rep 2.";
+      ? "Optional: enter seconds or m:ss with optional decimals, for example 90, 1:30, or 1:45.1."
+      : "Leave blank for the first rep; enter seconds or m:ss with optional decimals from rep 2.";
   }
 }
 
@@ -7049,7 +7092,7 @@ function renderCompletionSprintBlocks() {
                   ${blockIndex === 0 && rowIndex === 0
                     ? '<div class="completion-sprint-cell">—</div>'
                     : `<label class="completion-sprint-input">
-                        <input type="text" data-role="completion-sprint-rest-before" data-block-index="${blockIndex}" data-row-index="${rowIndex}" value="${escapeHtml(row.actualRestBeforeRaw || "")}" placeholder="1:30 or 90" />
+                        <input type="text" data-role="completion-sprint-rest-before" data-block-index="${blockIndex}" data-row-index="${rowIndex}" value="${escapeHtml(row.actualRestBeforeRaw || "")}" placeholder="1:45.1 or 90" />
                       </label>`}`,
               )
               .join("")}

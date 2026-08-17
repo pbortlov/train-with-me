@@ -25,11 +25,20 @@ describe("local-first UX guidance", () => {
 
   it("keeps exact sprint reps as a compact optional detail list", () => {
     expect(script).toContain('class="sprint-consistency-rep-details"');
-    expect(script).toContain("Rep times (${session.repCount})");
+    expect(script).toContain("Rep details (${session.repCount})");
     expect(script).toContain('class="sprint-consistency-rep-list"');
+    expect(script).toContain('class="sprint-consistency-rep-heading"');
     expect(script).toContain("formatSprintSeconds(rep.time)");
-    expect(styles).toContain("width: min(100%, 11rem)");
+    expect(script).toContain("formatSprintRest(rep.restBeforeSec)");
+    expect(styles).toContain("width: min(100%, 15rem)");
     expect(styles).toContain("font-variant-numeric: tabular-nums");
+  });
+
+  it("keeps sprint recovery guidance in the focused performance view with its evidence available on demand", () => {
+    expect(index).toContain('id="sprint-recovery-insight"');
+    expect(script).toContain("function renderSprintRecoveryInsight(insight)");
+    expect(script).toContain("See the evidence (${insight.pairCount} reps, ${insight.sessionCount} sessions)");
+    expect(styles).toContain(".sprint-recovery-evidence");
   });
 
   it("shows local-first onboarding and backup safety guidance", () => {

@@ -16,7 +16,7 @@ const workouts = [
     sprintProfile: "acceleration",
     sprintSurface: "natural-grass",
     sprintSlope: "flat",
-    sprintSets: [{ time: 5.2, distance: 40 }, { time: 5.1, distance: 40 }, { time: 1.9, distance: 10 }],
+    sprintSets: [{ time: 5.2, distance: 40 }, { time: 5.1, distance: 40, restBeforeSec: 180 }, { time: 1.9, distance: 10 }],
   },
   {
     id: "two",
@@ -93,7 +93,7 @@ describe("sprint performance", () => {
         repCount: 2,
         surface: "natural-grass",
         slope: "flat",
-        reps: [{ order: 1, time: 5.2 }, { order: 2, time: 5.1 }],
+        reps: [{ order: 1, time: 5.2 }, { order: 2, time: 5.1, restBeforeSec: 180 }],
         firstTime: 5.2,
         lastTime: 5.1,
         firstToLastChange: -0.1,

@@ -289,8 +289,8 @@
                 </label>
                 <label>
                   Actual rest before this rep (optional)
-                  <input type="text" id="sprint-rest-before-sec" aria-describedby="sprint-rest-before-hint" placeholder="e.g. 1:30 or 90" />
-                  <span id="sprint-rest-before-hint" class="hint">Leave blank for the first rep; enter seconds or m:ss from rep 2.</span>
+                  <input type="text" id="sprint-rest-before-sec" aria-describedby="sprint-rest-before-hint" placeholder="e.g. 1:45.1 or 90" />
+                  <span id="sprint-rest-before-hint" class="hint">Leave blank for the first rep; enter seconds or m:ss with optional decimals from rep 2.</span>
                 </label>
                 <button type="button" id="add-sprint-set">Add Sprint Set</button>
               </div>
@@ -901,6 +901,11 @@
         </div>
         <p id="sprint-performance-status" class="hint" aria-live="polite"></p>
         <div id="sprint-performance-summary" class="summary"></div>
+        <article class="chart-card sprint-recovery-card">
+          <h3>Recovery signal</h3>
+          <p class="hint">Uses actual rest before a rep. Compare only one exact training context.</p>
+          <div id="sprint-recovery-insight" aria-live="polite"></div>
+        </article>
         <article class="chart-card sprint-performance-chart-card" id="sprint-performance-progression">
           <h3>Session-best progression</h3>
           <p class="hint">Lower is faster. Each point is the best rep from that session at the selected distance.</p>
@@ -1220,7 +1225,7 @@
             </label>
           </section>
           <label>
-            Sprint sets (one per line: timeSec,distanceM,actualRestBeforeSec or m:ss optional)
+            Sprint sets (one per line: timeSec,distanceM,actualRestBeforeSec or m:ss with optional decimals)
             <textarea id="edit-sprint-sets" rows="4"></textarea>
           </label>
           <label>

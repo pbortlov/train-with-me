@@ -31,8 +31,11 @@
    seconds.
 7. Add optional actual rest before each rep after the first. Delivered as an
    optional actual value, separate from planned rest, with compatibility for
-   older sprint records. Athlete entry accepts seconds or `m:ss` while storage
-   stays normalized to seconds.
+   older sprint records. Athlete entry accepts seconds or `m:ss` with optional
+   decimal seconds while storage stays normalized to seconds.
 8. Add evidence-based recovery guidance once enough actual-rest data exists.
+   Delivered with an exact profile/distance/surface/slope context, a minimum of
+   eight logged rest-to-rep pairs across three sessions, and a conservative
+   comparison of supported 30-second rest bands.
 
 Each step is independently testable and reversible.
