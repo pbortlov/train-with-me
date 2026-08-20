@@ -76,6 +76,7 @@ import {
   listSprintProfileOptions,
 } from "./src/domain/sprint-performance";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
+import { findStrengthLastPerformance } from "./src/domain/strength-last-performance";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
 
@@ -115,8 +116,10 @@ const sprintProfileCustomInput = document.getElementById("sprint-profile-custom"
 const sprintProfileCustomField = document.getElementById("sprint-profile-custom-field");
 const addStrengthSetButton = document.getElementById("add-strength-set");
 const addStrengthExerciseButton = document.getElementById("add-strength-exercise");
+const exerciseNameInput = document.getElementById("exercise-name");
 const currentStrengthSetsList = document.getElementById("current-strength-sets");
 const strengthExerciseList = document.getElementById("strength-exercise-list");
+const strengthLastPerformanceEl = document.getElementById("strength-last-performance");
 const strengthSetLoadTypeInput = document.getElementById("strength-set-load-type");
 const strengthSetWeightInput = document.getElementById("strength-set-weight");
 const strengthSetBandColorInput = document.getElementById("strength-set-band-color");
@@ -539,6 +542,7 @@ activityInput.addEventListener("change", () => {
   updateVisibleFields();
   syncLoggingActivityButtons();
 });
+addSafeEventListener(exerciseNameInput, "input", renderStrengthLastPerformance);
 
 addSafeEventListener(sprintProfileInput, "change", () => {
   syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
@@ -758,9 +762,10 @@ addStrengthExerciseButton.addEventListener("click", () => {
   rememberExerciseName(exerciseName);
 
   draftCurrentStrengthSets = [];
-  document.getElementById("exercise-name").value = "";
+  exerciseNameInput.value = "";
   renderCurrentStrengthSets();
   renderStrengthExercises();
+  renderStrengthLastPerformance();
   setWorkoutFormStatus("Exercise added to workout.");
 });
 
@@ -2304,6 +2309,7 @@ function resetWorkoutForm() {
   dateInput.valueAsDate = new Date();
   renderCurrentStrengthSets();
   renderStrengthExercises();
+  renderStrengthLastPerformance();
   renderSprintSets();
   syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
   updateVisibleFields();
@@ -3939,6 +3945,33 @@ function renderStrengthExercises() {
       return `<li>${exerciseIndex + 1}. ${escapeHtml(exercise.name)} — ${setSummary}</li>`;
     })
     .join("");
+}
+
+function renderStrengthLastPerformance() {
+  if (!strengthLastPerformanceEl || !exerciseNameInput) {
+    return;
+  }
+
+  const performance = findStrengthLastPerformance(workouts, exerciseNameInput.value);
+  if (!performance) {
+    strengthLastPerformanceEl.hidden = true;
+    strengthLastPerformanceEl.innerHTML = "";
+    return;
+  }
+
+  const setSummary = performance.sets
+    .map((set) => `${formatNumber(set.reps)} reps @ ${formatStrengthLoad(set)}`)
+    .join(" · ");
+  const bestKg = performance.bestKgSet
+    ? `${formatNumber(performance.bestKgSet.weight)} kg × ${formatNumber(performance.bestKgSet.reps)}${performance.bestKgSet.date ? ` · ${escapeHtml(performance.bestKgSet.date)}` : ""}`
+    : "No kg set yet";
+
+  strengthLastPerformanceEl.hidden = false;
+  strengthLastPerformanceEl.innerHTML = `
+    <strong>Last time · ${performance.date ? escapeHtml(formatHumanDate(performance.date)) : "previous workout"}</strong>
+    <span>${escapeHtml(setSummary)}</span>
+    <span>Best kg set · ${bestKg}</span>
+  `;
 }
 
 function formatStrengthLoad(set) {

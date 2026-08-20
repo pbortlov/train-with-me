@@ -1129,6 +1129,22 @@ textarea:focus-visible {
   color: var(--muted);
 }
 
+.strength-last-performance {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #2d6b88;
+  border-radius: 10px;
+  background: #091a2c;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.strength-last-performance strong {
+  color: #9be7ff;
+}
+
 .calendar-launchpad {
   display: grid;
   gap: 0.85rem;

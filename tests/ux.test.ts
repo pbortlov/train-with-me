@@ -7,6 +7,14 @@ const styles = readFileSync("styles.css", "utf8");
 const previewDomain = readFileSync("src/domain/program-preview.ts", "utf8");
 
 describe("local-first UX guidance", () => {
+  it("shows the latest logged strength performance while the athlete enters a known exercise", () => {
+    expect(index).toContain('id="strength-last-performance"');
+    expect(script).toContain('findStrengthLastPerformance(workouts, exerciseNameInput.value)');
+    expect(script).toContain("Last time ·");
+    expect(script).toContain("Best kg set ·");
+    expect(styles).toContain(".strength-last-performance");
+  });
+
   it("extracts shared design tokens from the Programs palette", () => {
     expect(styles).toContain("--surface-program-panel-bg");
     expect(styles).toContain("--button-program-secondary-bg");
