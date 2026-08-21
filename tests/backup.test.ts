@@ -14,6 +14,7 @@ describe("backup compatibility", () => {
       phaseTemplates: [],
       phaseInstances: [],
       uiSettings: {},
+      strengthProgression: { profiles: [] },
     }, "2026-06-10T10:00:00.000Z");
 
     expect(payload.version).toBe(BACKUP_VERSION);
@@ -28,6 +29,7 @@ describe("backup compatibility", () => {
       phaseTemplates: [],
       phaseInstances: [],
       uiSettings: {},
+      strengthProgression: {},
     });
     expect(parseBackupPayload({ version: 1, ...requiredBackup }).workouts).toHaveLength(1);
   });
@@ -35,5 +37,17 @@ describe("backup compatibility", () => {
   it("rejects backups without required workouts and goals", () => {
     expect(() => parseBackupPayload({ workouts: [] })).toThrow("Invalid backup file format.");
     expect(() => parseBackupPayload({ goals: {} })).toThrow("Invalid backup file format.");
+  });
+
+  it("keeps progression data optional for old backups and preserves it for new ones", () => {
+    const parsed = parseBackupPayload({
+      ...requiredBackup,
+      strengthProgression: { gymWeightJumps: [1.25, 2.5], profiles: [{ exercise: "Back squat" }] },
+    });
+
+    expect(parsed.strengthProgression).toEqual({
+      gymWeightJumps: [1.25, 2.5],
+      profiles: [{ exercise: "Back squat" }],
+    });
   });
 });

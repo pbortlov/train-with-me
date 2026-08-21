@@ -154,6 +154,40 @@
                 <input type="text" id="exercise-name" list="exercise-suggestions" placeholder="e.g. Back squat" />
               </label>
               <aside id="strength-last-performance" class="strength-last-performance" aria-live="polite" hidden></aside>
+              <section id="strength-progression-panel" class="strength-progression-panel" aria-live="polite" hidden>
+                <div id="strength-progression-summary" class="strength-progression-summary"></div>
+                <div class="grid strength-progression-fields">
+                  <label>
+                    Target working sets
+                    <input type="number" id="strength-target-sets" min="1" step="1" value="3" />
+                  </label>
+                  <label>
+                    Rep range from
+                    <input type="number" id="strength-target-rep-min" min="1" step="1" value="8" />
+                  </label>
+                  <label>
+                    Rep range to
+                    <input type="number" id="strength-target-rep-max" min="1" step="1" value="10" />
+                  </label>
+                  <label>
+                    Working weight (kg)
+                    <input type="number" id="strength-target-working-weight" min="0" step="0.1" placeholder="e.g. 32.5" />
+                  </label>
+                  <label>
+                    Gym weight jumps (kg)
+                    <input type="text" id="strength-gym-weight-jumps" inputmode="decimal" placeholder="e.g. 1, 1.25, 2.5" />
+                  </label>
+                  <label>
+                    Exercise jump override (kg)
+                    <input type="text" id="strength-exercise-weight-jumps" inputmode="decimal" placeholder="Use gym jumps" />
+                  </label>
+                </div>
+                <div class="strength-progression-actions">
+                  <button type="button" class="ghost-button" id="save-strength-target">Save strength target</button>
+                  <button type="button" id="accept-strength-next-weight" hidden></button>
+                </div>
+                <p id="strength-progression-status" class="hint"></p>
+              </section>
 
               <label>
                 Set reps

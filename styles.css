@@ -1145,6 +1145,41 @@ textarea:focus-visible {
   color: #9be7ff;
 }
 
+.strength-progression-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.8rem;
+  border: 1px solid #4f7b58;
+  border-radius: 10px;
+  background: #0b1b15;
+}
+
+.strength-progression-summary {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.strength-progression-summary strong {
+  color: #b9f7a8;
+}
+
+.strength-progression-fields {
+  gap: 0.6rem;
+}
+
+.strength-progression-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.strength-progression-panel .hint {
+  margin: 0;
+}
+
 .calendar-launchpad {
   display: grid;
   gap: 0.85rem;

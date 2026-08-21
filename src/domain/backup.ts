@@ -7,6 +7,7 @@ export interface BackupCollections {
   phaseTemplates: unknown[];
   phaseInstances: unknown[];
   uiSettings: Record<string, unknown>;
+  strengthProgression: unknown;
 }
 
 export interface BackupPayload extends BackupCollections {
@@ -42,5 +43,6 @@ export function parseBackupPayload(value: unknown): BackupCollections {
       backup.uiSettings && typeof backup.uiSettings === "object" && !Array.isArray(backup.uiSettings)
         ? backup.uiSettings as Record<string, unknown>
         : {},
+    strengthProgression: backup.strengthProgression || {},
   };
 }

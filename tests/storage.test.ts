@@ -19,6 +19,7 @@ describe("storage compatibility", () => {
       "twm_phase_templates_v2",
       "twm_phase_instances_v2",
       "twm_ui_settings_v2",
+      "twm_strength_progression_v1",
     ]);
   });
 
