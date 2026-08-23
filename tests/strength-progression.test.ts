@@ -68,6 +68,7 @@ describe("strength progression", () => {
         { order: 2, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
         { order: 3, reps: 8, weight: 90, loadType: "kg", bandColor: "" },
       ],
+      [1.25, 2.5, 5],
     );
 
     expect(progression.qualifyingSet).toEqual({ reps: 8, weight: 90 });
@@ -83,6 +84,7 @@ describe("strength progression", () => {
     const progression = advanceStrengthTargetAfterWorkout(
       { ...profile, key: "back squat", workingWeight: 85 },
       [{ order: 1, reps: 11, weight: 90, loadType: "kg", bandColor: "" }],
+      [1.25, 2.5, 5],
     );
 
     expect(progression.qualifyingSet).toEqual({ reps: 11, weight: 90 });
@@ -97,6 +99,7 @@ describe("strength progression", () => {
         { order: 2, reps: 9, weight: 92.5, loadType: "kg", bandColor: "" },
         { order: 3, reps: 8, weight: 95, loadType: "kg", bandColor: "" },
       ],
+      [1.25, 2.5, 5],
     );
 
     expect(progression.qualifyingSet).toEqual({ reps: 8, weight: 95 });
@@ -109,10 +112,75 @@ describe("strength progression", () => {
       { order: 1, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
       { order: 2, reps: 7, weight: 90, loadType: "kg", bandColor: "" },
       { order: 3, reps: 12, weight: null, loadType: "bodyweight", bandColor: "" },
-    ]);
+    ], [1.25, 2.5, 5]);
 
     expect(progression.qualifyingSet).toBeNull();
     expect(progression.profile).toBe(savedProfile);
+  });
+
+  it("suggests the next permitted weight at the bottom of the rep range after all target sets reach the top", () => {
+    const progression = advanceStrengthTargetAfterWorkout(
+      { ...profile, key: "back squat", workingWeight: 85 },
+      [
+        { order: 1, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 2, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 3, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+      ],
+      [1.25, 2.5, 5],
+    );
+
+    expect(progression.profile.workingWeight).toBe(85);
+    expect(progression.qualifyingSet).toBeNull();
+    expect(progression.nextTargetSuggestion).toEqual({
+      targetSets: 3,
+      reps: 8,
+      weight: 87.5,
+      increment: 2.5,
+    });
+  });
+
+  it("does not suggest a next target before every target set reaches the top rep range", () => {
+    const progression = advanceStrengthTargetAfterWorkout(
+      { ...profile, key: "back squat", workingWeight: 85 },
+      [
+        { order: 1, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 2, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 3, reps: 9, weight: 85, loadType: "kg", bandColor: "" },
+      ],
+      [1.25, 2.5, 5],
+    );
+
+    expect(progression.nextTargetSuggestion).toBeNull();
+  });
+
+  it("lets a qualifying heavier set win over a calculated next target", () => {
+    const progression = advanceStrengthTargetAfterWorkout(
+      { ...profile, key: "back squat", workingWeight: 85 },
+      [
+        { order: 1, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 2, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 3, reps: 10, weight: 90, loadType: "kg", bandColor: "" },
+      ],
+      [1.25, 2.5, 5],
+    );
+
+    expect(progression.profile.workingWeight).toBe(90);
+    expect(progression.qualifyingSet).toEqual({ reps: 10, weight: 90 });
+    expect(progression.nextTargetSuggestion).toBeNull();
+  });
+
+  it("does not suggest a next target when no allowed jump is available", () => {
+    const progression = advanceStrengthTargetAfterWorkout(
+      { ...profile, key: "back squat", workingWeight: 85, allowedJumps: [] },
+      [
+        { order: 1, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 2, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 3, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+      ],
+      [],
+    );
+
+    expect(progression.nextTargetSuggestion).toBeNull();
   });
 
   it("keeps gym jumps, profile overrides, and malformed legacy data safe", () => {

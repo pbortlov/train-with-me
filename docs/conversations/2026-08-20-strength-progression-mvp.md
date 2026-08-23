@@ -9,9 +9,10 @@ session gain even when the heaviest set is unchanged.
 
 ## Agreed model
 
-- Use two separate concepts: session progress (such as a promoted set) and a
-  saved-workout target update when a heavier kg set meets the target minimum
-  reps.
+- Use two separate concepts: session progress (such as a promoted set) and
+  saved-workout target progression. Completing all target sets at the top of
+  the rep range shows a next permitted target at the range minimum; a heavier
+  kg set that meets the target minimum reps updates the saved working weight.
 - Preserve the exact ordered set sequence for recall, but do not privilege the
   final/heaviest set when evaluating a future session.
 - Programs or coaches always override app recommendations.
@@ -23,9 +24,11 @@ session gain even when the heaviest set is unchanged.
 1. Show latest logged sets and best kg set in the actual strength logger.
    Delivered with no new stored data or recommendation.
 2. Add saved targets, promoted-set comparison, and backwards-compatible
-   persistence. A saved workout automatically updates a named kg target to its
-   highest comparable heavier set when it meets the target minimum reps; set
-   count and rep range remain unchanged.
+   persistence. After saving, a top-range workout can show a next permitted
+   target at the range minimum without changing the saved target. A named kg
+   target automatically updates to the highest comparable heavier set when it
+   meets the target minimum reps; that completed work takes precedence over a
+   calculated suggestion, while set count and rep range remain unchanged.
 3. Add working/warm-up context, variation/equipment, optional effort, recovery
    flags, and program authority.
 4. Add achievement feedback and repeated-session trends in Stats.

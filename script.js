@@ -83,6 +83,7 @@ import {
   createDefaultStrengthProgressionState,
   findStrengthProgressionProfile,
   normalizeStrengthProgressionState,
+  parseWeightJumps,
   upsertStrengthProgressionProfile,
 } from "./src/domain/strength-progression";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
@@ -136,6 +137,8 @@ const strengthTargetSetsInput = document.getElementById("strength-target-sets");
 const strengthTargetRepMinInput = document.getElementById("strength-target-rep-min");
 const strengthTargetRepMaxInput = document.getElementById("strength-target-rep-max");
 const strengthTargetWorkingWeightInput = document.getElementById("strength-target-working-weight");
+const strengthGymWeightJumpsInput = document.getElementById("strength-gym-weight-jumps");
+const strengthExerciseWeightJumpsInput = document.getElementById("strength-exercise-weight-jumps");
 const saveStrengthTargetButton = document.getElementById("save-strength-target");
 const strengthSetLoadTypeInput = document.getElementById("strength-set-load-type");
 const strengthSetWeightInput = document.getElementById("strength-set-weight");
@@ -553,12 +556,12 @@ workoutForm.addEventListener("submit", (event) => {
     workouts.unshift(workout);
   }
   save(STORAGE_KEY_WORKOUTS, workouts);
-  const progressionUpdates = workout.activity === "strength"
+  const progressionOutcomes = workout.activity === "strength"
     ? applyAutomaticStrengthTargetProgression(workout)
     : [];
   evaluateGoals({ persist: true, celebrate: true });
   resetWorkoutForm();
-  setWorkoutFormStatus(formatWorkoutSaveStatus(progressionUpdates));
+  setWorkoutFormStatus(formatWorkoutSaveStatus(progressionOutcomes));
   render();
 });
 
@@ -571,41 +574,57 @@ function applyAutomaticStrengthTargetProgression(workout) {
     exercisesByName.set(key, entry);
   });
 
-  const updates = [];
+  const outcomes = [];
   exercisesByName.forEach(({ exerciseName, sets }) => {
     const profile = findStrengthProgressionProfile(strengthProgression, exerciseName);
     if (!profile) {
       return;
     }
 
-    const progression = advanceStrengthTargetAfterWorkout(profile, sets);
-    if (!progression.qualifyingSet) {
-      return;
+    const progression = advanceStrengthTargetAfterWorkout(profile, sets, strengthProgression.gymWeightJumps);
+    if (progression.qualifyingSet) {
+      strengthProgression = upsertStrengthProgressionProfile(strengthProgression, progression.profile);
+      outcomes.push({
+        type: "updated",
+        exerciseName: profile.exercise,
+        previousWeight: profile.workingWeight,
+        qualifyingSet: progression.qualifyingSet,
+      });
+    } else if (progression.nextTargetSuggestion) {
+      outcomes.push({
+        type: "suggested",
+        exerciseName: profile.exercise,
+        nextTargetSuggestion: progression.nextTargetSuggestion,
+      });
     }
-
-    strengthProgression = upsertStrengthProgressionProfile(strengthProgression, progression.profile);
-    updates.push({
-      exerciseName: profile.exercise,
-      previousWeight: profile.workingWeight,
-      qualifyingSet: progression.qualifyingSet,
-    });
   });
 
-  if (updates.length) {
+  if (outcomes.some((outcome) => outcome.type === "updated")) {
     save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
   }
-  return updates;
+  return outcomes;
 }
 
-function formatWorkoutSaveStatus(progressionUpdates) {
-  if (!progressionUpdates.length) {
+function formatWorkoutSaveStatus(progressionOutcomes) {
+  if (!progressionOutcomes.length) {
     return "Workout saved.";
   }
 
-  const updates = progressionUpdates.map(({ exerciseName, previousWeight, qualifyingSet }) =>
-    `${exerciseName} ${formatNumber(previousWeight)} kg → ${formatNumber(qualifyingSet.weight)} kg after ${formatNumber(qualifyingSet.reps)} reps @ ${formatNumber(qualifyingSet.weight)} kg`,
-  );
-  return `Workout saved. ${updates.length === 1 ? "Target updated" : "Targets updated"}: ${updates.join("; ")}.`;
+  const updates = progressionOutcomes
+    .filter((outcome) => outcome.type === "updated")
+    .map(({ exerciseName, previousWeight, qualifyingSet }) =>
+      `${exerciseName} ${formatNumber(previousWeight)} kg → ${formatNumber(qualifyingSet.weight)} kg after ${formatNumber(qualifyingSet.reps)} reps @ ${formatNumber(qualifyingSet.weight)} kg`,
+    );
+  const suggestions = progressionOutcomes
+    .filter((outcome) => outcome.type === "suggested")
+    .map(({ exerciseName, nextTargetSuggestion }) =>
+      `${exerciseName} ${nextTargetSuggestion.targetSets} × ${nextTargetSuggestion.reps} @ ${formatNumber(nextTargetSuggestion.weight)} kg`,
+    );
+  const messages = [
+    updates.length ? `${updates.length === 1 ? "Target updated" : "Targets updated"}: ${updates.join("; ")}.` : "",
+    suggestions.length ? `${suggestions.length === 1 ? "Next target suggestion" : "Next target suggestions"}: ${suggestions.join("; ")}. Log a qualifying heavier set to update the saved target.` : "",
+  ].filter(Boolean);
+  return `Workout saved. ${messages.join(" ")}`;
 }
 
 activityInput.addEventListener("change", () => {
@@ -4089,7 +4108,7 @@ function renderStrengthProgressionPanel() {
     ? renderStrengthProgressionSummary(profile, sessionProgress)
     : `
       <strong>Set your strength target</strong>
-      <span>Start with the editable 3 × 8–10 template. A qualifying heavier kg set updates the saved target after the workout is saved.</span>
+      <span>Start with the editable 3 × 8–10 template. Saving can suggest a next target after top-range sets or update the target from a qualifying heavier kg set.</span>
     `;
 
   if (strengthSetLoadTypeInput?.value !== "kg" && strengthProgressionStatusEl) {
@@ -4100,7 +4119,7 @@ function renderStrengthProgressionPanel() {
 }
 
 function hydrateStrengthProgressionInputs(profile, previous) {
-  if (!strengthTargetSetsInput || !strengthTargetRepMinInput || !strengthTargetRepMaxInput || !strengthTargetWorkingWeightInput) {
+  if (!strengthTargetSetsInput || !strengthTargetRepMinInput || !strengthTargetRepMaxInput || !strengthTargetWorkingWeightInput || !strengthGymWeightJumpsInput || !strengthExerciseWeightJumpsInput) {
     return;
   }
 
@@ -4114,6 +4133,8 @@ function hydrateStrengthProgressionInputs(profile, previous) {
   strengthTargetRepMinInput.value = String(profile?.repMin || 8);
   strengthTargetRepMaxInput.value = String(profile?.repMax || 10);
   strengthTargetWorkingWeightInput.value = profile ? String(profile.workingWeight) : latestTopKg ? String(latestTopKg) : "";
+  strengthGymWeightJumpsInput.value = strengthProgression.gymWeightJumps.join(", ");
+  strengthExerciseWeightJumpsInput.value = profile?.allowedJumps.join(", ") || "";
 }
 
 function renderStrengthProgressionSummary(profile, sessionProgress) {
@@ -4130,7 +4151,7 @@ function renderStrengthProgressionSummary(profile, sessionProgress) {
       ? `${sessionProgress.repGainCount} ${sessionProgress.repGainCount === 1 ? "rep gain" : "rep gains"} at the same load`
       : "",
   ].filter(Boolean);
-  const autoProgression = `After this workout is saved, a kg set above ${formatNumber(profile.workingWeight)} kg with at least ${profile.repMin} reps updates this target automatically.`;
+  const autoProgression = `After this workout is saved, a kg set above ${formatNumber(profile.workingWeight)} kg with at least ${profile.repMin} reps updates this target automatically. Completing ${profile.targetSets} sets at ${formatNumber(profile.workingWeight)} kg × ${profile.repMax} reps can suggest the next target at ${profile.repMin} reps.`;
 
   return `${base}<span>${sessionChanges.length ? `Today: ${sessionChanges.join(" · ")}.` : "Today: no promoted set or same-load rep gain yet."}</span><span>${autoProgression}</span>`;
 }
@@ -4141,15 +4162,20 @@ function saveStrengthProgressionTarget() {
   const repMin = toNumberOrNull(strengthTargetRepMinInput?.value);
   const repMax = toNumberOrNull(strengthTargetRepMaxInput?.value);
   const workingWeight = toNumberOrNull(strengthTargetWorkingWeightInput?.value);
-  const existingProfile = findStrengthProgressionProfile(strengthProgression, exerciseName);
+  const gymWeightJumps = parseWeightJumps(strengthGymWeightJumpsInput?.value || "");
+  const allowedJumps = parseWeightJumps(strengthExerciseWeightJumpsInput?.value || "");
 
   if (!exerciseName || !Number.isInteger(targetSets) || targetSets <= 0 || !Number.isInteger(repMin) || !Number.isInteger(repMax) || repMin <= 0 || repMax < repMin || !isNumber(workingWeight) || workingWeight <= 0) {
     setStrengthProgressionStatus("Enter an exercise, whole-number sets and reps, and a working weight greater than 0.", "error");
     return;
   }
+  if (!gymWeightJumps.length) {
+    setStrengthProgressionStatus("Enter at least one gym weight jump, such as 1.25 or 2.5.", "error");
+    return;
+  }
 
   strengthProgression = upsertStrengthProgressionProfile(
-    strengthProgression,
+    { ...strengthProgression, gymWeightJumps },
     {
       exercise: exerciseName,
       goal: "strength",
@@ -4157,7 +4183,7 @@ function saveStrengthProgressionTarget() {
       repMin,
       repMax,
       workingWeight,
-      allowedJumps: existingProfile?.allowedJumps || [],
+      allowedJumps,
     },
   );
   save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
