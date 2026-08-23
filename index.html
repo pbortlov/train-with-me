@@ -153,6 +153,27 @@
                 Exercise name
                 <input type="text" id="exercise-name" list="exercise-suggestions" placeholder="e.g. Back squat" />
               </label>
+              <div class="grid strength-context-fields">
+                <label>
+                  Variation (optional)
+                  <input type="text" id="strength-exercise-variation" placeholder="e.g. High bar" />
+                </label>
+                <label>
+                  Equipment (optional)
+                  <input type="text" id="strength-exercise-equipment" placeholder="e.g. Barbell" />
+                </label>
+                <label>
+                  Session RIR (optional)
+                  <input type="number" id="strength-session-rir" min="0" max="4" step="1" placeholder="0–4" />
+                </label>
+              </div>
+              <fieldset class="strength-session-flags">
+                <legend>Session context</legend>
+                <label class="check-label"><input type="checkbox" id="strength-session-deload" /> Deload</label>
+                <label class="check-label"><input type="checkbox" id="strength-session-technique" /> Technique-focused</label>
+                <label class="check-label"><input type="checkbox" id="strength-session-pain" /> Pain or concerning discomfort</label>
+                <label class="check-label"><input type="checkbox" id="strength-session-incomplete" /> Incomplete session</label>
+              </fieldset>
               <aside id="strength-last-performance" class="strength-last-performance" aria-live="polite" hidden></aside>
               <section id="strength-progression-panel" class="strength-progression-panel" aria-live="polite" hidden>
                 <div id="strength-progression-summary" class="strength-progression-summary"></div>
@@ -199,6 +220,14 @@
                   <option value="kg">kg</option>
                   <option value="bodyweight">Body weight</option>
                   <option value="band">Band</option>
+                </select>
+              </label>
+
+              <label>
+                Set type
+                <select id="strength-set-kind">
+                  <option value="working">Working set</option>
+                  <option value="warmup">Warm-up</option>
                 </select>
               </label>
 

@@ -1,10 +1,16 @@
-import { normalizeStrengthExercises, type StrengthSet } from "./normalization";
+import {
+  isStrengthSessionComparable,
+  normalizeStrengthExercises,
+  strengthExerciseKey,
+  type StrengthSet,
+} from "./normalization";
 
 export interface StrengthPerformanceWorkout {
   activity?: string;
   date?: string;
   createdAt?: number;
   strengthExercises?: unknown;
+  strengthContext?: unknown;
 }
 
 export interface StrengthKgBestSet {
@@ -31,19 +37,23 @@ interface ExerciseOccurrence {
 export function findStrengthLastPerformance(
   workouts: StrengthPerformanceWorkout[],
   exerciseName: string,
+  variation = "",
+  equipment = "",
 ): StrengthLastPerformance | null {
-  const exerciseKey = normalizeExerciseName(exerciseName);
+  const exerciseKey = strengthExerciseKey(exerciseName, variation, equipment);
   if (!exerciseKey) {
     return null;
   }
 
   const occurrences = workouts.flatMap((workout, workoutIndex) => {
-    if (workout.activity !== "strength") {
+    if (workout.activity !== "strength" || !isStrengthSessionComparable(workout.strengthContext)) {
       return [];
     }
 
     return normalizeStrengthExercises(workout.strengthExercises)
-      .filter((exercise) => normalizeExerciseName(exercise.name) === exerciseKey)
+      .filter((exercise) => strengthExerciseKey(exercise.name, exercise.variation, exercise.equipment) === exerciseKey)
+      .map((exercise) => ({ ...exercise, sets: exercise.sets.filter((set) => set.kind !== "warmup") }))
+      .filter((exercise) => exercise.sets.length > 0)
       .map<ExerciseOccurrence>((exercise) => ({
         exercise: exercise.name,
         date: workout.date || "",
@@ -66,10 +76,6 @@ export function findStrengthLastPerformance(
     sets: latest.sets,
     bestKgSet: findBestKgSet(occurrences),
   };
-}
-
-function normalizeExerciseName(value: string): string {
-  return value.trim().toLocaleLowerCase();
 }
 
 function findBestKgSet(occurrences: ExerciseOccurrence[]): StrengthKgBestSet | null {

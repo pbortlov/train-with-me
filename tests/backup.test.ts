@@ -50,4 +50,20 @@ describe("backup compatibility", () => {
       profiles: [{ exercise: "Back squat" }],
     });
   });
+
+  it("preserves optional strength comparison context for compatible consumers", () => {
+    const workout = {
+      id: "strength-context",
+      activity: "strength",
+      strengthContext: { rir: 2, isTechnique: true },
+      strengthExercises: [{
+        name: "Back squat",
+        variation: "High bar",
+        equipment: "Barbell",
+        sets: [{ reps: 5, weight: 100, loadType: "kg", kind: "working" }],
+      }],
+    };
+
+    expect(parseBackupPayload({ ...requiredBackup, workouts: [workout] }).workouts).toEqual([workout]);
+  });
 });

@@ -1,9 +1,11 @@
-import type { StrengthSet } from "./normalization";
+import { strengthExerciseKey, type StrengthSet } from "./normalization";
 
 export const DEFAULT_GYM_WEIGHT_JUMPS = [1, 1.25, 2.5, 5];
 
 export interface StrengthProgressionProfile {
   exercise: string;
+  variation?: string;
+  equipment?: string;
   key: string;
   goal: "strength";
   targetSets: number;
@@ -72,8 +74,10 @@ export function normalizeStrengthProgressionState(value: unknown): StrengthProgr
 export function findStrengthProgressionProfile(
   state: StrengthProgressionState,
   exerciseName: string,
+  variation = "",
+  equipment = "",
 ): StrengthProgressionProfile | null {
-  const key = normalizeExerciseKey(exerciseName);
+  const key = strengthExerciseKey(exerciseName, variation, equipment);
   return state.profiles.find((profile) => profile.key === key) || null;
 }
 
@@ -176,7 +180,9 @@ function normalizeStrengthProgressionProfile(value: unknown): StrengthProgressio
   }
 
   const exercise = value.exercise.trim();
-  const key = normalizeExerciseKey(exercise);
+  const variation = typeof value.variation === "string" ? value.variation.trim() : "";
+  const equipment = typeof value.equipment === "string" ? value.equipment.trim() : "";
+  const key = strengthExerciseKey(exercise, variation, equipment);
   const targetSets = positiveInteger(value.targetSets);
   const repMin = positiveInteger(value.repMin);
   const repMax = positiveInteger(value.repMax);
@@ -187,6 +193,8 @@ function normalizeStrengthProgressionProfile(value: unknown): StrengthProgressio
 
   return {
     exercise,
+    variation,
+    equipment,
     key,
     goal: "strength",
     targetSets,
@@ -258,7 +266,7 @@ function selectSuggestedIncrement(jumps: number[], workingWeight: number): numbe
 
 function kgSets(sets: StrengthSet[]): ComparableKgSet[] {
   return sets
-    .filter((set): set is StrengthSet & { weight: number } => set.loadType === "kg" && typeof set.weight === "number")
+    .filter((set): set is StrengthSet & { weight: number } => set.kind !== "warmup" && set.loadType === "kg" && typeof set.weight === "number")
     .map((set) => ({ reps: set.reps, weight: set.weight }));
 }
 
@@ -267,10 +275,6 @@ function normalizeWeightJumps(value: unknown, fallback: number[]): number[] {
     return [...fallback];
   }
   return [...new Set(value.filter(positiveNumber))].sort((left, right) => left - right);
-}
-
-function normalizeExerciseKey(value: string): string {
-  return value.trim().toLowerCase();
 }
 
 function positiveInteger(value: unknown): number | null {

@@ -9,7 +9,7 @@ const previewDomain = readFileSync("src/domain/program-preview.ts", "utf8");
 describe("local-first UX guidance", () => {
   it("shows the latest logged strength performance while the athlete enters a known exercise", () => {
     expect(index).toContain('id="strength-last-performance"');
-    expect(script).toContain('findStrengthLastPerformance(workouts, exerciseNameInput.value)');
+    expect(script).toContain("findStrengthLastPerformance(\n    workouts,");
     expect(script).toContain("Last time ·");
     expect(script).toContain("Best kg set ·");
     expect(styles).toContain(".strength-last-performance");
@@ -18,6 +18,11 @@ describe("local-first UX guidance", () => {
   it("keeps editable strength targets, permitted jumps, and post-save progression feedback in the logger", () => {
     expect(index).toContain('id="strength-progression-panel"');
     expect(index).toContain('id="strength-target-sets"');
+    expect(index).toContain('id="strength-exercise-variation"');
+    expect(index).toContain('id="strength-exercise-equipment"');
+    expect(index).toContain('id="strength-set-kind"');
+    expect(index).toContain('id="strength-session-rir"');
+    expect(index).toContain('id="strength-session-deload"');
     expect(index).toContain('id="strength-gym-weight-jumps"');
     expect(index).toContain('id="strength-exercise-weight-jumps"');
     expect(index).not.toContain('id="accept-strength-next-weight"');
@@ -25,6 +30,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("advanceStrengthTargetAfterWorkout(profile, sets, strengthProgression.gymWeightJumps)");
     expect(script).toContain("Next target suggestion");
     expect(script).toContain("After this workout is saved");
+    expect(script).toContain("isStrengthSessionComparableCore(workout.strengthContext)");
     expect(styles).toContain(".strength-progression-panel");
   });
 

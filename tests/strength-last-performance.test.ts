@@ -99,4 +99,41 @@ describe("findStrengthLastPerformance", () => {
     expect(performance?.sets[0]).toMatchObject({ reps: 8, loadType: "bodyweight" });
     expect(performance?.bestKgSet).toBeNull();
   });
+
+  it("keeps variations and equipment separate and excludes warm-ups and non-comparable sessions", () => {
+    const workouts = [
+      {
+        activity: "strength",
+        date: "2026-08-01",
+        strengthExercises: [{ name: "Bench press", variation: "Paused", equipment: "Barbell", sets: [{ reps: 8, weight: 80, loadType: "kg", kind: "working" }] }],
+      },
+      {
+        activity: "strength",
+        date: "2026-08-08",
+        strengthExercises: [{ name: "Bench press", variation: "Paused", equipment: "Barbell", sets: [{ reps: 12, weight: 100, loadType: "kg", kind: "warmup" }] }],
+      },
+      {
+        activity: "strength",
+        date: "2026-08-15",
+        strengthContext: { isDeload: true },
+        strengthExercises: [{ name: "Bench press", variation: "Paused", equipment: "Barbell", sets: [{ reps: 8, weight: 90, loadType: "kg", kind: "working" }] }],
+      },
+      {
+        activity: "strength",
+        date: "2026-08-18",
+        strengthContext: { isProgram: true },
+        strengthExercises: [{ name: "Bench press", variation: "Paused", equipment: "Barbell", sets: [{ reps: 8, weight: 100, loadType: "kg", kind: "working" }] }],
+      },
+      {
+        activity: "strength",
+        date: "2026-08-20",
+        strengthExercises: [{ name: "Bench press", variation: "Touch and go", equipment: "Barbell", sets: [{ reps: 8, weight: 95, loadType: "kg", kind: "working" }] }],
+      },
+    ];
+
+    const paused = findStrengthLastPerformance(workouts, "Bench press", "Paused", "Barbell");
+    expect(paused?.date).toBe("2026-08-01");
+    expect(paused?.bestKgSet).toEqual({ weight: 80, reps: 8, date: "2026-08-01" });
+    expect(findStrengthLastPerformance(workouts, "Bench press", "Touch and go", "Barbell")?.bestKgSet?.weight).toBe(95);
+  });
 });

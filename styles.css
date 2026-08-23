@@ -1155,6 +1155,26 @@ textarea:focus-visible {
   background: #0b1b15;
 }
 
+.strength-context-fields,
+.strength-session-flags {
+  grid-column: 1 / -1;
+}
+
+.strength-session-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+}
+
+.strength-session-flags legend {
+  padding-inline: 0.25rem;
+  color: var(--muted);
+}
+
 .strength-progression-summary {
   display: grid;
   gap: 0.25rem;

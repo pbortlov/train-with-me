@@ -118,6 +118,21 @@ describe("strength progression", () => {
     expect(progression.profile).toBe(savedProfile);
   });
 
+  it("does not treat a warm-up set as qualifying heavier work", () => {
+    const progression = advanceStrengthTargetAfterWorkout(
+      { ...profile, key: "back squat", workingWeight: 85 },
+      [
+        { order: 1, reps: 8, weight: 90, loadType: "kg", bandColor: "", kind: "warmup" },
+        { order: 2, reps: 7, weight: 85, loadType: "kg", bandColor: "", kind: "working" },
+      ],
+      [1.25, 2.5, 5],
+    );
+
+    expect(progression.qualifyingSet).toBeNull();
+    expect(progression.nextTargetSuggestion).toBeNull();
+    expect(progression.profile.workingWeight).toBe(85);
+  });
+
   it("suggests the next permitted weight at the bottom of the rep range after all target sets reach the top", () => {
     const progression = advanceStrengthTargetAfterWorkout(
       { ...profile, key: "back squat", workingWeight: 85 },
