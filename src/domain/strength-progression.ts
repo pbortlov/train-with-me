@@ -21,11 +21,16 @@ export interface StrengthProgressionState {
 export interface StrengthSessionProgress {
   promotedSetCount: number;
   repGainCount: number;
-  targetSetCount: number;
-  completedTargetSetCount: number;
-  isReadyForNextWeight: boolean;
-  suggestedIncrement: number | null;
-  suggestedWeight: number | null;
+}
+
+export interface QualifyingHeavierSet {
+  reps: number;
+  weight: number;
+}
+
+export interface AutomaticStrengthTargetProgression {
+  profile: StrengthProgressionProfile;
+  qualifyingSet: QualifyingHeavierSet | null;
 }
 
 export function createDefaultStrengthProgressionState(): StrengthProgressionState {
@@ -97,28 +102,34 @@ export function getAllowedWeightJumps(
 export function buildStrengthSessionProgress(
   previousSets: StrengthSet[],
   currentSets: StrengthSet[],
-  profile: Pick<StrengthProgressionProfile, "targetSets" | "repMin" | "repMax" | "workingWeight" | "allowedJumps">,
-  gymWeightJumps: number[],
 ): StrengthSessionProgress {
   const previousKgSets = kgSets(previousSets);
   const currentKgSets = kgSets(currentSets);
-  const completedTargetSetCount = currentKgSets.filter(
-    (set) => set.weight >= profile.workingWeight && set.reps >= profile.repMax,
-  ).length;
-  const isReadyForNextWeight = completedTargetSetCount >= profile.targetSets;
-  const suggestedIncrement = isReadyForNextWeight
-    ? selectSuggestedIncrement(profile.workingWeight, profile.allowedJumps.length ? profile.allowedJumps : gymWeightJumps)
-    : null;
 
   return {
     promotedSetCount: countPromotedSets(previousKgSets, currentKgSets),
     repGainCount: countRepGains(previousKgSets, currentKgSets),
-    targetSetCount: profile.targetSets,
-    completedTargetSetCount,
-    isReadyForNextWeight,
-    suggestedIncrement,
-    suggestedWeight: suggestedIncrement == null ? null : profile.workingWeight + suggestedIncrement,
   };
+}
+
+export function advanceStrengthTargetAfterWorkout(
+  profile: StrengthProgressionProfile,
+  completedSets: StrengthSet[],
+): AutomaticStrengthTargetProgression {
+  const qualifyingSet = findQualifyingHeavierKgSet(completedSets, profile);
+  return {
+    profile: qualifyingSet ? { ...profile, workingWeight: qualifyingSet.weight } : profile,
+    qualifyingSet,
+  };
+}
+
+export function findQualifyingHeavierKgSet(
+  completedSets: StrengthSet[],
+  profile: Pick<StrengthProgressionProfile, "workingWeight" | "repMin">,
+): QualifyingHeavierSet | null {
+  return kgSets(completedSets)
+    .filter((set) => set.weight > profile.workingWeight && set.reps >= profile.repMin)
+    .sort((left, right) => right.weight - left.weight || right.reps - left.reps)[0] || null;
 }
 
 function normalizeStrengthProgressionProfile(value: unknown): StrengthProgressionProfile | null {
@@ -194,17 +205,6 @@ function setsByMetric(
   });
   grouped.forEach((values, key) => grouped.set(key, values.sort((left, right) => left - right)));
   return grouped;
-}
-
-function selectSuggestedIncrement(workingWeight: number, jumps: number[]): number | null {
-  if (!jumps.length) {
-    return null;
-  }
-
-  const targetIncrement = workingWeight * 0.025;
-  return [...jumps].sort((left, right) =>
-    Math.abs(left - targetIncrement) - Math.abs(right - targetIncrement) || left - right,
-  )[0];
 }
 
 function kgSets(sets: StrengthSet[]): ComparableKgSet[] {

@@ -78,11 +78,11 @@ import {
 import { buildStrengthInsights } from "./src/domain/strength-insights";
 import { findStrengthLastPerformance } from "./src/domain/strength-last-performance";
 import {
+  advanceStrengthTargetAfterWorkout,
   buildStrengthSessionProgress,
   createDefaultStrengthProgressionState,
   findStrengthProgressionProfile,
   normalizeStrengthProgressionState,
-  parseWeightJumps,
   upsertStrengthProgressionProfile,
 } from "./src/domain/strength-progression";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
@@ -136,10 +136,7 @@ const strengthTargetSetsInput = document.getElementById("strength-target-sets");
 const strengthTargetRepMinInput = document.getElementById("strength-target-rep-min");
 const strengthTargetRepMaxInput = document.getElementById("strength-target-rep-max");
 const strengthTargetWorkingWeightInput = document.getElementById("strength-target-working-weight");
-const strengthGymWeightJumpsInput = document.getElementById("strength-gym-weight-jumps");
-const strengthExerciseWeightJumpsInput = document.getElementById("strength-exercise-weight-jumps");
 const saveStrengthTargetButton = document.getElementById("save-strength-target");
-const acceptStrengthNextWeightButton = document.getElementById("accept-strength-next-weight");
 const strengthSetLoadTypeInput = document.getElementById("strength-set-load-type");
 const strengthSetWeightInput = document.getElementById("strength-set-weight");
 const strengthSetBandColorInput = document.getElementById("strength-set-band-color");
@@ -556,11 +553,60 @@ workoutForm.addEventListener("submit", (event) => {
     workouts.unshift(workout);
   }
   save(STORAGE_KEY_WORKOUTS, workouts);
+  const progressionUpdates = workout.activity === "strength"
+    ? applyAutomaticStrengthTargetProgression(workout)
+    : [];
   evaluateGoals({ persist: true, celebrate: true });
   resetWorkoutForm();
-  setWorkoutFormStatus("Workout saved.");
+  setWorkoutFormStatus(formatWorkoutSaveStatus(progressionUpdates));
   render();
 });
+
+function applyAutomaticStrengthTargetProgression(workout) {
+  const exercisesByName = new Map();
+  workout.strengthExercises.forEach((exercise) => {
+    const key = exercise.name.trim().toLowerCase();
+    const entry = exercisesByName.get(key) || { exerciseName: exercise.name, sets: [] };
+    entry.sets.push(...exercise.sets);
+    exercisesByName.set(key, entry);
+  });
+
+  const updates = [];
+  exercisesByName.forEach(({ exerciseName, sets }) => {
+    const profile = findStrengthProgressionProfile(strengthProgression, exerciseName);
+    if (!profile) {
+      return;
+    }
+
+    const progression = advanceStrengthTargetAfterWorkout(profile, sets);
+    if (!progression.qualifyingSet) {
+      return;
+    }
+
+    strengthProgression = upsertStrengthProgressionProfile(strengthProgression, progression.profile);
+    updates.push({
+      exerciseName: profile.exercise,
+      previousWeight: profile.workingWeight,
+      qualifyingSet: progression.qualifyingSet,
+    });
+  });
+
+  if (updates.length) {
+    save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
+  }
+  return updates;
+}
+
+function formatWorkoutSaveStatus(progressionUpdates) {
+  if (!progressionUpdates.length) {
+    return "Workout saved.";
+  }
+
+  const updates = progressionUpdates.map(({ exerciseName, previousWeight, qualifyingSet }) =>
+    `${exerciseName} ${formatNumber(previousWeight)} kg → ${formatNumber(qualifyingSet.weight)} kg after ${formatNumber(qualifyingSet.reps)} reps @ ${formatNumber(qualifyingSet.weight)} kg`,
+  );
+  return `Workout saved. ${updates.length === 1 ? "Target updated" : "Targets updated"}: ${updates.join("; ")}.`;
+}
 
 activityInput.addEventListener("change", () => {
   updateVisibleFields();
@@ -569,7 +615,6 @@ activityInput.addEventListener("change", () => {
 addSafeEventListener(exerciseNameInput, "input", renderStrengthLastPerformance);
 addSafeEventListener(exerciseNameInput, "input", renderStrengthProgressionPanel);
 addSafeEventListener(saveStrengthTargetButton, "click", saveStrengthProgressionTarget);
-addSafeEventListener(acceptStrengthNextWeightButton, "click", acceptStrengthNextWeight);
 
 addSafeEventListener(sprintProfileInput, "change", () => {
   syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
@@ -4037,8 +4082,6 @@ function renderStrengthProgressionPanel() {
     ? buildStrengthSessionProgress(
       previous?.sets || [],
       draftCurrentStrengthSets,
-      profile,
-      strengthProgression.gymWeightJumps,
     )
     : null;
   strengthProgressionPanelEl.hidden = false;
@@ -4046,26 +4089,18 @@ function renderStrengthProgressionPanel() {
     ? renderStrengthProgressionSummary(profile, sessionProgress)
     : `
       <strong>Set your strength target</strong>
-      <span>Start with the editable 3 × 8–10 template. Save a kg working weight to get a clear next-step check.</span>
+      <span>Start with the editable 3 × 8–10 template. A qualifying heavier kg set updates the saved target after the workout is saved.</span>
     `;
 
-  if (acceptStrengthNextWeightButton) {
-    const nextWeight = sessionProgress?.suggestedWeight;
-    acceptStrengthNextWeightButton.hidden = !sessionProgress?.isReadyForNextWeight || nextWeight == null;
-    acceptStrengthNextWeightButton.textContent = nextWeight == null
-      ? ""
-      : `Use ${formatNumber(nextWeight)} kg as next target`;
-  }
-
   if (strengthSetLoadTypeInput?.value !== "kg" && strengthProgressionStatusEl) {
-    strengthProgressionStatusEl.textContent = "Weight targets and recommendations apply to kg sets. Other load types stay in your history for now.";
+    strengthProgressionStatusEl.textContent = "Weight targets apply to kg sets. Other load types stay in your history for now.";
   } else if (strengthProgressionStatusEl?.dataset.message !== "saved") {
     strengthProgressionStatusEl.textContent = "";
   }
 }
 
 function hydrateStrengthProgressionInputs(profile, previous) {
-  if (!strengthTargetSetsInput || !strengthTargetRepMinInput || !strengthTargetRepMaxInput || !strengthTargetWorkingWeightInput || !strengthGymWeightJumpsInput || !strengthExerciseWeightJumpsInput) {
+  if (!strengthTargetSetsInput || !strengthTargetRepMinInput || !strengthTargetRepMaxInput || !strengthTargetWorkingWeightInput) {
     return;
   }
 
@@ -4079,8 +4114,6 @@ function hydrateStrengthProgressionInputs(profile, previous) {
   strengthTargetRepMinInput.value = String(profile?.repMin || 8);
   strengthTargetRepMaxInput.value = String(profile?.repMax || 10);
   strengthTargetWorkingWeightInput.value = profile ? String(profile.workingWeight) : latestTopKg ? String(latestTopKg) : "";
-  strengthGymWeightJumpsInput.value = strengthProgression.gymWeightJumps.join(", ");
-  strengthExerciseWeightJumpsInput.value = profile?.allowedJumps.join(", ") || "";
 }
 
 function renderStrengthProgressionSummary(profile, sessionProgress) {
@@ -4097,11 +4130,9 @@ function renderStrengthProgressionSummary(profile, sessionProgress) {
       ? `${sessionProgress.repGainCount} ${sessionProgress.repGainCount === 1 ? "rep gain" : "rep gains"} at the same load`
       : "",
   ].filter(Boolean);
-  const readiness = sessionProgress.isReadyForNextWeight && sessionProgress.suggestedWeight != null
-    ? `Ready for next weight: ${formatNumber(sessionProgress.suggestedWeight)} kg. Confirm it when you want to use it.`
-    : `${sessionProgress.completedTargetSetCount}/${sessionProgress.targetSetCount} sets have reached ${formatNumber(profile.workingWeight)} kg × ${profile.repMax}.`;
+  const autoProgression = `After this workout is saved, a kg set above ${formatNumber(profile.workingWeight)} kg with at least ${profile.repMin} reps updates this target automatically.`;
 
-  return `${base}<span>${sessionChanges.length ? `Today: ${sessionChanges.join(" · ")}.` : "Today: no promoted set or same-load rep gain yet."}</span><span>${readiness}</span>`;
+  return `${base}<span>${sessionChanges.length ? `Today: ${sessionChanges.join(" · ")}.` : "Today: no promoted set or same-load rep gain yet."}</span><span>${autoProgression}</span>`;
 }
 
 function saveStrengthProgressionTarget() {
@@ -4110,20 +4141,15 @@ function saveStrengthProgressionTarget() {
   const repMin = toNumberOrNull(strengthTargetRepMinInput?.value);
   const repMax = toNumberOrNull(strengthTargetRepMaxInput?.value);
   const workingWeight = toNumberOrNull(strengthTargetWorkingWeightInput?.value);
-  const gymWeightJumps = parseWeightJumps(strengthGymWeightJumpsInput?.value || "");
-  const allowedJumps = parseWeightJumps(strengthExerciseWeightJumpsInput?.value || "");
+  const existingProfile = findStrengthProgressionProfile(strengthProgression, exerciseName);
 
   if (!exerciseName || !Number.isInteger(targetSets) || targetSets <= 0 || !Number.isInteger(repMin) || !Number.isInteger(repMax) || repMin <= 0 || repMax < repMin || !isNumber(workingWeight) || workingWeight <= 0) {
     setStrengthProgressionStatus("Enter an exercise, whole-number sets and reps, and a working weight greater than 0.", "error");
     return;
   }
-  if (!gymWeightJumps.length) {
-    setStrengthProgressionStatus("Enter at least one gym weight jump, such as 1.25 or 2.5.", "error");
-    return;
-  }
 
   strengthProgression = upsertStrengthProgressionProfile(
-    { ...strengthProgression, gymWeightJumps },
+    strengthProgression,
     {
       exercise: exerciseName,
       goal: "strength",
@@ -4131,42 +4157,11 @@ function saveStrengthProgressionTarget() {
       repMin,
       repMax,
       workingWeight,
-      allowedJumps,
+      allowedJumps: existingProfile?.allowedJumps || [],
     },
   );
   save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
   setStrengthProgressionStatus("Strength target saved.", "saved");
-  renderStrengthProgressionPanel();
-}
-
-function acceptStrengthNextWeight() {
-  const exerciseName = exerciseNameInput?.value.trim() || "";
-  const profile = findStrengthProgressionProfile(strengthProgression, exerciseName);
-  if (!profile) {
-    return;
-  }
-
-  const previous = findStrengthLastPerformance(workouts, exerciseName);
-  const sessionProgress = buildStrengthSessionProgress(
-    previous?.sets || [],
-    draftCurrentStrengthSets,
-    profile,
-    strengthProgression.gymWeightJumps,
-  );
-  if (!sessionProgress.isReadyForNextWeight || sessionProgress.suggestedWeight == null) {
-    return;
-  }
-
-  strengthProgression = upsertStrengthProgressionProfile(strengthProgression, {
-    ...profile,
-    workingWeight: sessionProgress.suggestedWeight,
-  });
-  save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
-  hydrateStrengthProgressionInputs(
-    findStrengthProgressionProfile(strengthProgression, exerciseName),
-    previous,
-  );
-  setStrengthProgressionStatus(`Next target set to ${formatNumber(sessionProgress.suggestedWeight)} kg.`, "saved");
   renderStrengthProgressionPanel();
 }
 

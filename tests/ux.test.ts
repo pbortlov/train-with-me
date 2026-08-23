@@ -15,14 +15,13 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".strength-last-performance");
   });
 
-  it("keeps editable strength targets, permitted jumps, and explicit next-weight acceptance in the logger", () => {
+  it("keeps editable strength targets and explains automatic post-save progression in the logger", () => {
     expect(index).toContain('id="strength-progression-panel"');
     expect(index).toContain('id="strength-target-sets"');
-    expect(index).toContain('id="strength-gym-weight-jumps"');
-    expect(index).toContain('id="strength-exercise-weight-jumps"');
-    expect(index).toContain('id="accept-strength-next-weight"');
+    expect(index).not.toContain('id="accept-strength-next-weight"');
     expect(script).toContain("buildStrengthSessionProgress(");
-    expect(script).toContain("Use ${formatNumber(nextWeight)} kg as next target");
+    expect(script).toContain("advanceStrengthTargetAfterWorkout(profile, sets)");
+    expect(script).toContain("After this workout is saved");
     expect(styles).toContain(".strength-progression-panel");
   });
 

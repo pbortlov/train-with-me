@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  advanceStrengthTargetAfterWorkout,
   buildStrengthSessionProgress,
   createDefaultStrengthProgressionState,
   findStrengthProgressionProfile,
@@ -32,20 +33,15 @@ describe("strength progression", () => {
         { order: 2, reps: 10, weight: 32.5, loadType: "kg", bandColor: "" },
         { order: 3, reps: 10, weight: 32.5, loadType: "kg", bandColor: "" },
       ],
-      profile,
-      [1.25, 2.5, 5],
     );
 
     expect(progress).toMatchObject({
       promotedSetCount: 1,
       repGainCount: 0,
-      completedTargetSetCount: 2,
-      isReadyForNextWeight: false,
-      suggestedWeight: null,
     });
   });
 
-  it("reports rep gains and suggests the nearest permitted 2.5 percent jump only when ready", () => {
+  it("reports rep gains without changing a target while sets are being entered", () => {
     const progress = buildStrengthSessionProgress(
       [
         { order: 1, reps: 8, weight: 32.5, loadType: "kg", bandColor: "" },
@@ -57,17 +53,66 @@ describe("strength progression", () => {
         { order: 2, reps: 10, weight: 32.5, loadType: "kg", bandColor: "" },
         { order: 3, reps: 10, weight: 32.5, loadType: "kg", bandColor: "" },
       ],
-      profile,
-      [1.25, 2.5, 5],
     );
 
     expect(progress).toMatchObject({
       repGainCount: 3,
-      completedTargetSetCount: 3,
-      isReadyForNextWeight: true,
-      suggestedIncrement: 1.25,
-      suggestedWeight: 33.75,
     });
+  });
+
+  it("advances to a heavier saved set at the target minimum reps", () => {
+    const progression = advanceStrengthTargetAfterWorkout(
+      { ...profile, key: "back squat", workingWeight: 85 },
+      [
+        { order: 1, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 2, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+        { order: 3, reps: 8, weight: 90, loadType: "kg", bandColor: "" },
+      ],
+    );
+
+    expect(progression.qualifyingSet).toEqual({ reps: 8, weight: 90 });
+    expect(progression.profile).toMatchObject({
+      targetSets: 3,
+      repMin: 8,
+      repMax: 10,
+      workingWeight: 90,
+    });
+  });
+
+  it("advances when a heavier set is above the rep range", () => {
+    const progression = advanceStrengthTargetAfterWorkout(
+      { ...profile, key: "back squat", workingWeight: 85 },
+      [{ order: 1, reps: 11, weight: 90, loadType: "kg", bandColor: "" }],
+    );
+
+    expect(progression.qualifyingSet).toEqual({ reps: 11, weight: 90 });
+    expect(progression.profile.workingWeight).toBe(90);
+  });
+
+  it("uses the highest qualifying heavier weight from one saved workout", () => {
+    const progression = advanceStrengthTargetAfterWorkout(
+      { ...profile, key: "back squat", workingWeight: 85 },
+      [
+        { order: 1, reps: 8, weight: 90, loadType: "kg", bandColor: "" },
+        { order: 2, reps: 9, weight: 92.5, loadType: "kg", bandColor: "" },
+        { order: 3, reps: 8, weight: 95, loadType: "kg", bandColor: "" },
+      ],
+    );
+
+    expect(progression.qualifyingSet).toEqual({ reps: 8, weight: 95 });
+    expect(progression.profile.workingWeight).toBe(95);
+  });
+
+  it("does not advance for equal weight, below-minimum reps, or non-kg sets", () => {
+    const savedProfile = { ...profile, key: "back squat", workingWeight: 85 };
+    const progression = advanceStrengthTargetAfterWorkout(savedProfile, [
+      { order: 1, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
+      { order: 2, reps: 7, weight: 90, loadType: "kg", bandColor: "" },
+      { order: 3, reps: 12, weight: null, loadType: "bodyweight", bandColor: "" },
+    ]);
+
+    expect(progression.qualifyingSet).toBeNull();
+    expect(progression.profile).toBe(savedProfile);
   });
 
   it("keeps gym jumps, profile overrides, and malformed legacy data safe", () => {
