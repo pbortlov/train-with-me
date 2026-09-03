@@ -152,6 +152,7 @@ describe("strength progression", () => {
       weight: 87.5,
       increment: 2.5,
     });
+    expect(progression.profile.nextTargetSuggestion).toEqual(progression.nextTargetSuggestion);
   });
 
   it("does not suggest a next target before every target set reaches the top rep range", () => {
@@ -170,7 +171,12 @@ describe("strength progression", () => {
 
   it("lets a qualifying heavier set win over a calculated next target", () => {
     const progression = advanceStrengthTargetAfterWorkout(
-      { ...profile, key: "back squat", workingWeight: 85 },
+      {
+        ...profile,
+        key: "back squat",
+        workingWeight: 85,
+        nextTargetSuggestion: { targetSets: 3, reps: 8, weight: 87.5, increment: 2.5 },
+      },
       [
         { order: 1, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
         { order: 2, reps: 10, weight: 85, loadType: "kg", bandColor: "" },
@@ -182,6 +188,7 @@ describe("strength progression", () => {
     expect(progression.profile.workingWeight).toBe(90);
     expect(progression.qualifyingSet).toEqual({ reps: 10, weight: 90 });
     expect(progression.nextTargetSuggestion).toBeNull();
+    expect(progression.profile.nextTargetSuggestion).toBeNull();
   });
 
   it("does not suggest a next target when no allowed jump is available", () => {
@@ -215,5 +222,12 @@ describe("strength progression", () => {
     });
     expect(normalizeStrengthProgressionState({ gymWeightJumps: [] }).gymWeightJumps).toEqual([1, 1.25, 2.5, 5]);
     expect(normalizeStrengthProgressionState(null)).toEqual(createDefaultStrengthProgressionState());
+    expect(normalizeStrengthProgressionState({
+      gymWeightJumps: [2.5],
+      profiles: [{
+        ...profile,
+        nextTargetSuggestion: { targetSets: 3, reps: 8, weight: 35, increment: 2.5 },
+      }],
+    }).profiles[0]?.nextTargetSuggestion).toEqual({ targetSets: 3, reps: 8, weight: 35, increment: 2.5 });
   });
 });

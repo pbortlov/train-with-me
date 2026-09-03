@@ -31,6 +31,7 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("buildStrengthSessionProgress(");
     expect(script).toContain("advanceStrengthTargetAfterWorkout(profile, sets, strengthProgression.gymWeightJumps)");
     expect(script).toContain("Next target suggestion");
+    expect(script).toContain("Suggested next session");
     expect(script).toContain("After this workout is saved");
     expect(script).toContain("isStrengthSessionComparableCore(workout.strengthContext)");
     expect(styles).toContain(".strength-progression-panel");

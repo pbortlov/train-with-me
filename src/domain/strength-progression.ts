@@ -14,6 +14,7 @@ export interface StrengthProgressionProfile {
   repMax: number;
   workingWeight: number;
   allowedJumps: number[];
+  nextTargetSuggestion?: NextTargetSuggestion | null;
 }
 
 export interface StrengthProgressionState {
@@ -131,12 +132,17 @@ export function advanceStrengthTargetAfterWorkout(
   gymWeightJumps: number[],
 ): AutomaticStrengthTargetProgression {
   const qualifyingSet = findQualifyingHeavierKgSet(completedSets, profile);
+  const nextTargetSuggestion = qualifyingSet
+    ? null
+    : findTopRangeNextTargetSuggestion(completedSets, profile, gymWeightJumps);
   return {
-    profile: qualifyingSet ? { ...profile, workingWeight: qualifyingSet.weight } : profile,
+    profile: qualifyingSet
+      ? { ...profile, workingWeight: qualifyingSet.weight, nextTargetSuggestion: null }
+      : nextTargetSuggestion
+        ? { ...profile, nextTargetSuggestion }
+        : profile,
     qualifyingSet,
-    nextTargetSuggestion: qualifyingSet
-      ? null
-      : findTopRangeNextTargetSuggestion(completedSets, profile, gymWeightJumps),
+    nextTargetSuggestion,
   };
 }
 
@@ -204,7 +210,31 @@ function normalizeStrengthProgressionProfile(value: unknown): StrengthProgressio
     repMax,
     workingWeight,
     allowedJumps: normalizeWeightJumps(value.allowedJumps, []),
+    nextTargetSuggestion: normalizeNextTargetSuggestion(value.nextTargetSuggestion, targetSets, repMin, workingWeight),
   };
+}
+
+function normalizeNextTargetSuggestion(
+  value: unknown,
+  targetSets: number,
+  repMin: number,
+  workingWeight: number,
+): NextTargetSuggestion | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const weight = positiveNumber(value.weight) ? value.weight : null;
+  const increment = positiveNumber(value.increment) ? value.increment : null;
+  if (
+    value.targetSets !== targetSets ||
+    value.reps !== repMin ||
+    !weight ||
+    !increment ||
+    weight <= workingWeight
+  ) {
+    return null;
+  }
+  return { targetSets, reps: repMin, weight, increment };
 }
 
 function countPromotedSets(previousSets: ComparableKgSet[], currentSets: ComparableKgSet[]): number {

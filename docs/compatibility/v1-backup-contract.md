@@ -90,6 +90,11 @@ empty, and missing UI settings fall back to defaults.
 Missing or malformed `strengthProgression` falls back to default permitted gym
 weight jumps and no exercise profiles.
 
+A strength progression profile may include optional `nextTargetSuggestion`
+with `targetSets`, `reps`, `weight`, and `increment`. It is a persisted
+post-save suggestion for the next matching kg session, not a replacement for
+the saved working weight. Older profiles without it continue to work.
+
 Strength workout entries may include optional `strengthContext` with `rir`,
 `isDeload`, `isTechnique`, `hasPain`, `isIncomplete`, and `isProgram` fields.
 Each item in `strengthExercises` may include optional `variation`,

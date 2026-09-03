@@ -24,8 +24,8 @@ session gain even when the heaviest set is unchanged.
 1. Show latest logged sets and best kg set in the actual strength logger.
    Delivered with no new stored data or recommendation.
 2. Add saved targets, promoted-set comparison, and backwards-compatible
-   persistence. After saving, a top-range workout can show a next permitted
-   target at the range minimum without changing the saved target. A named kg
+   persistence. After saving, a top-range workout saves and shows a next
+   permitted target at the range minimum without changing the saved target. A named kg
    target automatically updates to the highest comparable heavier set when it
    meets the target minimum reps; that completed work takes precedence over a
    calculated suggestion, while set count and rep range remain unchanged.

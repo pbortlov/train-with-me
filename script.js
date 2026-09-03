@@ -612,6 +612,7 @@ function applyAutomaticStrengthTargetProgression(workout) {
         qualifyingSet: progression.qualifyingSet,
       });
     } else if (progression.nextTargetSuggestion) {
+      strengthProgression = upsertStrengthProgressionProfile(strengthProgression, progression.profile);
       outcomes.push({
         type: "suggested",
         exerciseName: profile.exercise,
@@ -620,7 +621,7 @@ function applyAutomaticStrengthTargetProgression(workout) {
     }
   });
 
-  if (outcomes.some((outcome) => outcome.type === "updated")) {
+  if (outcomes.some((outcome) => outcome.type === "updated" || outcome.type === "suggested")) {
     save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
   }
   return outcomes;
@@ -4208,12 +4209,15 @@ function hydrateStrengthProgressionInputs(profile, previous) {
 
 function renderStrengthProgressionSummary(profile, sessionProgress) {
   const base = `<strong>Strength target</strong><span>${profile.targetSets} sets × ${profile.repMin}–${profile.repMax} reps at ${formatNumber(profile.workingWeight)} kg</span>`;
+  const suggestedNextTarget = profile.nextTargetSuggestion
+    ? `<span><strong>Suggested next session</strong> · ${profile.nextTargetSuggestion.targetSets} sets × ${profile.nextTargetSuggestion.reps} reps at ${formatNumber(profile.nextTargetSuggestion.weight)} kg. Your saved working target remains ${formatNumber(profile.workingWeight)} kg until you complete a heavier working set.</span>`
+    : "";
   const sessionContext = currentStrengthSessionContext();
   if (!isStrengthSessionComparableCore(sessionContext)) {
-    return `${base}<span>${formatStrengthProgressionExclusion(sessionContext)} Targets and suggestions are unchanged for this session.</span>`;
+    return `${base}${suggestedNextTarget}<span>${formatStrengthProgressionExclusion(sessionContext)} Targets and suggestions are unchanged for this session.</span>`;
   }
   if (!draftCurrentStrengthSets.length || !sessionProgress) {
-    return `${base}<span>Add your working sets to see today's progress.</span>`;
+    return `${base}${suggestedNextTarget}<span>Add your working sets to see today's progress.</span>`;
   }
 
   const sessionChanges = [
@@ -4226,7 +4230,7 @@ function renderStrengthProgressionSummary(profile, sessionProgress) {
   ].filter(Boolean);
   const autoProgression = `After this workout is saved, a kg set above ${formatNumber(profile.workingWeight)} kg with at least ${profile.repMin} reps updates this target automatically. Completing ${profile.targetSets} sets at ${formatNumber(profile.workingWeight)} kg × ${profile.repMax} reps can suggest the next target at ${profile.repMin} reps.`;
 
-  return `${base}<span>${sessionChanges.length ? `Today: ${sessionChanges.join(" · ")}.` : "Today: no promoted set or same-load rep gain yet."}</span><span>${autoProgression}</span>`;
+  return `${base}${suggestedNextTarget}<span>${sessionChanges.length ? `Today: ${sessionChanges.join(" · ")}.` : "Today: no promoted set or same-load rep gain yet."}</span><span>${autoProgression}</span>`;
 }
 
 function renderNewStrengthTargetSummary(sessionContext) {
@@ -4277,6 +4281,7 @@ function saveStrengthProgressionTarget() {
       repMax,
       workingWeight,
       allowedJumps,
+      nextTargetSuggestion: null,
     },
   );
   save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);

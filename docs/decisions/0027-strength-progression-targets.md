@@ -34,12 +34,14 @@ weight, without treating that calculation as completed work.
   at or above the saved working weight and maximum target reps, calculate a
   2.5%-based increment rounded to the nearest permitted jump. Show a next
   target with the same set count, the target minimum reps, and that calculated
-  weight. If no permitted jump exists, show no suggestion.
+  weight. Persist that suggestion with the matching profile so it is visible in
+  the next session. If no permitted jump exists, show no suggestion.
 - Do not change the target set count or rep range, alter original logged sets,
   or require an athlete to accept a next weight. A calculated next target is a
   post-save suggestion only; it does not change the saved target. A qualifying
-  heavier set wins over a calculated suggestion because it is completed work.
-  The save confirmation names the profile and qualifying set or suggestion.
+  heavier set wins over a calculated suggestion because it is completed work
+  and clears the pending suggestion. The save confirmation names the profile
+  and qualifying set or suggestion.
   Planned program completion stays outside this automatic flow until
   program-authority context is delivered.
 - Export and import `strengthProgression` as an optional backup field without
@@ -52,8 +54,9 @@ weight, without treating that calculation as completed work.
   `10×30, 10×32.5, 10×32.5` as one promoted set even though the best set is
   unchanged.
 - This is a saved-workout update, not a live drafting signal or a universal
-  strength verdict. The calculated next target is likewise shown only after
-  save and remains a suggestion until a later heavier set is logged. Explicit
+  strength verdict. The calculated next target remains visible when the
+  athlete returns to the matching exercise, but remains a suggestion until a
+  later heavier set is logged. Explicit
   variation/equipment and recovery context are deferred to the next slice; an
   athlete should use distinct exercise names for unlike variations until then.
   In this slice, the named exercise's logged kg sets are its working sets.
