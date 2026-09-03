@@ -92,11 +92,11 @@ weight jumps and no exercise profiles.
 
 Strength workout entries may include optional `strengthContext` with `rir`,
 `isDeload`, `isTechnique`, `hasPain`, `isIncomplete`, and `isProgram` fields.
-Each item in `strengthExercises` may include optional `variation` and
-`equipment`; each set may include optional `kind` (`working` or `warmup`).
-Older entries without these fields retain their existing meaning and normalize
-as a comparable manual session with blank variation/equipment and working
-sets.
+Each item in `strengthExercises` may include optional `variation`,
+`equipment`, and working `loadType`; each set may include optional `kind`
+(`working` or `warmup`). Older entries without these fields retain their
+existing meaning and normalize as a comparable manual session with blank
+variation/equipment, kg as the target load type, and working sets.
 
 ## Compatibility Rules
 

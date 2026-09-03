@@ -49,6 +49,7 @@ describe("workout normalization", () => {
         name: "Back squat",
         variation: "",
         equipment: "",
+        loadType: "kg",
         sets: [
           { order: 1, reps: 5, weight: 100, loadType: "kg", bandColor: "", kind: "working" },
           { order: 2, reps: 8, weight: null, loadType: "bodyweight", bandColor: "", kind: "working" },

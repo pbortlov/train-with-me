@@ -31,9 +31,9 @@ session gain even when the heaviest set is unchanged.
    calculated suggestion, while set count and rep range remain unchanged.
 3. Add working/warm-up context, variation/equipment, optional effort, recovery
    flags, and program authority. Delivered with profile/recall identity by
-   name + variation + equipment; working-set-only progression; optional
-   session RIR and neutral context flags; and program-linked workouts excluded
-   from generic target changes and comparisons.
+   name + variation + equipment + load type; working-set-only progression;
+   optional session RIR and neutral context flags; and program-linked workouts
+   excluded from generic target changes and comparisons.
 4. Add achievement feedback and repeated-session trends in Stats.
 
 Each slice remains independently functional, tested, documented, and manually

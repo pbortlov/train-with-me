@@ -584,7 +584,7 @@ function applyAutomaticStrengthTargetProgression(workout) {
 
   const exercisesByName = new Map();
   workout.strengthExercises.forEach((exercise) => {
-    const key = strengthExerciseKeyCore(exercise.name, exercise.variation, exercise.equipment);
+    const key = strengthExerciseKeyCore(exercise.name, exercise.variation, exercise.equipment, exercise.loadType);
     const entry = exercisesByName.get(key) || {
       exerciseName: exercise.name,
       variation: exercise.variation,
@@ -787,6 +787,8 @@ strengthSetLoadTypeInput.addEventListener("change", () => {
   if (loadType !== "band") {
     setBandColorPickerValue(strengthSetBandColorInput, "");
   }
+  syncStrengthEquipmentGuidance(loadType);
+  renderStrengthLastPerformance();
   renderStrengthProgressionPanel();
 });
 
@@ -857,6 +859,12 @@ addStrengthSetButton.addEventListener("click", () => {
     return;
   }
 
+  const existingWorkingLoadType = draftCurrentStrengthSets.find((set) => set.kind !== "warmup")?.loadType;
+  if (kind === "working" && existingWorkingLoadType && existingWorkingLoadType !== loadType) {
+    setWorkoutFormStatus("Working sets with different load types need separate exercise entries so progress stays comparable.");
+    return;
+  }
+
   draftCurrentStrengthSets.push({
     reps,
     weight: loadType === "kg" ? weight : null,
@@ -875,15 +883,17 @@ addStrengthSetButton.addEventListener("click", () => {
 
 addStrengthExerciseButton.addEventListener("click", () => {
   const exerciseName = valueOf("exercise-name").trim();
-  if (!exerciseName || !draftCurrentStrengthSets.length) {
-    setWorkoutFormStatus("Add an exercise name and at least one set.");
+  const workingLoadType = draftCurrentStrengthSets.find((set) => set.kind !== "warmup")?.loadType;
+  if (!exerciseName || !draftCurrentStrengthSets.length || !workingLoadType) {
+    setWorkoutFormStatus("Add an exercise name and at least one working set.");
     return;
   }
 
   draftStrengthExercises.push({
     name: exerciseName,
     variation: strengthExerciseVariationInput?.value.trim() || "",
-    equipment: strengthExerciseEquipmentInput?.value.trim() || "",
+    equipment: workingLoadType === "band" ? "" : strengthExerciseEquipmentInput?.value.trim() || "",
+    loadType: workingLoadType,
     sets: draftCurrentStrengthSets.map((set, index) => ({
       order: index + 1,
       reps: set.reps,
@@ -2440,6 +2450,7 @@ function resetWorkoutForm() {
   draftCurrentStrengthSets = [];
   workoutForm.reset();
   strengthSetLoadTypeInput.value = "kg";
+  syncStrengthEquipmentGuidance("kg");
   if (strengthSetKindInput) strengthSetKindInput.value = "working";
   strengthSetWeightInput.disabled = false;
   setBandColorPickerValue(strengthSetBandColorInput, "");
@@ -4102,6 +4113,7 @@ function renderStrengthLastPerformance() {
     exerciseNameInput.value,
     strengthExerciseVariationInput?.value || "",
     strengthExerciseEquipmentInput?.value || "",
+    currentStrengthLoadType(),
   );
   if (!performance) {
     strengthLastPerformanceEl.hidden = true;
@@ -4132,15 +4144,18 @@ function renderStrengthProgressionPanel() {
   const exerciseName = exerciseNameInput.value.trim();
   const variation = strengthExerciseVariationInput?.value || "";
   const equipment = strengthExerciseEquipmentInput?.value || "";
-  const exerciseKey = strengthExerciseKeyCore(exerciseName, variation, equipment);
+  const loadType = currentStrengthLoadType();
+  const exerciseKey = strengthExerciseKeyCore(exerciseName, variation, equipment, loadType);
   if (!exerciseName) {
     strengthProgressionPanelEl.hidden = true;
     strengthProgressionExerciseKey = "";
     return;
   }
 
-  const profile = findStrengthProgressionProfile(strengthProgression, exerciseName, variation, equipment);
-  const previous = findStrengthLastPerformance(workouts, exerciseName, variation, equipment);
+  const profile = loadType === "kg"
+    ? findStrengthProgressionProfile(strengthProgression, exerciseName, variation, equipment)
+    : null;
+  const previous = findStrengthLastPerformance(workouts, exerciseName, variation, equipment, loadType);
   if (strengthProgressionExerciseKey !== exerciseKey) {
     hydrateStrengthProgressionInputs(profile, previous);
     strengthProgressionExerciseKey = exerciseKey;
@@ -4157,7 +4172,10 @@ function renderStrengthProgressionPanel() {
       draftCurrentStrengthSets,
     )
     : null;
-  strengthProgressionPanelEl.hidden = false;
+  strengthProgressionPanelEl.hidden = loadType !== "kg";
+  if (loadType !== "kg") {
+    return;
+  }
   strengthProgressionSummaryEl.innerHTML = profile
     ? renderStrengthProgressionSummary(profile, sessionProgress)
     : renderNewStrengthTargetSummary(currentStrengthSessionContext());
@@ -4232,6 +4250,11 @@ function saveStrengthProgressionTarget() {
   const gymWeightJumps = parseWeightJumps(strengthGymWeightJumpsInput?.value || "");
   const allowedJumps = parseWeightJumps(strengthExerciseWeightJumpsInput?.value || "");
 
+  if (currentStrengthLoadType() !== "kg") {
+    setStrengthProgressionStatus("Strength targets are available for kg working sets only.", "error");
+    return;
+  }
+
   if (!exerciseName || !Number.isInteger(targetSets) || targetSets <= 0 || !Number.isInteger(repMin) || !Number.isInteger(repMax) || repMin <= 0 || repMax < repMin || !isNumber(workingWeight) || workingWeight <= 0) {
     setStrengthProgressionStatus("Enter an exercise, whole-number sets and reps, and a working weight greater than 0.", "error");
     return;
@@ -4247,6 +4270,7 @@ function saveStrengthProgressionTarget() {
       exercise: exerciseName,
       variation,
       equipment,
+      loadType: "kg",
       goal: "strength",
       targetSets,
       repMin,
@@ -4294,7 +4318,28 @@ function formatStrengthProgressionExclusion(context) {
 }
 
 function formatStrengthExerciseIdentity(exercise) {
-  return [exercise.name, exercise.variation, exercise.equipment].filter(Boolean).join(" · ");
+  return [exercise.name, exercise.variation, exercise.equipment, exercise.loadType].filter(Boolean).join(" · ");
+}
+
+function currentStrengthLoadType() {
+  const value = strengthSetLoadTypeInput?.value;
+  return value === "band" || value === "bodyweight" ? value : "kg";
+}
+
+function syncStrengthEquipmentGuidance(loadType) {
+  const equipmentField = strengthExerciseEquipmentInput?.closest("label");
+  if (!strengthExerciseEquipmentInput || !equipmentField) {
+    return;
+  }
+
+  equipmentField.hidden = loadType === "band";
+  if (loadType === "band") {
+    strengthExerciseEquipmentInput.value = "";
+    return;
+  }
+  strengthExerciseEquipmentInput.placeholder = loadType === "bodyweight"
+    ? "e.g. Pull-up bar or rings"
+    : "e.g. Barbell, dumbbell, cable";
 }
 
 function formatStrengthLoad(set) {

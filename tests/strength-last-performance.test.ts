@@ -94,10 +94,28 @@ describe("findStrengthLastPerformance", () => {
         },
       ],
       "Pull-up",
+      "",
+      "",
+      "bodyweight",
     );
 
     expect(performance?.sets[0]).toMatchObject({ reps: 8, loadType: "bodyweight" });
     expect(performance?.bestKgSet).toBeNull();
+  });
+
+  it("keeps kg, bodyweight, and band work independent for the same setup", () => {
+    const workouts = [{
+      activity: "strength",
+      date: "2026-08-20",
+      strengthExercises: [
+        { name: "Split squat", variation: "Rear-foot elevated", equipment: "Dumbbell", loadType: "kg", sets: [{ reps: 8, weight: 24, loadType: "kg", kind: "working" }] },
+        { name: "Split squat", variation: "Rear-foot elevated", equipment: "Dumbbell", loadType: "bodyweight", sets: [{ reps: 12, loadType: "bodyweight", kind: "working" }] },
+      ],
+    }];
+
+    expect(findStrengthLastPerformance(workouts, "Split squat", "Rear-foot elevated", "Dumbbell", "kg")?.sets[0]).toMatchObject({ reps: 8, weight: 24, loadType: "kg" });
+    expect(findStrengthLastPerformance(workouts, "Split squat", "Rear-foot elevated", "Dumbbell", "bodyweight")?.sets[0]).toMatchObject({ reps: 12, loadType: "bodyweight" });
+    expect(findStrengthLastPerformance(workouts, "Split squat", "Rear-foot elevated", "Dumbbell", "band")).toBeNull();
   });
 
   it("keeps variations and equipment separate and excludes warm-ups and non-comparable sessions", () => {

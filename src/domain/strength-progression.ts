@@ -6,6 +6,7 @@ export interface StrengthProgressionProfile {
   exercise: string;
   variation?: string;
   equipment?: string;
+  loadType?: "kg";
   key: string;
   goal: "strength";
   targetSets: number;
@@ -77,7 +78,7 @@ export function findStrengthProgressionProfile(
   variation = "",
   equipment = "",
 ): StrengthProgressionProfile | null {
-  const key = strengthExerciseKey(exerciseName, variation, equipment);
+  const key = strengthExerciseKey(exerciseName, variation, equipment, "kg");
   return state.profiles.find((profile) => profile.key === key) || null;
 }
 
@@ -182,7 +183,7 @@ function normalizeStrengthProgressionProfile(value: unknown): StrengthProgressio
   const exercise = value.exercise.trim();
   const variation = typeof value.variation === "string" ? value.variation.trim() : "";
   const equipment = typeof value.equipment === "string" ? value.equipment.trim() : "";
-  const key = strengthExerciseKey(exercise, variation, equipment);
+  const key = strengthExerciseKey(exercise, variation, equipment, "kg");
   const targetSets = positiveInteger(value.targetSets);
   const repMin = positiveInteger(value.repMin);
   const repMax = positiveInteger(value.repMax);
@@ -195,6 +196,7 @@ function normalizeStrengthProgressionProfile(value: unknown): StrengthProgressio
     exercise,
     variation,
     equipment,
+    loadType: "kg",
     key,
     goal: "strength",
     targetSets,

@@ -21,6 +21,8 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="strength-exercise-variation"');
     expect(index).toContain('id="strength-exercise-equipment"');
     expect(index).toContain('id="strength-set-kind"');
+    expect(script).toContain("Working sets with different load types need separate exercise entries");
+    expect(script).toContain("currentStrengthLoadType()");
     expect(index).toContain('id="strength-session-rir"');
     expect(index).toContain('id="strength-session-deload"');
     expect(index).toContain('id="strength-gym-weight-jumps"');

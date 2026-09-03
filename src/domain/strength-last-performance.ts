@@ -39,8 +39,9 @@ export function findStrengthLastPerformance(
   exerciseName: string,
   variation = "",
   equipment = "",
+  loadType: StrengthSet["loadType"] = "kg",
 ): StrengthLastPerformance | null {
-  const exerciseKey = strengthExerciseKey(exerciseName, variation, equipment);
+  const exerciseKey = strengthExerciseKey(exerciseName, variation, equipment, loadType);
   if (!exerciseKey) {
     return null;
   }
@@ -51,8 +52,8 @@ export function findStrengthLastPerformance(
     }
 
     return normalizeStrengthExercises(workout.strengthExercises)
-      .filter((exercise) => strengthExerciseKey(exercise.name, exercise.variation, exercise.equipment) === exerciseKey)
-      .map((exercise) => ({ ...exercise, sets: exercise.sets.filter((set) => set.kind !== "warmup") }))
+      .filter((exercise) => strengthExerciseKey(exercise.name, exercise.variation, exercise.equipment, exercise.loadType) === exerciseKey)
+      .map((exercise) => ({ ...exercise, sets: exercise.sets.filter((set) => set.kind !== "warmup" && set.loadType === loadType) }))
       .filter((exercise) => exercise.sets.length > 0)
       .map<ExerciseOccurrence>((exercise) => ({
         exercise: exercise.name,

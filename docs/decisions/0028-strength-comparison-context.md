@@ -14,13 +14,20 @@ altering a generic target.
 
 ## Decision
 
-- Store optional `variation` and `equipment` strings with every strength
-  exercise. A strength profile and last-performance lookup match the exercise
-  name, variation, and equipment together. Blank values preserve the legacy
-  name-only identity for existing history.
+- Store optional `variation` and `equipment` strings plus a working load type
+  with every strength exercise. A strength profile and last-performance lookup
+  match the exercise name, variation, equipment, and load type together. Load
+  type means how resistance is measured (`kg`, `bodyweight`, or `band`);
+  equipment describes the physical setup and does not replace load type. Blank
+  values preserve the legacy name-only identity for existing history, with kg
+  as the legacy target mode.
 - Store a set kind of `working` or `warmup`; legacy sets normalize to
   `working`. Only working kg sets are evidence for promoted sets, automatic
   heavier-set updates, and top-range suggestions.
+- Keep one working load type per logged exercise entry. A user who changes
+  from kg to bodyweight or band logs a separate exercise entry, preventing a
+  mixed sequence from becoming comparison evidence. Equipment is optional for
+  bodyweight and hidden for bands, where the resistance type is already clear.
 - Store optional session RIR (whole number 0–4) and neutral flags for deload,
   technique-focused, pain/discomfort, and incomplete sessions. These flags do
   not label a session as failed; they make it non-comparable for generic

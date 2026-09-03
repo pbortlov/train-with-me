@@ -13,7 +13,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Fast activity-specific actual logging for strength, run, and sprint, with Today/Yesterday date shortcuts
 - Strength logging shows the latest recorded set sequence and best kg set for a known exercise
 - Strength logging can save an editable kg target, recognise promoted sets and same-load rep gains, suggest the next permitted target after all top-range sets are saved, and automatically update the saved target after a qualifying heavier kg set is saved
-- Strength progression distinguishes exercise variation/equipment and working sets, and leaves generic targets unchanged for deload, technique, pain, incomplete, and program-linked sessions
+- Strength progression distinguishes exercise variation, equipment, and load type (kg/bodyweight/band), uses working sets only, and leaves generic targets unchanged for deload, technique, pain, incomplete, and program-linked sessions
 - Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix, with a momentum highlight
 - Strength Insights for strength workout count, exercise coverage, load mix, top kg lift, and most trained exercises
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
