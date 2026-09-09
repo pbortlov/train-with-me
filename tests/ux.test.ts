@@ -37,6 +37,18 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".strength-progression-panel");
   });
 
+  it("keeps evidence-based strength milestones and comparable-session review in Stats", () => {
+    expect(index).toContain('id="strength-progression-review-section"');
+    expect(index).toContain('id="strength-progression-review"');
+    expect(script).toContain("buildStrengthSaveAchievements(workoutsBeforeSave, workout)");
+    expect(script).toContain("Session evidence:");
+    expect(script).toContain("buildStrengthProgressionReview(workouts, strengthProgression.profiles)");
+    expect(script).toContain("First comparable session");
+    expect(script).toContain("Comparable repeat");
+    expect(styles).toContain(".strength-progression-review-card");
+    expect(styles).toContain(".strength-progression-review-row");
+  });
+
   it("extracts shared design tokens from the Programs palette", () => {
     expect(styles).toContain("--surface-program-panel-bg");
     expect(styles).toContain("--button-program-secondary-bg");

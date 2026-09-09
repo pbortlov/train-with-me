@@ -81,6 +81,10 @@ import {
 import { buildStrengthInsights } from "./src/domain/strength-insights";
 import { findStrengthLastPerformance } from "./src/domain/strength-last-performance";
 import {
+  buildStrengthProgressionReview,
+  buildStrengthSaveAchievements,
+} from "./src/domain/strength-progression-review";
+import {
   advanceStrengthTargetAfterWorkout,
   buildStrengthSessionProgress,
   createDefaultStrengthProgressionState,
@@ -165,6 +169,7 @@ const chartsStatusEl = document.getElementById("charts-status");
 const strengthInsightsSummaryEl = document.getElementById("strength-insights-summary");
 const strengthInsightsDetailsEl = document.getElementById("strength-insights-details");
 const strengthInsightsBodyEl = document.getElementById("strength-insights-body");
+const strengthProgressionReviewEl = document.getElementById("strength-progression-review");
 const runningInsightsSummaryEl = document.getElementById("running-insights-summary");
 const runningInsightsDetailsEl = document.getElementById("running-insights-details");
 const runningInsightsBodyEl = document.getElementById("running-insights-body");
@@ -556,6 +561,13 @@ workoutForm.addEventListener("submit", (event) => {
     return;
   }
 
+  const workoutsBeforeSave = editingWorkoutId
+    ? workouts.filter((savedWorkout) => savedWorkout.id !== editingWorkoutId)
+    : workouts;
+  const strengthSaveAchievements = workout.activity === "strength"
+    ? buildStrengthSaveAchievements(workoutsBeforeSave, workout)
+    : [];
+
   if (editingWorkoutId) {
     const existingIndex = workouts.findIndex((savedWorkout) => savedWorkout.id === editingWorkoutId);
     if (existingIndex >= 0) {
@@ -573,7 +585,7 @@ workoutForm.addEventListener("submit", (event) => {
     : [];
   evaluateGoals({ persist: true, celebrate: true });
   resetWorkoutForm();
-  setWorkoutFormStatus(formatWorkoutSaveStatus(progressionOutcomes));
+  setWorkoutFormStatus(formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements));
   render();
 });
 
@@ -627,8 +639,8 @@ function applyAutomaticStrengthTargetProgression(workout) {
   return outcomes;
 }
 
-function formatWorkoutSaveStatus(progressionOutcomes) {
-  if (!progressionOutcomes.length) {
+function formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements = []) {
+  if (!progressionOutcomes.length && !strengthSaveAchievements.length) {
     return "Workout saved.";
   }
 
@@ -645,9 +657,25 @@ function formatWorkoutSaveStatus(progressionOutcomes) {
   const exclusions = progressionOutcomes
     .filter((outcome) => outcome.type === "excluded")
     .map(({ reason }) => reason);
+  const achievements = strengthSaveAchievements.map((achievement) => {
+    const identity = formatStrengthExerciseIdentity(achievement);
+    const evidence = [
+      achievement.promotedSetCount
+        ? `${achievement.promotedSetCount} promoted ${achievement.promotedSetCount === 1 ? "set" : "sets"}`
+        : "",
+      achievement.repGainCount
+        ? `${achievement.repGainCount} same-load ${achievement.repGainCount === 1 ? "rep gain" : "rep gains"}`
+        : "",
+      achievement.newHeaviestKgSet
+        ? `new heaviest ${formatNumber(achievement.newHeaviestKgSet.weight)} kg × ${formatNumber(achievement.newHeaviestKgSet.reps)}`
+        : "",
+    ].filter(Boolean);
+    return `${identity}: ${evidence.join(", ")}`;
+  });
   const messages = [
     updates.length ? `${updates.length === 1 ? "Target updated" : "Targets updated"}: ${updates.join("; ")}.` : "",
     suggestions.length ? `${suggestions.length === 1 ? "Next target suggestion" : "Next target suggestions"}: ${suggestions.join("; ")}. Log a qualifying heavier set to update the saved target.` : "",
+    achievements.length ? `Session evidence: ${achievements.join("; ")}.` : "",
     exclusions.length ? `Strength targets were left unchanged: ${exclusions.join("; ")}.` : "",
   ].filter(Boolean);
   return `Workout saved. ${messages.join(" ")}`;
@@ -956,6 +984,7 @@ function render() {
   renderGoals();
   renderProgressHub();
   renderStrengthInsights();
+  renderStrengthProgressionReview();
   renderRunningInsights();
   renderSprintInsights();
   renderPlannerSummary();
@@ -2732,6 +2761,68 @@ function formatStrengthInsightLoadTypes(loadTypes) {
     .join(", ");
 }
 
+function renderStrengthProgressionReview() {
+  if (!strengthProgressionReviewEl) {
+    return;
+  }
+
+  const rows = buildStrengthProgressionReview(workouts, strengthProgression.profiles);
+  if (!rows.length) {
+    strengthProgressionReviewEl.innerHTML = "<p class=\"planner-empty\">Save a kg strength target to build its comparable-session review here.</p>";
+    return;
+  }
+
+  strengthProgressionReviewEl.innerHTML = rows.map(({ profile, sessions }) => {
+    const recentSessions = sessions.slice(-3).reverse();
+    const suggestion = profile.nextTargetSuggestion
+      ? `<p class="strength-progression-review-suggestion">Suggested next session · ${profile.nextTargetSuggestion.targetSets} × ${profile.nextTargetSuggestion.reps} @ ${formatNumber(profile.nextTargetSuggestion.weight)} kg</p>`
+      : "";
+    const sessionMarkup = recentSessions.length
+      ? recentSessions.map((session) => `
+          <li>
+            <span class="strength-progression-review-date">${session.date ? escapeHtml(formatHumanDate(session.date)) : "Previous session"}</span>
+            <span>${escapeHtml(formatStrengthReviewSetSequence(session.sets))}</span>
+            <span class="strength-progression-review-trend">${escapeHtml(formatStrengthReviewTrend(session.progressFromPrevious))}</span>
+          </li>
+        `).join("")
+      : "<li class=\"planner-empty\">No comparable working kg session recorded yet.</li>";
+    return `
+      <article class="strength-progression-review-row">
+        <div class="strength-progression-review-heading">
+          <div>
+            <strong>${escapeHtml(formatStrengthExerciseIdentity(profile))}</strong>
+            <span>Saved target · ${profile.targetSets} × ${profile.repMin}–${profile.repMax} @ ${formatNumber(profile.workingWeight)} kg</span>
+          </div>
+          <span class="strength-progression-review-count">${sessions.length} comparable ${sessions.length === 1 ? "session" : "sessions"}</span>
+        </div>
+        ${suggestion}
+        <ol class="strength-progression-review-sessions">${sessionMarkup}</ol>
+      </article>
+    `;
+  }).join("");
+}
+
+function formatStrengthReviewSetSequence(sets) {
+  return sets
+    .map((set) => `${formatNumber(set.reps)} × ${formatNumber(set.weight)} kg`)
+    .join(" · ");
+}
+
+function formatStrengthReviewTrend(progress) {
+  if (!progress) {
+    return "First comparable session";
+  }
+  const signals = [
+    progress.promotedSetCount
+      ? `${progress.promotedSetCount} promoted ${progress.promotedSetCount === 1 ? "set" : "sets"}`
+      : "",
+    progress.repGainCount
+      ? `${progress.repGainCount} same-load ${progress.repGainCount === 1 ? "rep gain" : "rep gains"}`
+      : "",
+  ].filter(Boolean);
+  return signals.length ? signals.join(" · ") : "Comparable repeat";
+}
+
 function renderRunningInsights() {
   if (!runningInsightsSummaryEl || !runningInsightsDetailsEl || !runningInsightsBodyEl) {
     return;
@@ -4287,6 +4378,7 @@ function saveStrengthProgressionTarget() {
   save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
   setStrengthProgressionStatus("Strength target saved.", "saved");
   renderStrengthProgressionPanel();
+  renderStrengthProgressionReview();
 }
 
 function setStrengthProgressionStatus(message, type) {

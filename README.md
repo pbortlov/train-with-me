@@ -14,6 +14,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength logging shows the latest recorded set sequence and best kg set for a known exercise
 - Strength logging can save an editable kg target, recognise promoted sets and same-load rep gains, retain a higher suggested next session after all top-range sets are saved, and automatically update the saved target after a qualifying heavier kg set is saved
 - Strength progression distinguishes exercise variation, equipment, and load type (kg/bodyweight/band), uses working sets only, and leaves generic targets unchanged for deload, technique, pain, incomplete, and program-linked sessions
+- Strength saves acknowledge promoted sets, same-load rep gains, and genuinely heavier working sets; Stats keeps the latest comparable sequences beside each saved kg target without using streaks or workout grades
 - Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix, with a momentum highlight
 - Strength Insights for strength workout count, exercise coverage, load mix, top kg lift, and most trained exercises
 - Running Insights for run count, total distance, weighted average pace, longest run, best pace, and recent runs
@@ -80,7 +81,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 ## Main Pages
 - `Today`: quick navigator and launchpad, daily plan, completion shortcuts, status-colored planned-session cards with a dominant `Log & Complete` action, existing workout access, and activity-specific quick logging
 - `Calendar`: weekly working surface, `Add Training` for actual logs plus a collapsed planning drawer for manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, `Log & Complete` execution logging, and a momentum strip that shows next up plus weekly progress
-- `Stats`: progress proof, goals, adherence summaries, program strength progress, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts, with a reward-first top section and a review drawer shortcut
+- `Stats`: progress proof, goals, adherence summaries, program strength progress, saved-target strength progression review, Strength Insights, Running Insights, Sprint Insights, and per-entry activity charts, with a reward-first top section and a review drawer shortcut
 - `Programs`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept out of the primary athlete nav and opened from the Stats page
 - `Data`: quiet maintenance surface for backup, with exercise library and workout history tucked behind expandable drawers
@@ -129,6 +130,7 @@ V1 keeps decision and planning history in the repo:
 - [docs/decisions/0026-last-logged-strength-performance.md](docs/decisions/0026-last-logged-strength-performance.md)
 - [docs/decisions/0027-strength-progression-targets.md](docs/decisions/0027-strength-progression-targets.md)
 - [docs/decisions/0028-strength-comparison-context.md](docs/decisions/0028-strength-comparison-context.md)
+- [docs/decisions/0029-strength-progression-achievements-and-review.md](docs/decisions/0029-strength-progression-achievements-and-review.md)
 - [docs/decisions/0011-local-first-onboarding-and-backup-ux.md](docs/decisions/0011-local-first-onboarding-and-backup-ux.md)
 - [docs/conversations/2026-04-19-v2-planner-direction.md](docs/conversations/2026-04-19-v2-planner-direction.md)
 - [docs/conversations/2026-08-20-strength-progression-mvp.md](docs/conversations/2026-08-20-strength-progression-mvp.md)

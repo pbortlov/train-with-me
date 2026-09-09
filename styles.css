@@ -712,6 +712,7 @@ body {
 }
 
 .strength-insights-card,
+.strength-progression-review-card,
 .running-insights-card,
 .sprint-insights-card {
   display: grid;
@@ -723,6 +724,88 @@ body {
   background:
     linear-gradient(180deg, rgb(155 92 255 / 5%), rgb(8 17 33 / 96%)),
     #081121;
+}
+
+.strength-progression-review-card {
+  border-color: #9b5cff55;
+  background:
+    linear-gradient(180deg, rgb(155 92 255 / 8%), rgb(8 17 33 / 96%)),
+    #081121;
+}
+
+#strength-progression-review {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.strength-progression-review-row {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0a1326;
+  padding: 0.8rem;
+}
+
+.strength-progression-review-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.strength-progression-review-heading > div,
+.strength-progression-review-heading strong,
+.strength-progression-review-heading span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.strength-progression-review-heading > div > span,
+.strength-progression-review-count,
+.strength-progression-review-suggestion,
+.strength-progression-review-trend {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.strength-progression-review-count {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.strength-progression-review-suggestion {
+  margin: 0;
+  color: #c9a8ff;
+}
+
+.strength-progression-review-sessions {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.35rem;
+}
+
+.strength-progression-review-sessions li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.strength-progression-review-date {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 540px) {
+  .strength-progression-review-heading {
+    display: grid;
+  }
+
+  .strength-progression-review-count {
+    text-align: left;
+    white-space: normal;
+  }
 }
 
 .running-insights-card {

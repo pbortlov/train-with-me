@@ -34,7 +34,11 @@ session gain even when the heaviest set is unchanged.
    name + variation + equipment + load type; working-set-only progression;
    optional session RIR and neutral context flags; and program-linked workouts
    excluded from generic target changes and comparisons.
-4. Add achievement feedback and repeated-session trends in Stats.
+4. Add achievement feedback and repeated-session trends in Stats. Delivered
+   with post-save promoted-set, same-load rep-gain, and new-heaviest feedback,
+   plus each saved kg target's three latest comparable working sessions in
+   Stats. The review deliberately has no streak, volume score, or pass/fail
+   workout label.
 
 Each slice remains independently functional, tested, documented, and manually
 reviewed before the next one begins.
