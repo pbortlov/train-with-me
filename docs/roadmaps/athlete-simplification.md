@@ -88,7 +88,7 @@ Create the archive directory during closeout, not while implementation is still
 pending. Subsequent features and bugfixes belong in separate work items; this
 completed roadmap remains a historical record.
 
-## R01 — Compact strength logger (in progress)
+## R01 — Compact strength logger (delivered in PR #72)
 
 Show exercise name and setup summary, exact previous sets, the saved-target/next-
 session summary, and current set entry. Collapse setup and target controls behind
@@ -106,7 +106,7 @@ Acceptance checks:
 Docs: update logging guidance and README. Reference ADR 0030's disclosure decision
 and ADR 0031 for the implemented layout choice.
 
-## R02 — Confirm actual sets and apply suggestions
+## R02 — Confirm actual sets and apply suggestions (in progress)
 
 Introduce an explicit draft/completed distinction for strength set rows. Add
 **Apply suggested target**, which fills the intended draft target while keeping

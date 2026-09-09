@@ -911,6 +911,7 @@ addStrengthSetButton.addEventListener("click", () => {
     loadType,
     bandColor: loadType === "band" ? bandColor : "",
     kind,
+    confirmed: false,
   });
 
   document.getElementById("strength-set-reps").value = "";
@@ -923,9 +924,10 @@ addStrengthSetButton.addEventListener("click", () => {
 
 addStrengthExerciseButton.addEventListener("click", () => {
   const exerciseName = valueOf("exercise-name").trim();
-  const workingLoadType = draftCurrentStrengthSets.find((set) => set.kind !== "warmup")?.loadType;
-  if (!exerciseName || !draftCurrentStrengthSets.length || !workingLoadType) {
-    setWorkoutFormStatus("Add an exercise name and at least one working set.");
+  const confirmedSets = draftCurrentStrengthSets.filter((set) => set.confirmed);
+  const workingLoadType = confirmedSets.find((set) => set.kind !== "warmup")?.loadType;
+  if (!exerciseName || !confirmedSets.length || !workingLoadType) {
+    setWorkoutFormStatus("Confirm at least one working set before adding the exercise.");
     return;
   }
 
@@ -934,7 +936,7 @@ addStrengthExerciseButton.addEventListener("click", () => {
     variation: strengthExerciseVariationInput?.value.trim() || "",
     equipment: workingLoadType === "band" ? "" : strengthExerciseEquipmentInput?.value.trim() || "",
     loadType: workingLoadType,
-    sets: draftCurrentStrengthSets.map((set, index) => ({
+    sets: confirmedSets.map((set, index) => ({
       order: index + 1,
       reps: set.reps,
       weight: set.weight,
@@ -954,6 +956,23 @@ addStrengthExerciseButton.addEventListener("click", () => {
   renderStrengthLastPerformance();
   renderStrengthProgressionPanel();
   setWorkoutFormStatus("Exercise added to workout.");
+});
+
+currentStrengthSetsList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-strength-set-action]");
+  if (!button) return;
+  const index = Number(button.dataset.strengthSetIndex);
+  const set = draftCurrentStrengthSets[index];
+  if (!set) return;
+  if (button.dataset.strengthSetAction === "confirm") {
+    set.confirmed = true;
+    setWorkoutFormStatus("Set confirmed. It will count toward the workout when you add the exercise.");
+  } else if (button.dataset.strengthSetAction === "remove") {
+    draftCurrentStrengthSets.splice(index, 1);
+    setWorkoutFormStatus("Draft set removed.");
+  }
+  renderCurrentStrengthSets();
+  renderStrengthProgressionPanel();
 });
 
 goalsForm.addEventListener("submit", (event) => {
@@ -4186,7 +4205,7 @@ function renderCurrentStrengthSets() {
   currentStrengthSetsList.innerHTML = draftCurrentStrengthSets
     .map(
       (set, index) =>
-        `<li>Set #${index + 1}: ${set.reps} reps @ ${formatStrengthLoad(set)}${set.kind === "warmup" ? " · Warm-up" : ""}</li>`,
+        `<li class="strength-draft-set ${set.confirmed ? "is-confirmed" : "is-draft"}"><span>Set #${index + 1}: ${set.reps} reps @ ${formatStrengthLoad(set)}${set.kind === "warmup" ? " · Warm-up" : ""} <span class="strength-draft-set-status">${set.confirmed ? "Confirmed" : "Draft"}</span></span><span class="strength-draft-set-actions">${set.confirmed ? "" : `<button type="button" class="ghost-button" data-strength-set-action="confirm" data-strength-set-index="${index}">Confirm set</button>`}<button type="button" class="ghost-button" data-strength-set-action="remove" data-strength-set-index="${index}">Remove</button></span></li>`,
     )
     .join("");
 }
@@ -4274,7 +4293,7 @@ function renderStrengthProgressionPanel() {
   const sessionProgress = profile && isStrengthSessionComparableCore(currentStrengthSessionContext())
     ? buildStrengthSessionProgress(
       previous?.sets || [],
-      draftCurrentStrengthSets,
+      draftCurrentStrengthSets.filter((set) => set.confirmed),
     )
     : null;
   strengthProgressionPanelEl.hidden = loadType !== "kg";
@@ -4337,13 +4356,13 @@ function hydrateStrengthProgressionInputs(profile, previous) {
 function renderStrengthProgressionSummary(profile, sessionProgress) {
   const base = `<strong>Strength target</strong><span>${profile.targetSets} sets × ${profile.repMin}–${profile.repMax} reps at ${formatNumber(profile.workingWeight)} kg</span>`;
   const suggestedNextTarget = profile.nextTargetSuggestion
-    ? `<span><strong>Suggested next session</strong> · ${profile.nextTargetSuggestion.targetSets} sets × ${profile.nextTargetSuggestion.reps} reps at ${formatNumber(profile.nextTargetSuggestion.weight)} kg. Your saved working target remains ${formatNumber(profile.workingWeight)} kg until you complete a heavier working set.</span>`
+    ? `<span><strong>Suggested next session</strong> · ${profile.nextTargetSuggestion.targetSets} sets × ${profile.nextTargetSuggestion.reps} reps at ${formatNumber(profile.nextTargetSuggestion.weight)} kg. Your saved working target remains ${formatNumber(profile.workingWeight)} kg until you complete a heavier working set.</span><button type="button" class="ghost-button" data-strength-action="apply-suggestion">Apply suggested target to next set</button>`
     : "";
   const sessionContext = currentStrengthSessionContext();
   if (!isStrengthSessionComparableCore(sessionContext)) {
     return `${base}${suggestedNextTarget}<span>${formatStrengthProgressionExclusion(sessionContext)} Targets and suggestions are unchanged for this session.</span>`;
   }
-  if (!draftCurrentStrengthSets.length || !sessionProgress) {
+  if (!draftCurrentStrengthSets.some((set) => set.confirmed) || !sessionProgress) {
     return `${base}${suggestedNextTarget}<span>Add your working sets to see today's progress.</span>`;
   }
 
@@ -4369,6 +4388,21 @@ function renderNewStrengthTargetSummary(sessionContext) {
     <span>Start with the editable 3 × 8–10 template. Saving can suggest a next target after top-range sets or update the target from a qualifying heavier kg set.</span>
   `;
 }
+
+strengthProgressionSummaryEl?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-strength-action]");
+  if (!button || button.dataset.strengthAction !== "apply-suggestion") return;
+  const profile = findStrengthProgressionProfile(
+    strengthProgression,
+    exerciseNameInput?.value || "",
+    strengthExerciseVariationInput?.value || "",
+    strengthExerciseEquipmentInput?.value || "",
+  );
+  if (!profile?.nextTargetSuggestion || currentStrengthLoadType() !== "kg") return;
+  document.getElementById("strength-set-reps").value = String(profile.nextTargetSuggestion.reps);
+  strengthSetWeightInput.value = String(profile.nextTargetSuggestion.weight);
+  setWorkoutFormStatus("Suggested target copied to the next set draft. Confirm the set after completing it.");
+});
 
 function saveStrengthProgressionTarget() {
   const exerciseName = exerciseNameInput?.value.trim() || "";

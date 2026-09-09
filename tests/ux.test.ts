@@ -50,6 +50,16 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".strength-editor");
   });
 
+  it("requires explicit confirmation for strength drafts and offers suggestion fill", () => {
+    expect(script).toContain('data-strength-set-action="confirm"');
+    expect(script).toContain('data-strength-set-action="remove"');
+    expect(script).toContain("Confirm set");
+    expect(script).toContain("Apply suggested target to next set");
+    expect(script).toContain("draftCurrentStrengthSets.filter((set) => set.confirmed)");
+    expect(script).toContain("confirmed: false");
+    expect(styles).toContain(".strength-draft-set");
+  });
+
   it("keeps evidence-based strength milestones and comparable-session review in Stats", () => {
     expect(index).toContain('id="strength-progression-review-section"');
     expect(index).toContain('id="strength-progression-review"');

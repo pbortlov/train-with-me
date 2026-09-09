@@ -62,3 +62,11 @@ weight, without treating that calculation as completed work.
   In this slice, the named exercise's logged kg sets are its working sets.
 - Bodyweight and band history stays visible, but only kg sets can update a
   target.
+
+## Draft entry workflow (R02)
+
+Set rows are transient drafts until the athlete explicitly confirms each row.
+Only confirmed rows can be added to an exercise and participate in progression,
+achievements, or completed history. Applying a calculated suggestion copies its
+reps and weight into the entry controls; it does not confirm the set or mutate
+the saved target. Existing imported and saved workouts remain completed records.
