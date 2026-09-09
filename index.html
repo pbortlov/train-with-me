@@ -153,6 +153,61 @@
                 Exercise name
                 <input type="text" id="exercise-name" list="exercise-suggestions" placeholder="e.g. Back squat" />
               </label>
+              <div class="grid strength-context-fields">
+                <label>
+                  Variation (optional)
+                  <input type="text" id="strength-exercise-variation" placeholder="e.g. High bar" />
+                </label>
+                <label>
+                  Equipment (optional)
+                  <input type="text" id="strength-exercise-equipment" placeholder="e.g. Barbell" />
+                </label>
+                <label>
+                  Session RIR (optional)
+                  <input type="number" id="strength-session-rir" min="0" max="4" step="1" placeholder="0–4" />
+                </label>
+              </div>
+              <fieldset class="strength-session-flags">
+                <legend>Session context</legend>
+                <label class="check-label"><input type="checkbox" id="strength-session-deload" /> Deload</label>
+                <label class="check-label"><input type="checkbox" id="strength-session-technique" /> Technique-focused</label>
+                <label class="check-label"><input type="checkbox" id="strength-session-pain" /> Pain or concerning discomfort</label>
+                <label class="check-label"><input type="checkbox" id="strength-session-incomplete" /> Incomplete session</label>
+              </fieldset>
+              <aside id="strength-last-performance" class="strength-last-performance" aria-live="polite" hidden></aside>
+              <section id="strength-progression-panel" class="strength-progression-panel" aria-live="polite" hidden>
+                <div id="strength-progression-summary" class="strength-progression-summary"></div>
+                <div class="grid strength-progression-fields">
+                  <label>
+                    Target working sets
+                    <input type="number" id="strength-target-sets" min="1" step="1" value="3" />
+                  </label>
+                  <label>
+                    Rep range from
+                    <input type="number" id="strength-target-rep-min" min="1" step="1" value="8" />
+                  </label>
+                  <label>
+                    Rep range to
+                    <input type="number" id="strength-target-rep-max" min="1" step="1" value="10" />
+                  </label>
+                  <label>
+                    Working weight (kg)
+                    <input type="number" id="strength-target-working-weight" min="0" step="0.1" placeholder="e.g. 32.5" />
+                  </label>
+                  <label>
+                    Gym weight jumps (kg)
+                    <input type="text" id="strength-gym-weight-jumps" inputmode="decimal" placeholder="e.g. 1, 1.25, 2.5" />
+                  </label>
+                  <label>
+                    Exercise jump override (kg)
+                    <input type="text" id="strength-exercise-weight-jumps" inputmode="decimal" placeholder="Use gym jumps" />
+                  </label>
+                </div>
+                <div class="strength-progression-actions">
+                  <button type="button" class="ghost-button" id="save-strength-target">Save strength target</button>
+                </div>
+                <p id="strength-progression-status" class="hint"></p>
+              </section>
 
               <label>
                 Set reps
@@ -165,6 +220,14 @@
                   <option value="kg">kg</option>
                   <option value="bodyweight">Body weight</option>
                   <option value="band">Band</option>
+                </select>
+              </label>
+
+              <label>
+                Set type
+                <select id="strength-set-kind">
+                  <option value="working">Working set</option>
+                  <option value="warmup">Warm-up</option>
                 </select>
               </label>
 
@@ -740,6 +803,12 @@
               </table>
             </div>
           </details>
+        </article>
+
+        <article class="card stats-detail-section strength-progression-review-card" id="strength-progression-review-section">
+          <h3>Strength progression</h3>
+          <p class="hint">Your saved kg targets with the latest comparable working sessions. Warm-ups and recovery, technique, pain, incomplete, and program-linked sessions stay out of this comparison.</p>
+          <div id="strength-progression-review"></div>
         </article>
 
         <article class="card stats-detail-section running-insights-card" id="running-insights-section">

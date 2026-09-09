@@ -6,6 +6,8 @@ import {
   normalizeSprintText,
   normalizeSprintSets,
   normalizeStrengthExercises,
+  normalizeStrengthSessionContext,
+  isStrengthSessionComparable,
 } from "../src/domain/normalization";
 
 describe("workout normalization", () => {
@@ -45,13 +47,35 @@ describe("workout normalization", () => {
     ])).toEqual([
       {
         name: "Back squat",
+        variation: "",
+        equipment: "",
+        loadType: "kg",
         sets: [
-          { order: 1, reps: 5, weight: 100, loadType: "kg", bandColor: "" },
-          { order: 2, reps: 8, weight: null, loadType: "bodyweight", bandColor: "" },
-          { order: 3, reps: 12, weight: null, loadType: "band", bandColor: "purple" },
+          { order: 1, reps: 5, weight: 100, loadType: "kg", bandColor: "", kind: "working" },
+          { order: 2, reps: 8, weight: null, loadType: "bodyweight", bandColor: "", kind: "working" },
+          { order: 3, reps: 12, weight: null, loadType: "band", bandColor: "purple", kind: "working" },
         ],
       },
     ]);
+  });
+
+  it("defaults legacy strength data to comparable working work and keeps recovery flags safe", () => {
+    expect(normalizeStrengthExercises([{ name: "Row", variation: " chest supported ", equipment: " machine ", sets: [{ reps: 8, weight: 50, kind: "warmup" }] }])[0]).toMatchObject({
+      variation: "chest supported",
+      equipment: "machine",
+      sets: [{ kind: "warmup" }],
+    });
+    expect(normalizeStrengthSessionContext({ rir: 3, isDeload: true, hasPain: "yes" })).toEqual({
+      rir: 3,
+      isDeload: true,
+      isTechnique: false,
+      hasPain: true,
+      isIncomplete: false,
+      isProgram: false,
+    });
+    expect(isStrengthSessionComparable(undefined)).toBe(true);
+    expect(isStrengthSessionComparable({ isTechnique: true })).toBe(false);
+    expect(isStrengthSessionComparable({ isProgram: true })).toBe(false);
   });
 
   it("keeps only supported sprint context values while preserving optional text", () => {

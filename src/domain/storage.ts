@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   phaseTemplates: "twm_phase_templates_v2",
   phaseInstances: "twm_phase_instances_v2",
   uiSettings: "twm_ui_settings_v2",
+  strengthProgression: "twm_strength_progression_v1",
 } as const;
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;

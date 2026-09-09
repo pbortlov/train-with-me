@@ -41,6 +41,7 @@ The following V1 keys are compatibility-sensitive and must not be renamed:
 - `twm_phase_templates_v2`
 - `twm_phase_instances_v2`
 - `twm_ui_settings_v2`
+- `twm_strength_progression_v1`
 
 The suffix is part of the key name. A `_v2` suffix does not make a key
 V2-cloud-owned.
@@ -58,7 +59,8 @@ Version 2 exports use:
   "plannedSessions": [],
   "phaseTemplates": [],
   "phaseInstances": [],
-  "uiSettings": {}
+  "uiSettings": {},
+  "strengthProgression": {}
 }
 ```
 
@@ -75,6 +77,7 @@ Optional:
 - `phaseTemplates`
 - `phaseInstances`
 - `uiSettings`
+- `strengthProgression`
 
 `phaseInstances` may include optional scheduling fields such as
 `slotDayShifts`, where each item records a generated strength training slot
@@ -83,6 +86,22 @@ shift using `phaseSlotId`, `fromWeekIndex`, `dayDelta`, and `createdAt`.
 V1 restore and V2 import may accept older or unversioned backups when
 `workouts` and `goals` are valid. Missing optional collections are treated as
 empty, and missing UI settings fall back to defaults.
+
+Missing or malformed `strengthProgression` falls back to default permitted gym
+weight jumps and no exercise profiles.
+
+A strength progression profile may include optional `nextTargetSuggestion`
+with `targetSets`, `reps`, `weight`, and `increment`. It is a persisted
+post-save suggestion for the next matching kg session, not a replacement for
+the saved working weight. Older profiles without it continue to work.
+
+Strength workout entries may include optional `strengthContext` with `rir`,
+`isDeload`, `isTechnique`, `hasPain`, `isIncomplete`, and `isProgram` fields.
+Each item in `strengthExercises` may include optional `variation`,
+`equipment`, and working `loadType`; each set may include optional `kind`
+(`working` or `warmup`). Older entries without these fields retain their
+existing meaning and normalize as a comparable manual session with blank
+variation/equipment, kg as the target load type, and working sets.
 
 ## Compatibility Rules
 

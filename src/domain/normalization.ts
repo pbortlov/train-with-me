@@ -19,11 +19,24 @@ export interface StrengthSet {
   weight: number | null;
   loadType: "kg" | "bodyweight" | "band";
   bandColor: string;
+  kind?: "warmup" | "working";
 }
 
 export interface StrengthExercise {
   name: string;
+  variation?: string;
+  equipment?: string;
+  loadType?: StrengthSet["loadType"];
   sets: StrengthSet[];
+}
+
+export interface StrengthSessionContext {
+  rir: number | null;
+  isDeload: boolean;
+  isTechnique: boolean;
+  hasPain: boolean;
+  isIncomplete: boolean;
+  isProgram: boolean;
 }
 
 function isNumber(value: unknown): value is number {
@@ -70,6 +83,31 @@ export function normalizeSprintText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+export function normalizeStrengthSessionContext(value: unknown): StrengthSessionContext {
+  const context = isRecord(value) ? value : {};
+  return {
+    rir: isNumber(context.rir) && Number.isInteger(context.rir) && context.rir >= 0 && context.rir <= 4
+      ? Number(context.rir)
+      : null,
+    isDeload: Boolean(context.isDeload),
+    isTechnique: Boolean(context.isTechnique),
+    hasPain: Boolean(context.hasPain),
+    isIncomplete: Boolean(context.isIncomplete),
+    isProgram: Boolean(context.isProgram),
+  };
+}
+
+export function isStrengthSessionComparable(value: unknown): boolean {
+  const context = normalizeStrengthSessionContext(value);
+  return !context.isDeload && !context.isTechnique && !context.hasPain && !context.isIncomplete && !context.isProgram;
+}
+
+export function strengthExerciseKey(name: string, variation = "", equipment = "", loadType: StrengthSet["loadType"] = "kg"): string {
+  return [name, variation, equipment, loadType]
+    .map((entry) => entry.trim().toLocaleLowerCase())
+    .join("\u0000");
+}
+
 export function normalizeStrengthExercises(value: unknown): StrengthExercise[] {
   if (!Array.isArray(value)) {
     return [];
@@ -83,9 +121,8 @@ export function normalizeStrengthExercises(value: unknown): StrengthExercise[] {
         exercise.name.trim().length > 0 &&
         Array.isArray(exercise.sets),
     )
-    .map((exercise) => ({
-      name: String(exercise.name).trim(),
-      sets: (exercise.sets as unknown[])
+    .map((exercise) => {
+      const sets = (exercise.sets as unknown[])
         .filter((set): set is Record<string, unknown> => isRecord(set) && isNumber(set.reps))
         .map((set, index) => {
           const loadType: StrengthSet["loadType"] =
@@ -96,8 +133,20 @@ export function normalizeStrengthExercises(value: unknown): StrengthExercise[] {
             weight: loadType === "kg" && isNumber(set.weight) ? Number(set.weight) : null,
             loadType,
             bandColor: typeof set.bandColor === "string" ? set.bandColor : "",
+            kind: (set.kind === "warmup" ? "warmup" : "working") as StrengthSet["kind"],
           };
-        }),
-    }))
+        });
+      const configuredLoadType = exercise.loadType === "band" || exercise.loadType === "bodyweight" || exercise.loadType === "kg"
+        ? exercise.loadType
+        : null;
+      const workingLoadType = sets.find((set) => set.kind !== "warmup")?.loadType || sets[0]?.loadType || "kg";
+      return {
+        name: String(exercise.name).trim(),
+        variation: normalizeSprintText(exercise.variation),
+        equipment: normalizeSprintText(exercise.equipment),
+        loadType: configuredLoadType || workingLoadType,
+        sets,
+      };
+    })
     .filter((exercise) => exercise.sets.length > 0);
 }

@@ -14,6 +14,9 @@ import {
   normalizeSprintSurface as normalizeSprintSurfaceCore,
   normalizeSprintText as normalizeSprintTextCore,
   normalizeStrengthExercises as normalizeStrengthExercisesCore,
+  normalizeStrengthSessionContext as normalizeStrengthSessionContextCore,
+  isStrengthSessionComparable as isStrengthSessionComparableCore,
+  strengthExerciseKey as strengthExerciseKeyCore,
 } from "./src/domain/normalization";
 import { evaluatePlanStatus as evaluatePlanStatusCore } from "./src/domain/metrics";
 import { LOG_ACTIVITIES, normalizeLogActivity, resolveDateShortcut } from "./src/domain/logging";
@@ -76,6 +79,20 @@ import {
   listSprintProfileOptions,
 } from "./src/domain/sprint-performance";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
+import { findStrengthLastPerformance } from "./src/domain/strength-last-performance";
+import {
+  buildStrengthProgressionReview,
+  buildStrengthSaveAchievements,
+} from "./src/domain/strength-progression-review";
+import {
+  advanceStrengthTargetAfterWorkout,
+  buildStrengthSessionProgress,
+  createDefaultStrengthProgressionState,
+  findStrengthProgressionProfile,
+  normalizeStrengthProgressionState,
+  parseWeightJumps,
+  upsertStrengthProgressionProfile,
+} from "./src/domain/strength-progression";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
 
@@ -86,6 +103,7 @@ const STORAGE_KEY_PLANNED_SESSIONS = STORAGE_KEYS.plannedSessions;
 const STORAGE_KEY_PHASE_TEMPLATES = STORAGE_KEYS.phaseTemplates;
 const STORAGE_KEY_PHASE_INSTANCES = STORAGE_KEYS.phaseInstances;
 const STORAGE_KEY_UI_SETTINGS = STORAGE_KEYS.uiSettings;
+const STORAGE_KEY_STRENGTH_PROGRESSION = STORAGE_KEYS.strengthProgression;
 const ACTIVITY_CHART_DATE_COLORS = ["#4DA3FF", "#FF7A00", "#6DFF5C", "#E879F9", "#FACC15", "#38BDF8", "#FB7185", "#A3E635"];
 
 const workoutForm = document.getElementById("workout-form");
@@ -115,9 +133,29 @@ const sprintProfileCustomInput = document.getElementById("sprint-profile-custom"
 const sprintProfileCustomField = document.getElementById("sprint-profile-custom-field");
 const addStrengthSetButton = document.getElementById("add-strength-set");
 const addStrengthExerciseButton = document.getElementById("add-strength-exercise");
+const exerciseNameInput = document.getElementById("exercise-name");
+const strengthExerciseVariationInput = document.getElementById("strength-exercise-variation");
+const strengthExerciseEquipmentInput = document.getElementById("strength-exercise-equipment");
+const strengthSessionRirInput = document.getElementById("strength-session-rir");
+const strengthSessionDeloadInput = document.getElementById("strength-session-deload");
+const strengthSessionTechniqueInput = document.getElementById("strength-session-technique");
+const strengthSessionPainInput = document.getElementById("strength-session-pain");
+const strengthSessionIncompleteInput = document.getElementById("strength-session-incomplete");
 const currentStrengthSetsList = document.getElementById("current-strength-sets");
 const strengthExerciseList = document.getElementById("strength-exercise-list");
+const strengthLastPerformanceEl = document.getElementById("strength-last-performance");
+const strengthProgressionPanelEl = document.getElementById("strength-progression-panel");
+const strengthProgressionSummaryEl = document.getElementById("strength-progression-summary");
+const strengthProgressionStatusEl = document.getElementById("strength-progression-status");
+const strengthTargetSetsInput = document.getElementById("strength-target-sets");
+const strengthTargetRepMinInput = document.getElementById("strength-target-rep-min");
+const strengthTargetRepMaxInput = document.getElementById("strength-target-rep-max");
+const strengthTargetWorkingWeightInput = document.getElementById("strength-target-working-weight");
+const strengthGymWeightJumpsInput = document.getElementById("strength-gym-weight-jumps");
+const strengthExerciseWeightJumpsInput = document.getElementById("strength-exercise-weight-jumps");
+const saveStrengthTargetButton = document.getElementById("save-strength-target");
 const strengthSetLoadTypeInput = document.getElementById("strength-set-load-type");
+const strengthSetKindInput = document.getElementById("strength-set-kind");
 const strengthSetWeightInput = document.getElementById("strength-set-weight");
 const strengthSetBandColorInput = document.getElementById("strength-set-band-color");
 const strengthSetWeightLabel = document.getElementById("strength-set-weight-label");
@@ -131,6 +169,7 @@ const chartsStatusEl = document.getElementById("charts-status");
 const strengthInsightsSummaryEl = document.getElementById("strength-insights-summary");
 const strengthInsightsDetailsEl = document.getElementById("strength-insights-details");
 const strengthInsightsBodyEl = document.getElementById("strength-insights-body");
+const strengthProgressionReviewEl = document.getElementById("strength-progression-review");
 const runningInsightsSummaryEl = document.getElementById("running-insights-summary");
 const runningInsightsDetailsEl = document.getElementById("running-insights-details");
 const runningInsightsBodyEl = document.getElementById("running-insights-body");
@@ -369,6 +408,9 @@ let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
 let plannedSessions = load(STORAGE_KEY_PLANNED_SESSIONS, []).map((session) => normalizePlannedSession(session));
 let phaseTemplates = load(STORAGE_KEY_PHASE_TEMPLATES, []).map((template) => normalizePhaseTemplate(template));
 let phaseInstances = load(STORAGE_KEY_PHASE_INSTANCES, []).map((instance) => normalizePhaseInstance(instance));
+let strengthProgression = normalizeStrengthProgressionState(
+  load(STORAGE_KEY_STRENGTH_PROGRESSION, createDefaultStrengthProgressionState()),
+);
 let uiSettings = load(STORAGE_KEY_UI_SETTINGS, {
   currentView: "today",
   coachMode: false,
@@ -380,6 +422,7 @@ let draftSprintSets = [];
 let draftPlannedSprintBlocks = [];
 let draftStrengthExercises = [];
 let draftCurrentStrengthSets = [];
+let strengthProgressionExerciseKey = "";
 let progressFilters = {
   activity: "all",
   fromDate: "",
@@ -481,6 +524,7 @@ workoutForm.addEventListener("submit", (event) => {
     date: valueOf("date"),
     activity: selectedActivity,
     strengthExercises: selectedActivity === "strength" ? normalizeStrengthExercises(draftStrengthExercises) : [],
+    strengthContext: selectedActivity === "strength" ? currentStrengthSessionContext() : normalizeStrengthSessionContextCore({}),
     distance: selectedActivity === "run" ? runDistance : toNumberOrNull(valueOf("distance")),
     time: selectedActivity === "run" ? runTime : toNumberOrNull(valueOf("time")),
     pace: selectedActivity === "run" ? runPace : toNumberOrNull(valueOf("pace")),
@@ -517,6 +561,13 @@ workoutForm.addEventListener("submit", (event) => {
     return;
   }
 
+  const workoutsBeforeSave = editingWorkoutId
+    ? workouts.filter((savedWorkout) => savedWorkout.id !== editingWorkoutId)
+    : workouts;
+  const strengthSaveAchievements = workout.activity === "strength"
+    ? buildStrengthSaveAchievements(workoutsBeforeSave, workout)
+    : [];
+
   if (editingWorkoutId) {
     const existingIndex = workouts.findIndex((savedWorkout) => savedWorkout.id === editingWorkoutId);
     if (existingIndex >= 0) {
@@ -529,16 +580,125 @@ workoutForm.addEventListener("submit", (event) => {
     workouts.unshift(workout);
   }
   save(STORAGE_KEY_WORKOUTS, workouts);
+  const progressionOutcomes = workout.activity === "strength"
+    ? applyAutomaticStrengthTargetProgression(workout)
+    : [];
   evaluateGoals({ persist: true, celebrate: true });
   resetWorkoutForm();
-  setWorkoutFormStatus("Workout saved.");
+  setWorkoutFormStatus(formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements));
   render();
 });
+
+function applyAutomaticStrengthTargetProgression(workout) {
+  if (!isStrengthSessionComparableCore(workout.strengthContext)) {
+    return [{ type: "excluded", reason: formatStrengthProgressionExclusion(workout.strengthContext) }];
+  }
+
+  const exercisesByName = new Map();
+  workout.strengthExercises.forEach((exercise) => {
+    const key = strengthExerciseKeyCore(exercise.name, exercise.variation, exercise.equipment, exercise.loadType);
+    const entry = exercisesByName.get(key) || {
+      exerciseName: exercise.name,
+      variation: exercise.variation,
+      equipment: exercise.equipment,
+      sets: [],
+    };
+    entry.sets.push(...exercise.sets);
+    exercisesByName.set(key, entry);
+  });
+
+  const outcomes = [];
+  exercisesByName.forEach(({ exerciseName, variation, equipment, sets }) => {
+    const profile = findStrengthProgressionProfile(strengthProgression, exerciseName, variation, equipment);
+    if (!profile) {
+      return;
+    }
+
+    const progression = advanceStrengthTargetAfterWorkout(profile, sets, strengthProgression.gymWeightJumps);
+    if (progression.qualifyingSet) {
+      strengthProgression = upsertStrengthProgressionProfile(strengthProgression, progression.profile);
+      outcomes.push({
+        type: "updated",
+        exerciseName: profile.exercise,
+        previousWeight: profile.workingWeight,
+        qualifyingSet: progression.qualifyingSet,
+      });
+    } else if (progression.nextTargetSuggestion) {
+      strengthProgression = upsertStrengthProgressionProfile(strengthProgression, progression.profile);
+      outcomes.push({
+        type: "suggested",
+        exerciseName: profile.exercise,
+        nextTargetSuggestion: progression.nextTargetSuggestion,
+      });
+    }
+  });
+
+  if (outcomes.some((outcome) => outcome.type === "updated" || outcome.type === "suggested")) {
+    save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
+  }
+  return outcomes;
+}
+
+function formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements = []) {
+  if (!progressionOutcomes.length && !strengthSaveAchievements.length) {
+    return "Workout saved.";
+  }
+
+  const updates = progressionOutcomes
+    .filter((outcome) => outcome.type === "updated")
+    .map(({ exerciseName, previousWeight, qualifyingSet }) =>
+      `${exerciseName} ${formatNumber(previousWeight)} kg → ${formatNumber(qualifyingSet.weight)} kg after ${formatNumber(qualifyingSet.reps)} reps @ ${formatNumber(qualifyingSet.weight)} kg`,
+    );
+  const suggestions = progressionOutcomes
+    .filter((outcome) => outcome.type === "suggested")
+    .map(({ exerciseName, nextTargetSuggestion }) =>
+      `${exerciseName} ${nextTargetSuggestion.targetSets} × ${nextTargetSuggestion.reps} @ ${formatNumber(nextTargetSuggestion.weight)} kg`,
+    );
+  const exclusions = progressionOutcomes
+    .filter((outcome) => outcome.type === "excluded")
+    .map(({ reason }) => reason);
+  const achievements = strengthSaveAchievements.map((achievement) => {
+    const identity = formatStrengthExerciseIdentity(achievement);
+    const evidence = [
+      achievement.promotedSetCount
+        ? `${achievement.promotedSetCount} promoted ${achievement.promotedSetCount === 1 ? "set" : "sets"}`
+        : "",
+      achievement.repGainCount
+        ? `${achievement.repGainCount} same-load ${achievement.repGainCount === 1 ? "rep gain" : "rep gains"}`
+        : "",
+      achievement.newHeaviestKgSet
+        ? `new heaviest ${formatNumber(achievement.newHeaviestKgSet.weight)} kg × ${formatNumber(achievement.newHeaviestKgSet.reps)}`
+        : "",
+    ].filter(Boolean);
+    return `${identity}: ${evidence.join(", ")}`;
+  });
+  const messages = [
+    updates.length ? `${updates.length === 1 ? "Target updated" : "Targets updated"}: ${updates.join("; ")}.` : "",
+    suggestions.length ? `${suggestions.length === 1 ? "Next target suggestion" : "Next target suggestions"}: ${suggestions.join("; ")}. Log a qualifying heavier set to update the saved target.` : "",
+    achievements.length ? `Session evidence: ${achievements.join("; ")}.` : "",
+    exclusions.length ? `Strength targets were left unchanged: ${exclusions.join("; ")}.` : "",
+  ].filter(Boolean);
+  return `Workout saved. ${messages.join(" ")}`;
+}
 
 activityInput.addEventListener("change", () => {
   updateVisibleFields();
   syncLoggingActivityButtons();
 });
+addSafeEventListener(exerciseNameInput, "input", renderStrengthLastPerformance);
+addSafeEventListener(exerciseNameInput, "input", renderStrengthProgressionPanel);
+addSafeEventListener(strengthExerciseVariationInput, "input", renderStrengthLastPerformance);
+addSafeEventListener(strengthExerciseVariationInput, "input", renderStrengthProgressionPanel);
+addSafeEventListener(strengthExerciseEquipmentInput, "input", renderStrengthLastPerformance);
+addSafeEventListener(strengthExerciseEquipmentInput, "input", renderStrengthProgressionPanel);
+[
+  strengthSessionRirInput,
+  strengthSessionDeloadInput,
+  strengthSessionTechniqueInput,
+  strengthSessionPainInput,
+  strengthSessionIncompleteInput,
+].forEach((input) => addSafeEventListener(input, "change", renderStrengthProgressionPanel));
+addSafeEventListener(saveStrengthTargetButton, "click", saveStrengthProgressionTarget);
 
 addSafeEventListener(sprintProfileInput, "change", () => {
   syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
@@ -656,6 +816,9 @@ strengthSetLoadTypeInput.addEventListener("change", () => {
   if (loadType !== "band") {
     setBandColorPickerValue(strengthSetBandColorInput, "");
   }
+  syncStrengthEquipmentGuidance(loadType);
+  renderStrengthLastPerformance();
+  renderStrengthProgressionPanel();
 });
 
 window.addEventListener("beforeinstallprompt", (event) => {
@@ -708,6 +871,7 @@ addStrengthSetButton.addEventListener("click", () => {
   const weight = toNumberOrNull(valueOf("strength-set-weight"));
   const loadType = valueOf("strength-set-load-type");
   const bandColor = valueOf("strength-set-band-color");
+  const kind = valueOf("strength-set-kind") === "warmup" ? "warmup" : "working";
 
   if (!isNumber(reps)) {
     setWorkoutFormStatus("Set reps are required.");
@@ -724,43 +888,60 @@ addStrengthSetButton.addEventListener("click", () => {
     return;
   }
 
+  const existingWorkingLoadType = draftCurrentStrengthSets.find((set) => set.kind !== "warmup")?.loadType;
+  if (kind === "working" && existingWorkingLoadType && existingWorkingLoadType !== loadType) {
+    setWorkoutFormStatus("Working sets with different load types need separate exercise entries so progress stays comparable.");
+    return;
+  }
+
   draftCurrentStrengthSets.push({
     reps,
     weight: loadType === "kg" ? weight : null,
     loadType,
     bandColor: loadType === "band" ? bandColor : "",
+    kind,
   });
 
   document.getElementById("strength-set-reps").value = "";
   document.getElementById("strength-set-weight").value = "";
   setBandColorPickerValue(strengthSetBandColorInput, "");
   renderCurrentStrengthSets();
+  renderStrengthProgressionPanel();
   setWorkoutFormStatus("Strength set added.");
 });
 
 addStrengthExerciseButton.addEventListener("click", () => {
   const exerciseName = valueOf("exercise-name").trim();
-  if (!exerciseName || !draftCurrentStrengthSets.length) {
-    setWorkoutFormStatus("Add an exercise name and at least one set.");
+  const workingLoadType = draftCurrentStrengthSets.find((set) => set.kind !== "warmup")?.loadType;
+  if (!exerciseName || !draftCurrentStrengthSets.length || !workingLoadType) {
+    setWorkoutFormStatus("Add an exercise name and at least one working set.");
     return;
   }
 
   draftStrengthExercises.push({
     name: exerciseName,
+    variation: strengthExerciseVariationInput?.value.trim() || "",
+    equipment: workingLoadType === "band" ? "" : strengthExerciseEquipmentInput?.value.trim() || "",
+    loadType: workingLoadType,
     sets: draftCurrentStrengthSets.map((set, index) => ({
       order: index + 1,
       reps: set.reps,
       weight: set.weight,
       loadType: set.loadType || "kg",
       bandColor: set.bandColor || "",
+      kind: set.kind === "warmup" ? "warmup" : "working",
     })),
   });
   rememberExerciseName(exerciseName);
 
   draftCurrentStrengthSets = [];
-  document.getElementById("exercise-name").value = "";
+  exerciseNameInput.value = "";
+  if (strengthExerciseVariationInput) strengthExerciseVariationInput.value = "";
+  if (strengthExerciseEquipmentInput) strengthExerciseEquipmentInput.value = "";
   renderCurrentStrengthSets();
   renderStrengthExercises();
+  renderStrengthLastPerformance();
+  renderStrengthProgressionPanel();
   setWorkoutFormStatus("Exercise added to workout.");
 });
 
@@ -803,6 +984,7 @@ function render() {
   renderGoals();
   renderProgressHub();
   renderStrengthInsights();
+  renderStrengthProgressionReview();
   renderRunningInsights();
   renderSprintInsights();
   renderPlannerSummary();
@@ -2298,12 +2480,16 @@ function resetWorkoutForm() {
   draftCurrentStrengthSets = [];
   workoutForm.reset();
   strengthSetLoadTypeInput.value = "kg";
+  syncStrengthEquipmentGuidance("kg");
+  if (strengthSetKindInput) strengthSetKindInput.value = "working";
   strengthSetWeightInput.disabled = false;
   setBandColorPickerValue(strengthSetBandColorInput, "");
   setBandColorPickerDisabled(strengthSetBandColorInput, true);
   dateInput.valueAsDate = new Date();
   renderCurrentStrengthSets();
   renderStrengthExercises();
+  renderStrengthLastPerformance();
+  renderStrengthProgressionPanel();
   renderSprintSets();
   syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
   updateVisibleFields();
@@ -2573,6 +2759,68 @@ function formatStrengthInsightLoadTypes(loadTypes) {
       return loadType;
     })
     .join(", ");
+}
+
+function renderStrengthProgressionReview() {
+  if (!strengthProgressionReviewEl) {
+    return;
+  }
+
+  const rows = buildStrengthProgressionReview(workouts, strengthProgression.profiles);
+  if (!rows.length) {
+    strengthProgressionReviewEl.innerHTML = "<p class=\"planner-empty\">Save a kg strength target to build its comparable-session review here.</p>";
+    return;
+  }
+
+  strengthProgressionReviewEl.innerHTML = rows.map(({ profile, sessions }) => {
+    const recentSessions = sessions.slice(-3).reverse();
+    const suggestion = profile.nextTargetSuggestion
+      ? `<p class="strength-progression-review-suggestion">Suggested next session · ${profile.nextTargetSuggestion.targetSets} × ${profile.nextTargetSuggestion.reps} @ ${formatNumber(profile.nextTargetSuggestion.weight)} kg</p>`
+      : "";
+    const sessionMarkup = recentSessions.length
+      ? recentSessions.map((session) => `
+          <li>
+            <span class="strength-progression-review-date">${session.date ? escapeHtml(formatHumanDate(session.date)) : "Previous session"}</span>
+            <span>${escapeHtml(formatStrengthReviewSetSequence(session.sets))}</span>
+            <span class="strength-progression-review-trend">${escapeHtml(formatStrengthReviewTrend(session.progressFromPrevious))}</span>
+          </li>
+        `).join("")
+      : "<li class=\"planner-empty\">No comparable working kg session recorded yet.</li>";
+    return `
+      <article class="strength-progression-review-row">
+        <div class="strength-progression-review-heading">
+          <div>
+            <strong>${escapeHtml(formatStrengthExerciseIdentity(profile))}</strong>
+            <span>Saved target · ${profile.targetSets} × ${profile.repMin}–${profile.repMax} @ ${formatNumber(profile.workingWeight)} kg</span>
+          </div>
+          <span class="strength-progression-review-count">${sessions.length} comparable ${sessions.length === 1 ? "session" : "sessions"}</span>
+        </div>
+        ${suggestion}
+        <ol class="strength-progression-review-sessions">${sessionMarkup}</ol>
+      </article>
+    `;
+  }).join("");
+}
+
+function formatStrengthReviewSetSequence(sets) {
+  return sets
+    .map((set) => `${formatNumber(set.reps)} × ${formatNumber(set.weight)} kg`)
+    .join(" · ");
+}
+
+function formatStrengthReviewTrend(progress) {
+  if (!progress) {
+    return "First comparable session";
+  }
+  const signals = [
+    progress.promotedSetCount
+      ? `${progress.promotedSetCount} promoted ${progress.promotedSetCount === 1 ? "set" : "sets"}`
+      : "",
+    progress.repGainCount
+      ? `${progress.repGainCount} same-load ${progress.repGainCount === 1 ? "rep gain" : "rep gains"}`
+      : "",
+  ].filter(Boolean);
+  return signals.length ? signals.join(" · ") : "Comparable repeat";
 }
 
 function renderRunningInsights() {
@@ -3344,6 +3592,7 @@ function exportBackupData() {
     phaseTemplates,
     phaseInstances,
     uiSettings,
+    strengthProgression,
   });
 
   downloadJsonFile(`train-with-me-backup-${new Date().toISOString().slice(0, 10)}.json`, backupPayload);
@@ -3456,6 +3705,7 @@ function importBackupData(event) {
         coachMode: Boolean(parsed.uiSettings?.coachMode),
         currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
       };
+      strengthProgression = normalizeStrengthProgressionState(parsed.strengthProgression);
       refreshDetectedSessionStatuses({ persist: false });
       evaluateGoals({ persist: false, celebrate: true });
 
@@ -3465,6 +3715,7 @@ function importBackupData(event) {
       save(STORAGE_KEY_PHASE_TEMPLATES, phaseTemplates);
       save(STORAGE_KEY_PHASE_INSTANCES, phaseInstances);
       save(STORAGE_KEY_UI_SETTINGS, uiSettings);
+      save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
       hydrateGoalInputs();
       render();
       backupStatusEl.textContent = `Imported ${workouts.length} workout(s) successfully.`;
@@ -3895,6 +4146,9 @@ function normalizeImportedWorkout(workout) {
     date: workout.date || "",
     activity,
     strengthExercises: normalizeStrengthExercises(workout.strengthExercises),
+    strengthContext: activity === "strength"
+      ? normalizeStrengthSessionContextCore(workout.strengthContext)
+      : normalizeStrengthSessionContextCore({}),
     distance: normalizedDistance,
     time: normalizedTime,
     pace: normalizedPace,
@@ -3920,7 +4174,7 @@ function renderCurrentStrengthSets() {
   currentStrengthSetsList.innerHTML = draftCurrentStrengthSets
     .map(
       (set, index) =>
-        `<li>Set #${index + 1}: ${set.reps} reps @ ${formatStrengthLoad(set)}</li>`,
+        `<li>Set #${index + 1}: ${set.reps} reps @ ${formatStrengthLoad(set)}${set.kind === "warmup" ? " · Warm-up" : ""}</li>`,
     )
     .join("");
 }
@@ -3934,11 +4188,255 @@ function renderStrengthExercises() {
   strengthExerciseList.innerHTML = draftStrengthExercises
     .map((exercise, exerciseIndex) => {
       const setSummary = exercise.sets
-        .map((set) => `#${set.order}: ${set.reps} reps @ ${formatStrengthLoad(set)}`)
+        .map((set) => `#${set.order}: ${set.reps} reps @ ${formatStrengthLoad(set)}${set.kind === "warmup" ? " (warm-up)" : ""}`)
         .join(", ");
-      return `<li>${exerciseIndex + 1}. ${escapeHtml(exercise.name)} — ${setSummary}</li>`;
+      return `<li>${exerciseIndex + 1}. ${escapeHtml(formatStrengthExerciseIdentity(exercise))} — ${setSummary}</li>`;
     })
     .join("");
+}
+
+function renderStrengthLastPerformance() {
+  if (!strengthLastPerformanceEl || !exerciseNameInput) {
+    return;
+  }
+
+  const performance = findStrengthLastPerformance(
+    workouts,
+    exerciseNameInput.value,
+    strengthExerciseVariationInput?.value || "",
+    strengthExerciseEquipmentInput?.value || "",
+    currentStrengthLoadType(),
+  );
+  if (!performance) {
+    strengthLastPerformanceEl.hidden = true;
+    strengthLastPerformanceEl.innerHTML = "";
+    return;
+  }
+
+  const setSummary = performance.sets
+    .map((set) => `${formatNumber(set.reps)} reps @ ${formatStrengthLoad(set)}`)
+    .join(" · ");
+  const bestKg = performance.bestKgSet
+    ? `${formatNumber(performance.bestKgSet.weight)} kg × ${formatNumber(performance.bestKgSet.reps)}${performance.bestKgSet.date ? ` · ${escapeHtml(performance.bestKgSet.date)}` : ""}`
+    : "No kg set yet";
+
+  strengthLastPerformanceEl.hidden = false;
+  strengthLastPerformanceEl.innerHTML = `
+    <strong>Last time · ${performance.date ? escapeHtml(formatHumanDate(performance.date)) : "previous workout"}</strong>
+    <span>${escapeHtml(setSummary)}</span>
+    <span>Best kg set · ${bestKg}</span>
+  `;
+}
+
+function renderStrengthProgressionPanel() {
+  if (!strengthProgressionPanelEl || !exerciseNameInput) {
+    return;
+  }
+
+  const exerciseName = exerciseNameInput.value.trim();
+  const variation = strengthExerciseVariationInput?.value || "";
+  const equipment = strengthExerciseEquipmentInput?.value || "";
+  const loadType = currentStrengthLoadType();
+  const exerciseKey = strengthExerciseKeyCore(exerciseName, variation, equipment, loadType);
+  if (!exerciseName) {
+    strengthProgressionPanelEl.hidden = true;
+    strengthProgressionExerciseKey = "";
+    return;
+  }
+
+  const profile = loadType === "kg"
+    ? findStrengthProgressionProfile(strengthProgression, exerciseName, variation, equipment)
+    : null;
+  const previous = findStrengthLastPerformance(workouts, exerciseName, variation, equipment, loadType);
+  if (strengthProgressionExerciseKey !== exerciseKey) {
+    hydrateStrengthProgressionInputs(profile, previous);
+    strengthProgressionExerciseKey = exerciseKey;
+    if (strengthProgressionStatusEl) {
+      strengthProgressionStatusEl.textContent = "";
+      strengthProgressionStatusEl.dataset.message = "";
+      strengthProgressionStatusEl.classList.remove("is-error");
+    }
+  }
+
+  const sessionProgress = profile && isStrengthSessionComparableCore(currentStrengthSessionContext())
+    ? buildStrengthSessionProgress(
+      previous?.sets || [],
+      draftCurrentStrengthSets,
+    )
+    : null;
+  strengthProgressionPanelEl.hidden = loadType !== "kg";
+  if (loadType !== "kg") {
+    return;
+  }
+  strengthProgressionSummaryEl.innerHTML = profile
+    ? renderStrengthProgressionSummary(profile, sessionProgress)
+    : renderNewStrengthTargetSummary(currentStrengthSessionContext());
+
+  if (strengthSetLoadTypeInput?.value !== "kg" && strengthProgressionStatusEl) {
+    strengthProgressionStatusEl.textContent = "Weight targets apply to kg sets. Other load types stay in your history for now.";
+  } else if (strengthProgressionStatusEl?.dataset.message !== "saved") {
+    strengthProgressionStatusEl.textContent = "";
+  }
+}
+
+function hydrateStrengthProgressionInputs(profile, previous) {
+  if (!strengthTargetSetsInput || !strengthTargetRepMinInput || !strengthTargetRepMaxInput || !strengthTargetWorkingWeightInput || !strengthGymWeightJumpsInput || !strengthExerciseWeightJumpsInput) {
+    return;
+  }
+
+  const latestTopKg = Math.max(
+    ...((previous?.sets || [])
+      .filter((set) => set.loadType === "kg" && isNumber(set.weight))
+      .map((set) => set.weight)),
+    0,
+  );
+  strengthTargetSetsInput.value = String(profile?.targetSets || 3);
+  strengthTargetRepMinInput.value = String(profile?.repMin || 8);
+  strengthTargetRepMaxInput.value = String(profile?.repMax || 10);
+  strengthTargetWorkingWeightInput.value = profile ? String(profile.workingWeight) : latestTopKg ? String(latestTopKg) : "";
+  strengthGymWeightJumpsInput.value = strengthProgression.gymWeightJumps.join(", ");
+  strengthExerciseWeightJumpsInput.value = profile?.allowedJumps.join(", ") || "";
+}
+
+function renderStrengthProgressionSummary(profile, sessionProgress) {
+  const base = `<strong>Strength target</strong><span>${profile.targetSets} sets × ${profile.repMin}–${profile.repMax} reps at ${formatNumber(profile.workingWeight)} kg</span>`;
+  const suggestedNextTarget = profile.nextTargetSuggestion
+    ? `<span><strong>Suggested next session</strong> · ${profile.nextTargetSuggestion.targetSets} sets × ${profile.nextTargetSuggestion.reps} reps at ${formatNumber(profile.nextTargetSuggestion.weight)} kg. Your saved working target remains ${formatNumber(profile.workingWeight)} kg until you complete a heavier working set.</span>`
+    : "";
+  const sessionContext = currentStrengthSessionContext();
+  if (!isStrengthSessionComparableCore(sessionContext)) {
+    return `${base}${suggestedNextTarget}<span>${formatStrengthProgressionExclusion(sessionContext)} Targets and suggestions are unchanged for this session.</span>`;
+  }
+  if (!draftCurrentStrengthSets.length || !sessionProgress) {
+    return `${base}${suggestedNextTarget}<span>Add your working sets to see today's progress.</span>`;
+  }
+
+  const sessionChanges = [
+    sessionProgress.promotedSetCount
+      ? `${sessionProgress.promotedSetCount} promoted ${sessionProgress.promotedSetCount === 1 ? "set" : "sets"}`
+      : "",
+    sessionProgress.repGainCount
+      ? `${sessionProgress.repGainCount} ${sessionProgress.repGainCount === 1 ? "rep gain" : "rep gains"} at the same load`
+      : "",
+  ].filter(Boolean);
+  const autoProgression = `After this workout is saved, a kg set above ${formatNumber(profile.workingWeight)} kg with at least ${profile.repMin} reps updates this target automatically. Completing ${profile.targetSets} sets at ${formatNumber(profile.workingWeight)} kg × ${profile.repMax} reps can suggest the next target at ${profile.repMin} reps.`;
+
+  return `${base}${suggestedNextTarget}<span>${sessionChanges.length ? `Today: ${sessionChanges.join(" · ")}.` : "Today: no promoted set or same-load rep gain yet."}</span><span>${autoProgression}</span>`;
+}
+
+function renderNewStrengthTargetSummary(sessionContext) {
+  if (!isStrengthSessionComparableCore(sessionContext)) {
+    return `<strong>Set your strength target</strong><span>${formatStrengthProgressionExclusion(sessionContext)} A target will not be suggested or updated from this session.</span>`;
+  }
+  return `
+    <strong>Set your strength target</strong>
+    <span>Start with the editable 3 × 8–10 template. Saving can suggest a next target after top-range sets or update the target from a qualifying heavier kg set.</span>
+  `;
+}
+
+function saveStrengthProgressionTarget() {
+  const exerciseName = exerciseNameInput?.value.trim() || "";
+  const variation = strengthExerciseVariationInput?.value.trim() || "";
+  const equipment = strengthExerciseEquipmentInput?.value.trim() || "";
+  const targetSets = toNumberOrNull(strengthTargetSetsInput?.value);
+  const repMin = toNumberOrNull(strengthTargetRepMinInput?.value);
+  const repMax = toNumberOrNull(strengthTargetRepMaxInput?.value);
+  const workingWeight = toNumberOrNull(strengthTargetWorkingWeightInput?.value);
+  const gymWeightJumps = parseWeightJumps(strengthGymWeightJumpsInput?.value || "");
+  const allowedJumps = parseWeightJumps(strengthExerciseWeightJumpsInput?.value || "");
+
+  if (currentStrengthLoadType() !== "kg") {
+    setStrengthProgressionStatus("Strength targets are available for kg working sets only.", "error");
+    return;
+  }
+
+  if (!exerciseName || !Number.isInteger(targetSets) || targetSets <= 0 || !Number.isInteger(repMin) || !Number.isInteger(repMax) || repMin <= 0 || repMax < repMin || !isNumber(workingWeight) || workingWeight <= 0) {
+    setStrengthProgressionStatus("Enter an exercise, whole-number sets and reps, and a working weight greater than 0.", "error");
+    return;
+  }
+  if (!gymWeightJumps.length) {
+    setStrengthProgressionStatus("Enter at least one gym weight jump, such as 1.25 or 2.5.", "error");
+    return;
+  }
+
+  strengthProgression = upsertStrengthProgressionProfile(
+    { ...strengthProgression, gymWeightJumps },
+    {
+      exercise: exerciseName,
+      variation,
+      equipment,
+      loadType: "kg",
+      goal: "strength",
+      targetSets,
+      repMin,
+      repMax,
+      workingWeight,
+      allowedJumps,
+      nextTargetSuggestion: null,
+    },
+  );
+  save(STORAGE_KEY_STRENGTH_PROGRESSION, strengthProgression);
+  setStrengthProgressionStatus("Strength target saved.", "saved");
+  renderStrengthProgressionPanel();
+  renderStrengthProgressionReview();
+}
+
+function setStrengthProgressionStatus(message, type) {
+  if (!strengthProgressionStatusEl) {
+    return;
+  }
+  strengthProgressionStatusEl.textContent = message;
+  strengthProgressionStatusEl.dataset.message = type;
+  strengthProgressionStatusEl.classList.toggle("is-error", type === "error");
+}
+
+function currentStrengthSessionContext() {
+  return normalizeStrengthSessionContextCore({
+    rir: toNumberOrNull(strengthSessionRirInput?.value),
+    isDeload: Boolean(strengthSessionDeloadInput?.checked),
+    isTechnique: Boolean(strengthSessionTechniqueInput?.checked),
+    hasPain: Boolean(strengthSessionPainInput?.checked),
+    isIncomplete: Boolean(strengthSessionIncompleteInput?.checked),
+  });
+}
+
+function formatStrengthProgressionExclusion(context) {
+  const normalized = normalizeStrengthSessionContextCore(context);
+  const labels = [
+    normalized.isDeload ? "deload" : "",
+    normalized.isTechnique ? "technique-focused" : "",
+    normalized.hasPain ? "pain/discomfort" : "",
+    normalized.isIncomplete ? "incomplete" : "",
+    normalized.isProgram ? "program-linked" : "",
+  ].filter(Boolean);
+  return labels.length
+    ? `This session is marked ${labels.join(", ")}.`
+    : "This session is not comparable for progression.";
+}
+
+function formatStrengthExerciseIdentity(exercise) {
+  return [exercise.name, exercise.variation, exercise.equipment, exercise.loadType].filter(Boolean).join(" · ");
+}
+
+function currentStrengthLoadType() {
+  const value = strengthSetLoadTypeInput?.value;
+  return value === "band" || value === "bodyweight" ? value : "kg";
+}
+
+function syncStrengthEquipmentGuidance(loadType) {
+  const equipmentField = strengthExerciseEquipmentInput?.closest("label");
+  if (!strengthExerciseEquipmentInput || !equipmentField) {
+    return;
+  }
+
+  equipmentField.hidden = loadType === "band";
+  if (loadType === "band") {
+    strengthExerciseEquipmentInput.value = "";
+    return;
+  }
+  strengthExerciseEquipmentInput.placeholder = loadType === "bodyweight"
+    ? "e.g. Pull-up bar or rings"
+    : "e.g. Barbell, dumbbell, cable";
 }
 
 function formatStrengthLoad(set) {
@@ -7701,6 +8199,7 @@ function createWorkoutFromPlannedSession(session, actual, modificationNote) {
     date: session.date,
     activity: "strength",
     strengthExercises: convertStrengthActualToWorkoutExercises(actual.blocks),
+    strengthContext: normalizeStrengthSessionContextCore({ isProgram: true }),
     distance: null,
     time: null,
     pace: null,
