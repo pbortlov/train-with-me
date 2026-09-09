@@ -119,3 +119,8 @@ project through a documentation PR and archive the roadmap under
 promotion from README and update links. Retain ADRs and this decision record,
 updating implementation status where appropriate. Any deliberately deferred work
 requires an explicit recorded agreement and a follow-up reference.
+
+R01 is now in progress on the compact strength logger. Its first implementation
+keeps setup and target summaries visible while moving their editing controls into
+on-demand disclosures. Set confirmation, repeat drafts, and exercise-level
+discomfort remain in the later roadmap steps.

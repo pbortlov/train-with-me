@@ -136,6 +136,8 @@ const addStrengthExerciseButton = document.getElementById("add-strength-exercise
 const exerciseNameInput = document.getElementById("exercise-name");
 const strengthExerciseVariationInput = document.getElementById("strength-exercise-variation");
 const strengthExerciseEquipmentInput = document.getElementById("strength-exercise-equipment");
+const strengthSetupSummaryEl = document.getElementById("strength-setup-summary");
+const strengthSessionSummaryEl = document.getElementById("strength-session-summary");
 const strengthSessionRirInput = document.getElementById("strength-session-rir");
 const strengthSessionDeloadInput = document.getElementById("strength-session-deload");
 const strengthSessionTechniqueInput = document.getElementById("strength-session-technique");
@@ -588,6 +590,15 @@ workoutForm.addEventListener("submit", (event) => {
   setWorkoutFormStatus(formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements));
   render();
 });
+
+// Reveal invalid fields inside collapsed editors before native validation focuses them.
+workoutForm.addEventListener("invalid", (event) => {
+  let editor = event.target.closest("details");
+  while (editor) {
+    editor.open = true;
+    editor = editor.parentElement?.closest("details");
+  }
+}, true);
 
 function applyAutomaticStrengthTargetProgression(workout) {
   if (!isStrengthSessionComparableCore(workout.strengthContext)) {
@@ -2479,6 +2490,7 @@ function resetWorkoutForm() {
   draftStrengthExercises = [];
   draftCurrentStrengthSets = [];
   workoutForm.reset();
+  workoutForm.querySelectorAll("details.strength-editor").forEach((editor) => { editor.open = false; });
   strengthSetLoadTypeInput.value = "kg";
   syncStrengthEquipmentGuidance("kg");
   if (strengthSetKindInput) strengthSetKindInput.value = "working";
@@ -4229,6 +4241,7 @@ function renderStrengthLastPerformance() {
 }
 
 function renderStrengthProgressionPanel() {
+  renderStrengthLoggingContext();
   if (!strengthProgressionPanelEl || !exerciseNameInput) {
     return;
   }
@@ -4276,6 +4289,29 @@ function renderStrengthProgressionPanel() {
     strengthProgressionStatusEl.textContent = "Weight targets apply to kg sets. Other load types stay in your history for now.";
   } else if (strengthProgressionStatusEl?.dataset.message !== "saved") {
     strengthProgressionStatusEl.textContent = "";
+  }
+}
+
+function renderStrengthLoggingContext() {
+  if (strengthSetupSummaryEl) {
+    const setup = [
+      strengthExerciseVariationInput?.value.trim(),
+      strengthExerciseEquipmentInput?.value.trim(),
+    ].filter(Boolean);
+    const loadType = currentStrengthLoadType();
+    const loadLabel = loadType === "bodyweight" ? "Body weight" : loadType === "band" ? "Band" : "kg";
+    strengthSetupSummaryEl.textContent = `${loadLabel} · ${setup.join(" · ") || "No variation or equipment specified"}`;
+  }
+  if (strengthSessionSummaryEl) {
+    const context = currentStrengthSessionContext();
+    const labels = [
+      context.hasPain ? "Pain/discomfort" : "",
+      context.isDeload ? "Deload" : "",
+      context.isTechnique ? "Technique-focused" : "",
+      context.isIncomplete ? "Incomplete session" : "",
+      context.rir !== null ? `RIR ${context.rir}` : "",
+    ].filter(Boolean);
+    strengthSessionSummaryEl.textContent = labels.join(" · ") || "No special session context";
   }
 }
 

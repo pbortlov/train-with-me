@@ -1283,6 +1283,49 @@ textarea:focus-visible {
   margin: 0;
 }
 
+.strength-logging-card {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.strength-logging-card > .hint {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.strength-editor {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.65rem;
+}
+
+.strength-editor > summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.3rem;
+}
+
+.strength-editor > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.strength-editor[open] > summary {
+  margin-bottom: 0.75rem;
+}
+
+.strength-editor > .strength-editor,
+.strength-editor > .strength-progression-actions,
+.strength-editor > .strength-session-flags {
+  margin-top: 0.75rem;
+}
+
+.strength-logging-card [hidden] {
+  display: none;
+}
+
 .calendar-launchpad {
   display: grid;
   gap: 0.85rem;
