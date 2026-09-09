@@ -1,6 +1,9 @@
-# Athlete Simplification: PR Roadmap
+# Athlete Simplification Project: PR Roadmap
 
 - Updated: 2026-09-09
+- Project status: active
+- Implementation progress: 0 of 11 steps delivered
+- Next implementation: R01 — compact strength logger
 - Baseline: [PR #69](https://github.com/pbortlov/train-with-me/pull/69), merged
 - Scope: the athlete doing strength, running, and sprinting
 - Product agreement: [decision record](../conversations/2026-09-09-athlete-simplification.md)
@@ -8,8 +11,9 @@
 
 ## What happens next
 
-Review and commit the documentation change (R00). The first implementation is
-**R01: simplify strength logging**. Finish, test, and review one PR before starting
+R00 is merged in [PR #70](https://github.com/pbortlov/train-with-me/pull/70).
+The first implementation is **R01: simplify strength logging**.
+Finish, test, and review one PR before starting
 the next. The final flow is Today → start/repeat → record actual work → save →
 review improvements and the next target.
 
@@ -21,7 +25,7 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 
 | Order | Proposed PR title | Athlete outcome | Depends on | Status / GitHub PR |
 | --- | --- | --- | --- | --- |
-| R00 | `docs: record athlete simplification roadmap` | Agreements and next steps are recorded | Merged #69 | Documentation prepared; not committed |
+| R00 | `docs: record athlete simplification roadmap` | Agreements and next steps are recorded | Merged #69 | Merged — [#70](https://github.com/pbortlov/train-with-me/pull/70) |
 | R01 | `refactor(logging): simplify strength exercise cards` | See last work, next suggestion, and set entry first | R00 | Planned |
 | R02 | `feat(logging): confirm draft sets and apply suggested targets` | Confirm actual sets; explicitly apply a suggestion to a draft | R01 | Planned |
 | R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | Planned |
@@ -33,10 +37,56 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | R09 | `refactor(navigation): add today plan progress and settings` | Three main tabs with clear settings and history access | R07, R08 | Planned |
 | R10 | `feat(settings): choose training activities on first use` | Choose strength, running, and/or sprinting | R09 | Planned |
 | R11 | `feat(settings): suggest hiding inactive activities` | Optional reminders after 30 inactive days | R10 | Planned |
+| Close | `docs: close and archive athlete simplification project` | Completed delivery and final validation are recorded | R01–R11 and final product check | Planned |
 
 The original seven broad items are split into eleven implementation PRs to keep
 draft completion, exercise eligibility, goals, and reminder timing independently
 testable. No app changes are included in R00.
+
+## Project tracking and completion
+
+Treat this roadmap as one finite project. Keep it in `docs/roadmaps/` while
+active, updating each implementation row through **Planned → In progress → PR
+open → Delivered**. Attach the real PR link when available and mark Delivered
+only after merge and the step's validation. Keep the header's delivered count
+and next step in sync; R00 and the closing documentation PR are not part of the
+eleven implementation steps.
+
+The project is ready to close when:
+
+- R01–R11 are merged and their acceptance checks and manual reviews are complete.
+- The final product check below is recorded with results and any limitations.
+- No unresolved issue prevents an agreed user flow from working.
+- README, behavior documentation, ADR implementation status, and applicable
+  backup contracts describe what was actually delivered.
+
+Do not silently drop unfinished work to close the project. If the athlete
+explicitly agrees to defer a step or requirement, record the reason and a linked
+follow-up issue or roadmap item. Distinguish deferred work from delivered work
+in both the table and the final completion summary.
+
+## Closing PR and archive policy
+
+Use one final documentation PR to close the project after the conditions above
+are met:
+
+1. Record the completion date, implementation PR links, final validation results,
+   and any explicitly agreed deferrals in this roadmap.
+2. Mark the project **Completed**, and move this file to
+   `docs/roadmaps/archive/athlete-simplification.md`. Preserve its decision and
+   delivery history rather than deleting it.
+3. Update all incoming links and this file's relative links for its new location.
+   Remove the README's next-iteration promotion; keep a historical documentation
+   link if useful. Update the product-principles next-iteration wording as well.
+4. Keep the conversation record and ADRs in their existing directories. Update
+   pending implementation statuses and cross-references to reflect delivery;
+   preserve historical decisions and mark superseded rules explicitly.
+5. Verify documentation links and run the required build. Link the closing PR
+   in the project record. Archiving takes effect when that PR merges.
+
+Create the archive directory during closeout, not while implementation is still
+pending. Subsequent features and bugfixes belong in separate work items; this
+completed roadmap remains a historical record.
 
 ## R01 — Compact strength logger (next implementation)
 

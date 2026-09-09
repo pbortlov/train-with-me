@@ -109,3 +109,13 @@ The user requested a written decision record and roadmap first. This change is
 documentation only. Implement the roadmap as small functional PRs, validate each
 changed flow, update the relevant ADRs/docs, and stop for athlete review between
 slices. Future GitHub PR numbers are assigned only when those PRs are opened.
+
+## Project lifecycle agreement
+
+Treat the roadmap as a finite project. Track each step's actual PR and completion
+status. Once the implementation and final validation are complete, close the
+project through a documentation PR and archive the roadmap under
+`docs/roadmaps/archive/` instead of deleting it. Remove its active/next-iteration
+promotion from README and update links. Retain ADRs and this decision record,
+updating implementation status where appropriate. Any deliberately deferred work
+requires an explicit recorded agreement and a follow-up reference.
