@@ -3161,6 +3161,30 @@ textarea:focus-visible {
   color: var(--text);
 }
 
+.strength-draft-set {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.35rem 0.45rem;
+  border-left: 2px solid #64748b;
+}
+
+.strength-draft-set.is-confirmed {
+  border-left-color: #34d399;
+}
+
+.strength-draft-set-status {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.strength-draft-set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
 .diff-panel {
   border: 1px solid var(--border);
   border-radius: 10px;

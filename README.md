@@ -111,6 +111,9 @@ Slot notes can also include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`. The Cal
 Active project: [Athlete simplification PR roadmap](docs/roadmaps/athlete-simplification.md).
 R01 keeps strength set entry visible while setup, target, and increment controls
 open on demand.
+Strength set rows begin as drafts and must be explicitly confirmed before they
+can be added to a saved workout. A pending next-target suggestion can be copied
+into the next-set inputs without changing the saved target.
 The [agreed decisions](docs/conversations/2026-09-09-athlete-simplification.md) and
 [ADR 0030](docs/decisions/0030-athlete-simplification-direction.md) describe future
 changes; they are not part of the currently implemented feature list above.
