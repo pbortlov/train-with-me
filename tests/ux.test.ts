@@ -37,6 +37,19 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".strength-progression-panel");
   });
 
+  it("keeps frequent strength entry visible while setup and target controls stay on demand", () => {
+    expect(index).toContain('id="strength-setup-summary"');
+    expect(index).toContain('id="strength-setup-editor"');
+    expect(index).toContain('id="strength-target-editor"');
+    expect(index).toContain('id="strength-increments-editor"');
+    expect(index).toContain('class="grid strength-set-entry"');
+    expect(index).toContain('id="strength-session-editor"');
+    expect(script).toContain("function renderStrengthLoggingContext()");
+    expect(script).toContain("workoutForm.querySelectorAll(\"details.strength-editor\")");
+    expect(styles).toContain(".strength-logging-card");
+    expect(styles).toContain(".strength-editor");
+  });
+
   it("keeps evidence-based strength milestones and comparable-session review in Stats", () => {
     expect(index).toContain('id="strength-progression-review-section"');
     expect(index).toContain('id="strength-progression-review"');

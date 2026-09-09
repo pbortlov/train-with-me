@@ -109,6 +109,8 @@ Slot notes can also include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`. The Cal
 ## Documentation
 
 Active project: [Athlete simplification PR roadmap](docs/roadmaps/athlete-simplification.md).
+R01 keeps strength set entry visible while setup, target, and increment controls
+open on demand.
 The [agreed decisions](docs/conversations/2026-09-09-athlete-simplification.md) and
 [ADR 0030](docs/decisions/0030-athlete-simplification-direction.md) describe future
 changes; they are not part of the currently implemented feature list above.

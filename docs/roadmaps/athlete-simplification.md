@@ -1,7 +1,7 @@
 # Athlete Simplification Project: PR Roadmap
 
 - Updated: 2026-09-09
-- Project status: active
+- Project status: active; R01 in progress
 - Implementation progress: 0 of 11 steps delivered
 - Next implementation: R01 — compact strength logger
 - Baseline: [PR #69](https://github.com/pbortlov/train-with-me/pull/69), merged
@@ -26,7 +26,7 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | Order | Proposed PR title | Athlete outcome | Depends on | Status / GitHub PR |
 | --- | --- | --- | --- | --- |
 | R00 | `docs: record athlete simplification roadmap` | Agreements and next steps are recorded | Merged #69 | Merged — [#70](https://github.com/pbortlov/train-with-me/pull/70) |
-| R01 | `refactor(logging): simplify strength exercise cards` | See last work, next suggestion, and set entry first | R00 | Planned |
+| R01 | `refactor(logging): simplify strength exercise cards` | See last work, next suggestion, and set entry first | R00 | In progress |
 | R02 | `feat(logging): confirm draft sets and apply suggested targets` | Confirm actual sets; explicitly apply a suggestion to a draft | R01 | Planned |
 | R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | Planned |
 | R04 | `feat(today): start and repeat workouts` | Start today's plan or repeat previous training | R03 | Planned |
@@ -88,7 +88,7 @@ Create the archive directory during closeout, not while implementation is still
 pending. Subsequent features and bugfixes belong in separate work items; this
 completed roadmap remains a historical record.
 
-## R01 — Compact strength logger (next implementation)
+## R01 — Compact strength logger (in progress)
 
 Show exercise name and setup summary, exact previous sets, the saved-target/next-
 session summary, and current set entry. Collapse setup and target controls behind
@@ -103,7 +103,8 @@ Acceptance checks:
 - A pending suggestion is clearly labeled; the saved working baseline remains
   inspectable. Keyboard and phone layouts support entering and correcting sets.
 
-Docs: update logging guidance and README. Reference ADR 0030's disclosure decision.
+Docs: update logging guidance and README. Reference ADR 0030's disclosure decision
+and ADR 0031 for the implemented layout choice.
 
 ## R02 — Confirm actual sets and apply suggestions
 
