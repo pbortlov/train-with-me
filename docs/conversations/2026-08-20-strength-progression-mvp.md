@@ -42,3 +42,12 @@ session gain even when the heaviest set is unchanged.
 
 Each slice remains independently functional, tested, documented, and manually
 reviewed before the next one begins.
+
+## Follow-up direction (2026-09-09)
+
+All four slices were merged in [PR #69](https://github.com/pbortlov/train-with-me/pull/69).
+The next [athlete simplification roadmap](../roadmaps/athlete-simplification.md)
+includes an agreed change to session-wide exclusions: completed, unaffected
+exercises may progress on days finished with fewer sets, while exercises selected
+as hurting remain saved but excluded. See [ADR 0030](../decisions/0030-athlete-simplification-direction.md).
+This follow-up is planned; the delivery descriptions above document the shipped MVP.

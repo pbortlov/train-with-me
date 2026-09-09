@@ -107,6 +107,12 @@ See [docs/strength-phase-import.md](docs/strength-phase-import.md) for the exact
 Slot notes can also include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`. The Calendar uses that together with block durations and planned rests to show total strength-session time on the card.
 
 ## Documentation
+
+Planned next iteration: [Athlete simplification PR roadmap](docs/roadmaps/athlete-simplification.md).
+The [agreed decisions](docs/conversations/2026-09-09-athlete-simplification.md) and
+[ADR 0030](docs/decisions/0030-athlete-simplification-direction.md) describe future
+changes; they are not part of the currently implemented feature list above.
+
 V1 keeps decision and planning history in the repo:
 - [docs/product-principles.md](docs/product-principles.md)
 - [docs/agents.md](docs/agents.md)

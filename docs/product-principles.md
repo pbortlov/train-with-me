@@ -1,5 +1,13 @@
 # Product Principles
 
+## Accepted Next Iteration
+
+The [athlete simplification roadmap](roadmaps/athlete-simplification.md) records
+the next direction: Today, Plan, and Progress for an athlete doing strength,
+running, and sprinting, with advanced planning and data utilities available on
+demand. [ADR 0030](decisions/0030-athlete-simplification-direction.md) distinguishes
+these accepted future changes from the existing planning-first behavior below.
+
 ## Simple First
 The default experience must be understandable for non-technical users. The main flow should be:
 - see this week
