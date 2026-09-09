@@ -108,7 +108,7 @@ Slot notes can also include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`. The Cal
 
 ## Documentation
 
-Planned next iteration: [Athlete simplification PR roadmap](docs/roadmaps/athlete-simplification.md).
+Active project: [Athlete simplification PR roadmap](docs/roadmaps/athlete-simplification.md).
 The [agreed decisions](docs/conversations/2026-09-09-athlete-simplification.md) and
 [ADR 0030](docs/decisions/0030-athlete-simplification-direction.md) describe future
 changes; they are not part of the currently implemented feature list above.
