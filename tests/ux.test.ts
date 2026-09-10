@@ -60,6 +60,16 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".strength-draft-set");
   });
 
+  it("lets athletes mark one strength exercise as pain-affected", () => {
+    expect(index).toContain('id="strength-exercise-pain"');
+    expect(index).not.toContain('id="strength-session-pain"');
+    expect(script).toContain("painAffected: Boolean(strengthExercisePainInput?.checked)");
+    expect(script).toContain("Progression excluded: pain/discomfort");
+    expect(script).toContain("metric-line");
+    expect(index).toContain('id="edit-exercise-pain"');
+    expect(script).toContain('data-role="exercise-pain"');
+  });
+
   it("keeps evidence-based strength milestones and comparable-session review in Stats", () => {
     expect(index).toContain('id="strength-progression-review-section"');
     expect(index).toContain('id="strength-progression-review"');

@@ -144,7 +144,7 @@ function comparableKgOccurrences(workouts: StrengthProgressionReviewWorkout[]): 
     }
 
     return normalizeStrengthExercises(workout.strengthExercises)
-      .filter((exercise) => exercise.loadType === "kg")
+      .filter((exercise) => !exercise.painAffected && exercise.loadType === "kg")
       .map((exercise) => {
         const sets = exercise.sets.filter(
           (set): set is StrengthSet & { weight: number } =>

@@ -255,7 +255,7 @@
               </div>
               <ul id="current-strength-sets" class="detail-list"></ul>
               <button type="button" id="add-strength-exercise">Add Exercise To Workout</button>
-              <label class="check-label"><input type="checkbox" id="strength-session-pain" /> Pain or concerning discomfort</label>
+              <label class="check-label"><input type="checkbox" id="strength-exercise-pain" /> This exercise was affected by pain/discomfort</label>
               <p id="strength-session-summary" class="hint" aria-live="polite">No special session context</p>
               <details id="strength-session-editor" class="strength-editor">
                 <summary>Session details</summary>
@@ -1336,6 +1336,7 @@
               Exercise name
               <input type="text" id="edit-exercise-name" list="exercise-suggestions" />
             </label>
+            <label class="check-label"><input type="checkbox" id="edit-exercise-pain" /> This exercise was affected by pain/discomfort</label>
             <label>
               Set reps
               <input type="number" id="edit-strength-reps" min="0" />

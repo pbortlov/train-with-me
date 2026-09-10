@@ -27,6 +27,7 @@ export interface StrengthExercise {
   variation?: string;
   equipment?: string;
   loadType?: StrengthSet["loadType"];
+  painAffected?: boolean;
   sets: StrengthSet[];
 }
 
@@ -145,6 +146,7 @@ export function normalizeStrengthExercises(value: unknown): StrengthExercise[] {
         variation: normalizeSprintText(exercise.variation),
         equipment: normalizeSprintText(exercise.equipment),
         loadType: configuredLoadType || workingLoadType,
+        ...(exercise.painAffected ? { painAffected: true } : {}),
         sets,
       };
     })

@@ -136,6 +136,7 @@ const addStrengthExerciseButton = document.getElementById("add-strength-exercise
 const exerciseNameInput = document.getElementById("exercise-name");
 const strengthExerciseVariationInput = document.getElementById("strength-exercise-variation");
 const strengthExerciseEquipmentInput = document.getElementById("strength-exercise-equipment");
+const strengthExercisePainInput = document.getElementById("strength-exercise-pain");
 const strengthSetupSummaryEl = document.getElementById("strength-setup-summary");
 const strengthSessionSummaryEl = document.getElementById("strength-session-summary");
 const strengthSessionRirInput = document.getElementById("strength-session-rir");
@@ -232,6 +233,7 @@ const editSprintSlopeInput = document.getElementById("edit-sprint-slope");
 const editSprintWarmupCompletedInput = document.getElementById("edit-sprint-warmup-completed");
 const editSprintWarmupNoteInput = document.getElementById("edit-sprint-warmup-note");
 const editExerciseNameInput = document.getElementById("edit-exercise-name");
+const editExercisePainInput = document.getElementById("edit-exercise-pain");
 const editStrengthRepsInput = document.getElementById("edit-strength-reps");
 const editStrengthLoadTypeInput = document.getElementById("edit-strength-load-type");
 const editStrengthWeightInput = document.getElementById("edit-strength-weight");
@@ -607,6 +609,9 @@ function applyAutomaticStrengthTargetProgression(workout) {
 
   const exercisesByName = new Map();
   workout.strengthExercises.forEach((exercise) => {
+    if (exercise.painAffected) {
+      return;
+    }
     const key = strengthExerciseKeyCore(exercise.name, exercise.variation, exercise.equipment, exercise.loadType);
     const entry = exercisesByName.get(key) || {
       exerciseName: exercise.name,
@@ -936,6 +941,7 @@ addStrengthExerciseButton.addEventListener("click", () => {
     variation: strengthExerciseVariationInput?.value.trim() || "",
     equipment: workingLoadType === "band" ? "" : strengthExerciseEquipmentInput?.value.trim() || "",
     loadType: workingLoadType,
+    painAffected: Boolean(strengthExercisePainInput?.checked),
     sets: confirmedSets.map((set, index) => ({
       order: index + 1,
       reps: set.reps,
@@ -951,6 +957,7 @@ addStrengthExerciseButton.addEventListener("click", () => {
   exerciseNameInput.value = "";
   if (strengthExerciseVariationInput) strengthExerciseVariationInput.value = "";
   if (strengthExerciseEquipmentInput) strengthExerciseEquipmentInput.value = "";
+  if (strengthExercisePainInput) strengthExercisePainInput.checked = false;
   renderCurrentStrengthSets();
   renderStrengthExercises();
   renderStrengthLastPerformance();
@@ -1541,7 +1548,7 @@ function buildStrengthExerciseSnapshotMap(workout) {
   const snapshots = new Map();
   normalizeStrengthExercises(workout.strengthExercises).forEach((exercise) => {
     const exerciseKey = normalizeExerciseKey(exercise.name || "");
-    if (!exerciseKey || !exercise.completed) {
+    if (!exerciseKey || !exercise.completed || exercise.painAffected) {
       return;
     }
     snapshots.set(exerciseKey, {
@@ -1917,7 +1924,8 @@ function formatMainMetric(w) {
           const setSummary = exercise.sets
             .map((set) => `${set.reps} reps @ ${formatStrengthLoad(set)}`)
             .join(", ");
-          return `<div class="metric-line"><strong class="exercise-name">${escapeHtml(exercise.name)}</strong> (${setSummary})</div>`;
+          const context = exercise.painAffected ? " <span class=\"hint\">· Progression excluded: pain/discomfort</span>" : "";
+          return `<div class="metric-line"><strong class="exercise-name">${escapeHtml(exercise.name)}</strong>${context} (${setSummary})</div>`;
         })
         .join("");
     }
@@ -2391,6 +2399,9 @@ function openEditWorkoutDialog(workoutId) {
   if (editExerciseNameInput) {
     editExerciseNameInput.value = "";
   }
+  if (editExercisePainInput) {
+    editExercisePainInput.checked = false;
+  }
   if (editStrengthRepsInput) {
     editStrengthRepsInput.value = "";
   }
@@ -2508,6 +2519,7 @@ function resetWorkoutForm() {
   draftSprintSets = [];
   draftStrengthExercises = [];
   draftCurrentStrengthSets = [];
+  if (strengthExercisePainInput) strengthExercisePainInput.checked = false;
   workoutForm.reset();
   workoutForm.querySelectorAll("details.strength-editor").forEach((editor) => { editor.open = false; });
   strengthSetLoadTypeInput.value = "kg";
@@ -3879,11 +3891,13 @@ function addEditStrengthExercise() {
 
   editDraftStrengthExercises.push({
     name,
+    ...(editExercisePainInput?.checked ? { painAffected: true } : {}),
     sets: editDraftCurrentStrengthSets.map((set, index) => ({ ...set, order: index + 1 })),
   });
   rememberExerciseName(name);
   editDraftCurrentStrengthSets = [];
   editExerciseNameInput.value = "";
+  if (editExercisePainInput) editExercisePainInput.checked = false;
   renderEditStrengthSets();
   renderEditStrengthExercises();
 }
@@ -3940,6 +3954,7 @@ function renderEditStrengthExercises() {
       return `<li>
         <div class="inline-exercise-row">
           <input type="text" data-role="exercise-name" data-exercise-index="${exerciseIndex}" value="${escapeHtml(exercise.name)}" />
+          <label class="check-label"><input type="checkbox" data-role="exercise-pain" data-exercise-index="${exerciseIndex}" ${exercise.painAffected ? "checked" : ""} /> Pain-affected</label>
           <button type="button" class="danger-button" data-role="delete-exercise" data-exercise-index="${exerciseIndex}">Delete Exercise</button>
         </div>
         ${sets}
@@ -3968,6 +3983,12 @@ function handleInlineStrengthEdit(event) {
 
   if (role === "exercise-name") {
     exercise.name = target.value.trim();
+    return;
+  }
+
+  if (role === "exercise-pain") {
+    exercise.painAffected = target.checked;
+    if (!exercise.painAffected) delete exercise.painAffected;
     return;
   }
 
@@ -4221,7 +4242,8 @@ function renderStrengthExercises() {
       const setSummary = exercise.sets
         .map((set) => `#${set.order}: ${set.reps} reps @ ${formatStrengthLoad(set)}${set.kind === "warmup" ? " (warm-up)" : ""}`)
         .join(", ");
-      return `<li>${exerciseIndex + 1}. ${escapeHtml(formatStrengthExerciseIdentity(exercise))} — ${setSummary}</li>`;
+      const context = exercise.painAffected ? " · Progression excluded: pain/discomfort" : "";
+      return `<li>${exerciseIndex + 1}. ${escapeHtml(formatStrengthExerciseIdentity(exercise))} — ${setSummary}${context}</li>`;
     })
     .join("");
 }

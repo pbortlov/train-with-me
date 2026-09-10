@@ -52,6 +52,9 @@ export function buildStrengthInsights(
   strengthWorkouts.forEach((workout) => {
     const workoutExerciseNames = new Set<string>();
     normalizeStrengthExercises(workout.strengthExercises).forEach((exercise) => {
+      if (exercise.painAffected) {
+        return;
+      }
       workoutExerciseNames.add(exercise.name);
       const row =
         rowsByExercise.get(exercise.name) ||

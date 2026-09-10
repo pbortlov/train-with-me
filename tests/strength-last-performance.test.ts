@@ -154,4 +154,17 @@ describe("findStrengthLastPerformance", () => {
     expect(paused?.bestKgSet).toEqual({ weight: 80, reps: 8, date: "2026-08-01" });
     expect(findStrengthLastPerformance(workouts, "Bench press", "Touch and go", "Barbell")?.bestKgSet?.weight).toBe(95);
   });
+
+  it("excludes a pain-affected exercise while retaining unaffected exercise history", () => {
+    const workouts = [{
+      activity: "strength",
+      date: "2026-08-20",
+      strengthExercises: [
+        { name: "Squat", painAffected: true, sets: [{ reps: 8, weight: 100, loadType: "kg" }] },
+        { name: "Bench", sets: [{ reps: 8, weight: 60, loadType: "kg" }] },
+      ],
+    }];
+    expect(findStrengthLastPerformance(workouts, "Squat")).toBeNull();
+    expect(findStrengthLastPerformance(workouts, "Bench")?.bestKgSet?.weight).toBe(60);
+  });
 });

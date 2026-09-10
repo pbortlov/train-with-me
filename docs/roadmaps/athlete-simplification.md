@@ -26,9 +26,9 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | Order | Proposed PR title | Athlete outcome | Depends on | Status / GitHub PR |
 | --- | --- | --- | --- | --- |
 | R00 | `docs: record athlete simplification roadmap` | Agreements and next steps are recorded | Merged #69 | Merged — [#70](https://github.com/pbortlov/train-with-me/pull/70) |
-| R01 | `refactor(logging): simplify strength exercise cards` | See last work, next suggestion, and set entry first | R00 | In progress |
-| R02 | `feat(logging): confirm draft sets and apply suggested targets` | Confirm actual sets; explicitly apply a suggestion to a draft | R01 | Planned |
-| R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | Planned |
+| R01 | `refactor(logging): simplify strength exercise cards` | See last work, next suggestion, and set entry first | R00 | Merged — [#72](https://github.com/pbortlov/train-with-me/pull/72) |
+| R02 | `feat(logging): confirm draft sets and apply suggested targets` | Confirm actual sets; explicitly apply a suggestion to a draft | R01 | Merged — [#73](https://github.com/pbortlov/train-with-me/pull/73) |
+| R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | In progress |
 | R04 | `feat(today): start and repeat workouts` | Start today's plan or repeat previous training | R03 | Planned |
 | R05 | `feat(goals): track exercise weight and rep goals` | Achieve a specific strength goal in one working set | R03; deliver after R04 | Planned |
 | R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | Planned |
@@ -106,7 +106,7 @@ Acceptance checks:
 Docs: update logging guidance and README. Reference ADR 0030's disclosure decision
 and ADR 0031 for the implemented layout choice.
 
-## R02 — Confirm actual sets and apply suggestions (in progress)
+## R02 — Confirm actual sets and apply suggestions (delivered in PR #73)
 
 Introduce an explicit draft/completed distinction for strength set rows. Add
 **Apply suggested target**, which fills the intended draft target while keeping
@@ -124,7 +124,7 @@ Acceptance checks:
 Docs: record draft/confirmation semantics and update ADR 0027 for the draft action.
 Document any persistence changes and their legacy behavior before shipping.
 
-## R03 — Progress when finishing with fewer sets
+## R03 — Progress when finishing with fewer sets (in progress)
 
 Add **Finish with fewer sets** and let the athlete select exercises that were
 hurting. Exclude affected exercises, preserve all actual logs, and keep unaffected
@@ -141,13 +141,32 @@ Acceptance checks:
 - An explicitly unfinished exercise is distinct from **Finish with fewer sets**.
   A wholly affected session, deload, technique session, and program prescription
   retain their applicable restrictions.
-- Legacy session-wide pain/incomplete flags keep their prior meaning. Save,
+- Legacy session-wide pain/incomplete flags keep their prior meaning. The
+  session-wide pain control is retained only for legacy data, while new logging
+  uses the exercise-level choice. Save,
   reopen, edit, and backup/restore retain exercise-specific context correctly.
 
 Docs: update ADRs 0028/0029, the MVP record, and the backup contract. Include the
 completed-work/eligibility matrix in domain tests. No pain coaching is introduced.
 
 ## R04 — Start and repeat from Today
+
+### Follow-up UX backlog
+
+- Redesign the **Edit log** dialog so saved exercises/sets being edited are
+  visually separate from controls for adding new exercises and sets. Improve
+  button versus checkbox placement and make the dialog's completed-versus-new
+  workflow immediately clear.
+- Improve **Strength progression** review: show the exercise name prominently,
+  list each comparable session with its date and exact sets, and make each
+  session open or locate the corresponding workout in History.
+- In **Edit log**, merge a newly added exercise into the existing row when its
+  exercise identity matches (name plus variation, equipment, and load type),
+  appending the new sets instead of creating a duplicate line.
+- Expand **Strength progression** to cover all logged strength exercises, not
+  only exercises with saved targets. Keep the Stats page compact with grouped
+  or collapsible rows, and show a clear setup/target state for exercises that
+  have history but no configured progression target.
 
 Lead with **Start today's workout** when scheduled. Otherwise offer **Repeat last
 workout** when history exists and **Log workout** for a new athlete. Always allow
