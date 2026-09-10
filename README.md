@@ -108,6 +108,11 @@ Slot notes can also include `Warm Up: 10 mins` or `Warm Up: 10-15 mins`. The Cal
 
 ## Documentation
 
+From Today, **Repeat last strength workout** opens each exercise with its previous
+sets and editable rows for today. Adjust reps/load, add or remove sets, and confirm
+each completed set. Editing a confirmed set requires confirmation again; only
+confirmed work is saved.
+
 Active project: [Athlete simplification PR roadmap](docs/roadmaps/athlete-simplification.md).
 R01 keeps strength set entry visible while setup, target, and increment controls
 open on demand.

@@ -28,8 +28,8 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | R00 | `docs: record athlete simplification roadmap` | Agreements and next steps are recorded | Merged #69 | Merged — [#70](https://github.com/pbortlov/train-with-me/pull/70) |
 | R01 | `refactor(logging): simplify strength exercise cards` | See last work, next suggestion, and set entry first | R00 | Merged — [#72](https://github.com/pbortlov/train-with-me/pull/72) |
 | R02 | `feat(logging): confirm draft sets and apply suggested targets` | Confirm actual sets; explicitly apply a suggestion to a draft | R01 | Merged — [#73](https://github.com/pbortlov/train-with-me/pull/73) |
-| R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | In progress |
-| R04 | `feat(today): start and repeat workouts` | Start today's plan or repeat previous training | R03 | Planned |
+| R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | Merged — [#74](https://github.com/pbortlov/train-with-me/pull/74) |
+| R04 | `feat(today): start and repeat workouts` | Start today's plan or repeat previous training | R03 | In progress |
 | R05 | `feat(goals): track exercise weight and rep goals` | Achieve a specific strength goal in one working set | R03; deliver after R04 | Planned |
 | R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | Planned |
 | R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Planned |

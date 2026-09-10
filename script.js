@@ -95,6 +95,7 @@ import {
 } from "./src/domain/strength-progression";
 import { loadJson, loadNormalizedList, saveJson, STORAGE_KEYS } from "./src/domain/storage";
 import { buildTodayModel } from "./src/domain/today";
+import { buildStrengthRepeatDraft, isRepeatSetValid } from "./src/domain/strength-repeat";
 
 const STORAGE_KEY_WORKOUTS = STORAGE_KEYS.workouts;
 const STORAGE_KEY_GOALS = STORAGE_KEYS.goals;
@@ -532,7 +533,12 @@ workoutForm.addEventListener("submit", (event) => {
     id: editingWorkoutId ?? crypto.randomUUID(),
     date: valueOf("date"),
     activity: selectedActivity,
-    strengthExercises: selectedActivity === "strength" ? normalizeStrengthExercises(draftStrengthExercises) : [],
+    strengthExercises: selectedActivity === "strength"
+      ? normalizeStrengthExercises(draftStrengthExercises.map((exercise) => ({
+        ...exercise,
+        sets: exercise.sets.filter((set) => set.confirmed !== false),
+      })))
+      : [],
     strengthContext: selectedActivity === "strength" ? currentStrengthSessionContext() : normalizeStrengthSessionContextCore({}),
     distance: selectedActivity === "run" ? runDistance : toNumberOrNull(valueOf("distance")),
     time: selectedActivity === "run" ? runTime : toNumberOrNull(valueOf("time")),
@@ -1009,6 +1015,50 @@ currentStrengthSetsList.addEventListener("click", (event) => {
   renderStrengthProgressionPanel();
 });
 
+strengthExerciseList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-strength-exercise-action]");
+  if (!button) return;
+  const index = Number(button.dataset.strengthExerciseIndex);
+  const exercise = draftStrengthExercises[index];
+  if (!exercise) return;
+  const action = button.dataset.strengthExerciseAction;
+  const setIndex = Number(button.dataset.setIndex);
+  if (action === "confirm") {
+    const set = exercise.sets[setIndex];
+    if (!set || !isRepeatSetValid(set)) {
+      setWorkoutFormStatus("Enter positive whole-number reps and a valid load before confirming this set.");
+      return;
+    }
+    set.confirmed = true;
+  } else if (action === "remove") {
+    exercise.sets.splice(setIndex, 1);
+  } else if (action === "add") {
+    const template = exercise.sets.at(-1) || exercise.previousSets[0];
+    exercise.sets.push({ ...template, confirmed: false });
+  }
+  renderStrengthExercises();
+  setWorkoutFormStatus("Today's sets updated. Only confirmed sets count when you save.");
+});
+
+strengthExerciseList.addEventListener("input", (event) => {
+  const input = event.target.closest("[data-repeat-field]");
+  if (!input) return;
+  const exercise = draftStrengthExercises[Number(input.dataset.exerciseIndex)];
+  if (input.dataset.repeatField === "painAffected" && exercise) {
+    exercise.painAffected = input.checked;
+    return;
+  }
+  const set = exercise?.sets[Number(input.dataset.setIndex)];
+  if (!set) return;
+  const field = input.dataset.repeatField;
+  if (field === "bandColor") set.bandColor = input.value;
+  else set[field] = input.value === "" ? null : Number(input.value);
+  set.confirmed = false;
+  const row = input.closest(".repeat-set");
+  row.querySelector("[data-repeat-status]").textContent = "Draft — confirm after completing";
+  row.querySelector('[data-strength-exercise-action="confirm"]').disabled = false;
+});
+
 goalsForm.addEventListener("submit", (event) => {
   event.preventDefault();
   goals = buildGoalsFromForm(goals);
@@ -1099,6 +1149,8 @@ function renderToday() {
       <span class="value">${model.standaloneWorkouts.length}</span>
     </article>
   `;
+  const repeatButton = todayViewPanel?.querySelector('[data-today-action="repeat-last"]');
+  if (repeatButton) repeatButton.hidden = !workouts.some((workout) => workout.activity === "strength");
 
   const plannedMarkup = model.sessions.map((session) => renderTodaySessionCard(session)).join("");
   const workoutMarkup = model.standaloneWorkouts.map((workout) => renderWorkoutCalendarCard(workout)).join("");
@@ -4280,6 +4332,7 @@ function renderStrengthExercises() {
 
   strengthExerciseList.innerHTML = draftStrengthExercises
     .map((exercise, exerciseIndex) => {
+      if (exercise.repeatDraft) return renderRepeatExercise(exercise, exerciseIndex);
       const setSummary = exercise.sets
         .map((set) => `#${set.order}: ${set.reps} reps @ ${formatStrengthLoad(set)}${set.kind === "warmup" ? " (warm-up)" : ""}`)
         .join(", ");
@@ -4287,6 +4340,24 @@ function renderStrengthExercises() {
       return `<li>${exerciseIndex + 1}. ${escapeHtml(formatStrengthExerciseIdentity(exercise))} — ${setSummary}${context}</li>`;
     })
     .join("");
+}
+
+function renderRepeatExercise(exercise, exerciseIndex) {
+  const previous = exercise.previousSets.map(set => `${set.reps} reps @ ${formatStrengthLoad(set)}${set.kind === "warmup" ? " (warm-up)" : ""}`).join(" · ");
+  return `<li class="repeat-exercise"><h4>${escapeHtml(formatStrengthExerciseIdentity(exercise))}</h4>
+    <p><strong>Previous workout</strong> · ${escapeHtml(previous)}</p>
+    <h5>Today's sets</h5>
+    <label class="check-label"><input type="checkbox" data-repeat-field="painAffected" data-exercise-index="${exerciseIndex}" ${exercise.painAffected ? "checked" : ""} /> This exercise was affected by pain/discomfort today</label>
+    ${exercise.sets.map((set, setIndex) => `<div class="repeat-set">
+      <span>Set ${setIndex + 1}${set.kind === "warmup" ? " · Warm-up" : ""}</span>
+      <label>Reps <input type="number" min="1" step="1" data-repeat-field="reps" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${set.reps ?? ""}" /></label>
+      ${set.loadType === "kg" ? `<label>Weight (kg) <input type="number" min="0" step="any" data-repeat-field="weight" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${set.weight ?? ""}" /></label>` : set.loadType === "band" ? `<label>Band <select data-repeat-field="bandColor" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}">${["yellow", "red", "black", "purple", "green", "blue"].map(color => `<option ${set.bandColor === color ? "selected" : ""}>${color}</option>`).join("")}</select></label>` : "<span>Body weight</span>"}
+      <span data-repeat-status>${set.confirmed ? "Confirmed" : "Draft — confirm after completing"}</span>
+      <button type="button" data-strength-exercise-action="confirm" data-strength-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" ${set.confirmed ? "disabled" : ""}>Confirm set</button>
+      <button type="button" class="ghost-button" data-strength-exercise-action="remove" data-strength-exercise-index="${exerciseIndex}" data-set-index="${setIndex}">Remove set</button>
+    </div>`).join("")}
+    <button type="button" class="ghost-button" data-strength-exercise-action="add" data-strength-exercise-index="${exerciseIndex}">Add set</button>
+    </li>`;
 }
 
 function renderStrengthLastPerformance() {
@@ -4839,6 +4910,24 @@ function handleTodayAction(event) {
   if (actionButton.dataset.todayAction === "open-stats") {
     setCurrentView("stats");
     render();
+    return;
+  }
+
+  if (actionButton.dataset.todayAction === "repeat-last") {
+    const latestWorkout = [...workouts].filter((workout) => workout.activity === "strength").sort(compareWorkoutsByRecentDate)[0];
+    if (!latestWorkout) return;
+    if (draftStrengthExercises.length || draftCurrentStrengthSets.length || draftSprintSets.length || runDistanceInput.value || runTimeInput.value) {
+      setCurrentView("calendar");
+      setWorkoutFormStatus("You already have a workout in progress. Finish it before starting a repeat.");
+      return;
+    }
+    resetWorkoutForm();
+    selectLoggingActivity("strength", { focus: false });
+    draftStrengthExercises = buildStrengthRepeatDraft(latestWorkout.strengthExercises);
+    renderStrengthExercises();
+    setCurrentView("calendar");
+    setWorkoutFormStatus("Repeated workout loaded as drafts. Edit today's numbers and confirm each completed set before saving.");
+    requestAnimationFrame(() => workoutForm.scrollIntoView({ behavior: "smooth", block: "start" }));
     return;
   }
 
