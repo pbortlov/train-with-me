@@ -216,6 +216,10 @@ const deleteConfirmTitleEl = document.getElementById("delete-confirm-title");
 const deleteConfirmMessageEl = document.getElementById("delete-confirm-message");
 const confirmDeleteWorkoutButton = document.getElementById("confirm-delete-workout");
 const cancelDeleteWorkoutButton = document.getElementById("cancel-delete-workout");
+const finishFewerSetsDialog = document.getElementById("finish-fewer-sets-dialog");
+const finishFewerSetsMessageEl = document.getElementById("finish-fewer-sets-message");
+const finishFewerSetsConfirmButton = document.getElementById("finish-fewer-sets-confirm");
+const finishFewerSetsCancelButton = document.getElementById("finish-fewer-sets-cancel");
 const editWorkoutDialog = document.getElementById("edit-workout-dialog");
 const editDateInput = document.getElementById("edit-date");
 const editActivityInput = document.getElementById("edit-activity");
@@ -448,6 +452,7 @@ let completionStrengthDraft = [];
 let completionSprintDraft = [];
 let selectedCalendarSessionId = "";
 let pendingDestructiveAction = null;
+let pendingFinishFewerSetsAction = null;
 let deferredInstallPrompt = null;
 let editingPopupWorkoutId = null;
 let editDraftCurrentStrengthSets = [];
@@ -715,6 +720,17 @@ addSafeEventListener(strengthExerciseEquipmentInput, "input", renderStrengthProg
   strengthSessionIncompleteInput,
 ].forEach((input) => addSafeEventListener(input, "change", renderStrengthProgressionPanel));
 addSafeEventListener(saveStrengthTargetButton, "click", saveStrengthProgressionTarget);
+addSafeEventListener(finishFewerSetsConfirmButton, "click", () => {
+  finishFewerSetsDialog?.close();
+  const action = pendingFinishFewerSetsAction;
+  pendingFinishFewerSetsAction = null;
+  action?.();
+});
+addSafeEventListener(finishFewerSetsCancelButton, "click", () => {
+  finishFewerSetsDialog?.close();
+  pendingFinishFewerSetsAction = null;
+  setWorkoutFormStatus("Add the remaining target sets to continue.");
+});
 
 addSafeEventListener(sprintProfileInput, "change", () => {
   syncSprintProfileCustomField(sprintProfileInput, sprintProfileCustomField);
@@ -936,6 +952,17 @@ addStrengthExerciseButton.addEventListener("click", () => {
     return;
   }
 
+  const targetSetCount = toNumberOrNull(strengthTargetSetsInput?.value);
+  const workingSetCount = confirmedSets.filter((set) => set.kind !== "warmup").length;
+  if (workingLoadType === "kg" && isNumber(targetSetCount) && workingSetCount < targetSetCount) {
+    openFinishFewerSetsDialog(workingSetCount, targetSetCount, () => addConfirmedStrengthExercise(exerciseName, confirmedSets, workingLoadType));
+    return;
+  }
+
+  addConfirmedStrengthExercise(exerciseName, confirmedSets, workingLoadType);
+});
+
+function addConfirmedStrengthExercise(exerciseName, confirmedSets, workingLoadType) {
   draftStrengthExercises.push({
     name: exerciseName,
     variation: strengthExerciseVariationInput?.value.trim() || "",
@@ -963,7 +990,7 @@ addStrengthExerciseButton.addEventListener("click", () => {
   renderStrengthLastPerformance();
   renderStrengthProgressionPanel();
   setWorkoutFormStatus("Exercise added to workout.");
-});
+}
 
 currentStrengthSetsList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-strength-set-action]");
@@ -2249,6 +2276,20 @@ function openDestructiveActionDialog({ title, message, confirmLabel = "Delete", 
     pendingDestructiveAction();
   }
   pendingDestructiveAction = null;
+}
+
+function openFinishFewerSetsDialog(completedSets, targetSets, onConfirm) {
+  pendingFinishFewerSetsAction = onConfirm;
+  if (finishFewerSetsMessageEl) {
+    finishFewerSetsMessageEl.textContent = `You logged ${completedSets} of ${targetSets} target sets. The completed sets will be saved unchanged, and no missing sets will be added.`;
+  }
+  if (finishFewerSetsDialog && typeof finishFewerSetsDialog.showModal === "function") {
+    finishFewerSetsDialog.showModal();
+    return;
+  }
+  const accepted = window.confirm(`Finish this exercise with ${completedSets} of ${targetSets} sets?`);
+  if (accepted) onConfirm();
+  pendingFinishFewerSetsAction = null;
 }
 
 function openDeleteConfirm(workoutId) {
@@ -3954,7 +3995,7 @@ function renderEditStrengthExercises() {
       return `<li>
         <div class="inline-exercise-row">
           <input type="text" data-role="exercise-name" data-exercise-index="${exerciseIndex}" value="${escapeHtml(exercise.name)}" />
-          <label class="check-label"><input type="checkbox" data-role="exercise-pain" data-exercise-index="${exerciseIndex}" ${exercise.painAffected ? "checked" : ""} /> Pain-affected</label>
+          <label class="check-label"><input type="checkbox" data-role="exercise-pain" data-exercise-index="${exerciseIndex}" ${exercise.painAffected ? "checked" : ""} /> Pain-affected</label>${exercise.painAffected ? '<span class="hint">Progression excluded: pain/discomfort</span>' : ""}
           <button type="button" class="danger-button" data-role="delete-exercise" data-exercise-index="${exerciseIndex}">Delete Exercise</button>
         </div>
         ${sets}

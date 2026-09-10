@@ -68,6 +68,8 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("metric-line");
     expect(index).toContain('id="edit-exercise-pain"');
     expect(script).toContain('data-role="exercise-pain"');
+    expect(index).toContain("Finish with fewer sets?");
+    expect(script).toContain("The completed sets will be saved unchanged");
   });
 
   it("keeps evidence-based strength milestones and comparable-session review in Stats", () => {
