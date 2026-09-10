@@ -151,23 +151,6 @@ completed-work/eligibility matrix in domain tests. No pain coaching is introduce
 
 ## R04 — Start and repeat from Today
 
-### Follow-up UX backlog
-
-- Redesign the **Edit log** dialog so saved exercises/sets being edited are
-  visually separate from controls for adding new exercises and sets. Improve
-  button versus checkbox placement and make the dialog's completed-versus-new
-  workflow immediately clear.
-- Improve **Strength progression** review: show the exercise name prominently,
-  list each comparable session with its date and exact sets, and make each
-  session open or locate the corresponding workout in History.
-- In **Edit log**, merge a newly added exercise into the existing row when its
-  exercise identity matches (name plus variation, equipment, and load type),
-  appending the new sets instead of creating a duplicate line.
-- Expand **Strength progression** to cover all logged strength exercises, not
-  only exercises with saved targets. Keep the Stats page compact with grouped
-  or collapsible rows, and show a clear setup/target state for exercises that
-  have history but no configured progression target.
-
 Lead with **Start today's workout** when scheduled. Otherwise offer **Repeat last
 workout** when history exists and **Log workout** for a new athlete. Always allow
 a different workout. Make onboarding dismissible and keep help accessible.
