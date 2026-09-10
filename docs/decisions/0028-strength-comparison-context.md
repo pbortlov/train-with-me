@@ -42,6 +42,11 @@ altering a generic target.
 
 ## Consequences
 
+An exercise may now be marked pain-affected within an otherwise completed
+strength workout. That exercise remains in history, but its sets are excluded
+from comparable recall and automatic progression; unaffected exercises retain
+their normal eligibility. Legacy exercises without the marker remain eligible.
+
 - Athletes receive a separate target and recall history for the same exercise
   when they deliberately distinguish variation or equipment.
 - A neutral context message explains why targets remain unchanged after a

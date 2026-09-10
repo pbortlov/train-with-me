@@ -78,6 +78,16 @@ describe("workout normalization", () => {
     expect(isStrengthSessionComparable({ isProgram: true })).toBe(false);
   });
 
+  it("preserves exercise-level pain exclusion while keeping legacy exercises eligible", () => {
+    expect(normalizeStrengthExercises([
+      { name: "Squat", painAffected: true, sets: [{ reps: 8, weight: 80 }] },
+      { name: "Bench", sets: [{ reps: 8, weight: 60 }] },
+    ])).toMatchObject([
+      { name: "Squat", painAffected: true },
+      { name: "Bench" },
+    ]);
+  });
+
   it("keeps only supported sprint context values while preserving optional text", () => {
     expect(normalizeSprintProfile("acceleration")).toBe("acceleration");
     expect(normalizeSprintProfile("unknown")).toBe("");

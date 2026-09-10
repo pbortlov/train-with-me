@@ -255,7 +255,7 @@
               </div>
               <ul id="current-strength-sets" class="detail-list"></ul>
               <button type="button" id="add-strength-exercise">Add Exercise To Workout</button>
-              <label class="check-label"><input type="checkbox" id="strength-session-pain" /> Pain or concerning discomfort</label>
+              <label class="check-label"><input type="checkbox" id="strength-exercise-pain" /> This exercise was affected by pain/discomfort</label>
               <p id="strength-session-summary" class="hint" aria-live="polite">No special session context</p>
               <details id="strength-session-editor" class="strength-editor">
                 <summary>Session details</summary>
@@ -1084,6 +1084,15 @@
       </div>
     </dialog>
 
+    <dialog id="finish-fewer-sets-dialog" aria-labelledby="finish-fewer-sets-title">
+      <h3 id="finish-fewer-sets-title">Finish with fewer sets?</h3>
+      <p id="finish-fewer-sets-message" class="hint"></p>
+      <div class="dialog-actions">
+        <button type="button" id="finish-fewer-sets-confirm">Finish with fewer sets</button>
+        <button type="button" id="finish-fewer-sets-cancel" class="ghost-button">Add remaining sets</button>
+      </div>
+    </dialog>
+
     <dialog id="goal-celebration-dialog">
       <h3 id="goal-celebration-title">Goal achieved</h3>
       <p id="goal-celebration-message" class="hint"></p>
@@ -1336,6 +1345,7 @@
               Exercise name
               <input type="text" id="edit-exercise-name" list="exercise-suggestions" />
             </label>
+            <label class="check-label"><input type="checkbox" id="edit-exercise-pain" /> This exercise was affected by pain/discomfort</label>
             <label>
               Set reps
               <input type="number" id="edit-strength-reps" min="0" />

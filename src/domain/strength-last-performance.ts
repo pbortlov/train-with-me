@@ -52,7 +52,7 @@ export function findStrengthLastPerformance(
     }
 
     return normalizeStrengthExercises(workout.strengthExercises)
-      .filter((exercise) => strengthExerciseKey(exercise.name, exercise.variation, exercise.equipment, exercise.loadType) === exerciseKey)
+      .filter((exercise) => !exercise.painAffected && strengthExerciseKey(exercise.name, exercise.variation, exercise.equipment, exercise.loadType) === exerciseKey)
       .map((exercise) => ({ ...exercise, sets: exercise.sets.filter((set) => set.kind !== "warmup" && set.loadType === loadType) }))
       .filter((exercise) => exercise.sets.length > 0)
       .map<ExerciseOccurrence>((exercise) => ({

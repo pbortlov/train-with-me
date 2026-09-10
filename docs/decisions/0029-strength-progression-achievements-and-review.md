@@ -32,6 +32,10 @@ sequence.
 
 ## Consequences
 
+Exercise-level pain exclusion prevents achievements and Stats progression
+evidence for the affected exercise while preserving the raw logged sets and
+allowing unaffected exercises in the same workout to earn recognition.
+
 - An athlete can see the meaningful change from `10×30, 10×30, 10×32.5` to
   `10×30, 10×32.5, 10×32.5` as one promoted set, even though the session's
   top weight did not change.
