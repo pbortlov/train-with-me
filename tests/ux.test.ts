@@ -72,6 +72,14 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("The completed sets will be saved unchanged");
   });
 
+  it("offers repeat-last from Today and keeps repeated sets unconfirmed", () => {
+    expect(index).toContain('data-today-action="repeat-last"');
+    expect(script).toContain("Repeated workout loaded as drafts");
+    expect(script).toContain("Today's sets");
+    expect(script).toContain("data-strength-exercise-action=\"confirm\"");
+    expect(script).toContain("set.confirmed !== false");
+  });
+
   it("keeps evidence-based strength milestones and comparable-session review in Stats", () => {
     expect(index).toContain('id="strength-progression-review-section"');
     expect(index).toContain('id="strength-progression-review"');

@@ -3161,6 +3161,25 @@ textarea:focus-visible {
   color: var(--text);
 }
 
+.repeat-exercise {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.repeat-set {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.65rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.repeat-set label { width: 7rem; }
+.repeat-set [data-repeat-status] { color: var(--muted); }
+
 .strength-draft-set {
   display: flex;
   align-items: center;
