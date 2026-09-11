@@ -16,3 +16,5 @@ it to draft status. Today's pain marker starts unchecked. Repeat uses the
 latest strength workout by workout date and refuses to replace an active draft.
 Previous-set snapshots and confirmation flags are transient and do not change
 the saved-workout or backup schema. Running and sprint repeats remain pending.
+Calendar logged strength cards also offer **Repeat this workout**, so the
+athlete can choose the source day instead of relying on the latest session.
