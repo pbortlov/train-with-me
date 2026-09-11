@@ -37,6 +37,22 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".strength-progression-panel");
   });
 
+  it("exposes specific strength goal fields separately from generic kg goals", () => {
+    expect(index).toContain('id="goal-strength-exercise"');
+    expect(index).toContain('id="goal-strength-reps"');
+    expect(script).toContain("strengthTarget");
+    expect(script).toContain("strengthExerciseKeyCore(goal.target.exercise");
+    expect(script).toContain("kg to go");
+    expect(script).toContain("current best");
+    expect(script).toContain("strengthSpecificGoalRow");
+    expect(script).toContain("goals.strengthTarget?.target.weight ?? goals.strength");
+    expect(script).toContain('data-goal-action="edit-strength"');
+    expect(script).toContain('data-goal-action="remove-strength"');
+    expect(script).toContain('data-goal-action="edit-${goal.activity}"');
+    expect(script).toContain('data-goal-action="remove-${goal.activity}"');
+    expect(script).toContain("runGoal.type === \"combined\" || runGoal.type === \"distance\"");
+  });
+
   it("keeps frequent strength entry visible while setup and target controls stay on demand", () => {
     expect(index).toContain('id="strength-setup-summary"');
     expect(index).toContain('id="strength-setup-editor"');
