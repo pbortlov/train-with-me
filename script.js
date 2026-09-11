@@ -4890,6 +4890,21 @@ function syncViewState() {
   });
 }
 
+function startStrengthRepeatFromWorkout(sourceWorkout) {
+  if (draftStrengthExercises.length || draftCurrentStrengthSets.length || draftSprintSets.length || runDistanceInput.value || runTimeInput.value) {
+    setCurrentView("calendar");
+    setWorkoutFormStatus("You already have a workout in progress. Finish it before starting a repeat.");
+    return;
+  }
+  resetWorkoutForm();
+  selectLoggingActivity("strength", { focus: false });
+  draftStrengthExercises = buildStrengthRepeatDraft(sourceWorkout.strengthExercises);
+  renderStrengthExercises();
+  setCurrentView("calendar");
+  setWorkoutFormStatus(`Workout from ${sourceWorkout.date || "the selected day"} loaded as drafts. Edit today's numbers and confirm each completed set before saving.`);
+  requestAnimationFrame(() => workoutForm.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
 function handleTodayAction(event) {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {
@@ -4915,19 +4930,7 @@ function handleTodayAction(event) {
 
   if (actionButton.dataset.todayAction === "repeat-last") {
     const latestWorkout = [...workouts].filter((workout) => workout.activity === "strength").sort(compareWorkoutsByRecentDate)[0];
-    if (!latestWorkout) return;
-    if (draftStrengthExercises.length || draftCurrentStrengthSets.length || draftSprintSets.length || runDistanceInput.value || runTimeInput.value) {
-      setCurrentView("calendar");
-      setWorkoutFormStatus("You already have a workout in progress. Finish it before starting a repeat.");
-      return;
-    }
-    resetWorkoutForm();
-    selectLoggingActivity("strength", { focus: false });
-    draftStrengthExercises = buildStrengthRepeatDraft(latestWorkout.strengthExercises);
-    renderStrengthExercises();
-    setCurrentView("calendar");
-    setWorkoutFormStatus("Repeated workout loaded as drafts. Edit today's numbers and confirm each completed set before saving.");
-    requestAnimationFrame(() => workoutForm.scrollIntoView({ behavior: "smooth", block: "start" }));
+    if (latestWorkout) startStrengthRepeatFromWorkout(latestWorkout);
     return;
   }
 
@@ -5218,6 +5221,7 @@ function renderWorkoutCalendarCard(workout) {
         <span class="planned-session-status-inline actual-workout-label">logged</span>
       </div>
       <div class="calendar-workout-actions">
+        ${workout.activity === "strength" ? `<button type="button" class="ghost-button planned-session-button" data-role="repeat-workout" data-id="${workout.id}">Repeat this workout</button>` : ""}
         <button type="button" class="ghost-button planned-session-button" data-role="edit-workout" data-id="${workout.id}">Edit log</button>
         <button type="button" class="ghost-button danger-button planned-session-button" data-role="delete-workout" data-id="${workout.id}">Delete</button>
       </div>
@@ -5728,6 +5732,11 @@ function handleCalendarAction(event) {
     return;
   }
   const sessionId = target.dataset.id;
+  if (role === "repeat-workout" && sessionId) {
+    const workout = workouts.find((item) => item.id === sessionId);
+    if (workout?.activity === "strength") startStrengthRepeatFromWorkout(workout);
+    return;
+  }
   if (role === "edit-workout" && sessionId) {
     openEditWorkoutDialog(sessionId);
     return;
