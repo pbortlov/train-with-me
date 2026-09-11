@@ -174,6 +174,10 @@ const strengthInsightsSummaryEl = document.getElementById("strength-insights-sum
 const strengthInsightsDetailsEl = document.getElementById("strength-insights-details");
 const strengthInsightsBodyEl = document.getElementById("strength-insights-body");
 const strengthProgressionReviewEl = document.getElementById("strength-progression-review");
+const strengthGoalExerciseInput = document.getElementById("goal-strength-exercise");
+const strengthGoalRepsInput = document.getElementById("goal-strength-reps");
+const strengthGoalVariationInput = document.getElementById("goal-strength-variation");
+const strengthGoalEquipmentInput = document.getElementById("goal-strength-equipment");
 const runningInsightsSummaryEl = document.getElementById("running-insights-summary");
 const runningInsightsDetailsEl = document.getElementById("running-insights-details");
 const runningInsightsBodyEl = document.getElementById("running-insights-body");
@@ -1069,6 +1073,37 @@ goalsForm.addEventListener("submit", (event) => {
   renderCharts();
 });
 
+goalProgressEl.addEventListener("click", (event) => {
+  const action = event.target.closest("[data-goal-action]")?.dataset.goalAction;
+  if (!action) return;
+  if (action === "edit-strength" && goals.strengthTarget) {
+    setGoalActivity("strength");
+    hydrateGoalInputs();
+    strengthGoalExerciseInput?.focus();
+    return;
+  }
+  if (action === "edit-run" || action === "edit-sprint") {
+    setGoalActivity(action === "edit-run" ? "run" : "sprint");
+    hydrateGoalInputs();
+    (action === "edit-run" ? document.getElementById("goal-run-combined-distance") : document.getElementById("goal-sprint-distance"))?.focus();
+    return;
+  }
+  if (action === "remove-strength") {
+    goals.strengthTarget = null;
+    save(STORAGE_KEY_GOALS, goals);
+    hydrateGoalInputs();
+    renderGoals();
+    setWorkoutFormStatus("Specific strength goal removed.");
+    return;
+  }
+  if (action === "remove-run" || action === "remove-sprint") {
+    goals.active[action === "remove-run" ? "run" : "sprint"] = null;
+    save(STORAGE_KEY_GOALS, goals);
+    hydrateGoalInputs();
+    renderGoals();
+  }
+});
+
 historyBody.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {
@@ -1289,6 +1324,7 @@ function defaultGoals() {
   return {
     version: GOAL_VERSION,
     strength: null,
+    strengthTarget: null,
     active: {
       run: null,
       sprint: null,
@@ -1306,7 +1342,8 @@ function normalizeGoals(rawGoals) {
   if (rawGoals.version === GOAL_VERSION && rawGoals.active && Array.isArray(rawGoals.history)) {
     return {
       version: GOAL_VERSION,
-      strength: toNumberOrNull(rawGoals.strength),
+      strength: null,
+      strengthTarget: normalizeGoal(rawGoals.strengthTarget),
       active: {
         run: normalizeGoal(rawGoals.active.run),
         sprint: normalizeGoal(rawGoals.active.sprint),
@@ -1316,7 +1353,7 @@ function normalizeGoals(rawGoals) {
   }
 
   const migrated = defaultGoals();
-  migrated.strength = toNumberOrNull(rawGoals.strength);
+  migrated.strength = null;
   const runDistance = toNumberOrNull(rawGoals.run);
   const runPace = parseGoalPaceInput(rawGoals.runPace) ?? toNumberOrNull(rawGoals.runPace);
   const sprintTime = toNumberOrNull(rawGoals.sprint);
@@ -1335,7 +1372,7 @@ function normalizeGoal(goal) {
   if (!goal || typeof goal !== "object") {
     return null;
   }
-  const activity = goal.activity === "sprint" ? "sprint" : goal.activity === "run" ? "run" : "";
+  const activity = goal.activity === "sprint" ? "sprint" : goal.activity === "run" ? "run" : goal.activity === "strength" ? "strength" : "";
   if (!activity) {
     return null;
   }
@@ -1353,6 +1390,15 @@ function normalizeGoal(goal) {
 }
 
 function normalizeGoalTarget(activity, type, target) {
+  if (activity === "strength") {
+    return {
+      exercise: typeof target.exercise === "string" ? target.exercise.trim() : "",
+      variation: typeof target.variation === "string" ? target.variation.trim() : "",
+      equipment: typeof target.equipment === "string" ? target.equipment.trim() : "",
+      weight: toNumberOrNull(target.weight),
+      reps: toNumberOrNull(target.reps),
+    };
+  }
   if (activity === "run" && type === "distance") {
     return { distance: toNumberOrNull(target.distance) };
   }
@@ -1389,7 +1435,15 @@ function buildGoalsFromForm(existingGoals) {
   const selectedActivity = currentGoalActivity();
   const today = formatDateInput(new Date());
   if (selectedActivity === "strength") {
-    nextGoals.strength = toNumberOrNull(valueOf("goal-strength"));
+    nextGoals.strength = null;
+    const exercise = valueOf("goal-strength-exercise").trim();
+    const weight = toNumberOrNull(valueOf("goal-strength"));
+    const reps = toNumberOrNull(valueOf("goal-strength-reps"));
+    const variation = valueOf("goal-strength-variation").trim();
+    const equipment = valueOf("goal-strength-equipment").trim();
+    nextGoals.strengthTarget = exercise && isNumber(weight) && isNumber(reps)
+      ? preserveUnchangedGoal(nextGoals.strengthTarget, createGoal("strength", "working-set", { exercise, variation, equipment, weight, reps }, today))
+      : null;
     return nextGoals;
   }
 
@@ -1441,7 +1495,7 @@ function renderGoals() {
     .reduce((max, weightValue) => Math.max(max, weightValue), 0);
 
   goalProgressEl.innerHTML = `
-    ${goalRow("Strength", currentStrength, goals.strength, "kg", true)}
+    ${strengthSpecificGoalRow(goals.strengthTarget)}
     ${activeGoalRow(goals.active.run, "Run")}
     ${activeGoalRow(goals.active.sprint, "Sprint")}
   `;
@@ -1451,6 +1505,25 @@ function renderGoals() {
       ? `<h4>Achieved goals</h4>${achievedGoals.map((goal) => `<div class="goal-item"><strong>${formatGoalLabel(goal)}:</strong> achieved ${formatHumanDate(goal.achievedAt)} in ${daysBetween(goal.setAt, goal.achievedAt)} day(s)</div>`).join("")}`
       : "<div class=\"goal-item\"><strong>Achieved goals:</strong> No achieved run or sprint goals yet.</div>";
   }
+}
+
+function strengthSpecificGoalRow(goal) {
+  if (!goal) {
+    return "<div class=\"goal-item\"><strong>Strength goal:</strong> No specific exercise goal set yet.</div>";
+  }
+  const achievement = findGoalAchievement(goal);
+  const best = findStrengthGoalBestSet(goal);
+  const remaining = best ? Math.max(0, goal.target.weight - best.weight) : goal.target.weight;
+  return `<div class="goal-item"><strong>${escapeHtml(formatGoalLabel(goal))}</strong><div class="strength-goal-progress-detail">${best ? `${formatNumber(best.weight)} kg current best` : "No eligible set recorded yet"} · ${formatNumber(goal.target.weight)} kg goal · ${remaining > 0 ? `${formatNumber(remaining)} kg to go` : "Goal reached"}</div><div class="progress-bar"><span style="width:${goalProgressPercent(goal).toFixed(0)}%"></span></div>${achievement ? `<div class="hint">Achieved on ${escapeHtml(formatHumanDate(achievement.date))}</div>` : ""}<div class="dialog-actions"><button type="button" class="ghost-button" data-goal-action="edit-strength">Edit goal</button><button type="button" class="ghost-button danger-button" data-goal-action="remove-strength">Remove goal</button></div></div>`;
+}
+
+function findStrengthGoalBestSet(goal) {
+  const sets = workouts
+    .filter((workout) => workout.activity === "strength" && workout.date >= goal.setAt && isStrengthSessionComparableCore(workout.strengthContext))
+    .flatMap((workout) => normalizeStrengthExercises(workout.strengthExercises)
+      .filter((exercise) => !exercise.painAffected && strengthExerciseKeyCore(exercise.name, exercise.variation, exercise.equipment, "kg") === strengthExerciseKeyCore(goal.target.exercise, goal.target.variation, goal.target.equipment, "kg"))
+      .flatMap((exercise) => exercise.sets.filter((set) => set.kind !== "warmup" && set.loadType === "kg" && isNumber(set.weight) && set.reps >= goal.target.reps).map((set) => ({ weight: set.weight, reps: set.reps }))));
+  return sets.sort((a, b) => b.weight - a.weight || b.reps - a.reps)[0] || null;
 }
 
 function renderProgressHub() {
@@ -1701,10 +1774,14 @@ function goalRow(label, current, goal, unit, higherIsBetter) {
 
 function hydrateGoalInputs() {
   goals = normalizeGoals(goals);
-  document.getElementById("goal-strength").value = goals.strength ?? "";
+  document.getElementById("goal-strength").value = goals.strengthTarget?.target.weight ?? goals.strength ?? "";
+  if (strengthGoalExerciseInput) strengthGoalExerciseInput.value = goals.strengthTarget?.target.exercise || "";
+  if (strengthGoalRepsInput) strengthGoalRepsInput.value = goals.strengthTarget?.target.reps ?? "";
+  if (strengthGoalVariationInput) strengthGoalVariationInput.value = goals.strengthTarget?.target.variation || "";
+  if (strengthGoalEquipmentInput) strengthGoalEquipmentInput.value = goals.strengthTarget?.target.equipment || "";
   setGoalActivity(preferredGoalActivity());
   const runGoal = goals.active.run;
-  document.getElementById("goal-run-combined-distance").value = runGoal?.type === "combined" ? runGoal.target.distance ?? "" : "";
+  document.getElementById("goal-run-combined-distance").value = runGoal && (runGoal.type === "combined" || runGoal.type === "distance") ? runGoal.target.distance ?? "" : "";
   document.getElementById("goal-run-combined-time").value = runGoal?.type === "combined" ? runGoal.target.time || "" : "";
   document.getElementById("goal-sprint-distance").value = goals.active.sprint?.target?.distance ?? "";
   document.getElementById("goal-sprint").value = goals.active.sprint?.target?.time ?? "";
@@ -1756,6 +1833,7 @@ function activeGoalRow(goal, emptyLabel) {
     <div class="goal-item">
       <strong>${formatGoalLabel(goal)}:</strong> set ${formatHumanDate(goal.setAt)}${achievement ? ` • achieved in ${daysBetween(goal.setAt, achievement.date)} day(s)` : ""}
       <div class="progress-bar"><span style="width:${progress.toFixed(0)}%"></span></div>
+      <div class="dialog-actions"><button type="button" class="ghost-button" data-goal-action="edit-${goal.activity}">Edit goal</button><button type="button" class="ghost-button danger-button" data-goal-action="remove-${goal.activity}">Remove goal</button></div>
     </div>
   `;
 }
@@ -1777,6 +1855,9 @@ function formatGoalLabel(goal) {
     return isNumber(goal.target.distance)
       ? `Sprint ${formatNumber(goal.target.distance)} m under ${formatNumber(goal.target.time)} sec`
       : `Sprint under ${formatNumber(goal.target.time)} sec`;
+  }
+  if (goal.activity === "strength") {
+    return `${goal.target.exercise}${goal.target.variation ? ` (${goal.target.variation})` : ""} ${formatNumber(goal.target.weight)} kg × ${formatNumber(goal.target.reps)} reps`;
   }
   return "Goal";
 }
@@ -1824,6 +1905,15 @@ function goalProgressPercent(goal) {
       .reduce((min, entry) => Math.min(min, entry.set.time), Infinity);
     return Number.isFinite(bestTime) && goal.target.time ? Math.min(100, (goal.target.time / bestTime) * 100) : 0;
   }
+  if (goal.activity === "strength") {
+    const bestWeight = workouts
+      .filter((workout) => workout.activity === "strength" && workout.date >= goal.setAt && isStrengthSessionComparableCore(workout.strengthContext))
+      .flatMap((workout) => normalizeStrengthExercises(workout.strengthExercises)
+        .filter((exercise) => !exercise.painAffected && strengthExerciseKeyCore(exercise.name, exercise.variation, exercise.equipment, "kg") === strengthExerciseKeyCore(goal.target.exercise, goal.target.variation, goal.target.equipment, "kg"))
+        .flatMap((exercise) => exercise.sets.filter((set) => set.kind !== "warmup" && set.loadType === "kg" && isNumber(set.weight) && set.reps >= goal.target.reps).map((set) => set.weight)))
+      .reduce((max, weight) => Math.max(max, weight), 0);
+    return goal.target.weight ? Math.min(100, (bestWeight / goal.target.weight) * 100) : 0;
+  }
   return 0;
 }
 
@@ -1849,6 +1939,14 @@ function evaluateGoals(options = {}) {
     goals.active[activity] = null;
     achieved.push({ goal: completedGoal, achievement });
   });
+  const strengthGoal = goals.strengthTarget;
+  const strengthAchievement = findGoalAchievement(strengthGoal);
+  if (strengthGoal && strengthAchievement) {
+    const completedGoal = { ...strengthGoal, achievedAt: strengthAchievement.date, achievedWorkoutId: strengthAchievement.workoutId };
+    goals.history.unshift(completedGoal);
+    goals.strengthTarget = null;
+    achieved.push({ goal: completedGoal, achievement: strengthAchievement });
+  }
   if (achieved.length && persist) {
     save(STORAGE_KEY_GOALS, goals);
   }
@@ -1882,6 +1980,11 @@ function findGoalAchievement(goal) {
         value: entry.set.time,
         label: `${formatNumber(entry.set.distance)}m in ${formatNumber(entry.set.time)}s`,
       }))[0] || null;
+  }
+  if (goal.activity === "strength") {
+    return workouts
+      .filter((workout) => workout.activity === "strength" && workout.date && workout.date >= goal.setAt && isStrengthSessionComparableCore(workout.strengthContext))
+      .flatMap((workout) => normalizeStrengthExercises(workout.strengthExercises).filter((exercise) => !exercise.painAffected && strengthExerciseKeyCore(exercise.name, exercise.variation, exercise.equipment, "kg") === strengthExerciseKeyCore(goal.target.exercise, goal.target.variation || "", goal.target.equipment || "", "kg")).flatMap((exercise) => exercise.sets.filter((set) => set.kind !== "warmup" && set.loadType === "kg" && isNumber(set.weight) && set.weight >= goal.target.weight && set.reps >= goal.target.reps).map((set) => ({ date: workout.date, workoutId: workout.id, value: set.weight, label: `${exercise.name}: ${formatNumber(set.weight)} kg × ${formatNumber(set.reps)}` })))).sort((a, b) => a.date.localeCompare(b.date))[0] || null;
   }
   return null;
 }
