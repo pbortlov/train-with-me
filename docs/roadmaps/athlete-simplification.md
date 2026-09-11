@@ -30,7 +30,7 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | R02 | `feat(logging): confirm draft sets and apply suggested targets` | Confirm actual sets; explicitly apply a suggestion to a draft | R01 | Merged — [#73](https://github.com/pbortlov/train-with-me/pull/73) |
 | R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | Merged — [#74](https://github.com/pbortlov/train-with-me/pull/74) |
 | R04 | `feat(today): start and repeat workouts` | Start today's plan or repeat previous training | R03 | Merged — [#76](https://github.com/pbortlov/train-with-me/pull/76) |
-| R05 | `feat(goals): track exercise weight and rep goals` | Achieve a specific strength goal in one working set | R03; deliver after R04 | In progress |
+| R05 | `feat(goals): track exercise weight and rep goals` | Achieve a specific strength goal in one working set | R03; deliver after R04 | Implemented — ready for PR |
 | R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | Planned |
 | R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Planned |
 | R08 | `refactor(plan): combine calendar and program management` | See the week and active program before builder controls | R04; deliver after R07 | Planned |
@@ -179,8 +179,9 @@ Acceptance checks:
   strength goal; the wrong exercise/setup, insufficient reps or load, warm-up,
   unconfirmed work, and pain-affected exercise do not.
 - An unaffected exercise can achieve a goal in a workout finished with fewer sets.
-- Old generic kg goals remain saved and can be explicitly associated with an
-  exercise and reps. No exercise or achievement is silently inferred.
+- Generic legacy kg goals are not shown as active goals; athletes must create a
+  specific exercise, weight, and reps target. No exercise or achievement is
+  silently inferred.
 - Running/sprint boundary and distance matching behavior remains compatible.
   Repeated saves do not duplicate achievements; edits and restores remain valid.
 
