@@ -29,6 +29,10 @@ sequence.
 - Do not store a separate achievement feed or aggregate score. Both the save
   message and Stats review are derived from the existing workout history and
   saved target profiles.
+- A saved workout uses one compact summary message for target updates, next
+  target suggestions, evidence-based improvements, exclusions, and any goals
+  achieved by that save. Goal achievements are not shown in a competing
+  second popup for the same workout.
 
 ## Consequences
 

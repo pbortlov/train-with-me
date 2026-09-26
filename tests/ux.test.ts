@@ -30,7 +30,7 @@ describe("local-first UX guidance", () => {
     expect(index).not.toContain('id="accept-strength-next-weight"');
     expect(script).toContain("buildStrengthSessionProgress(");
     expect(script).toContain("advanceStrengthTargetAfterWorkout(profile, sets, strengthProgression.gymWeightJumps)");
-    expect(script).toContain("Next target suggestion");
+    expect(script).toContain('title: "Suggested next target"');
     expect(script).toContain("Suggested next session");
     expect(script).toContain("After this workout is saved");
     expect(script).toContain("isStrengthSessionComparableCore(workout.strengthContext)");
@@ -40,14 +40,14 @@ describe("local-first UX guidance", () => {
   it("exposes specific strength goal fields separately from generic kg goals", () => {
     expect(index).toContain('id="goal-strength-exercise"');
     expect(index).toContain('id="goal-strength-reps"');
-    expect(script).toContain("strengthTarget");
+    expect(script).toContain("strengthTargets");
     expect(script).toContain("strengthExerciseKeyCore(goal.target.exercise");
     expect(script).toContain("kg to go");
     expect(script).toContain("current best");
     expect(script).toContain("strengthSpecificGoalRow");
-    expect(script).toContain("goals.strengthTarget?.target.weight ?? goals.strength");
-    expect(script).toContain('data-goal-action="edit-strength"');
-    expect(script).toContain('data-goal-action="remove-strength"');
+    expect(script).toContain("goals.strengthTargets.find((goal) => goal.id === editingStrengthGoalId)");
+    expect(script).toContain('data-goal-action="edit-strength-${goal.id}"');
+    expect(script).toContain('data-goal-action="remove-strength-${goal.id}"');
     expect(script).toContain('data-goal-action="edit-${goal.activity}"');
     expect(script).toContain('data-goal-action="remove-${goal.activity}"');
     expect(script).toContain("runGoal.type === \"combined\" || runGoal.type === \"distance\"");
@@ -96,13 +96,25 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("set.confirmed !== false");
     expect(script).toContain('data-role="repeat-workout"');
     expect(script).toContain("startStrengthRepeatFromWorkout");
+    expect(script).toContain('${set.confirmed ? "" : `<button type="button" data-strength-exercise-action="confirm"');
+    expect(script).toContain("button.remove();");
   });
 
   it("keeps evidence-based strength milestones and comparable-session review in Stats", () => {
     expect(index).toContain('id="strength-progression-review-section"');
     expect(index).toContain('id="strength-progression-review"');
     expect(script).toContain("buildStrengthSaveAchievements(workoutsBeforeSave, workout)");
-    expect(script).toContain("Session evidence:");
+    expect(script).toContain("buildWorkoutSaveSummary(progressionOutcomes, strengthSaveAchievements, achievedGoals)");
+    expect(script).toContain("showWorkoutSaveSummary(saveSummary, achievedGoals)");
+    expect(script).toContain('title: "Workout updated"');
+    expect(script).toContain("showWorkoutSaveSummary(updateSummary)");
+    expect(script).toContain("evaluateGoals({ persist: true, celebrate: false });");
+    expect(script).toContain("save-summary-section");
+    expect(script).toContain("No new progression signal yet.");
+    expect(script).toContain('title: "Progress from last time"');
+    expect(script).toContain("evaluateGoals({ persist: true, celebrate: false })");
+    expect(script).not.toContain('title: "Session evidence"');
+    expect(script).toContain("exercise.name || exercise.exercise");
     expect(script).toContain("buildStrengthProgressionReview(workouts, strengthProgression.profiles)");
     expect(script).toContain("First comparable session");
     expect(script).toContain("Comparable repeat");

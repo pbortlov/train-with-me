@@ -3204,6 +3204,19 @@ textarea:focus-visible {
   gap: 0.35rem;
 }
 
+.save-summary-section + .save-summary-section {
+  margin-top: 0.85rem;
+}
+
+.save-summary-section h4 {
+  margin: 0 0 0.25rem;
+}
+
+.save-summary-section ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
 .diff-panel {
   border: 1px solid var(--border);
   border-radius: 10px;
