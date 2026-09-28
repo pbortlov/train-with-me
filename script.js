@@ -417,6 +417,7 @@ dateInput.valueAsDate = new Date();
 
 let workouts = loadNormalizedList(localStorage, STORAGE_KEY_WORKOUTS, normalizeImportedWorkout);
 let goals = normalizeGoals(load(STORAGE_KEY_GOALS, defaultGoals()));
+let editingStrengthGoalId = "";
 let exerciseLibrary = load(STORAGE_KEY_EXERCISES, []);
 let plannedSessions = load(STORAGE_KEY_PLANNED_SESSIONS, []).map((session) => normalizePlannedSession(session));
 let phaseTemplates = load(STORAGE_KEY_PHASE_TEMPLATES, []).map((template) => normalizePhaseTemplate(template));
@@ -583,7 +584,8 @@ workoutForm.addEventListener("submit", (event) => {
   const workoutsBeforeSave = editingWorkoutId
     ? workouts.filter((savedWorkout) => savedWorkout.id !== editingWorkoutId)
     : workouts;
-  const strengthSaveAchievements = workout.activity === "strength"
+  const isEditingWorkout = Boolean(editingWorkoutId);
+  const strengthSaveAchievements = workout.activity === "strength" && !isEditingWorkout
     ? buildStrengthSaveAchievements(workoutsBeforeSave, workout)
     : [];
 
@@ -599,12 +601,16 @@ workoutForm.addEventListener("submit", (event) => {
     workouts.unshift(workout);
   }
   save(STORAGE_KEY_WORKOUTS, workouts);
-  const progressionOutcomes = workout.activity === "strength"
+  const progressionOutcomes = workout.activity === "strength" && !isEditingWorkout
     ? applyAutomaticStrengthTargetProgression(workout)
     : [];
-  evaluateGoals({ persist: true, celebrate: true });
+  const achievedGoals = evaluateGoals({ persist: true, celebrate: false });
   resetWorkoutForm();
-  setWorkoutFormStatus(formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements));
+  const saveSummary = isEditingWorkout
+    ? { title: "Workout updated", text: "Workout updated.", sections: [{ title: "Workout updated", items: ["Your changes were saved without creating a new progression celebration."] }] }
+    : buildWorkoutSaveSummary(progressionOutcomes, strengthSaveAchievements, achievedGoals);
+  setWorkoutFormStatus(saveSummary.text);
+  showWorkoutSaveSummary(saveSummary, achievedGoals);
   render();
 });
 
@@ -670,11 +676,7 @@ function applyAutomaticStrengthTargetProgression(workout) {
   return outcomes;
 }
 
-function formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements = []) {
-  if (!progressionOutcomes.length && !strengthSaveAchievements.length) {
-    return "Workout saved.";
-  }
-
+function buildWorkoutSaveSummary(progressionOutcomes, strengthSaveAchievements = [], achievedGoals = []) {
   const updates = progressionOutcomes
     .filter((outcome) => outcome.type === "updated")
     .map(({ exerciseName, previousWeight, qualifyingSet }) =>
@@ -683,7 +685,7 @@ function formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements =
   const suggestions = progressionOutcomes
     .filter((outcome) => outcome.type === "suggested")
     .map(({ exerciseName, nextTargetSuggestion }) =>
-      `${exerciseName} ${nextTargetSuggestion.targetSets} × ${nextTargetSuggestion.reps} @ ${formatNumber(nextTargetSuggestion.weight)} kg`,
+      `🎯 ${exerciseName}: ${nextTargetSuggestion.targetSets} × ${nextTargetSuggestion.reps} @ ${formatNumber(nextTargetSuggestion.weight)} kg`,
     );
   const exclusions = progressionOutcomes
     .filter((outcome) => outcome.type === "excluded")
@@ -691,25 +693,58 @@ function formatWorkoutSaveStatus(progressionOutcomes, strengthSaveAchievements =
   const achievements = strengthSaveAchievements.map((achievement) => {
     const identity = formatStrengthExerciseIdentity(achievement);
     const evidence = [
-      achievement.promotedSetCount
-        ? `${achievement.promotedSetCount} promoted ${achievement.promotedSetCount === 1 ? "set" : "sets"}`
+      achievement.promotedSetCount && achievement.promotedWeightGain
+        ? `+${formatNumber(achievement.promotedWeightGain)} kg on ${achievement.promotedSetCount} ${achievement.promotedSetCount === 1 ? "set" : "sets"}`
+        : achievement.promotedSetCount
+          ? `${achievement.promotedSetCount} ${achievement.promotedSetCount === 1 ? "set" : "sets"} improved`
         : "",
       achievement.repGainCount
         ? `${achievement.repGainCount} same-load ${achievement.repGainCount === 1 ? "rep gain" : "rep gains"}`
         : "",
       achievement.newHeaviestKgSet
-        ? `new heaviest ${formatNumber(achievement.newHeaviestKgSet.weight)} kg × ${formatNumber(achievement.newHeaviestKgSet.reps)}`
+        ? `heaviest set was ${formatNumber(achievement.newHeaviestKgSet.weight)} kg × ${formatNumber(achievement.newHeaviestKgSet.reps)}`
         : "",
     ].filter(Boolean);
-    return `${identity}: ${evidence.join(", ")}`;
+    return `🎉 ${identity}: ${evidence.join("; ")}`;
   });
-  const messages = [
-    updates.length ? `${updates.length === 1 ? "Target updated" : "Targets updated"}: ${updates.join("; ")}.` : "",
-    suggestions.length ? `${suggestions.length === 1 ? "Next target suggestion" : "Next target suggestions"}: ${suggestions.join("; ")}. Log a qualifying heavier set to update the saved target.` : "",
-    achievements.length ? `Session evidence: ${achievements.join("; ")}.` : "",
-    exclusions.length ? `Strength targets were left unchanged: ${exclusions.join("; ")}.` : "",
-  ].filter(Boolean);
-  return `Workout saved. ${messages.join(" ")}`;
+  const achieved = achievedGoals.map(({ goal, achievement }) =>
+    `🎉 ${formatGoalLabel(goal)} achieved: ${achievement.label}.`,
+  );
+  const detailItems = [
+    ...progressionOutcomes.filter((outcome) => outcome.type === "updated").map((outcome) => ({
+      section: "Progress from last time",
+      item: `${outcome.exerciseName} ${formatNumber(outcome.previousWeight)} kg → ${formatNumber(outcome.qualifyingSet.weight)} kg after ${formatNumber(outcome.qualifyingSet.reps)} reps @ ${formatNumber(outcome.qualifyingSet.weight)} kg`,
+      detail: `Qualifying set: ${formatNumber(outcome.qualifyingSet.reps)} reps × ${formatNumber(outcome.qualifyingSet.weight)} kg`,
+    })),
+    ...strengthSaveAchievements.map((achievement) => ({
+      section: "Progress from last time",
+      item: `🎉 ${formatStrengthExerciseIdentity(achievement)}: ${[
+        achievement.promotedSetCount && achievement.promotedWeightGain ? `+${formatNumber(achievement.promotedWeightGain)} kg on ${achievement.promotedSetCount} ${achievement.promotedSetCount === 1 ? "set" : "sets"}` : "",
+        achievement.newHeaviestKgSet ? `heaviest set was ${formatNumber(achievement.newHeaviestKgSet.weight)} kg × ${formatNumber(achievement.newHeaviestKgSet.reps)}` : "",
+      ].filter(Boolean).join("; ")}`,
+      detail: `Logged sets: ${achievement.sets.map((set) => `${formatNumber(set.weight)} kg × ${formatNumber(set.reps)}`).join(" · ")}`,
+    })),
+    ...progressionOutcomes.filter((outcome) => outcome.type === "suggested").map((outcome) => ({
+      section: "Suggested next target",
+      item: `🎯 ${outcome.exerciseName}: ${outcome.nextTargetSuggestion.targetSets} × ${outcome.nextTargetSuggestion.reps} @ ${formatNumber(outcome.nextTargetSuggestion.weight)} kg`,
+      detail: "Reason: all target sets reached the top rep range.",
+    })),
+    ...achievedGoals.map(({ goal, achievement }) => ({
+      section: "Goals achieved",
+      item: `🎉 ${formatGoalLabel(goal)} achieved: ${achievement.label}.`,
+      detail: `Qualifying set: ${achievement.label}.`,
+    })),
+  ];
+  const sections = [
+    { title: "Progress from last time", items: [...updates, ...achievements] },
+    { title: "Suggested next target", items: suggestions.map((item) => `${item} Log a qualifying heavier set to update the saved target.`) },
+    { title: "Goals achieved", items: achieved },
+    { title: "Notes", items: exclusions },
+  ].filter((section) => section.items.length);
+  const text = sections.length
+    ? `Workout saved. ${sections.flatMap((section) => section.items).join(" ")}`
+    : "Workout saved.";
+  return { title: "Workout saved", text, sections, details: detailItems };
 }
 
 activityInput.addEventListener("change", () => {
@@ -1034,6 +1069,7 @@ strengthExerciseList.addEventListener("click", (event) => {
       return;
     }
     set.confirmed = true;
+    button.remove();
   } else if (action === "remove") {
     exercise.sets.splice(setIndex, 1);
   } else if (action === "add") {
@@ -1076,7 +1112,8 @@ goalsForm.addEventListener("submit", (event) => {
 goalProgressEl.addEventListener("click", (event) => {
   const action = event.target.closest("[data-goal-action]")?.dataset.goalAction;
   if (!action) return;
-  if (action === "edit-strength" && goals.strengthTarget) {
+  if (action.startsWith("edit-strength-") && goals.strengthTargets.length) {
+    editingStrengthGoalId = action.slice("edit-strength-".length);
     setGoalActivity("strength");
     hydrateGoalInputs();
     strengthGoalExerciseInput?.focus();
@@ -1088,8 +1125,9 @@ goalProgressEl.addEventListener("click", (event) => {
     (action === "edit-run" ? document.getElementById("goal-run-combined-distance") : document.getElementById("goal-sprint-distance"))?.focus();
     return;
   }
-  if (action === "remove-strength") {
-    goals.strengthTarget = null;
+  if (action.startsWith("remove-strength-") ) {
+    const goalId = action.slice("remove-strength-".length);
+    goals.strengthTargets = goals.strengthTargets.filter((goal) => goal.id !== goalId);
     save(STORAGE_KEY_GOALS, goals);
     hydrateGoalInputs();
     renderGoals();
@@ -1324,7 +1362,7 @@ function defaultGoals() {
   return {
     version: GOAL_VERSION,
     strength: null,
-    strengthTarget: null,
+    strengthTargets: [],
     active: {
       run: null,
       sprint: null,
@@ -1343,7 +1381,7 @@ function normalizeGoals(rawGoals) {
     return {
       version: GOAL_VERSION,
       strength: null,
-      strengthTarget: normalizeGoal(rawGoals.strengthTarget),
+      strengthTargets: normalizeStrengthTargets(rawGoals.strengthTargets || rawGoals.strengthTarget),
       active: {
         run: normalizeGoal(rawGoals.active.run),
         sprint: normalizeGoal(rawGoals.active.sprint),
@@ -1366,6 +1404,18 @@ function normalizeGoals(rawGoals) {
     migrated.active.sprint = createGoal("sprint", "time", { distance: null, time: sprintTime }, today);
   }
   return migrated;
+}
+
+function normalizeStrengthTargets(rawTargets) {
+  const candidates = Array.isArray(rawTargets) ? rawTargets : rawTargets ? [rawTargets] : [];
+  const seen = new Set();
+  return candidates.map((goal) => normalizeGoal(goal)).filter((goal) => {
+    if (!goal || goal.activity !== "strength" || !goal.target.exercise) return false;
+    const key = goal.target.exercise.toLocaleLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function normalizeGoal(goal) {
@@ -1441,9 +1491,21 @@ function buildGoalsFromForm(existingGoals) {
     const reps = toNumberOrNull(valueOf("goal-strength-reps"));
     const variation = valueOf("goal-strength-variation").trim();
     const equipment = valueOf("goal-strength-equipment").trim();
-    nextGoals.strengthTarget = exercise && isNumber(weight) && isNumber(reps)
-      ? preserveUnchangedGoal(nextGoals.strengthTarget, createGoal("strength", "working-set", { exercise, variation, equipment, weight, reps }, today))
-      : null;
+    if (!exercise || !isNumber(weight) || !isNumber(reps)) return nextGoals;
+    const nextGoal = createGoal("strength", "working-set", { exercise, variation, equipment, weight, reps }, today);
+    let existingIndex = nextGoals.strengthTargets.findIndex((goal) => goal.target.exercise.toLocaleLowerCase() === exercise.toLocaleLowerCase());
+    const editingIndex = nextGoals.strengthTargets.findIndex((goal) => goal.id === editingStrengthGoalId);
+    if (editingIndex >= 0 && existingIndex >= 0 && editingIndex !== existingIndex) {
+      nextGoals.strengthTargets.splice(editingIndex, 1);
+      existingIndex = nextGoals.strengthTargets.findIndex((goal) => goal.target.exercise.toLocaleLowerCase() === exercise.toLocaleLowerCase());
+    }
+    if (existingIndex >= 0) {
+      nextGoals.strengthTargets[existingIndex] = preserveUnchangedGoal(nextGoals.strengthTargets[existingIndex], nextGoal);
+      editingStrengthGoalId = nextGoals.strengthTargets[existingIndex].id;
+    } else {
+      nextGoals.strengthTargets.push(nextGoal);
+      editingStrengthGoalId = nextGoal.id;
+    }
     return nextGoals;
   }
 
@@ -1495,7 +1557,7 @@ function renderGoals() {
     .reduce((max, weightValue) => Math.max(max, weightValue), 0);
 
   goalProgressEl.innerHTML = `
-    ${strengthSpecificGoalRow(goals.strengthTarget)}
+    ${goals.strengthTargets.length ? goals.strengthTargets.map(strengthSpecificGoalRow).join("") : strengthSpecificGoalRow(null)}
     ${activeGoalRow(goals.active.run, "Run")}
     ${activeGoalRow(goals.active.sprint, "Sprint")}
   `;
@@ -1514,7 +1576,7 @@ function strengthSpecificGoalRow(goal) {
   const achievement = findGoalAchievement(goal);
   const best = findStrengthGoalBestSet(goal);
   const remaining = best ? Math.max(0, goal.target.weight - best.weight) : goal.target.weight;
-  return `<div class="goal-item"><strong>${escapeHtml(formatGoalLabel(goal))}</strong><div class="strength-goal-progress-detail">${best ? `${formatNumber(best.weight)} kg current best` : "No eligible set recorded yet"} · ${formatNumber(goal.target.weight)} kg goal · ${remaining > 0 ? `${formatNumber(remaining)} kg to go` : "Goal reached"}</div><div class="progress-bar"><span style="width:${goalProgressPercent(goal).toFixed(0)}%"></span></div>${achievement ? `<div class="hint">Achieved on ${escapeHtml(formatHumanDate(achievement.date))}</div>` : ""}<div class="dialog-actions"><button type="button" class="ghost-button" data-goal-action="edit-strength">Edit goal</button><button type="button" class="ghost-button danger-button" data-goal-action="remove-strength">Remove goal</button></div></div>`;
+  return `<div class="goal-item"><strong>${escapeHtml(formatGoalLabel(goal))}</strong><div class="strength-goal-progress-detail">${best ? `${formatNumber(best.weight)} kg current best` : "No eligible set recorded yet"} · ${formatNumber(goal.target.weight)} kg goal · ${remaining > 0 ? `${formatNumber(remaining)} kg to go` : "Goal reached"}</div><div class="progress-bar"><span style="width:${goalProgressPercent(goal).toFixed(0)}%"></span></div>${achievement ? `<div class="hint">Achieved on ${escapeHtml(formatHumanDate(achievement.date))}</div>` : ""}<div class="dialog-actions"><button type="button" class="ghost-button" data-goal-action="edit-strength-${goal.id}">Edit goal</button><button type="button" class="ghost-button danger-button" data-goal-action="remove-strength-${goal.id}">Remove goal</button></div></div>`;
 }
 
 function findStrengthGoalBestSet(goal) {
@@ -1774,11 +1836,12 @@ function goalRow(label, current, goal, unit, higherIsBetter) {
 
 function hydrateGoalInputs() {
   goals = normalizeGoals(goals);
-  document.getElementById("goal-strength").value = goals.strengthTarget?.target.weight ?? goals.strength ?? "";
-  if (strengthGoalExerciseInput) strengthGoalExerciseInput.value = goals.strengthTarget?.target.exercise || "";
-  if (strengthGoalRepsInput) strengthGoalRepsInput.value = goals.strengthTarget?.target.reps ?? "";
-  if (strengthGoalVariationInput) strengthGoalVariationInput.value = goals.strengthTarget?.target.variation || "";
-  if (strengthGoalEquipmentInput) strengthGoalEquipmentInput.value = goals.strengthTarget?.target.equipment || "";
+  const strengthGoal = goals.strengthTargets.find((goal) => goal.id === editingStrengthGoalId) || goals.strengthTargets[0];
+  document.getElementById("goal-strength").value = strengthGoal?.target.weight ?? goals.strength ?? "";
+  if (strengthGoalExerciseInput) strengthGoalExerciseInput.value = strengthGoal?.target.exercise || "";
+  if (strengthGoalRepsInput) strengthGoalRepsInput.value = strengthGoal?.target.reps ?? "";
+  if (strengthGoalVariationInput) strengthGoalVariationInput.value = strengthGoal?.target.variation || "";
+  if (strengthGoalEquipmentInput) strengthGoalEquipmentInput.value = strengthGoal?.target.equipment || "";
   setGoalActivity(preferredGoalActivity());
   const runGoal = goals.active.run;
   document.getElementById("goal-run-combined-distance").value = runGoal && (runGoal.type === "combined" || runGoal.type === "distance") ? runGoal.target.distance ?? "" : "";
@@ -1798,7 +1861,7 @@ function preferredGoalActivity() {
   if (goals.active?.sprint) {
     return "sprint";
   }
-  if (isNumber(goals.strength)) {
+  if (goals.strengthTargets?.length || isNumber(goals.strength)) {
     return "strength";
   }
   return "run";
@@ -1939,14 +2002,14 @@ function evaluateGoals(options = {}) {
     goals.active[activity] = null;
     achieved.push({ goal: completedGoal, achievement });
   });
-  const strengthGoal = goals.strengthTarget;
-  const strengthAchievement = findGoalAchievement(strengthGoal);
-  if (strengthGoal && strengthAchievement) {
+  goals.strengthTargets = goals.strengthTargets.filter((strengthGoal) => {
+    const strengthAchievement = findGoalAchievement(strengthGoal);
+    if (!strengthAchievement) return true;
     const completedGoal = { ...strengthGoal, achievedAt: strengthAchievement.date, achievedWorkoutId: strengthAchievement.workoutId };
     goals.history.unshift(completedGoal);
-    goals.strengthTarget = null;
     achieved.push({ goal: completedGoal, achievement: strengthAchievement });
-  }
+    return false;
+  });
   if (achieved.length && persist) {
     save(STORAGE_KEY_GOALS, goals);
   }
@@ -2029,6 +2092,13 @@ function showGoalCelebration(entry) {
   if (!entry?.goal) {
     return;
   }
+  const title = document.getElementById("goal-celebration-title");
+  if (title) title.textContent = "Goal achieved";
+  const details = document.getElementById("workout-save-details");
+  if (details) {
+    details.hidden = true;
+    details.open = false;
+  }
   const now = new Date().toISOString();
   const historyGoal = goals.history.find((goal) => goal.id === entry.goal.id);
   if (historyGoal) {
@@ -2043,6 +2113,56 @@ function showGoalCelebration(entry) {
   } else {
     alert(goalCelebrationMessageEl?.textContent || "Goal achieved.");
   }
+}
+
+function showWorkoutSaveSummary(summary, achievedGoals = []) {
+  if (!summary?.text) {
+    return;
+  }
+  achievedGoals.forEach((entry) => {
+    const historyGoal = goals.history.find((goal) => goal.id === entry.goal.id);
+    if (historyGoal && !historyGoal.celebratedAt) {
+      historyGoal.celebratedAt = new Date().toISOString();
+    }
+  });
+  if (achievedGoals.length) {
+    save(STORAGE_KEY_GOALS, goals);
+  }
+  const title = document.getElementById("goal-celebration-title");
+  if (title) title.textContent = summary.title || "Workout saved";
+  if (goalCelebrationMessageEl) {
+    goalCelebrationMessageEl.innerHTML = summary.sections.length
+      ? summary.sections.map((section) => `<section class="save-summary-section save-summary-section-${section.title.toLocaleLowerCase().replace(/[^a-z]+/g, "-")}"><h4>${escapeHtml(section.title)}</h4><ul>${section.items.map((item) => `<li>${summaryItemMarkup(item)}</li>`).join("")}</ul></section>`).join("")
+      : "<p>Workout saved. No new progression signal yet.</p>";
+  }
+  const details = document.getElementById("workout-save-details");
+  const detailsContent = document.getElementById("workout-save-details-content");
+  if (detailsContent) {
+    const groupedDetails = new Map();
+    (summary.details || []).forEach((item) => {
+      const entries = groupedDetails.get(item.section) || [];
+      entries.push(item);
+      groupedDetails.set(item.section, entries);
+    });
+    detailsContent.innerHTML = [...groupedDetails.entries()].map(([section, items]) => {
+      const sectionClass = section.toLocaleLowerCase().replace(/[^a-z]+/g, "-");
+      return `<section class="save-summary-detail-group save-summary-detail-group-${sectionClass}"><h4>${escapeHtml(section)}</h4>${items.map((item) => `<article class="save-summary-detail-item"><p>${summaryItemMarkup(item.item)}</p><span>${escapeHtml(item.detail)}</span></article>`).join("")}</section>`;
+    }).join("");
+  }
+  if (details) {
+    details.hidden = !(summary.details || []).length;
+    details.open = false;
+  }
+  if (goalCelebrationDialog && typeof goalCelebrationDialog.showModal === "function") {
+    goalCelebrationDialog.showModal();
+  }
+}
+
+function summaryItemMarkup(item) {
+  const match = String(item).match(/^([🎉🎯🏆])\s+(.*)$/);
+  return match
+    ? `<span class="save-summary-emoji" aria-hidden="true">${match[1]}</span><span>${escapeHtml(match[2])}</span>`
+    : `<span class="save-summary-emoji" aria-hidden="true"></span><span>${escapeHtml(item)}</span>`;
 }
 
 function closeGoalCelebrationDialog() {
@@ -2687,10 +2807,16 @@ function saveEditedWorkout() {
       save(STORAGE_KEY_WORKOUTS, workouts);
       syncExerciseLibraryFromWorkouts();
       renderExerciseLibrary();
-      editWorkoutStatusEl.textContent = "Workout updated.";
+      const updateSummary = {
+        title: "Workout updated",
+        text: "Workout updated.",
+        sections: [{ title: "Workout updated", items: ["Your changes were saved without creating a new progression celebration."] }],
+      };
+      editWorkoutStatusEl.textContent = updateSummary.text;
       render();
       closeEditWorkoutDialog();
-      evaluateGoals({ persist: true, celebrate: true });
+      evaluateGoals({ persist: true, celebrate: false });
+      showWorkoutSaveSummary(updateSummary);
     }
   } catch {
     editWorkoutStatusEl.textContent = "Invalid edit format. Please check your lines and try again.";
@@ -4456,7 +4582,7 @@ function renderRepeatExercise(exercise, exerciseIndex) {
       <label>Reps <input type="number" min="1" step="1" data-repeat-field="reps" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${set.reps ?? ""}" /></label>
       ${set.loadType === "kg" ? `<label>Weight (kg) <input type="number" min="0" step="any" data-repeat-field="weight" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" value="${set.weight ?? ""}" /></label>` : set.loadType === "band" ? `<label>Band <select data-repeat-field="bandColor" data-exercise-index="${exerciseIndex}" data-set-index="${setIndex}">${["yellow", "red", "black", "purple", "green", "blue"].map(color => `<option ${set.bandColor === color ? "selected" : ""}>${color}</option>`).join("")}</select></label>` : "<span>Body weight</span>"}
       <span data-repeat-status>${set.confirmed ? "Confirmed" : "Draft — confirm after completing"}</span>
-      <button type="button" data-strength-exercise-action="confirm" data-strength-exercise-index="${exerciseIndex}" data-set-index="${setIndex}" ${set.confirmed ? "disabled" : ""}>Confirm set</button>
+      ${set.confirmed ? "" : `<button type="button" data-strength-exercise-action="confirm" data-strength-exercise-index="${exerciseIndex}" data-set-index="${setIndex}">Confirm set</button>`}
       <button type="button" class="ghost-button" data-strength-exercise-action="remove" data-strength-exercise-index="${exerciseIndex}" data-set-index="${setIndex}">Remove set</button>
     </div>`).join("")}
     <button type="button" class="ghost-button" data-strength-exercise-action="add" data-strength-exercise-index="${exerciseIndex}">Add set</button>
@@ -4722,7 +4848,7 @@ function formatStrengthProgressionExclusion(context) {
 }
 
 function formatStrengthExerciseIdentity(exercise) {
-  return [exercise.name, exercise.variation, exercise.equipment, exercise.loadType].filter(Boolean).join(" · ");
+  return [exercise.name || exercise.exercise, exercise.variation, exercise.equipment, exercise.loadType].filter(Boolean).join(" · ");
 }
 
 function currentStrengthLoadType() {

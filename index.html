@@ -1106,7 +1106,11 @@
 
     <dialog id="goal-celebration-dialog">
       <h3 id="goal-celebration-title">Goal achieved</h3>
-      <p id="goal-celebration-message" class="hint"></p>
+      <div id="goal-celebration-message" class="hint"></div>
+      <details id="workout-save-details" class="save-summary-details" hidden>
+        <summary>View details</summary>
+        <div id="workout-save-details-content"></div>
+      </details>
       <div class="dialog-actions">
         <button type="button" id="goal-celebration-new-goal">Set new goal</button>
         <button type="button" id="goal-celebration-close" class="ghost-button">Close</button>

@@ -36,7 +36,9 @@ export interface StrengthSaveAchievement {
   exercise: string;
   variation: string;
   equipment: string;
+  sets: StrengthSet[];
   promotedSetCount: number;
+  promotedWeightGain: number;
   repGainCount: number;
   newHeaviestKgSet: { weight: number; reps: number } | null;
 }
@@ -114,6 +116,10 @@ export function buildStrengthSaveAchievements(
       return [];
     }
 
+    if (sameComparableSetPerformance(previous.sets, current.sets)) {
+      return [];
+    }
+
     const progress = buildStrengthSessionProgress(previous.sets, current.sets);
     const currentTopSet = findTopKgSet(current.sets);
     const isNewHeaviest = Boolean(
@@ -128,13 +134,43 @@ export function buildStrengthSaveAchievements(
       exercise: current.exercise,
       variation: current.variation,
       equipment: current.equipment,
+      sets: current.sets,
       promotedSetCount: progress.promotedSetCount,
+      promotedWeightGain: findPromotedWeightGain(previous.sets, current.sets),
       repGainCount: progress.repGainCount,
       newHeaviestKgSet: isNewHeaviest && currentTopSet
         ? { weight: currentTopSet.weight, reps: currentTopSet.reps }
         : null,
     }];
   });
+}
+
+function findPromotedWeightGain(previousSets: StrengthSet[], currentSets: StrengthSet[]): number {
+  const grouped = (sets: StrengthSet[]) => {
+    const byReps = new Map<number, number[]>();
+    sets.filter((set) => set.kind !== "warmup" && set.loadType === "kg" && typeof set.weight === "number")
+      .forEach((set) => byReps.set(set.reps, [...(byReps.get(set.reps) || []), set.weight as number]));
+    byReps.forEach((weights, reps) => byReps.set(reps, weights.sort((left, right) => left - right)));
+    return byReps;
+  };
+  const previousByReps = grouped(previousSets);
+  const currentByReps = grouped(currentSets);
+  let maximum = 0;
+  currentByReps.forEach((currentWeights, reps) => {
+    const previousWeights = previousByReps.get(reps) || [];
+    currentWeights.forEach((weight, index) => {
+      if (index < previousWeights.length) maximum = Math.max(maximum, weight - previousWeights[index]);
+    });
+  });
+  return maximum;
+}
+
+function sameComparableSetPerformance(previousSets: StrengthSet[], currentSets: StrengthSet[]): boolean {
+  const normalize = (sets: StrengthSet[]) => sets
+    .filter((set) => set.kind !== "warmup" && set.loadType === "kg" && typeof set.weight === "number")
+    .map((set) => `${set.weight}:${set.reps}`)
+    .sort();
+  return JSON.stringify(normalize(previousSets)) === JSON.stringify(normalize(currentSets));
 }
 
 function comparableKgOccurrences(workouts: StrengthProgressionReviewWorkout[]): ExerciseOccurrence[] {
