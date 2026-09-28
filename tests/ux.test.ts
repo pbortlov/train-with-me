@@ -112,6 +112,11 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("save-summary-section");
     expect(script).toContain("No new progression signal yet.");
     expect(script).toContain('title: "Progress from last time"');
+    expect(index).toContain('id="workout-save-details"');
+    expect(index).toContain("View details");
+    expect(script).toContain("Qualifying set:");
+    expect(script).toContain("save-summary-detail-item");
+    expect(script).toContain("Logged sets:");
     expect(script).toContain("evaluateGoals({ persist: true, celebrate: false })");
     expect(script).not.toContain('title: "Session evidence"');
     expect(script).toContain("exercise.name || exercise.exercise");
@@ -120,6 +125,20 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("Comparable repeat");
     expect(styles).toContain(".strength-progression-review-card");
     expect(styles).toContain(".strength-progression-review-row");
+    expect(styles).toContain(".save-summary-section li");
+    expect(styles).toContain("font-size: 1.08rem");
+    expect(styles).toContain(".save-summary-detail-item span");
+    expect(styles).toContain("font-size: 0.84rem");
+    expect(styles).toContain("margin-left: 1.65rem");
+    expect(script).toContain("save-summary-detail-group");
+    expect(styles).toContain(".save-summary-detail-group-progress-from-last-time");
+    expect(styles).toContain(".save-summary-detail-group-suggested-next-target");
+    expect(styles).toContain("#goal-celebration-title");
+    expect(styles).toContain(".save-summary-section-progress-from-last-time h4");
+    expect(styles).toContain(".save-summary-section-suggested-next-target h4");
+    expect(styles).toContain(".save-summary-section-goals-achieved h4");
+    expect(script).toContain("function summaryItemMarkup(item)");
+    expect(styles).toContain("grid-template-columns: 1.5rem minmax(0, 1fr)");
   });
 
   it("extracts shared design tokens from the Programs palette", () => {

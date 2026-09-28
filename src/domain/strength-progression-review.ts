@@ -36,6 +36,7 @@ export interface StrengthSaveAchievement {
   exercise: string;
   variation: string;
   equipment: string;
+  sets: StrengthSet[];
   promotedSetCount: number;
   promotedWeightGain: number;
   repGainCount: number;
@@ -133,6 +134,7 @@ export function buildStrengthSaveAchievements(
       exercise: current.exercise,
       variation: current.variation,
       equipment: current.equipment,
+      sets: current.sets,
       promotedSetCount: progress.promotedSetCount,
       promotedWeightGain: findPromotedWeightGain(previous.sets, current.sets),
       repGainCount: progress.repGainCount,

@@ -702,7 +702,7 @@ function buildWorkoutSaveSummary(progressionOutcomes, strengthSaveAchievements =
         ? `${achievement.repGainCount} same-load ${achievement.repGainCount === 1 ? "rep gain" : "rep gains"}`
         : "",
       achievement.newHeaviestKgSet
-        ? `new heaviest ${formatNumber(achievement.newHeaviestKgSet.weight)} kg × ${formatNumber(achievement.newHeaviestKgSet.reps)}`
+        ? `heaviest set was ${formatNumber(achievement.newHeaviestKgSet.weight)} kg × ${formatNumber(achievement.newHeaviestKgSet.reps)}`
         : "",
     ].filter(Boolean);
     return `🎉 ${identity}: ${evidence.join("; ")}`;
@@ -710,6 +710,31 @@ function buildWorkoutSaveSummary(progressionOutcomes, strengthSaveAchievements =
   const achieved = achievedGoals.map(({ goal, achievement }) =>
     `🎉 ${formatGoalLabel(goal)} achieved: ${achievement.label}.`,
   );
+  const detailItems = [
+    ...progressionOutcomes.filter((outcome) => outcome.type === "updated").map((outcome) => ({
+      section: "Progress from last time",
+      item: `${outcome.exerciseName} ${formatNumber(outcome.previousWeight)} kg → ${formatNumber(outcome.qualifyingSet.weight)} kg after ${formatNumber(outcome.qualifyingSet.reps)} reps @ ${formatNumber(outcome.qualifyingSet.weight)} kg`,
+      detail: `Qualifying set: ${formatNumber(outcome.qualifyingSet.reps)} reps × ${formatNumber(outcome.qualifyingSet.weight)} kg`,
+    })),
+    ...strengthSaveAchievements.map((achievement) => ({
+      section: "Progress from last time",
+      item: `🎉 ${formatStrengthExerciseIdentity(achievement)}: ${[
+        achievement.promotedSetCount && achievement.promotedWeightGain ? `+${formatNumber(achievement.promotedWeightGain)} kg on ${achievement.promotedSetCount} ${achievement.promotedSetCount === 1 ? "set" : "sets"}` : "",
+        achievement.newHeaviestKgSet ? `heaviest set was ${formatNumber(achievement.newHeaviestKgSet.weight)} kg × ${formatNumber(achievement.newHeaviestKgSet.reps)}` : "",
+      ].filter(Boolean).join("; ")}`,
+      detail: `Logged sets: ${achievement.sets.map((set) => `${formatNumber(set.weight)} kg × ${formatNumber(set.reps)}`).join(" · ")}`,
+    })),
+    ...progressionOutcomes.filter((outcome) => outcome.type === "suggested").map((outcome) => ({
+      section: "Suggested next target",
+      item: `🎯 ${outcome.exerciseName}: ${outcome.nextTargetSuggestion.targetSets} × ${outcome.nextTargetSuggestion.reps} @ ${formatNumber(outcome.nextTargetSuggestion.weight)} kg`,
+      detail: "Reason: all target sets reached the top rep range.",
+    })),
+    ...achievedGoals.map(({ goal, achievement }) => ({
+      section: "Goals achieved",
+      item: `🎉 ${formatGoalLabel(goal)} achieved: ${achievement.label}.`,
+      detail: `Qualifying set: ${achievement.label}.`,
+    })),
+  ];
   const sections = [
     { title: "Progress from last time", items: [...updates, ...achievements] },
     { title: "Suggested next target", items: suggestions.map((item) => `${item} Log a qualifying heavier set to update the saved target.`) },
@@ -719,7 +744,7 @@ function buildWorkoutSaveSummary(progressionOutcomes, strengthSaveAchievements =
   const text = sections.length
     ? `Workout saved. ${sections.flatMap((section) => section.items).join(" ")}`
     : "Workout saved.";
-  return { title: "Workout saved", text, sections };
+  return { title: "Workout saved", text, sections, details: detailItems };
 }
 
 activityInput.addEventListener("change", () => {
@@ -2069,6 +2094,11 @@ function showGoalCelebration(entry) {
   }
   const title = document.getElementById("goal-celebration-title");
   if (title) title.textContent = "Goal achieved";
+  const details = document.getElementById("workout-save-details");
+  if (details) {
+    details.hidden = true;
+    details.open = false;
+  }
   const now = new Date().toISOString();
   const historyGoal = goals.history.find((goal) => goal.id === entry.goal.id);
   if (historyGoal) {
@@ -2102,12 +2132,37 @@ function showWorkoutSaveSummary(summary, achievedGoals = []) {
   if (title) title.textContent = summary.title || "Workout saved";
   if (goalCelebrationMessageEl) {
     goalCelebrationMessageEl.innerHTML = summary.sections.length
-      ? summary.sections.map((section) => `<section class="save-summary-section"><h4>${escapeHtml(section.title)}</h4><ul>${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></section>`).join("")
+      ? summary.sections.map((section) => `<section class="save-summary-section save-summary-section-${section.title.toLocaleLowerCase().replace(/[^a-z]+/g, "-")}"><h4>${escapeHtml(section.title)}</h4><ul>${section.items.map((item) => `<li>${summaryItemMarkup(item)}</li>`).join("")}</ul></section>`).join("")
       : "<p>Workout saved. No new progression signal yet.</p>";
+  }
+  const details = document.getElementById("workout-save-details");
+  const detailsContent = document.getElementById("workout-save-details-content");
+  if (detailsContent) {
+    const groupedDetails = new Map();
+    (summary.details || []).forEach((item) => {
+      const entries = groupedDetails.get(item.section) || [];
+      entries.push(item);
+      groupedDetails.set(item.section, entries);
+    });
+    detailsContent.innerHTML = [...groupedDetails.entries()].map(([section, items]) => {
+      const sectionClass = section.toLocaleLowerCase().replace(/[^a-z]+/g, "-");
+      return `<section class="save-summary-detail-group save-summary-detail-group-${sectionClass}"><h4>${escapeHtml(section)}</h4>${items.map((item) => `<article class="save-summary-detail-item"><p>${summaryItemMarkup(item.item)}</p><span>${escapeHtml(item.detail)}</span></article>`).join("")}</section>`;
+    }).join("");
+  }
+  if (details) {
+    details.hidden = !(summary.details || []).length;
+    details.open = false;
   }
   if (goalCelebrationDialog && typeof goalCelebrationDialog.showModal === "function") {
     goalCelebrationDialog.showModal();
   }
+}
+
+function summaryItemMarkup(item) {
+  const match = String(item).match(/^([🎉🎯🏆])\s+(.*)$/);
+  return match
+    ? `<span class="save-summary-emoji" aria-hidden="true">${match[1]}</span><span>${escapeHtml(match[2])}</span>`
+    : `<span class="save-summary-emoji" aria-hidden="true"></span><span>${escapeHtml(item)}</span>`;
 }
 
 function closeGoalCelebrationDialog() {

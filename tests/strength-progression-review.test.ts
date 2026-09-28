@@ -155,6 +155,10 @@ describe("strength progression review", () => {
       exercise: "Back squat",
       variation: "High bar",
       equipment: "Barbell",
+      sets: [
+        { order: 1, reps: 8, weight: 82.5, loadType: "kg", bandColor: "", kind: "working" },
+        { order: 2, reps: 9, weight: 80, loadType: "kg", bandColor: "", kind: "working" },
+      ],
       promotedSetCount: 1,
       promotedWeightGain: 2.5,
       repGainCount: 1,
