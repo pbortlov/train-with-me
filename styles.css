@@ -3247,6 +3247,7 @@ textarea:focus-visible {
   font-size: 1.08rem;
   font-weight: 600;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .save-summary-emoji {
@@ -3334,6 +3335,7 @@ textarea:focus-visible {
   color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .diff-panel {
@@ -3750,6 +3752,8 @@ dialog {
     #06080f;
   color: var(--text);
   box-shadow: 0 1.2rem 3rem rgb(0 0 0 / 45%);
+  max-height: min(90vh, 42rem);
+  overflow: auto;
 }
 
 dialog::backdrop {
@@ -3767,6 +3771,7 @@ dialog::backdrop {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .strength-session-move-preview {

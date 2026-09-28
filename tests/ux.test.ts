@@ -129,6 +129,8 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain("font-size: 1.08rem");
     expect(styles).toContain(".save-summary-detail-item span");
     expect(styles).toContain("font-size: 0.84rem");
+    expect(styles).toContain("max-height: min(90vh, 42rem)");
+    expect(styles).toContain("overflow-wrap: anywhere");
     expect(styles).toContain("margin-left: 1.65rem");
     expect(script).toContain("save-summary-detail-group");
     expect(styles).toContain(".save-summary-detail-group-progress-from-last-time");
