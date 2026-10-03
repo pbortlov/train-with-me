@@ -3231,7 +3231,14 @@ textarea:focus-visible {
 }
 
 .save-summary-section-goals-achieved h4 {
-  color: var(--panel-title);
+  color: var(--success);
+}
+
+.save-summary-section-goals-achieved {
+  border: 1px solid #6dff5c55;
+  border-radius: 10px;
+  background: rgb(109 255 92 / 5%);
+  padding: 0.7rem 0.8rem;
 }
 
 .save-summary-section ul {
@@ -3306,11 +3313,11 @@ textarea:focus-visible {
 }
 
 .save-summary-detail-group-goals-achieved {
-  border-left-color: var(--panel-title);
+  border-left-color: var(--success);
 }
 
 .save-summary-detail-group-goals-achieved h4 {
-  color: var(--panel-title);
+  color: var(--success);
 }
 
 .save-summary-detail-item p {

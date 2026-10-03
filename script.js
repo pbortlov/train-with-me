@@ -708,14 +708,9 @@ function buildWorkoutSaveSummary(progressionOutcomes, strengthSaveAchievements =
     return `🎉 ${identity}: ${evidence.join("; ")}`;
   });
   const achieved = achievedGoals.map(({ goal, achievement }) =>
-    `🎉 ${formatGoalLabel(goal)} achieved: ${achievement.label}.`,
+    `🏆 ${formatGoalLabel(goal)} achieved: ${achievement.label}.`,
   );
   const detailItems = [
-    ...progressionOutcomes.filter((outcome) => outcome.type === "updated").map((outcome) => ({
-      section: "Progress from last time",
-      item: `${outcome.exerciseName} ${formatNumber(outcome.previousWeight)} kg → ${formatNumber(outcome.qualifyingSet.weight)} kg after ${formatNumber(outcome.qualifyingSet.reps)} reps @ ${formatNumber(outcome.qualifyingSet.weight)} kg`,
-      detail: `Qualifying set: ${formatNumber(outcome.qualifyingSet.reps)} reps × ${formatNumber(outcome.qualifyingSet.weight)} kg`,
-    })),
     ...strengthSaveAchievements.map((achievement) => ({
       section: "Progress from last time",
       item: `🎉 ${formatStrengthExerciseIdentity(achievement)}: ${[
@@ -731,7 +726,7 @@ function buildWorkoutSaveSummary(progressionOutcomes, strengthSaveAchievements =
     })),
     ...achievedGoals.map(({ goal, achievement }) => ({
       section: "Goals achieved",
-      item: `🎉 ${formatGoalLabel(goal)} achieved: ${achievement.label}.`,
+      item: `🏆 ${formatGoalLabel(goal)} achieved: ${achievement.label}.`,
       detail: `Qualifying set: ${achievement.label}.`,
     })),
   ];

@@ -139,6 +139,8 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain(".save-summary-section-progress-from-last-time h4");
     expect(styles).toContain(".save-summary-section-suggested-next-target h4");
     expect(styles).toContain(".save-summary-section-goals-achieved h4");
+    expect(script).toContain("🏆 ${formatGoalLabel(goal)} achieved");
+    expect(styles).toContain(".save-summary-section-goals-achieved {");
     expect(script).toContain("function summaryItemMarkup(item)");
     expect(styles).toContain("grid-template-columns: 1.5rem minmax(0, 1fr)");
   });
