@@ -155,7 +155,12 @@ describe("strength progression review", () => {
       exercise: "Back squat",
       variation: "High bar",
       equipment: "Barbell",
+      sets: [
+        { order: 1, reps: 8, weight: 82.5, loadType: "kg", bandColor: "", kind: "working" },
+        { order: 2, reps: 9, weight: 80, loadType: "kg", bandColor: "", kind: "working" },
+      ],
       promotedSetCount: 1,
+      promotedWeightGain: 2.5,
       repGainCount: 1,
       newHeaviestKgSet: { weight: 82.5, reps: 8 },
     }]);
@@ -163,5 +168,20 @@ describe("strength progression review", () => {
       ...savedWorkout,
       strengthContext: { isTechnique: true },
     })).toEqual([]);
+  });
+
+  it("does not report evidence when a repeated session has identical kg sets", () => {
+    const workout = {
+      activity: "strength",
+      date: "2026-08-10",
+      strengthContext: {},
+      strengthExercises: [{
+        name: "Back squat",
+        variation: "High bar",
+        equipment: "Barbell",
+        sets: [{ reps: 10, weight: 80, loadType: "kg" }],
+      }],
+    };
+    expect(buildStrengthSaveAchievements([workout], { ...workout, createdAt: 2 })).toEqual([]);
   });
 });

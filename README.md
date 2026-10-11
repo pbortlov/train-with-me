@@ -53,6 +53,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Activity metrics use the explicit activity, date, and strength load filters
 - Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
 - Strength goals are tied to a named exercise and minimum reps, show the current best kg against the target, and can be edited or removed directly from Stats
+- After saving, the workout summary separates **Progress from last time**, **Suggested next target**, and **Goals achieved** using short numeric training-log messages
 - Run and sprint goals are tracked separately from the activity charts
 - Run goals use distance plus target time, such as `5 km under 22:00`
 - Sprint goals are distance-specific, such as `100 m under 14.2 sec`

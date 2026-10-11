@@ -29,6 +29,15 @@ sequence.
 - Do not store a separate achievement feed or aggregate score. Both the save
   message and Stats review are derived from the existing workout history and
   saved target profiles.
+- A saved workout uses one compact summary message for target updates, next
+  target suggestions, evidence-based improvements, exclusions, and any goals
+  achieved by that save. Goal achievements are not shown in a competing
+  second popup for the same workout.
+- The athlete-facing summary uses the training-log headings **Progress from last
+  time**, **Suggested next target**, and **Goals achieved**. Improvement lines
+  use concrete deltas such as `🎉 Deadlift: +5 kg on 3 sets; heaviest set was
+  145 kg × 5`; suggested prescriptions use `🎯` and set × rep × load notation.
+  The wording favors short, numeric, one-fact-per-line messages.
 
 ## Consequences
 

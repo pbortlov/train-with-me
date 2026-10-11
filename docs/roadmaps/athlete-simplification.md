@@ -31,7 +31,7 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | Merged — [#74](https://github.com/pbortlov/train-with-me/pull/74) |
 | R04 | `feat(today): start and repeat workouts` | Start today's plan or repeat previous training | R03 | Merged — [#76](https://github.com/pbortlov/train-with-me/pull/76) |
 | R05 | `feat(goals): track exercise weight and rep goals` | Achieve a specific strength goal in one working set | R03; deliver after R04 | Implemented — ready for PR |
-| R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | Planned |
+| R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | In progress |
 | R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Planned |
 | R08 | `refactor(plan): combine calendar and program management` | See the week and active program before builder controls | R04; deliver after R07 | Planned |
 | R09 | `refactor(navigation): add today plan progress and settings` | Three main tabs with clear settings and history access | R07, R08 | Planned |
