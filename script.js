@@ -6447,7 +6447,7 @@ function serializeStrengthPhaseDefinition(template) {
       );
       (block.exercises || []).forEach((exercise) => {
         rows.push(
-          `EXERCISE,${exercise.code || ""},${exercise.name || ""},${exercise.reps || ""},${exercise.notes || ""},${exercise.weight ?? ""}`,
+          `EXERCISE,${exercise.code || ""},${exercise.name || ""},${exercise.reps || ""},${exercise.notes || ""},${isNumber(exercise.weight) && exercise.weight > 0 ? exercise.weight : ""}`,
         );
       });
     });

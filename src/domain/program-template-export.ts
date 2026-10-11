@@ -50,6 +50,9 @@ function createTemplateId(): string {
 }
 
 function toNumberOrNull(value: unknown): number | null {
+  if (value == null || (typeof value === "string" && value.trim() === "")) {
+    return null;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -80,12 +83,13 @@ function normalizeBlock(block: unknown): ProgramTemplateBlock {
 
 function normalizeExercise(exercise: unknown): ProgramTemplateExercise {
   const normalizedExercise = asRecord(exercise);
+  const parsedWeight = toNumberOrNull(normalizedExercise.weight);
   return {
     code: normalizeText(normalizedExercise.code),
     name: normalizeText(normalizedExercise.name, "Exercise"),
     reps: normalizeText(normalizedExercise.reps),
     notes: normalizeText(normalizedExercise.notes),
-    weight: toNumberOrNull(normalizedExercise.weight),
+    weight: parsedWeight != null && parsedWeight > 0 ? parsedWeight : null,
   };
 }
 
