@@ -102,6 +102,39 @@ describe("program template export/import", () => {
     });
   });
 
+  it("keeps blank and legacy zero exercise weights empty when editing a template", () => {
+    const [template] = parseProgramTemplateExportPayload({
+      phaseTemplates: [
+        {
+          name: "Legacy weights",
+          durationWeeks: 4,
+          weekdaySlots: [
+            {
+              weekday: "Monday",
+              blocks: [
+                {
+                  exercises: [
+                    { name: "Blank weight", reps: "8", weight: "" },
+                    { name: "Null weight", reps: "8", weight: null },
+                    { name: "Legacy zero", reps: "8", weight: 0 },
+                    { name: "Valid weight", reps: "8", weight: 60 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(template.weekdaySlots[0].blocks[0].exercises.map((exercise) => exercise.weight)).toEqual([
+      null,
+      null,
+      null,
+      60,
+    ]);
+  });
+
   it("accepts files with missing optional top-level fields", () => {
     expect(
       parseProgramTemplateExportPayload({
