@@ -79,6 +79,7 @@ import {
   listSprintProfileOptions,
 } from "./src/domain/sprint-performance";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
+import { buildStrengthExerciseProgressList } from "./src/domain/strength-exercise-progress";
 import { findStrengthLastPerformance } from "./src/domain/strength-last-performance";
 import {
   buildStrengthProgressionReview,
@@ -174,6 +175,7 @@ const strengthInsightsSummaryEl = document.getElementById("strength-insights-sum
 const strengthInsightsDetailsEl = document.getElementById("strength-insights-details");
 const strengthInsightsBodyEl = document.getElementById("strength-insights-body");
 const strengthProgressionReviewEl = document.getElementById("strength-progression-review");
+const strengthExerciseProgressListEl = document.getElementById("strength-exercise-progress-list");
 const strengthGoalExerciseInput = document.getElementById("goal-strength-exercise");
 const strengthGoalRepsInput = document.getElementById("goal-strength-reps");
 const strengthGoalVariationInput = document.getElementById("goal-strength-variation");
@@ -1166,6 +1168,7 @@ function render() {
   renderGoals();
   renderProgressHub();
   renderStrengthInsights();
+  renderStrengthExerciseProgressList();
   renderStrengthProgressionReview();
   renderRunningInsights();
   renderSprintInsights();
@@ -3157,6 +3160,49 @@ function renderStrengthProgressionReview() {
         </div>
         ${suggestion}
         <ol class="strength-progression-review-sessions">${sessionMarkup}</ol>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderStrengthExerciseProgressList() {
+  if (!strengthExerciseProgressListEl) {
+    return;
+  }
+
+  const rows = buildStrengthExerciseProgressList(workouts, strengthProgression.profiles);
+  if (!rows.length) {
+    strengthExerciseProgressListEl.innerHTML = "<p class=\"planner-empty\">Log a strength exercise to build your progress list.</p>";
+    return;
+  }
+
+  strengthExerciseProgressListEl.innerHTML = rows.map((row) => {
+    const identity = [
+      row.variation,
+      row.equipment,
+      row.loadType === "bodyweight" ? "bodyweight" : row.loadType === "band" ? "band" : "kg",
+    ].filter(Boolean).join(" · ");
+    const status = row.latestStatus === "pain-excluded"
+      ? "Progression excluded: pain/discomfort"
+      : row.latestStatus === "session-excluded"
+        ? "Recorded, not comparable"
+        : "Comparable history";
+    const target = row.hasSavedTarget ? "Saved target available" : "No saved target yet";
+    return `
+      <article class="strength-exercise-progress-list-row">
+        <div class="strength-exercise-progress-list-heading">
+          <strong>${escapeHtml(row.exercise)}</strong>
+          <span>${escapeHtml(identity)}</span>
+        </div>
+        <div class="strength-exercise-progress-list-meta">
+          <span>${row.sessionCount} ${row.sessionCount === 1 ? "session" : "sessions"}</span>
+          <span>${row.setCount} ${row.setCount === 1 ? "set" : "sets"}</span>
+          <span>${row.latestDate ? escapeHtml(formatHumanDate(row.latestDate)) : "No date"}</span>
+        </div>
+        <div class="strength-exercise-progress-list-status">
+          <span>${escapeHtml(status)}</span>
+          <span>${escapeHtml(target)}</span>
+        </div>
       </article>
     `;
   }).join("");

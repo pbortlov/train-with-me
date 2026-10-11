@@ -738,6 +738,51 @@ body {
   gap: 0.75rem;
 }
 
+.strength-exercise-progress-list-card {
+  border-color: var(--surface-program-panel-border);
+}
+
+#strength-exercise-progress-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.strength-exercise-progress-list-row {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card-strong);
+}
+
+.strength-exercise-progress-list-heading,
+.strength-exercise-progress-list-meta,
+.strength-exercise-progress-list-status {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.strength-exercise-progress-list-heading strong {
+  color: var(--text);
+}
+
+.strength-exercise-progress-list-heading span,
+.strength-exercise-progress-list-meta,
+.strength-exercise-progress-list-status {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.strength-exercise-progress-list-meta span + span::before,
+.strength-exercise-progress-list-status span + span::before {
+  content: "•";
+  margin-right: 0.55rem;
+  color: var(--border);
+}
+
 .strength-progression-review-row {
   display: grid;
   gap: 0.65rem;
