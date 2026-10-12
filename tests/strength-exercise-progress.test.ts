@@ -70,8 +70,19 @@ describe("strength exercise progress list", () => {
         date: "2026-10-01",
         strengthExercises: [{ name: "Deadlift", equipment: "Barbell", sets: [{ reps: 5, weight: 100 }] }],
       },
-    ], [{ key: "deadlift\u0000\u0000barbell\u0000kg", exercise: "Deadlift", loadType: "kg" } as never]);
+    ], [{
+      key: "deadlift\u0000\u0000barbell\u0000kg",
+      exercise: "Deadlift",
+      loadType: "kg",
+      goal: "strength",
+      targetSets: 3,
+      repMin: 5,
+      repMax: 8,
+      workingWeight: 100,
+      allowedJumps: [2.5],
+    }]);
 
     expect(rows[0].hasSavedTarget).toBe(true);
+    expect(rows[0].savedTarget).toEqual({ targetSets: 3, repMin: 5, repMax: 8, workingWeight: 100 });
   });
 });

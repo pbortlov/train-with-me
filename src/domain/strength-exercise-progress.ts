@@ -26,6 +26,19 @@ export interface StrengthExerciseProgressRow {
   latestSets: StrengthSet[];
   latestStatus: "comparable" | "pain-excluded" | "session-excluded";
   hasSavedTarget: boolean;
+  savedTarget: {
+    targetSets: number;
+    repMin: number;
+    repMax: number;
+    workingWeight: number;
+  } | null;
+  sessions: StrengthExerciseProgressSession[];
+}
+
+export interface StrengthExerciseProgressSession {
+  date: string;
+  sets: StrengthSet[];
+  status: StrengthExerciseProgressRow["latestStatus"];
 }
 
 interface ExerciseOccurrence {
@@ -96,6 +109,15 @@ export function buildStrengthExerciseProgressList(
         latestSets: latest.sets,
         latestStatus: latest.status,
         hasSavedTarget: Boolean(profile && (profile.loadType === "kg" || !profile.loadType)),
+        savedTarget: profile && (profile.loadType === "kg" || !profile.loadType)
+          ? {
+              targetSets: profile.targetSets,
+              repMin: profile.repMin,
+              repMax: profile.repMax,
+              workingWeight: profile.workingWeight,
+            }
+          : null,
+        sessions: ordered.map((entry) => ({ date: entry.date, sets: entry.sets, status: entry.status })),
       };
     })
     .sort((left, right) =>

@@ -410,7 +410,9 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="strength-exercise-progress-list-section"');
     expect(index).toContain('id="strength-exercise-progress-list"');
     expect(script).toContain('buildStrengthExerciseProgressList');
+    expect(script).toContain('data-strength-progress-key');
     expect(styles).toContain('.strength-exercise-progress-list-row');
+    expect(styles).toContain('.strength-exercise-progress-detail');
     expect(styles).toContain('.running-insights-card');
     expect(styles).toContain('.sprint-insights-card');
     expect(styles).toContain('.stats-insight-details summary');

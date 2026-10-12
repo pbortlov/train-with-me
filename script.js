@@ -439,6 +439,7 @@ let draftPlannedSprintBlocks = [];
 let draftStrengthExercises = [];
 let draftCurrentStrengthSets = [];
 let strengthProgressionExerciseKey = "";
+let strengthExerciseProgressSelectionKey = "";
 let progressFilters = {
   activity: "all",
   fromDate: "",
@@ -798,6 +799,18 @@ progressHubActions.forEach((button) => {
   button.addEventListener("click", () => {
     scrollToProgressSection(button.dataset.progressJump || "");
   });
+});
+addSafeEventListener(strengthExerciseProgressListEl, "click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const button = target.closest("[data-strength-progress-key]");
+  if (!(button instanceof HTMLElement)) {
+    return;
+  }
+  strengthExerciseProgressSelectionKey = decodeURIComponent(button.dataset.strengthProgressKey || "");
+  renderStrengthExerciseProgressList();
 });
 addSafeEventListener(runDistanceInput, "input", () => {
   if (toNumberOrNull(runDistanceInput.value) > 0) {
@@ -3176,6 +3189,10 @@ function renderStrengthExerciseProgressList() {
     return;
   }
 
+  if (!rows.some((row) => row.key === strengthExerciseProgressSelectionKey)) {
+    strengthExerciseProgressSelectionKey = rows[0].key;
+  }
+
   strengthExerciseProgressListEl.innerHTML = rows.map((row) => {
     const identity = [
       row.variation,
@@ -3191,7 +3208,7 @@ function renderStrengthExerciseProgressList() {
     return `
       <article class="strength-exercise-progress-list-row">
         <div class="strength-exercise-progress-list-heading">
-          <strong>${escapeHtml(row.exercise)}</strong>
+          <button type="button" class="strength-exercise-progress-open${row.key === strengthExerciseProgressSelectionKey ? " is-selected" : ""}" data-strength-progress-key="${encodeURIComponent(row.key)}">${escapeHtml(row.exercise)}</button>
           <span>${escapeHtml(identity)}</span>
         </div>
         <div class="strength-exercise-progress-list-meta">
@@ -3203,9 +3220,34 @@ function renderStrengthExerciseProgressList() {
           <span>${escapeHtml(status)}</span>
           <span>${escapeHtml(target)}</span>
         </div>
+        ${row.key === strengthExerciseProgressSelectionKey ? renderStrengthExerciseProgressDetail(row) : ""}
       </article>
     `;
   }).join("");
+
+}
+
+function renderStrengthExerciseProgressDetail(selected) {
+  const targetLabel = selected.savedTarget
+    ? `Saved target · ${selected.savedTarget.targetSets} × ${selected.savedTarget.repMin}–${selected.savedTarget.repMax} @ ${formatNumber(selected.savedTarget.workingWeight)} kg`
+    : "No saved target yet";
+  const sessionMarkup = selected.sessions.slice().reverse().map((session) => `
+    <li>
+      <span>${session.date ? escapeHtml(formatHumanDate(session.date)) : "Undated session"}</span>
+      <span>${escapeHtml(session.sets.filter((set) => set.kind !== "warmup").map((set) => `${formatNumber(set.reps)} reps @ ${formatStrengthLoad(set)}`).join(" · ")) || "No working sets"}</span>
+      <span>${session.status === "comparable" ? "Comparable" : session.status === "pain-excluded" ? "Pain/discomfort excluded" : "Session excluded"}</span>
+    </li>
+  `).join("");
+  return `
+    <div class="strength-exercise-progress-detail-heading">
+      <div>
+        <h4>${escapeHtml(selected.exercise)}</h4>
+        <p>${escapeHtml([selected.variation, selected.equipment, selected.loadType].filter(Boolean).join(" · "))}</p>
+      </div>
+      <span>${escapeHtml(targetLabel)}</span>
+    </div>
+    <ol class="strength-exercise-progress-detail-sessions">${sessionMarkup}</ol>
+  `;
 }
 
 function formatStrengthReviewSetSequence(sets) {

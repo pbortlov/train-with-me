@@ -769,6 +769,26 @@ body {
   color: var(--text);
 }
 
+.strength-exercise-progress-open {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--panel-title);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.strength-exercise-progress-open:hover,
+.strength-exercise-progress-open:focus-visible,
+.strength-exercise-progress-open.is-selected {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .strength-exercise-progress-list-heading span,
 .strength-exercise-progress-list-meta,
 .strength-exercise-progress-list-status {
@@ -781,6 +801,49 @@ body {
   content: "•";
   margin-right: 0.55rem;
   color: var(--border);
+}
+
+.strength-exercise-progress-detail {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.strength-exercise-progress-detail-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.strength-exercise-progress-detail-heading h4,
+.strength-exercise-progress-detail-heading p {
+  margin: 0;
+}
+
+.strength-exercise-progress-detail-heading p,
+.strength-exercise-progress-detail-heading > span,
+.strength-exercise-progress-detail-sessions {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.strength-exercise-progress-detail-sessions {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding-left: 1.35rem;
+}
+
+.strength-exercise-progress-detail-sessions li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.strength-exercise-progress-detail-sessions li span:nth-child(2) {
+  color: var(--text);
 }
 
 .strength-progression-review-row {
