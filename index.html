@@ -681,6 +681,16 @@
           <div id="progress-hub-breakdown" class="progress-hub-breakdown"></div>
         </article>
 
+        <nav class="progress-activity-switcher" aria-label="Progress activity">
+          <span class="progress-activity-switcher-label">Show progress for</span>
+          <div class="progress-activity-switcher-buttons" role="group">
+            <button type="button" class="ghost-button is-active" data-progress-activity="strength" aria-pressed="true">Strength</button>
+            <button type="button" class="ghost-button" data-progress-activity="run" aria-pressed="false">Running</button>
+            <button type="button" class="ghost-button" data-progress-activity="sprint" aria-pressed="false">Sprint</button>
+          </div>
+          <p id="progress-activity-status" class="hint" aria-live="polite">Strength progress selected.</p>
+        </nav>
+
         <details class="card review-disclosure stats-secondary-section" id="review-disclosure">
           <summary>Plan vs actual</summary>
           <p class="hint">Use this when you want to inspect what changed.</p>
@@ -841,6 +851,12 @@
           <div id="strength-progression-review"></div>
         </article>
 
+        <article class="card stats-detail-section strength-exercise-progress-list-card" id="strength-exercise-progress-list-section">
+          <h3>Strength exercises</h3>
+          <p class="hint">Every strength exercise with recorded history. Select an exercise to review its logged sessions.</p>
+          <div id="strength-exercise-progress-list"></div>
+        </article>
+
         <article class="card stats-detail-section running-insights-card" id="running-insights-section">
           <h3>Running</h3>
           <p class="hint">Distance, pace, and recent run proof.</p>
@@ -923,8 +939,11 @@
               <button type="button" id="clear-filters">Clear Filters</button>
             </div>
           </details>
+          <p id="progress-filter-summary" class="progress-filter-summary" aria-live="polite"></p>
           <p id="charts-status" class="hint"></p>
-          <div class="charts-grid">
+          <details class="stats-chart-review" id="activity-chart-details">
+            <summary>Open detailed charts</summary>
+            <div class="charts-grid">
             <article class="chart-card activity-chart-card">
               <h4>Running pace by entry</h4>
               <div class="chart-viewport">
@@ -952,7 +971,8 @@
                 </table>
               </div>
             </article>
-          </div>
+            </div>
+          </details>
         </article>
       </section>
 

@@ -636,6 +636,85 @@ body {
   color: #a9bdcb;
 }
 
+.progress-activity-switcher {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 0.9rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+}
+
+.progress-activity-switcher-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.progress-activity-switcher-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.progress-activity-switcher-buttons .ghost-button.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0.45rem rgb(0 229 255 / 20%);
+}
+
+.progress-empty-state {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.7rem;
+  background: rgb(0 229 255 / 3%);
+}
+
+.progress-empty-state strong {
+  color: var(--panel-title);
+}
+
+.progress-empty-state span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.progress-empty-state .ghost-button {
+  justify-self: start;
+}
+
+.progress-filter-summary {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid var(--accent);
+  background: rgb(0 229 255 / 4%);
+  color: var(--panel-hint);
+  font-size: 0.82rem;
+}
+
+.stats-chart-review {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: rgb(8 17 33 / 55%);
+}
+
+.stats-chart-review > summary {
+  padding: 0.7rem 0.8rem;
+  color: var(--panel-title);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stats-chart-review[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-chart-review .charts-grid {
+  padding: 0.8rem;
+}
+
 .progress-hub-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -736,6 +815,131 @@ body {
 #strength-progression-review {
   display: grid;
   gap: 0.75rem;
+}
+
+.strength-exercise-progress-list-card {
+  border-color: var(--surface-program-panel-border);
+}
+
+#strength-exercise-progress-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.strength-exercise-progress-list-row {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card-strong);
+}
+
+.strength-exercise-progress-list-heading,
+.strength-exercise-progress-list-meta,
+.strength-exercise-progress-list-status {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.strength-exercise-progress-list-heading strong {
+  color: var(--text);
+}
+
+.strength-exercise-progress-open {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--panel-title);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.strength-exercise-progress-open:hover,
+.strength-exercise-progress-open:focus-visible,
+.strength-exercise-progress-open.is-selected {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.strength-exercise-progress-list-heading span,
+.strength-exercise-progress-list-meta,
+.strength-exercise-progress-list-status {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.strength-exercise-progress-list-meta span + span::before,
+.strength-exercise-progress-list-status span + span::before {
+  content: "•";
+  margin-right: 0.55rem;
+  color: var(--border);
+}
+
+.strength-exercise-progress-detail {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  padding: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.strength-exercise-progress-detail-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.strength-exercise-progress-detail-heading h4,
+.strength-exercise-progress-detail-heading p {
+  margin: 0;
+}
+
+.strength-exercise-progress-detail-heading p,
+.strength-exercise-progress-detail-heading > span,
+.strength-exercise-progress-detail-sessions {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.strength-exercise-progress-detail-summary {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.65rem;
+  border-left: 3px solid var(--success);
+  background: rgb(109 255 92 / 6%);
+}
+
+.strength-exercise-progress-detail-summary strong {
+  color: var(--success);
+}
+
+.strength-exercise-progress-detail-summary span {
+  color: var(--accent);
+  font-size: 0.84rem;
+}
+
+.strength-exercise-progress-detail-sessions {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding-left: 1.35rem;
+}
+
+.strength-exercise-progress-detail-sessions li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.strength-exercise-progress-detail-sessions li span:nth-child(2) {
+  color: var(--text);
 }
 
 .strength-progression-review-row {

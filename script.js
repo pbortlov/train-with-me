@@ -79,6 +79,7 @@ import {
   listSprintProfileOptions,
 } from "./src/domain/sprint-performance";
 import { buildStrengthInsights } from "./src/domain/strength-insights";
+import { buildStrengthExerciseProgressList } from "./src/domain/strength-exercise-progress";
 import { findStrengthLastPerformance } from "./src/domain/strength-last-performance";
 import {
   buildStrengthProgressionReview,
@@ -170,10 +171,12 @@ const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
 const filterStrengthLoadInput = document.getElementById("filter-strength-load");
 const chartsStatusEl = document.getElementById("charts-status");
+const progressFilterSummaryEl = document.getElementById("progress-filter-summary");
 const strengthInsightsSummaryEl = document.getElementById("strength-insights-summary");
 const strengthInsightsDetailsEl = document.getElementById("strength-insights-details");
 const strengthInsightsBodyEl = document.getElementById("strength-insights-body");
 const strengthProgressionReviewEl = document.getElementById("strength-progression-review");
+const strengthExerciseProgressListEl = document.getElementById("strength-exercise-progress-list");
 const strengthGoalExerciseInput = document.getElementById("goal-strength-exercise");
 const strengthGoalRepsInput = document.getElementById("goal-strength-reps");
 const strengthGoalVariationInput = document.getElementById("goal-strength-variation");
@@ -207,6 +210,7 @@ const strengthHighestBody = document.getElementById("strength-highest-body");
 const runDistanceChartCanvas = document.getElementById("run-distance-chart");
 const sprintChartCanvas = document.getElementById("sprint-chart");
 const chartsGridEl = document.querySelector(".charts-grid");
+const activityChartDetailsEl = document.getElementById("activity-chart-details");
 const strengthChartCard = strengthHighestBody ? strengthHighestBody.closest(".chart-card") : null;
 const runDistanceChartCard = runDistanceChartCanvas ? runDistanceChartCanvas.closest(".chart-card") : null;
 const sprintChartCard = sprintChartCanvas ? sprintChartCanvas.closest(".chart-card") : null;
@@ -357,6 +361,9 @@ const progressHubHighlightEl = document.getElementById("progress-hub-highlight")
 const progressHubSummaryEl = document.getElementById("progress-hub-summary");
 const progressHubBreakdownEl = document.getElementById("progress-hub-breakdown");
 const progressHubActions = document.querySelectorAll("[data-progress-jump]");
+const progressActivityButtons = document.querySelectorAll("[data-progress-activity]");
+const progressActivityStatusEl = document.getElementById("progress-activity-status");
+const statsViewPanel = document.querySelector('.view-panel[data-view="stats"]');
 const programProgressSelect = document.getElementById("program-progress-select");
 const programExerciseSortInput = document.getElementById("program-exercise-sort");
 const programProgressSummaryEl = document.getElementById("program-progress-summary");
@@ -437,6 +444,8 @@ let draftPlannedSprintBlocks = [];
 let draftStrengthExercises = [];
 let draftCurrentStrengthSets = [];
 let strengthProgressionExerciseKey = "";
+let strengthExerciseProgressSelectionKey = "";
+let progressActivityView = "strength";
 let progressFilters = {
   activity: "all",
   fromDate: "",
@@ -796,6 +805,35 @@ progressHubActions.forEach((button) => {
   button.addEventListener("click", () => {
     scrollToProgressSection(button.dataset.progressJump || "");
   });
+});
+progressActivityButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    progressActivityView = button.dataset.progressActivity || "strength";
+    syncProgressActivityView();
+  });
+});
+statsViewPanel?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const actionButton = target.closest("[data-progress-empty-action]");
+  if (!(actionButton instanceof HTMLElement)) {
+    return;
+  }
+  selectLoggingActivity(actionButton.dataset.progressEmptyAction || "strength", { focus: true });
+});
+addSafeEventListener(strengthExerciseProgressListEl, "click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const button = target.closest("[data-strength-progress-key]");
+  if (!(button instanceof HTMLElement)) {
+    return;
+  }
+  strengthExerciseProgressSelectionKey = decodeURIComponent(button.dataset.strengthProgressKey || "");
+  renderStrengthExerciseProgressList();
 });
 addSafeEventListener(runDistanceInput, "input", () => {
   if (toNumberOrNull(runDistanceInput.value) > 0) {
@@ -1166,9 +1204,11 @@ function render() {
   renderGoals();
   renderProgressHub();
   renderStrengthInsights();
+  renderStrengthExerciseProgressList();
   renderStrengthProgressionReview();
   renderRunningInsights();
   renderSprintInsights();
+  syncProgressActivityView();
   renderPlannerSummary();
   renderCalendar();
   renderCalendarSessionDetail();
@@ -1781,7 +1821,55 @@ function formatProgressHubStrengthSnapshot(snapshot) {
   return formatActualProgressSnapshot(snapshot) || "logged";
 }
 
+function syncProgressActivityView() {
+  const sectionIdsByActivity = {
+    strength: [
+      "program-progress-section",
+      "strength-insights-section",
+      "strength-progression-review-section",
+      "strength-exercise-progress-list-section",
+    ],
+    run: ["running-insights-section"],
+    sprint: ["sprint-insights-section"],
+  };
+  const activeSectionIds = new Set(sectionIdsByActivity[progressActivityView] || sectionIdsByActivity.strength);
+  [
+    "program-progress-section",
+    "strength-insights-section",
+    "strength-progression-review-section",
+    "strength-exercise-progress-list-section",
+    "running-insights-section",
+    "sprint-insights-section",
+  ].forEach((id) => {
+    document.getElementById(id)?.classList.toggle("is-hidden", !activeSectionIds.has(id));
+  });
+  progressActivityButtons.forEach((button) => {
+    const isActive = button.dataset.progressActivity === progressActivityView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+  if (progressActivityStatusEl) {
+    const label = progressActivityView === "run" ? "Running" : progressActivityView === "sprint" ? "Sprint" : "Strength";
+    progressActivityStatusEl.textContent = `${label} progress selected. Use the activity cards below to review your history.`;
+  }
+}
+
+function renderProgressEmptyState(activity, title, message) {
+  const label = activity === "run" ? "run" : activity === "sprint" ? "sprint" : "strength";
+  return `
+    <div class="progress-empty-state">
+      <strong>${escapeHtml(title)}</strong>
+      <span>${escapeHtml(message)}</span>
+      <button type="button" class="ghost-button" data-progress-empty-action="${label}">Log a ${label} workout</button>
+    </div>
+  `;
+}
+
 function scrollToProgressSection(target) {
+  if (target === "strength" || target === "running" || target === "sprint") {
+    progressActivityView = target === "running" ? "run" : target;
+    syncProgressActivityView();
+  }
   const sectionByTarget = {
     adherence: document.getElementById("adherence-section"),
     goals: document.getElementById("goals-section"),
@@ -1807,6 +1895,9 @@ function scrollToProgressSection(target) {
     const detail = detailByTarget[target];
     if (detail instanceof HTMLDetailsElement) {
       detail.setAttribute("open", "");
+    }
+    if (target === "activity" && activityChartDetailsEl instanceof HTMLDetailsElement) {
+      activityChartDetailsEl.open = true;
     }
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -2975,6 +3066,9 @@ function compareWorkoutsByRecentDate(a, b) {
 }
 
 function renderCharts() {
+  if (progressFilterSummaryEl) {
+    progressFilterSummaryEl.textContent = formatProgressFilterSummary();
+  }
   if (typeof Chart === "undefined") {
     chartsStatusEl.textContent = "Charts unavailable (Chart.js failed to load).";
     return;
@@ -3022,6 +3116,23 @@ function renderCharts() {
   chartsStatusEl.textContent = hasVisibleCharts
     ? ""
     : "No entries match these filters.";
+}
+
+function formatProgressFilterSummary() {
+  const activityLabel = progressFilters.activity === "all"
+    ? "all activities"
+    : progressFilters.activity === "run"
+      ? "running"
+      : progressFilters.activity === "sprint"
+        ? "sprinting"
+        : "strength";
+  const dateLabel = progressFilters.fromDate || progressFilters.toDate
+    ? ` from ${progressFilters.fromDate || "the beginning"} to ${progressFilters.toDate || "today"}`
+    : "";
+  const loadLabel = progressFilters.strengthLoad !== "all"
+    ? ` · ${progressFilters.strengthLoad === "bodyweight" ? "bodyweight" : progressFilters.strengthLoad} load`
+    : "";
+  return `Evidence filters: ${activityLabel}${dateLabel}${loadLabel}.`;
 }
 
 function renderStrengthHighestWeights(rows) {
@@ -3162,6 +3273,90 @@ function renderStrengthProgressionReview() {
   }).join("");
 }
 
+function renderStrengthExerciseProgressList() {
+  if (!strengthExerciseProgressListEl) {
+    return;
+  }
+
+  const rows = buildStrengthExerciseProgressList(workouts, strengthProgression.profiles);
+  if (!rows.length) {
+    strengthExerciseProgressListEl.innerHTML = renderProgressEmptyState("strength", "No strength history yet", "Log a strength workout to start building exercise progress.");
+    return;
+  }
+
+  if (!rows.some((row) => row.key === strengthExerciseProgressSelectionKey)) {
+    strengthExerciseProgressSelectionKey = rows[0].key;
+  }
+
+  strengthExerciseProgressListEl.innerHTML = rows.map((row) => {
+    const identity = [
+      row.variation,
+      row.equipment,
+      row.loadType === "bodyweight" ? "bodyweight" : row.loadType === "band" ? "band" : "kg",
+    ].filter(Boolean).join(" · ");
+    const status = row.latestStatus === "pain-excluded"
+      ? "Progression excluded: pain/discomfort"
+      : row.latestStatus === "session-excluded"
+        ? "Recorded, not comparable"
+        : "Comparable history";
+    const target = row.hasSavedTarget ? "Saved target available" : "No saved target yet";
+    return `
+      <article class="strength-exercise-progress-list-row">
+        <div class="strength-exercise-progress-list-heading">
+          <button type="button" class="strength-exercise-progress-open${row.key === strengthExerciseProgressSelectionKey ? " is-selected" : ""}" data-strength-progress-key="${encodeURIComponent(row.key)}">${escapeHtml(row.exercise)}</button>
+          <span>${escapeHtml(identity)}</span>
+        </div>
+        <div class="strength-exercise-progress-list-meta">
+          <span>${row.sessionCount} ${row.sessionCount === 1 ? "session" : "sessions"}</span>
+          <span>${row.setCount} ${row.setCount === 1 ? "set" : "sets"}</span>
+          <span>${row.latestDate ? escapeHtml(formatHumanDate(row.latestDate)) : "No date"}</span>
+        </div>
+        <div class="strength-exercise-progress-list-status">
+          <span>${escapeHtml(status)}</span>
+          <span>${escapeHtml(target)}</span>
+        </div>
+        ${row.key === strengthExerciseProgressSelectionKey ? renderStrengthExerciseProgressDetail(row) : ""}
+      </article>
+    `;
+  }).join("");
+
+}
+
+function renderStrengthExerciseProgressDetail(selected) {
+  const targetLabel = selected.savedTarget
+    ? `Saved target · ${selected.savedTarget.targetSets} × ${selected.savedTarget.repMin}–${selected.savedTarget.repMax} @ ${formatNumber(selected.savedTarget.workingWeight)} kg`
+    : "No saved target yet";
+  const latestProgressSession = selected.sessions.slice().reverse().find((session) => session.progressFromPrevious);
+  const progress = latestProgressSession?.progressFromPrevious;
+  const progressText = progress && (progress.promotedSetCount || progress.repGainCount)
+    ? `🎉 ${progress.promotedSetCount ? `+${progress.promotedSetCount} promoted ${progress.promotedSetCount === 1 ? "set" : "sets"}` : ""}${progress.promotedSetCount && progress.repGainCount ? "; " : ""}${progress.repGainCount ? `+${progress.repGainCount} rep ${progress.repGainCount === 1 ? "gain" : "gains"}` : ""}`
+    : "Latest comparable session recorded";
+  const suggestionText = selected.pendingSuggestion
+    ? `🎯 Suggested next target · ${selected.pendingSuggestion.targetSets} × ${selected.pendingSuggestion.reps} @ ${formatNumber(selected.pendingSuggestion.weight)} kg`
+    : "";
+  const sessionMarkup = selected.sessions.slice().reverse().map((session) => `
+    <li>
+      <span>${session.date ? escapeHtml(formatHumanDate(session.date)) : "Undated session"}</span>
+      <span>${escapeHtml(session.sets.filter((set) => set.kind !== "warmup").map((set) => `${formatNumber(set.reps)} reps @ ${formatStrengthLoad(set)}`).join(" · ")) || "No working sets"}</span>
+      <span>${session.status === "comparable" ? "Comparable" : session.status === "pain-excluded" ? "Pain/discomfort excluded" : "Session excluded"}</span>
+    </li>
+  `).join("");
+  return `
+    <div class="strength-exercise-progress-detail-heading">
+      <div>
+        <h4>${escapeHtml(selected.exercise)}</h4>
+        <p>${escapeHtml([selected.variation, selected.equipment, selected.loadType].filter(Boolean).join(" · "))}</p>
+      </div>
+      <span>${escapeHtml(targetLabel)}</span>
+    </div>
+    <div class="strength-exercise-progress-detail-summary">
+      <strong>${escapeHtml(progressText)}</strong>
+      ${suggestionText ? `<span>${escapeHtml(suggestionText)}</span>` : ""}
+    </div>
+    <ol class="strength-exercise-progress-detail-sessions">${sessionMarkup}</ol>
+  `;
+}
+
 function formatStrengthReviewSetSequence(sets) {
   return sets
     .map((set) => `${formatNumber(set.reps)} × ${formatNumber(set.weight)} kg`)
@@ -3230,7 +3425,7 @@ function renderRunningInsights() {
         <span>${insights.totalDurationSeconds ? formatSecondsAsRunDuration(insights.totalDurationSeconds) : "-"}</span>
       </div>
     `
-    : "<p class=\"planner-empty\">Log a run to see running insights.</p>";
+    : renderProgressEmptyState("run", "No runs yet", "Log your first run to start tracking distance, duration, and pace.");
   runningInsightsBodyEl.innerHTML = insights.rows.length
     ? insights.rows
         .slice(0, 8)
@@ -3245,7 +3440,7 @@ function renderRunningInsights() {
           `,
         )
         .join("")
-    : "";
+    : `<tr><td colspan="4">${renderProgressEmptyState("run", "No run history", "Log a run to add the first entry.")}</td></tr>`;
 }
 
 function renderSprintInsights() {
@@ -3291,7 +3486,7 @@ function renderSprintInsights() {
         <span>${formatRecentSprintSessions(insights.rows)}</span>
       </div>
     `
-    : "<p class=\"planner-empty\">Log a sprint workout to see sprint insights.</p>";
+    : renderProgressEmptyState("sprint", "No sprints yet", "Log your first sprint session to compare distances and times.");
   sprintInsightsBodyEl.innerHTML = insights.bestByDistance.length
     ? insights.bestByDistance
         .map(
@@ -3304,7 +3499,7 @@ function renderSprintInsights() {
           `,
         )
         .join("")
-    : "";
+    : `<tr><td colspan="3">${renderProgressEmptyState("sprint", "No sprint history", "Log a sprint session to add the first entry.")}</td></tr>`;
   if (openSprintPerformanceButton) {
     openSprintPerformanceButton.disabled = insights.workoutCount === 0;
   }
