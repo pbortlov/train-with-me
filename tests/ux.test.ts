@@ -435,6 +435,8 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="manage-program-templates"');
     expect(index).toContain('<summary>Saved program templates</summary>');
     expect(styles).toContain('.manage-program-templates-content');
+    expect(script).toContain('getProgramWeekIndexForDate(instance.startDate, uiSettings.currentWeekStart)');
+    expect(script).toContain('Week ${currentWeek} of ${instance.durationWeeks}');
     expect(index).toContain('id="activity-chart-details"');
     expect(index).toContain('Open detailed charts');
     expect(script).toContain('activityChartDetailsEl.open = true');

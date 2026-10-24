@@ -1261,11 +1261,15 @@ function renderPlanProgramContext() {
   }
   const lifecycle = buildPhaseInstanceLifecycle(instance);
   const plannedCount = plannedSessions.filter((session) => session.phaseInstanceId === instance.id && session.status === "planned").length;
+  const currentWeek = getProgramWeekIndexForDate(instance.startDate, uiSettings.currentWeekStart);
+  const weekLabel = currentWeek == null
+    ? "Program week unavailable"
+    : `Week ${currentWeek} of ${instance.durationWeeks}`;
   planProgramContextContentEl.innerHTML = `
     <div class="plan-program-summary">
       <div>
         <strong>${escapeHtml(instance.templateName || "Strength program")}</strong>
-        <span>${escapeHtml(lifecycle.status.label)} · starts ${escapeHtml(formatHumanDate(lifecycle.startDate))}</span>
+        <span>${escapeHtml(lifecycle.status.label)} · ${escapeHtml(weekLabel)} · starts ${escapeHtml(formatHumanDate(lifecycle.startDate))}</span>
       </div>
       <span>${plannedCount} planned ${plannedCount === 1 ? "session" : "sessions"}</span>
     </div>
