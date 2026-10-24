@@ -268,6 +268,8 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="activity-preferences-form"');
     expect(index).toContain('data-activity-preference="strength"');
     expect(script).toContain("function saveActivityPreferencesFromSettings()");
+    expect(script).toContain("function syncActivityVisibility()");
+    expect(script).toContain('data-today-action=\\"quick-log\\"');
   });
 
   it("turns Today into a launchpad with a direct stats jump", () => {

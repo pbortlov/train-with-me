@@ -1234,6 +1234,7 @@ historyBody.addEventListener("click", (event) => {
 });
 
 function render() {
+  syncActivityVisibility();
   renderToday();
   renderSummary();
   renderCharts();
@@ -5379,6 +5380,24 @@ function syncActivityPreferenceControls() {
   });
 }
 
+function syncActivityVisibility() {
+  const enabled = new Set(uiSettings.activityPreferences.enabled);
+  [
+    ...document.querySelectorAll("[data-today-action=\"quick-log\"][data-activity]"),
+    ...document.querySelectorAll("[data-log-activity]"),
+    ...document.querySelectorAll("[data-progress-activity]"),
+    ...document.querySelectorAll("[data-goal-activity]"),
+  ].forEach((element) => {
+    const activity = element.dataset.activity || element.dataset.logActivity || element.dataset.progressActivity || element.dataset.goalActivity;
+    const visible = enabled.has(activity === "running" ? "run" : activity);
+    element.hidden = !visible;
+    element.setAttribute("aria-hidden", visible ? "false" : "true");
+  });
+  if (!enabled.has(progressActivityView)) {
+    progressActivityView = uiSettings.activityPreferences.enabled[0];
+  }
+}
+
 function saveActivityPreferencesFromSettings() {
   const enabled = [...activityPreferenceInputs]
     .filter((input) => input.checked)
@@ -5396,6 +5415,8 @@ function saveActivityPreferencesFromSettings() {
     enabled: [...new Set(enabled)],
   };
   savePlannerCollections();
+  syncActivityVisibility();
+  syncProgressActivityView();
   if (activityPreferencesStatusEl) {
     activityPreferencesStatusEl.textContent = "Activities saved.";
   }
