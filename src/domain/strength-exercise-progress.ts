@@ -4,7 +4,11 @@ import {
   strengthExerciseKey,
   type StrengthSet,
 } from "./normalization";
-import type { StrengthProgressionProfile } from "./strength-progression";
+import {
+  buildStrengthSessionProgress,
+  type StrengthProgressionProfile,
+  type StrengthSessionProgress,
+} from "./strength-progression";
 
 export interface StrengthExerciseProgressWorkout {
   activity?: string;
@@ -32,6 +36,11 @@ export interface StrengthExerciseProgressRow {
     repMax: number;
     workingWeight: number;
   } | null;
+  pendingSuggestion: {
+    targetSets: number;
+    reps: number;
+    weight: number;
+  } | null;
   sessions: StrengthExerciseProgressSession[];
 }
 
@@ -39,6 +48,7 @@ export interface StrengthExerciseProgressSession {
   date: string;
   sets: StrengthSet[];
   status: StrengthExerciseProgressRow["latestStatus"];
+  progressFromPrevious: StrengthSessionProgress | null;
 }
 
 interface ExerciseOccurrence {
@@ -117,7 +127,23 @@ export function buildStrengthExerciseProgressList(
               workingWeight: profile.workingWeight,
             }
           : null,
-        sessions: ordered.map((entry) => ({ date: entry.date, sets: entry.sets, status: entry.status })),
+        sessions: ordered.map((entry, index) => ({
+          date: entry.date,
+          sets: entry.sets,
+          status: entry.status,
+          progressFromPrevious: index > 0
+            && ordered[index - 1].status === "comparable"
+            && entry.status === "comparable"
+            ? buildStrengthSessionProgress(ordered[index - 1].sets, entry.sets)
+            : null,
+        })),
+        pendingSuggestion: profile?.nextTargetSuggestion
+          ? {
+              targetSets: profile.nextTargetSuggestion.targetSets,
+              reps: profile.nextTargetSuggestion.reps,
+              weight: profile.nextTargetSuggestion.weight,
+            }
+          : null,
       };
     })
     .sort((left, right) =>

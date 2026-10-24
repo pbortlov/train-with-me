@@ -85,4 +85,34 @@ describe("strength exercise progress list", () => {
     expect(rows[0].hasSavedTarget).toBe(true);
     expect(rows[0].savedTarget).toEqual({ targetSets: 3, repMin: 5, repMax: 8, workingWeight: 100 });
   });
+
+  it("reports existing progression signals and pending suggestions without changing history", () => {
+    const rows = buildStrengthExerciseProgressList([
+      {
+        activity: "strength",
+        date: "2026-10-01",
+        strengthExercises: [{ name: "Deadlift", sets: [{ reps: 5, weight: 100 }, { reps: 5, weight: 100 }] }],
+      },
+      {
+        activity: "strength",
+        date: "2026-10-08",
+        strengthExercises: [{ name: "Deadlift", sets: [{ reps: 5, weight: 100 }, { reps: 5, weight: 105 }] }],
+      },
+    ], [{
+      key: "deadlift\u0000\u0000\u0000kg",
+      exercise: "Deadlift",
+      loadType: "kg",
+      goal: "strength",
+      targetSets: 2,
+      repMin: 5,
+      repMax: 8,
+      workingWeight: 100,
+      allowedJumps: [2.5],
+      nextTargetSuggestion: { targetSets: 2, reps: 5, weight: 102.5, increment: 2.5 },
+    }]);
+
+    expect(rows[0].sessions[1].progressFromPrevious).toEqual({ promotedSetCount: 1, repGainCount: 0 });
+    expect(rows[0].pendingSuggestion).toEqual({ targetSets: 2, reps: 5, weight: 102.5 });
+    expect(rows[0].sessions[0].sets[1].weight).toBe(100);
+  });
 });

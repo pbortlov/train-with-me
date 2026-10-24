@@ -830,6 +830,23 @@ body {
   font-size: 0.84rem;
 }
 
+.strength-exercise-progress-detail-summary {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.65rem;
+  border-left: 3px solid var(--success);
+  background: rgb(109 255 92 / 6%);
+}
+
+.strength-exercise-progress-detail-summary strong {
+  color: var(--success);
+}
+
+.strength-exercise-progress-detail-summary span {
+  color: var(--accent);
+  font-size: 0.84rem;
+}
+
 .strength-exercise-progress-detail-sessions {
   display: grid;
   gap: 0.55rem;

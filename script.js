@@ -3231,6 +3231,14 @@ function renderStrengthExerciseProgressDetail(selected) {
   const targetLabel = selected.savedTarget
     ? `Saved target · ${selected.savedTarget.targetSets} × ${selected.savedTarget.repMin}–${selected.savedTarget.repMax} @ ${formatNumber(selected.savedTarget.workingWeight)} kg`
     : "No saved target yet";
+  const latestProgressSession = selected.sessions.slice().reverse().find((session) => session.progressFromPrevious);
+  const progress = latestProgressSession?.progressFromPrevious;
+  const progressText = progress && (progress.promotedSetCount || progress.repGainCount)
+    ? `🎉 ${progress.promotedSetCount ? `+${progress.promotedSetCount} promoted ${progress.promotedSetCount === 1 ? "set" : "sets"}` : ""}${progress.promotedSetCount && progress.repGainCount ? "; " : ""}${progress.repGainCount ? `+${progress.repGainCount} rep ${progress.repGainCount === 1 ? "gain" : "gains"}` : ""}`
+    : "Latest comparable session recorded";
+  const suggestionText = selected.pendingSuggestion
+    ? `🎯 Suggested next target · ${selected.pendingSuggestion.targetSets} × ${selected.pendingSuggestion.reps} @ ${formatNumber(selected.pendingSuggestion.weight)} kg`
+    : "";
   const sessionMarkup = selected.sessions.slice().reverse().map((session) => `
     <li>
       <span>${session.date ? escapeHtml(formatHumanDate(session.date)) : "Undated session"}</span>
@@ -3245,6 +3253,10 @@ function renderStrengthExerciseProgressDetail(selected) {
         <p>${escapeHtml([selected.variation, selected.equipment, selected.loadType].filter(Boolean).join(" · "))}</p>
       </div>
       <span>${escapeHtml(targetLabel)}</span>
+    </div>
+    <div class="strength-exercise-progress-detail-summary">
+      <strong>${escapeHtml(progressText)}</strong>
+      ${suggestionText ? `<span>${escapeHtml(suggestionText)}</span>` : ""}
     </div>
     <ol class="strength-exercise-progress-detail-sessions">${sessionMarkup}</ol>
   `;
