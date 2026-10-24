@@ -1,9 +1,9 @@
 # Athlete Simplification Project: PR Roadmap
 
-- Updated: 2026-09-09
-- Project status: active; R01 in progress
-- Implementation progress: 0 of 11 steps delivered
-- Next implementation: R01 — compact strength logger
+- Updated: 2026-10-24
+- Project status: active; R07 ready for PR review
+- Implementation progress: 6 of 11 steps delivered
+- Next implementation: R08 — Plan and Manage programs
 - Baseline: [PR #69](https://github.com/pbortlov/train-with-me/pull/69), merged
 - Scope: the athlete doing strength, running, and sprinting
 - Product agreement: [decision record](../conversations/2026-09-09-athlete-simplification.md)
@@ -30,9 +30,9 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | R02 | `feat(logging): confirm draft sets and apply suggested targets` | Confirm actual sets; explicitly apply a suggestion to a draft | R01 | Merged — [#73](https://github.com/pbortlov/train-with-me/pull/73) |
 | R03 | `feat(strength): preserve progress on shortened workouts` | Select hurting exercises; celebrate unaffected completed work | R02 | Merged — [#74](https://github.com/pbortlov/train-with-me/pull/74) |
 | R04 | `feat(today): start and repeat workouts` | Start today's plan or repeat previous training | R03 | Merged — [#76](https://github.com/pbortlov/train-with-me/pull/76) |
-| R05 | `feat(goals): track exercise weight and rep goals` | Achieve a specific strength goal in one working set | R03; deliver after R04 | Implemented — ready for PR |
-| R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | In progress |
-| R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Planned |
+| R05 | `feat(goals): track exercise weight and rep goals` | Achieve a specific strength goal in one working set | R03; deliver after R04 | Merged — [#78](https://github.com/pbortlov/train-with-me/pull/78) |
+| R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | Merged — [#79](https://github.com/pbortlov/train-with-me/pull/79) |
+| R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Ready for PR — implementation complete |
 | R08 | `refactor(plan): combine calendar and program management` | See the week and active program before builder controls | R04; deliver after R07 | Planned |
 | R09 | `refactor(navigation): add today plan progress and settings` | Three main tabs with clear settings and history access | R07, R08 | Planned |
 | R10 | `feat(settings): choose training activities on first use` | Choose strength, running, and/or sprinting | R09 | Planned |
@@ -205,7 +205,7 @@ Acceptance checks:
 
 Docs: update ADR 0029 and goal-celebration documentation.
 
-## R07 — One Progress destination
+## R07 — One Progress destination (implementation complete; PR pending)
 
 Lead with recent improvements and offer Strength, Running, and Sprint views. For
 strength, place history, current target, pending suggestion, and trends on the
@@ -222,6 +222,19 @@ Acceptance checks:
   explain how to begin. Full history, editing, and deletion remain discoverable.
 
 Docs: update Stats/review ADRs and README. Preserve existing metric definitions.
+
+Implementation slices completed on the R07 branch:
+
+- All-exercise strength progress list using full exercise identity.
+- Inline exercise detail with exact session evidence, saved targets, and suggestions.
+- Existing progression signals for promoted sets and rep gains.
+- Activity switcher for Strength, Running, and Sprint.
+- Activity-specific empty states and visible evidence-filter context.
+- On-demand detailed chart review with the existing chart calculations unchanged.
+
+Validation: 198 tests passed, production build passed, and phone-width manual
+checks passed for the activity switcher, inline exercise detail, empty states,
+filters, and chart disclosure.
 
 ## R08 — Plan and Manage programs
 
