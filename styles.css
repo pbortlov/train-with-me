@@ -643,16 +643,32 @@ body {
 }
 
 .settings-preferences-card,
+.settings-activities-card,
 .settings-help-card {
   display: grid;
   gap: 0.65rem;
 }
 
 .settings-preferences-card h3,
+.settings-activities-card h3,
 .settings-help-card h3,
 .settings-preferences-card p,
+.settings-activities-card p,
 .settings-help-card p {
   margin-top: 0;
+}
+
+.activity-preferences-form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.activity-preferences-form .checkbox-label {
+  min-height: 2.5rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: rgb(255 255 255 / 3%);
 }
 
 .settings-install-panel {

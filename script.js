@@ -266,6 +266,9 @@ const cancelEditWorkoutButton = document.getElementById("cancel-edit-workout");
 const exerciseSuggestionsEl = document.getElementById("exercise-suggestions");
 const exerciseLibraryListEl = document.getElementById("exercise-library-list");
 const coachModeToggle = document.getElementById("coach-mode-toggle");
+const activityPreferencesForm = document.getElementById("activity-preferences-form");
+const activityPreferenceInputs = document.querySelectorAll("[data-activity-preference]");
+const activityPreferencesStatusEl = document.getElementById("activity-preferences-status");
 const viewNavButtons = document.querySelectorAll("[data-view-target]");
 const viewPanels = document.querySelectorAll(".view-panel");
 const todayViewPanel = document.querySelector('[data-view="today"]');
@@ -437,7 +440,12 @@ let uiSettings = load(STORAGE_KEY_UI_SETTINGS, {
   currentView: "today",
   coachMode: false,
   currentWeekStart: formatDateInput(startOfWeek(new Date())),
+  activityPreferences: {
+    configured: false,
+    enabled: ["strength", "run", "sprint"],
+  },
 });
+uiSettings.activityPreferences = normalizeActivityPreferences(uiSettings.activityPreferences);
 uiSettings.currentView = normalizeViewName(uiSettings.currentView);
 let editingWorkoutId = null;
 let draftSprintSets = [];
@@ -5214,6 +5222,7 @@ function strengthBestWeight(workout) {
 
 function initializeV2() {
   setCoachMode(uiSettings.coachMode);
+  syncActivityPreferenceControls();
   syncAllPhaseInstancePlannedSessionDates();
   bindV2Events();
   plannedSessionDateInput.value = formatDateInput(new Date());
@@ -5230,6 +5239,10 @@ function bindV2Events() {
 
   addSafeEventListener(coachModeToggle, "change", () => {
     setCoachMode(Boolean(coachModeToggle.checked));
+  });
+  addSafeEventListener(activityPreferencesForm, "submit", (event) => {
+    event.preventDefault();
+    saveActivityPreferencesFromSettings();
   });
   addSafeEventListener(prevWeekButton, "click", () => shiftCurrentWeek(-7));
   addSafeEventListener(nextWeekButton, "click", () => shiftCurrentWeek(7));
@@ -5347,6 +5360,45 @@ function normalizeViewName(view) {
     return "stats";
   }
   return ["today", "calendar", "phases", "stats", "settings", "data"].includes(view) ? view : "today";
+}
+
+function normalizeActivityPreferences(value) {
+  const enabled = Array.isArray(value?.enabled)
+    ? value.enabled.filter((activity) => ["strength", "run", "sprint"].includes(activity))
+    : ["strength", "run", "sprint"];
+  return {
+    configured: Boolean(value?.configured),
+    enabled: [...new Set(enabled)].length ? [...new Set(enabled)] : ["strength", "run", "sprint"],
+  };
+}
+
+function syncActivityPreferenceControls() {
+  const enabled = new Set(uiSettings.activityPreferences.enabled);
+  activityPreferenceInputs.forEach((input) => {
+    input.checked = enabled.has(input.dataset.activityPreference || "");
+  });
+}
+
+function saveActivityPreferencesFromSettings() {
+  const enabled = [...activityPreferenceInputs]
+    .filter((input) => input.checked)
+    .map((input) => input.dataset.activityPreference)
+    .filter((activity) => ["strength", "run", "sprint"].includes(activity));
+  if (!enabled.length) {
+    if (activityPreferencesStatusEl) {
+      activityPreferencesStatusEl.textContent = "Keep at least one activity selected.";
+    }
+    syncActivityPreferenceControls();
+    return;
+  }
+  uiSettings.activityPreferences = {
+    configured: true,
+    enabled: [...new Set(enabled)],
+  };
+  savePlannerCollections();
+  if (activityPreferencesStatusEl) {
+    activityPreferencesStatusEl.textContent = "Activities saved.";
+  }
 }
 
 function setCoachMode(enabled) {

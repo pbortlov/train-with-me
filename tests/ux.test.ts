@@ -261,6 +261,15 @@ describe("local-first UX guidance", () => {
     expect(index).not.toContain('data-view-target="review"');
   });
 
+  it("keeps activity preferences backward-compatible with all activities enabled by default", () => {
+    expect(script).toContain("activityPreferences");
+    expect(script).toContain('enabled: ["strength", "run", "sprint"]');
+    expect(script).toContain("function normalizeActivityPreferences(value)");
+    expect(index).toContain('id="activity-preferences-form"');
+    expect(index).toContain('data-activity-preference="strength"');
+    expect(script).toContain("function saveActivityPreferencesFromSettings()");
+  });
+
   it("turns Today into a launchpad with a direct stats jump", () => {
     expect(index).toContain('class="card today-launchpad"');
     expect(index).toContain('data-today-action="open-stats"');

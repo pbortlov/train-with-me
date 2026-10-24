@@ -1098,6 +1098,19 @@
           <p class="hint">Show extra coaching and implementation detail when you want it.</p>
         </article>
 
+        <article class="card settings-activities-card" aria-labelledby="settings-activities-heading">
+          <p class="today-eyebrow">Activities</p>
+          <h3 id="settings-activities-heading">What do you train?</h3>
+          <p class="hint">Choose the activities you want to keep close at hand. Your existing history is always preserved.</p>
+          <form id="activity-preferences-form" class="activity-preferences-form">
+            <label class="checkbox-label"><input type="checkbox" data-activity-preference="strength" /> Strength</label>
+            <label class="checkbox-label"><input type="checkbox" data-activity-preference="run" /> Running</label>
+            <label class="checkbox-label"><input type="checkbox" data-activity-preference="sprint" /> Sprinting</label>
+            <button type="submit">Save activities</button>
+          </form>
+          <p id="activity-preferences-status" class="hint" aria-live="polite"></p>
+        </article>
+
         <article class="card settings-help-card" aria-labelledby="settings-help-heading">
           <p class="today-eyebrow">Help and safety</p>
           <h3 id="settings-help-heading">Train locally, protect your history</h3>
