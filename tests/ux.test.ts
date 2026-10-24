@@ -432,6 +432,9 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('data-program-action="back-to-plan"');
     expect(script).toContain('target.dataset.programAction !== "back-to-plan"');
     expect(styles).toContain('.manage-programs-heading');
+    expect(index).toContain('id="manage-program-templates"');
+    expect(index).toContain('<summary>Saved program templates</summary>');
+    expect(styles).toContain('.manage-program-templates-content');
     expect(index).toContain('id="activity-chart-details"');
     expect(index).toContain('Open detailed charts');
     expect(script).toContain('activityChartDetailsEl.open = true');

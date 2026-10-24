@@ -600,6 +600,18 @@ body {
   margin-top: 0;
 }
 
+.manage-program-templates > summary {
+  color: var(--panel-title);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.manage-program-templates-content {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
 .plan-program-summary span,
 .plan-program-empty span {
   color: var(--muted);
