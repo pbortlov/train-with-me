@@ -5363,7 +5363,10 @@ function syncViewState() {
     panel.classList.toggle("is-hidden", panel.dataset.view !== uiSettings.currentView);
   });
   viewNavButtons.forEach((button) => {
-    const isActive = button.dataset.viewTarget === uiSettings.currentView;
+    const isSettingsDestination = ["settings", "phases", "data"].includes(uiSettings.currentView);
+    const isActive = isSettingsDestination
+      ? button.dataset.viewTarget === "settings"
+      : button.dataset.viewTarget === uiSettings.currentView;
     button.classList.toggle("is-active", isActive);
     if (isActive) {
       button.setAttribute("aria-current", "page");

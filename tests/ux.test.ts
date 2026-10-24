@@ -439,6 +439,7 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('data-settings-action="manage"');
     expect(index).toContain('data-settings-action="data"');
     expect(script).toContain('"settings", "data"].includes(view)');
+    expect(script).toContain('["settings", "phases", "data"].includes(uiSettings.currentView)');
     expect(styles).toContain('.settings-tool-grid');
     expect(script).toContain('getProgramWeekIndexForDate(instance.startDate, uiSettings.currentWeekStart)');
     expect(script).toContain('Week ${currentWeek} of ${instance.durationWeeks}');
