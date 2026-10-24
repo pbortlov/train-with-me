@@ -557,6 +557,49 @@ body {
   box-shadow: var(--surface-program-panel-shadow);
 }
 
+.plan-program-context-card {
+  border-color: var(--surface-program-instance-border);
+  background: var(--surface-program-instance-bg);
+}
+
+.plan-program-context-header,
+.plan-program-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.plan-program-context-header h3,
+.plan-program-context-header p {
+  margin-top: 0;
+}
+
+.plan-program-summary {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: rgb(8 17 33 / 55%);
+}
+
+.plan-program-summary div,
+.plan-program-empty {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.plan-program-summary span,
+.plan-program-empty span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.plan-program-empty {
+  padding: 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.7rem;
+}
+
 .progress-hub-header {
   display: flex;
   justify-content: space-between;

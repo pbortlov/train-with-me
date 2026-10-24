@@ -277,6 +277,7 @@ const plannerSummaryEl = document.getElementById("planner-summary");
 const calendarMomentumEl = document.getElementById("calendar-momentum");
 const calendarWeekLabelEl = document.getElementById("calendar-week-label");
 const calendarGridEl = document.getElementById("calendar-grid");
+const planProgramContextContentEl = document.getElementById("plan-program-context-content");
 const calendarSessionDialog = document.getElementById("calendar-session-dialog");
 const calendarSessionDetailEl = document.getElementById("calendar-session-detail");
 const plannedRunEditDialog = document.getElementById("planned-run-edit-dialog");
@@ -530,6 +531,14 @@ setAddTrainingMode("log");
 syncLoggingActivityButtons();
 syncLogDateButtons();
 render();
+
+document.querySelector('[data-view="calendar"]')?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || target.dataset.planAction !== "manage-programs") {
+    return;
+  }
+  setCurrentView("phases");
+});
 
 workoutForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -1211,6 +1220,7 @@ function render() {
   syncProgressActivityView();
   renderPlannerSummary();
   renderCalendar();
+  renderPlanProgramContext();
   renderCalendarSessionDetail();
   renderPhaseTemplates();
   renderProgramTemplatePicker();
@@ -1223,6 +1233,36 @@ function render() {
   renderAdherenceStats();
   renderProgramProgress();
   syncViewState();
+}
+
+function renderPlanProgramContext() {
+  if (!planProgramContextContentEl) {
+    return;
+  }
+  const instance = phaseInstances.find((candidate) => {
+    const lifecycle = buildPhaseInstanceLifecycle(candidate);
+    return lifecycle.status.code === "in-progress" || lifecycle.status.code === "shifted" || lifecycle.status.code === "on-track";
+  }) || phaseInstances[0];
+  if (!instance) {
+    planProgramContextContentEl.innerHTML = `
+      <div class="plan-program-empty">
+        <strong>No active program scheduled</strong>
+        <span>Create or schedule a strength program when you are ready.</span>
+      </div>
+    `;
+    return;
+  }
+  const lifecycle = buildPhaseInstanceLifecycle(instance);
+  const plannedCount = plannedSessions.filter((session) => session.phaseInstanceId === instance.id && session.status === "planned").length;
+  planProgramContextContentEl.innerHTML = `
+    <div class="plan-program-summary">
+      <div>
+        <strong>${escapeHtml(instance.templateName || "Strength program")}</strong>
+        <span>${escapeHtml(lifecycle.status.label)} · starts ${escapeHtml(formatHumanDate(lifecycle.startDate))}</span>
+      </div>
+      <span>${plannedCount} planned ${plannedCount === 1 ? "session" : "sessions"}</span>
+    </div>
+  `;
 }
 
 function renderToday() {
