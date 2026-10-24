@@ -31,9 +31,9 @@
         </div>
         <nav class="view-nav" aria-label="Main navigation">
           <button type="button" class="ghost-button nav-button" data-view-target="today">Today</button>
-          <button type="button" class="ghost-button nav-button" data-view-target="calendar">Calendar</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="calendar">Plan</button>
           <button type="button" class="ghost-button nav-button" data-view-target="stats">Stats</button>
-          <button type="button" class="ghost-button nav-button" data-view-target="phases">Programs</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="phases">Manage</button>
           <button type="button" class="ghost-button nav-button" data-view-target="data">Data</button>
         </nav>
       </header>
@@ -94,9 +94,9 @@
         <article class="card calendar-launchpad">
           <div class="calendar-toolbar">
             <div class="calendar-launchpad-copy">
-              <p class="today-eyebrow">Calendar</p>
+              <p class="today-eyebrow">Plan</p>
               <h2>Week view</h2>
-              <p class="hint">See the whole week, choose the day, and keep the plan close to the action.</p>
+              <p class="hint">See the week, active program, and planned training together.</p>
             </div>
             <div class="calendar-nav">
               <button type="button" class="ghost-button" id="prev-week">Previous week</button>
@@ -110,6 +110,17 @@
           <div class="calendar-layout">
             <div id="calendar-grid" class="calendar-grid"></div>
           </div>
+        </article>
+
+        <article class="card plan-program-context-card" id="plan-program-context">
+          <div class="plan-program-context-header">
+            <div>
+              <h3>Active program</h3>
+              <p class="hint">Your scheduled strength program stays close to the week view.</p>
+            </div>
+            <button type="button" class="ghost-button" data-plan-action="manage-programs">Manage programs</button>
+          </div>
+          <div id="plan-program-context-content"></div>
         </article>
 
         <article class="card add-training-card">
@@ -534,11 +545,17 @@
 
       <section class="view-panel" data-view="phases">
         <article class="card">
-          <h2>Programs</h2>
-          <p class="hint">
-            Manage scheduled strength programs first, then inspect or schedule saved templates. Create or import a new
-            program when you need to change the reusable structure.
-          </p>
+          <div class="manage-programs-heading">
+            <div>
+              <p class="today-eyebrow">Manage programs</p>
+              <h2>Programs</h2>
+              <p class="hint">
+                Manage scheduled strength programs first, then inspect or schedule saved templates. Create or import a new
+                program when you need to change the reusable structure.
+              </p>
+            </div>
+            <button type="button" class="ghost-button" data-program-action="back-to-plan">Back to Plan</button>
+          </div>
         </article>
 
         <article class="card">
@@ -556,7 +573,9 @@
           </div>
         </article>
 
-        <article class="card">
+        <details class="card manage-program-templates" id="manage-program-templates">
+          <summary>Saved program templates</summary>
+          <div class="manage-program-templates-content">
           <h3>Saved program templates</h3>
           <p class="hint">Reusable templates you can duplicate, edit, or load into the builder.</p>
           <p class="hint">Export or import reusable templates as a separate JSON file. This does not touch workouts, goals, planned sessions, or UI settings.</p>
@@ -578,7 +597,8 @@
             />
           </label>
           <div id="phase-template-list" class="phase-list"></div>
-        </article>
+          </div>
+        </details>
 
         <article class="card">
           <details id="phase-import-details" class="phase-import-details">

@@ -297,7 +297,7 @@ describe("local-first UX guidance", () => {
   it("makes Calendar the weekly working surface with a momentum strip", () => {
     expect(index).toContain('class="card calendar-launchpad"');
     expect(index).toContain('id="calendar-momentum"');
-    expect(index).toContain('See the whole week, choose the day, and keep the plan close to the action.');
+    expect(index).toContain('See the week, active program, and planned training together.');
     expect(index).toContain('<details class="add-training-plan-details" id="planned-session-drawer">');
     expect(index).toContain('<summary>Plan session</summary>');
     expect(index).toContain("Moves this training day and future matching program days by the same day offset.");
@@ -424,6 +424,19 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="progress-filter-summary"');
     expect(script).toContain('function formatProgressFilterSummary()');
     expect(styles).toContain('.progress-empty-state');
+    expect(index).toContain('data-view-target="calendar">Plan</button>');
+    expect(index).toContain('id="plan-program-context"');
+    expect(script).toContain('function renderPlanProgramContext()');
+    expect(styles).toContain('.plan-program-context-card');
+    expect(index).toContain('data-view-target="phases">Manage</button>');
+    expect(index).toContain('data-program-action="back-to-plan"');
+    expect(script).toContain('target.dataset.programAction !== "back-to-plan"');
+    expect(styles).toContain('.manage-programs-heading');
+    expect(index).toContain('id="manage-program-templates"');
+    expect(index).toContain('<summary>Saved program templates</summary>');
+    expect(styles).toContain('.manage-program-templates-content');
+    expect(script).toContain('getProgramWeekIndexForDate(instance.startDate, uiSettings.currentWeekStart)');
+    expect(script).toContain('Week ${currentWeek} of ${instance.durationWeeks}');
     expect(index).toContain('id="activity-chart-details"');
     expect(index).toContain('Open detailed charts');
     expect(script).toContain('activityChartDetailsEl.open = true');
