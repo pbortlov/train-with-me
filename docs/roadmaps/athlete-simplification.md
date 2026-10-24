@@ -1,9 +1,9 @@
 # Athlete Simplification Project: PR Roadmap
 
 - Updated: 2026-10-24
-- Project status: active; R07 ready for PR review
-- Implementation progress: 6 of 11 steps delivered
-- Next implementation: R08 — Plan and Manage programs
+- Project status: active; R08 ready for PR review
+- Implementation progress: 7 of 11 steps delivered
+- Next implementation: R09 — Three tabs and Settings
 - Baseline: [PR #69](https://github.com/pbortlov/train-with-me/pull/69), merged
 - Scope: the athlete doing strength, running, and sprinting
 - Product agreement: [decision record](../conversations/2026-09-09-athlete-simplification.md)
@@ -32,8 +32,8 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | R04 | `feat(today): start and repeat workouts` | Start today's plan or repeat previous training | R03 | Merged — [#76](https://github.com/pbortlov/train-with-me/pull/76) |
 | R05 | `feat(goals): track exercise weight and rep goals` | Achieve a specific strength goal in one working set | R03; deliver after R04 | Merged — [#78](https://github.com/pbortlov/train-with-me/pull/78) |
 | R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | Merged — [#79](https://github.com/pbortlov/train-with-me/pull/79) |
-| R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Ready for PR — implementation complete |
-| R08 | `refactor(plan): combine calendar and program management` | See the week and active program before builder controls | R04; deliver after R07 | Planned |
+| R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Merged — [#81](https://github.com/pbortlov/train-with-me/pull/81) |
+| R08 | `refactor(plan): combine calendar and program management` | See the week and active program before builder controls | R04; deliver after R07 | Ready for PR — implementation complete |
 | R09 | `refactor(navigation): add today plan progress and settings` | Three main tabs with clear settings and history access | R07, R08 | Planned |
 | R10 | `feat(settings): choose training activities on first use` | Choose strength, running, and/or sprinting | R09 | Planned |
 | R11 | `feat(settings): suggest hiding inactive activities` | Optional reminders after 30 inactive days | R10 | Planned |
@@ -236,7 +236,7 @@ Validation: 198 tests passed, production build passed, and phone-width manual
 checks passed for the activity switcher, inline exercise detail, empty states,
 filters, and chart disclosure.
 
-## R08 — Plan and Manage programs
+## R08 — Plan and Manage programs (implementation complete; PR pending)
 
 Bring the week calendar and active program into one Plan destination. Place
 creation, templates, import/export, and advanced program controls under **Manage
@@ -251,6 +251,18 @@ Acceptance checks:
   program gets a useful week view and an obvious setup route.
 
 Docs: update planner overview and navigation/program ADRs.
+
+Implementation slices completed on the R08 branch:
+
+- Renamed the athlete-facing Calendar destination to Plan.
+- Added active-program context, lifecycle status, planned-session count, and current program week to Plan.
+- Added a direct Manage programs route and a clear Back to Plan action.
+- Kept saved template tools collapsed until needed while preserving import/export,
+  filtering, editing, duplication, scheduling, and builder behavior.
+- Preserved existing calendar movement, program-week identity, and generated-session behavior.
+
+Validation: 198 tests passed, production build passed, and the Plan/Manage flow
+was checked at phone width.
 
 ## R09 — Three tabs and Settings
 
