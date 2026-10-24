@@ -2454,6 +2454,14 @@ textarea:focus-visible {
   background: var(--surface-program-panel-bg);
 }
 
+.progress-history-card {
+  border-color: var(--surface-program-panel-border);
+}
+
+.progress-history-card .data-history-card {
+  margin-top: 0.75rem;
+}
+
 .data-collapsible-card summary {
   display: flex;
   align-items: center;

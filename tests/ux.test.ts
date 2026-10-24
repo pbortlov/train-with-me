@@ -460,7 +460,8 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('class="card data-utility-card"');
     expect(index).toContain('class="card data-backup-card"');
     expect(index).toContain('<details class="card data-library-card data-collapsible-card">');
-    expect(index).toContain('<details class="card data-history-card data-collapsible-card">');
+    expect(index).toContain('<details class="data-history-card data-collapsible-card" open>');
+    expect(index).toContain('id="progress-history-section"');
     expect(index).toContain('id="export-data" class="data-backup-control data-backup-export"');
     expect(index).toContain('class="data-backup-control data-backup-import data-import-button"');
     expect(styles).toContain('.view-panel[data-view="data"] > .card');
