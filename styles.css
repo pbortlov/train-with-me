@@ -612,6 +612,36 @@ body {
   margin-top: 0.85rem;
 }
 
+.settings-launchpad {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.settings-launchpad h2,
+.settings-launchpad p {
+  margin-top: 0;
+}
+
+.settings-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.settings-tool-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-tool-card span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 .plan-program-summary span,
 .plan-program-empty span {
   color: var(--muted);
@@ -4725,7 +4755,7 @@ textarea {
     left: env(safe-area-inset-left);
     z-index: 50;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.2rem;
     margin: 0;
     padding: 0.45rem 0.35rem max(0.45rem, env(safe-area-inset-bottom));
