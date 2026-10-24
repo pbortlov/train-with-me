@@ -20,14 +20,6 @@
             <h1>Train With Me</h1>
             <p>Local-first training planning, logging, and progress.</p>
           </div>
-          <div class="header-actions">
-            <label class="checkbox-label coach-toggle">
-              <input type="checkbox" id="coach-mode-toggle" />
-              Geek / coach mode
-            </label>
-            <button type="button" id="install-app" aria-describedby="install-help">Install App</button>
-            <p id="install-help" class="install-help" hidden></p>
-          </div>
         </div>
         <nav class="view-nav" aria-label="Main navigation">
           <button type="button" class="ghost-button nav-button" data-view-target="today">Today</button>
@@ -75,18 +67,6 @@
           </div>
         </article>
 
-        <article class="card onboarding-card" aria-labelledby="onboarding-heading">
-          <div>
-            <p class="today-eyebrow">Start Here</p>
-            <h3 id="onboarding-heading">Train locally, protect your history</h3>
-            <p class="hint">This app stores training on this device. A quick routine keeps the local-first workflow safe.</p>
-          </div>
-          <ol class="onboarding-steps">
-            <li><strong>Enter fast:</strong> use Today as the launchpad, then open Calendar when you want the week.</li>
-            <li><strong>Check wins:</strong> use Stats for progress, strength, running, and sprint summaries.</li>
-            <li><strong>Back up often:</strong> export JSON from Data after important training changes.</li>
-          </ol>
-        </article>
       </section>
 
       <section class="view-panel" data-view="calendar">
@@ -1084,6 +1064,35 @@
               <span>Back up your data, manage exercises, and edit or delete workout history.</span>
             </button>
           </div>
+        </article>
+
+        <article class="card settings-preferences-card" aria-labelledby="settings-preferences-heading">
+          <p class="today-eyebrow">Preferences</p>
+          <h3 id="settings-preferences-heading">Training display</h3>
+          <label class="checkbox-label coach-toggle">
+            <input type="checkbox" id="coach-mode-toggle" />
+            Geek / coach mode
+          </label>
+          <p class="hint">Show extra coaching and implementation detail when you want it.</p>
+        </article>
+
+        <article class="card settings-help-card" aria-labelledby="settings-help-heading">
+          <p class="today-eyebrow">Help and safety</p>
+          <h3 id="settings-help-heading">Train locally, protect your history</h3>
+          <p class="hint">This app stores training on this device. Keep a backup after important changes.</p>
+          <ol class="onboarding-steps">
+            <li><strong>Enter fast:</strong> use Today as the launchpad, then open Plan when you want the week.</li>
+            <li><strong>Check wins:</strong> use Progress for strength, running, and sprint summaries.</li>
+            <li><strong>Back up often:</strong> export JSON from Data and history after important training changes.</li>
+          </ol>
+          <div class="settings-install-panel">
+            <div>
+              <strong>Install the app</strong>
+              <p class="hint">Keep Train With Me available from your phone home screen.</p>
+            </div>
+            <button type="button" id="install-app" aria-describedby="install-help">Install App</button>
+          </div>
+          <p id="install-help" class="install-help" hidden></p>
         </article>
       </section>
 
