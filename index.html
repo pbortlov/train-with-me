@@ -681,6 +681,15 @@
           <div id="progress-hub-breakdown" class="progress-hub-breakdown"></div>
         </article>
 
+        <nav class="progress-activity-switcher" aria-label="Progress activity">
+          <span class="progress-activity-switcher-label">Show progress for</span>
+          <div class="progress-activity-switcher-buttons" role="group">
+            <button type="button" class="ghost-button is-active" data-progress-activity="strength" aria-pressed="true">Strength</button>
+            <button type="button" class="ghost-button" data-progress-activity="run" aria-pressed="false">Running</button>
+            <button type="button" class="ghost-button" data-progress-activity="sprint" aria-pressed="false">Sprint</button>
+          </div>
+        </nav>
+
         <details class="card review-disclosure stats-secondary-section" id="review-disclosure">
           <summary>Plan vs actual</summary>
           <p class="hint">Use this when you want to inspect what changed.</p>

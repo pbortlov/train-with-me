@@ -359,6 +359,7 @@ const progressHubHighlightEl = document.getElementById("progress-hub-highlight")
 const progressHubSummaryEl = document.getElementById("progress-hub-summary");
 const progressHubBreakdownEl = document.getElementById("progress-hub-breakdown");
 const progressHubActions = document.querySelectorAll("[data-progress-jump]");
+const progressActivityButtons = document.querySelectorAll("[data-progress-activity]");
 const programProgressSelect = document.getElementById("program-progress-select");
 const programExerciseSortInput = document.getElementById("program-exercise-sort");
 const programProgressSummaryEl = document.getElementById("program-progress-summary");
@@ -440,6 +441,7 @@ let draftStrengthExercises = [];
 let draftCurrentStrengthSets = [];
 let strengthProgressionExerciseKey = "";
 let strengthExerciseProgressSelectionKey = "";
+let progressActivityView = "strength";
 let progressFilters = {
   activity: "all",
   fromDate: "",
@@ -798,6 +800,12 @@ logDateButtons.forEach((button) => {
 progressHubActions.forEach((button) => {
   button.addEventListener("click", () => {
     scrollToProgressSection(button.dataset.progressJump || "");
+  });
+});
+progressActivityButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    progressActivityView = button.dataset.progressActivity || "strength";
+    syncProgressActivityView();
   });
 });
 addSafeEventListener(strengthExerciseProgressListEl, "click", (event) => {
@@ -1185,6 +1193,7 @@ function render() {
   renderStrengthProgressionReview();
   renderRunningInsights();
   renderSprintInsights();
+  syncProgressActivityView();
   renderPlannerSummary();
   renderCalendar();
   renderCalendarSessionDetail();
@@ -1797,7 +1806,40 @@ function formatProgressHubStrengthSnapshot(snapshot) {
   return formatActualProgressSnapshot(snapshot) || "logged";
 }
 
+function syncProgressActivityView() {
+  const sectionIdsByActivity = {
+    strength: [
+      "program-progress-section",
+      "strength-insights-section",
+      "strength-progression-review-section",
+      "strength-exercise-progress-list-section",
+    ],
+    run: ["running-insights-section"],
+    sprint: ["sprint-insights-section"],
+  };
+  const activeSectionIds = new Set(sectionIdsByActivity[progressActivityView] || sectionIdsByActivity.strength);
+  [
+    "program-progress-section",
+    "strength-insights-section",
+    "strength-progression-review-section",
+    "strength-exercise-progress-list-section",
+    "running-insights-section",
+    "sprint-insights-section",
+  ].forEach((id) => {
+    document.getElementById(id)?.classList.toggle("is-hidden", !activeSectionIds.has(id));
+  });
+  progressActivityButtons.forEach((button) => {
+    const isActive = button.dataset.progressActivity === progressActivityView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
 function scrollToProgressSection(target) {
+  if (target === "strength" || target === "running" || target === "sprint") {
+    progressActivityView = target === "running" ? "run" : target;
+    syncProgressActivityView();
+  }
   const sectionByTarget = {
     adherence: document.getElementById("adherence-section"),
     goals: document.getElementById("goals-section"),

@@ -415,6 +415,12 @@ describe("local-first UX guidance", () => {
     expect(styles).toContain('.strength-exercise-progress-detail');
     expect(styles).toContain('.strength-exercise-progress-detail-summary');
     expect(script).toContain('Suggested next target');
+    expect(index).toContain('data-progress-activity="strength"');
+    expect(index).toContain('data-progress-activity="run"');
+    expect(index).toContain('data-progress-activity="sprint"');
+    expect(script).toContain('function syncProgressActivityView()');
+    expect(script).toContain('progressActivityView = target === "running" ? "run" : target');
+    expect(styles).toContain('.progress-activity-switcher');
     expect(styles).toContain('.running-insights-card');
     expect(styles).toContain('.sprint-insights-card');
     expect(styles).toContain('.stats-insight-details summary');
