@@ -421,6 +421,9 @@ describe("local-first UX guidance", () => {
     expect(script).toContain('function syncProgressActivityView()');
     expect(script).toContain('progressActivityView = target === "running" ? "run" : target');
     expect(styles).toContain('.progress-activity-switcher');
+    expect(index).toContain('id="progress-filter-summary"');
+    expect(script).toContain('function formatProgressFilterSummary()');
+    expect(styles).toContain('.progress-empty-state');
     expect(styles).toContain('.running-insights-card');
     expect(styles).toContain('.sprint-insights-card');
     expect(styles).toContain('.stats-insight-details summary');

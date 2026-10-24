@@ -171,6 +171,7 @@ const filterToDateInput = document.getElementById("filter-to-date");
 const clearFiltersButton = document.getElementById("clear-filters");
 const filterStrengthLoadInput = document.getElementById("filter-strength-load");
 const chartsStatusEl = document.getElementById("charts-status");
+const progressFilterSummaryEl = document.getElementById("progress-filter-summary");
 const strengthInsightsSummaryEl = document.getElementById("strength-insights-summary");
 const strengthInsightsDetailsEl = document.getElementById("strength-insights-details");
 const strengthInsightsBodyEl = document.getElementById("strength-insights-body");
@@ -360,6 +361,8 @@ const progressHubSummaryEl = document.getElementById("progress-hub-summary");
 const progressHubBreakdownEl = document.getElementById("progress-hub-breakdown");
 const progressHubActions = document.querySelectorAll("[data-progress-jump]");
 const progressActivityButtons = document.querySelectorAll("[data-progress-activity]");
+const progressActivityStatusEl = document.getElementById("progress-activity-status");
+const statsViewPanel = document.querySelector('.view-panel[data-view="stats"]');
 const programProgressSelect = document.getElementById("program-progress-select");
 const programExerciseSortInput = document.getElementById("program-exercise-sort");
 const programProgressSummaryEl = document.getElementById("program-progress-summary");
@@ -807,6 +810,17 @@ progressActivityButtons.forEach((button) => {
     progressActivityView = button.dataset.progressActivity || "strength";
     syncProgressActivityView();
   });
+});
+statsViewPanel?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const actionButton = target.closest("[data-progress-empty-action]");
+  if (!(actionButton instanceof HTMLElement)) {
+    return;
+  }
+  selectLoggingActivity(actionButton.dataset.progressEmptyAction || "strength", { focus: true });
 });
 addSafeEventListener(strengthExerciseProgressListEl, "click", (event) => {
   const target = event.target;
@@ -1833,6 +1847,21 @@ function syncProgressActivityView() {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
+  if (progressActivityStatusEl) {
+    const label = progressActivityView === "run" ? "Running" : progressActivityView === "sprint" ? "Sprint" : "Strength";
+    progressActivityStatusEl.textContent = `${label} progress selected. Use the activity cards below to review your history.`;
+  }
+}
+
+function renderProgressEmptyState(activity, title, message) {
+  const label = activity === "run" ? "run" : activity === "sprint" ? "sprint" : "strength";
+  return `
+    <div class="progress-empty-state">
+      <strong>${escapeHtml(title)}</strong>
+      <span>${escapeHtml(message)}</span>
+      <button type="button" class="ghost-button" data-progress-empty-action="${label}">Log a ${label} workout</button>
+    </div>
+  `;
 }
 
 function scrollToProgressSection(target) {
@@ -3033,6 +3062,9 @@ function compareWorkoutsByRecentDate(a, b) {
 }
 
 function renderCharts() {
+  if (progressFilterSummaryEl) {
+    progressFilterSummaryEl.textContent = formatProgressFilterSummary();
+  }
   if (typeof Chart === "undefined") {
     chartsStatusEl.textContent = "Charts unavailable (Chart.js failed to load).";
     return;
@@ -3080,6 +3112,23 @@ function renderCharts() {
   chartsStatusEl.textContent = hasVisibleCharts
     ? ""
     : "No entries match these filters.";
+}
+
+function formatProgressFilterSummary() {
+  const activityLabel = progressFilters.activity === "all"
+    ? "all activities"
+    : progressFilters.activity === "run"
+      ? "running"
+      : progressFilters.activity === "sprint"
+        ? "sprinting"
+        : "strength";
+  const dateLabel = progressFilters.fromDate || progressFilters.toDate
+    ? ` from ${progressFilters.fromDate || "the beginning"} to ${progressFilters.toDate || "today"}`
+    : "";
+  const loadLabel = progressFilters.strengthLoad !== "all"
+    ? ` · ${progressFilters.strengthLoad === "bodyweight" ? "bodyweight" : progressFilters.strengthLoad} load`
+    : "";
+  return `Evidence filters: ${activityLabel}${dateLabel}${loadLabel}.`;
 }
 
 function renderStrengthHighestWeights(rows) {
@@ -3227,7 +3276,7 @@ function renderStrengthExerciseProgressList() {
 
   const rows = buildStrengthExerciseProgressList(workouts, strengthProgression.profiles);
   if (!rows.length) {
-    strengthExerciseProgressListEl.innerHTML = "<p class=\"planner-empty\">Log a strength exercise to build your progress list.</p>";
+    strengthExerciseProgressListEl.innerHTML = renderProgressEmptyState("strength", "No strength history yet", "Log a strength workout to start building exercise progress.");
     return;
   }
 
@@ -3372,7 +3421,7 @@ function renderRunningInsights() {
         <span>${insights.totalDurationSeconds ? formatSecondsAsRunDuration(insights.totalDurationSeconds) : "-"}</span>
       </div>
     `
-    : "<p class=\"planner-empty\">Log a run to see running insights.</p>";
+    : renderProgressEmptyState("run", "No runs yet", "Log your first run to start tracking distance, duration, and pace.");
   runningInsightsBodyEl.innerHTML = insights.rows.length
     ? insights.rows
         .slice(0, 8)
@@ -3387,7 +3436,7 @@ function renderRunningInsights() {
           `,
         )
         .join("")
-    : "";
+    : `<tr><td colspan="4">${renderProgressEmptyState("run", "No run history", "Log a run to add the first entry.")}</td></tr>`;
 }
 
 function renderSprintInsights() {
@@ -3433,7 +3482,7 @@ function renderSprintInsights() {
         <span>${formatRecentSprintSessions(insights.rows)}</span>
       </div>
     `
-    : "<p class=\"planner-empty\">Log a sprint workout to see sprint insights.</p>";
+    : renderProgressEmptyState("sprint", "No sprints yet", "Log your first sprint session to compare distances and times.");
   sprintInsightsBodyEl.innerHTML = insights.bestByDistance.length
     ? insights.bestByDistance
         .map(
@@ -3446,7 +3495,7 @@ function renderSprintInsights() {
           `,
         )
         .join("")
-    : "";
+    : `<tr><td colspan="3">${renderProgressEmptyState("sprint", "No sprint history", "Log a sprint session to add the first entry.")}</td></tr>`;
   if (openSprintPerformanceButton) {
     openSprintPerformanceButton.disabled = insights.workoutCount === 0;
   }
