@@ -588,6 +588,18 @@ body {
   gap: 0.25rem;
 }
 
+.manage-programs-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.manage-programs-heading h2,
+.manage-programs-heading p {
+  margin-top: 0;
+}
+
 .plan-program-summary span,
 .plan-program-empty span {
   color: var(--muted);

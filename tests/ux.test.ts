@@ -428,6 +428,10 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="plan-program-context"');
     expect(script).toContain('function renderPlanProgramContext()');
     expect(styles).toContain('.plan-program-context-card');
+    expect(index).toContain('data-view-target="phases">Manage</button>');
+    expect(index).toContain('data-program-action="back-to-plan"');
+    expect(script).toContain('target.dataset.programAction !== "back-to-plan"');
+    expect(styles).toContain('.manage-programs-heading');
     expect(index).toContain('id="activity-chart-details"');
     expect(index).toContain('Open detailed charts');
     expect(script).toContain('activityChartDetailsEl.open = true');

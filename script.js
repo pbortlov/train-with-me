@@ -539,6 +539,13 @@ document.querySelector('[data-view="calendar"]')?.addEventListener("click", (eve
   }
   setCurrentView("phases");
 });
+document.querySelector('[data-view="phases"]')?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement) || target.dataset.programAction !== "back-to-plan") {
+    return;
+  }
+  setCurrentView("calendar");
+});
 
 workoutForm.addEventListener("submit", (event) => {
   event.preventDefault();

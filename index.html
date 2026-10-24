@@ -33,7 +33,7 @@
           <button type="button" class="ghost-button nav-button" data-view-target="today">Today</button>
           <button type="button" class="ghost-button nav-button" data-view-target="calendar">Plan</button>
           <button type="button" class="ghost-button nav-button" data-view-target="stats">Stats</button>
-          <button type="button" class="ghost-button nav-button" data-view-target="phases">Programs</button>
+          <button type="button" class="ghost-button nav-button" data-view-target="phases">Manage</button>
           <button type="button" class="ghost-button nav-button" data-view-target="data">Data</button>
         </nav>
       </header>
@@ -545,11 +545,17 @@
 
       <section class="view-panel" data-view="phases">
         <article class="card">
-          <h2>Programs</h2>
-          <p class="hint">
-            Manage scheduled strength programs first, then inspect or schedule saved templates. Create or import a new
-            program when you need to change the reusable structure.
-          </p>
+          <div class="manage-programs-heading">
+            <div>
+              <p class="today-eyebrow">Manage programs</p>
+              <h2>Programs</h2>
+              <p class="hint">
+                Manage scheduled strength programs first, then inspect or schedule saved templates. Create or import a new
+                program when you need to change the reusable structure.
+              </p>
+            </div>
+            <button type="button" class="ghost-button" data-program-action="back-to-plan">Back to Plan</button>
+          </div>
         </article>
 
         <article class="card">
