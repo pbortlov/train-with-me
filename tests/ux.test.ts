@@ -424,6 +424,9 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="progress-filter-summary"');
     expect(script).toContain('function formatProgressFilterSummary()');
     expect(styles).toContain('.progress-empty-state');
+    expect(index).toContain('id="activity-chart-details"');
+    expect(index).toContain('Open detailed charts');
+    expect(script).toContain('activityChartDetailsEl.open = true');
     expect(styles).toContain('.running-insights-card');
     expect(styles).toContain('.sprint-insights-card');
     expect(styles).toContain('.stats-insight-details summary');

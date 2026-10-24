@@ -210,6 +210,7 @@ const strengthHighestBody = document.getElementById("strength-highest-body");
 const runDistanceChartCanvas = document.getElementById("run-distance-chart");
 const sprintChartCanvas = document.getElementById("sprint-chart");
 const chartsGridEl = document.querySelector(".charts-grid");
+const activityChartDetailsEl = document.getElementById("activity-chart-details");
 const strengthChartCard = strengthHighestBody ? strengthHighestBody.closest(".chart-card") : null;
 const runDistanceChartCard = runDistanceChartCanvas ? runDistanceChartCanvas.closest(".chart-card") : null;
 const sprintChartCard = sprintChartCanvas ? sprintChartCanvas.closest(".chart-card") : null;
@@ -1894,6 +1895,9 @@ function scrollToProgressSection(target) {
     const detail = detailByTarget[target];
     if (detail instanceof HTMLDetailsElement) {
       detail.setAttribute("open", "");
+    }
+    if (target === "activity" && activityChartDetailsEl instanceof HTMLDetailsElement) {
+      activityChartDetailsEl.open = true;
     }
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   }

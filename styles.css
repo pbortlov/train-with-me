@@ -694,6 +694,27 @@ body {
   font-size: 0.82rem;
 }
 
+.stats-chart-review {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: rgb(8 17 33 / 55%);
+}
+
+.stats-chart-review > summary {
+  padding: 0.7rem 0.8rem;
+  color: var(--panel-title);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stats-chart-review[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-chart-review .charts-grid {
+  padding: 0.8rem;
+}
+
 .progress-hub-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
