@@ -1,9 +1,9 @@
 # Athlete Simplification Project: PR Roadmap
 
 - Updated: 2026-10-24
-- Project status: active; R08 ready for PR review
-- Implementation progress: 7 of 11 steps delivered
-- Next implementation: R09 — Three tabs and Settings
+- Project status: active; R09 implementation complete, PR pending
+- Implementation progress: 8 of 11 steps delivered
+- Next implementation: R10 — Activity selection
 - Baseline: [PR #69](https://github.com/pbortlov/train-with-me/pull/69), merged
 - Scope: the athlete doing strength, running, and sprinting
 - Product agreement: [decision record](../conversations/2026-09-09-athlete-simplification.md)
@@ -34,7 +34,7 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | R06 | `feat(progress): summarize workout achievements after saving` | One summary of improvements and achieved goals | R04, R05 | Merged — [#79](https://github.com/pbortlov/train-with-me/pull/79) |
 | R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Merged — [#81](https://github.com/pbortlov/train-with-me/pull/81) |
 | R08 | `refactor(plan): combine calendar and program management` | See the week and active program before builder controls | R04; deliver after R07 | Ready for PR — implementation complete |
-| R09 | `refactor(navigation): add today plan progress and settings` | Three main tabs with clear settings and history access | R07, R08 | Planned |
+| R09 | `refactor(navigation): add today plan progress and settings` | Three main tabs with clear settings and history access | R07, R08 | Implementation complete — PR pending |
 | R10 | `feat(settings): choose training activities on first use` | Choose strength, running, and/or sprinting | R09 | Planned |
 | R11 | `feat(settings): suggest hiding inactive activities` | Optional reminders after 30 inactive days | R10 | Planned |
 | Close | `docs: close and archive athlete simplification project` | Completed delivery and final validation are recorded | R01–R11 and final product check | Planned |
@@ -278,6 +278,20 @@ Acceptance checks:
   help are discoverable; phone navigation and keyboard focus behave correctly.
 
 Docs: update navigation ADRs, README, planner overview, and view-state migration notes.
+
+Implementation slices completed on the R09 branch:
+
+- Replaced the primary Calendar/Stats labels with Plan/Progress and added a
+  Settings destination.
+- Moved preferences, installation help, and local-first guidance into Settings.
+- Kept program management and data maintenance reachable through Settings.
+- Moved workout history into Progress while preserving edit/delete behavior.
+- Preserved `review`, `phases`, and `data` saved-view compatibility and marks
+  Settings active for the two legacy utility views.
+
+Validation: focused UX tests and the full 198-test suite pass; production build
+and `git diff --check` pass; phone navigation and utility-route manual checks
+were completed on the branch.
 
 ## R10 — Activity selection
 

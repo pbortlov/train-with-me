@@ -14,7 +14,7 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Strength logging shows the latest recorded set sequence and best kg set for a known exercise
 - Strength logging can save an editable kg target, recognise promoted sets and same-load rep gains, retain a higher suggested next session after all top-range sets are saved, and automatically update the saved target after a qualifying heavier kg set is saved
 - Strength progression distinguishes exercise variation, equipment, and load type (kg/bodyweight/band), uses working sets only, and leaves generic targets unchanged for deload, technique, pain, incomplete, and program-linked sessions
-- Strength saves acknowledge promoted sets, same-load rep gains, and genuinely heavier working sets; Stats keeps the latest comparable sequences beside each saved kg target without using streaks or workout grades
+- Strength saves acknowledge promoted sets, same-load rep gains, and genuinely heavier working sets; Progress keeps the latest comparable sequences beside each saved kg target without using streaks or workout grades
 - Progress Hub summary for workouts, plan completion, active goals, achieved goals, and training mix, with a momentum highlight
 - Progress activity switcher for focused Strength, Running, and Sprint review, with clear empty states and direct logging actions
 - Strength exercise progress list with full variation/equipment/load identity, inline session history, promoted-set signals, saved targets, and pending suggestions
@@ -24,8 +24,8 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Sprint Performance dialog for like-for-like session-best progression by sprint profile and distance, with surface and slope filters
 - Sprint Performance rep-consistency view for first, best, last, and optional exact two-decimal rep times within matching sessions
 - Sprint Performance record explorer defaults to all profiles and all distances, while charts remain limited to one selected profile and distance
-- Local-first onboarding, keyboard skip link, and backup safety guidance
-- Today-first quick navigation with Calendar for weekly planning and Stats for quick progress checks
+- Local-first guidance, keyboard skip link, and backup safety guidance in Settings
+- Today-first navigation with Plan for weekly planning and Progress for quick progress checks
 - Plan destination combines the week calendar with active-program context; Manage opens program scheduling, templates, import/export, and builder controls
 - Manual planned sessions for:
   - run
@@ -49,10 +49,10 @@ The app is designed to stay approachable for non-technical users by default, whi
 - Sprint logging can optionally record actual rest before every rep after the first as seconds or `m:ss`; planned rest remains a prescription
 - Sprint logging explains the rugby session profiles, surface/slope meanings, and post-session feeling emojis so athletes do not have to guess
 - Planned run editing opens in a popup, and run logging calculates actual pace from distance plus `hh:mm:ss` or `mm:ss` time
-- Stats includes Program Strength Progress for scheduled strength phases using each program's configured duration
+- Progress includes Program Strength Progress for scheduled strength phases using each program's configured duration
 - Program Strength Progress includes a completion doughnut chart: green for done (`completed + modified`), grey for not-done (`planned + missed`), with completion percentage in the center
 - Program Strength Progress can sort exercises by program order, highest improvement, or needs attention
-- Stats activity metrics show highest strength weight by exercise, run pace in min/km, and sprint rep times in seconds
+- Progress activity metrics show highest strength weight by exercise, run pace in min/km, and sprint rep times in seconds
 - Activity metrics use the explicit activity, date, and strength load filters
 - Goal setup uses compact Run, Sprint, and Strength buttons to show only the goal fields for that activity
 - Strength goals are tied to a named exercise and minimum reps, show the current best kg against the target, and can be edited or removed directly from Stats
@@ -68,16 +68,18 @@ The app is designed to stay approachable for non-technical users by default, whi
   - missed
 - Review stays available as a secondary inspection view, not a primary athlete tab
 - Weekly adherence summaries such as `5/6`
-- Stats page with:
+- Progress page with:
   - goal progress
   - goal history for achieved run and sprint targets
   - adherence summaries
   - program-duration strength progress
   - per-entry activity charts for strength, run, and sprint
-- Data page with:
+- Settings utilities with:
+  - program management
   - backup export/import
   - exercise library management
-  - workout history management
+  - coach-mode preference and installation help
+- Progress workout history management
 - Actual workout logging with edit and delete support
 - Exercise library with saved exercise names
 - Backup export/import as JSON
@@ -86,10 +88,11 @@ The app is designed to stay approachable for non-technical users by default, whi
 ## Main Pages
 - `Today`: quick navigator and launchpad, daily plan, completion shortcuts, status-colored planned-session cards with a dominant `Log & Complete` action, existing workout access, and activity-specific quick logging
 - `Plan`: weekly working surface with active-program context, current program week, `Add Training` for actual logs plus a collapsed planning drawer for manual run/sprint plans, activity-specific logging shortcuts, compact session cards, popup training detail, `Log & Complete` execution logging, and a momentum strip that shows next up plus weekly progress
-- `Stats`: progress proof, activity-focused Strength/Running/Sprint views, goals, adherence summaries, program strength progress, saved-target strength progression review, exercise history, and on-demand detailed charts, with a reward-first top section and a review drawer shortcut
+- `Progress`: progress proof, activity-focused Strength/Running/Sprint views, goals, adherence summaries, program strength progress, saved-target strength progression review, exercise history, workout history, and on-demand detailed charts, with a reward-first top section and a review drawer shortcut
 - `Manage`: manage scheduled strength programs first, then inspect, schedule, edit, or create reusable templates with a readable import preview; saved template tools stay collapsed until needed
 - `Review`: planned vs actual review for completed, modified, and missed planned sessions, kept out of the primary athlete nav and opened from the Stats page
-- `Data`: quiet maintenance surface for backup, with exercise library and workout history tucked behind expandable drawers
+- `Settings`: quiet maintenance surface for program management, backup, exercise library, preferences, installation help, and safety guidance
+- `Data`: legacy maintenance surface for backup and exercise-library tools, reachable from Settings; workout history now lives in Progress
 
 ## Strength Phase Import
 V1 import focuses on `strength phases` only.
@@ -215,7 +218,7 @@ npm run preview
 - Installed iOS web apps opt into safe-area handling so content and bottom navigation avoid the status bar, screen edges, and home indicator.
 - Development mode does not register the production service worker.
 - Browser storage clearing, private browsing cleanup, device loss, or changing the Pages origin can permanently remove local data.
-- The Today page includes a local-first onboarding reminder, and Data includes a backup safety checklist.
+- Settings includes local-first guidance and installation help, while Data includes the backup safety checklist.
 
 Export a JSON backup from Data after important training changes and store it outside the browser. Test restoring backups periodically before relying on them.
 

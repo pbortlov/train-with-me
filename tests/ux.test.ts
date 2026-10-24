@@ -252,14 +252,12 @@ describe("local-first UX guidance", () => {
     const todayIndex = index.indexOf('data-view-target="today"');
     const calendarIndex = index.indexOf('data-view-target="calendar"');
     const statsIndex = index.indexOf('data-view-target="stats"');
-    const phasesIndex = index.indexOf('data-view-target="phases"');
-    const dataIndex = index.indexOf('data-view-target="data"');
+    const settingsIndex = index.indexOf('data-view-target="settings"');
 
     expect(todayIndex).toBeGreaterThan(-1);
     expect(calendarIndex).toBeGreaterThan(todayIndex);
     expect(statsIndex).toBeGreaterThan(calendarIndex);
-    expect(phasesIndex).toBeGreaterThan(statsIndex);
-    expect(dataIndex).toBeGreaterThan(phasesIndex);
+    expect(settingsIndex).toBeGreaterThan(statsIndex);
     expect(index).not.toContain('data-view-target="review"');
   });
 
@@ -428,13 +426,21 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('id="plan-program-context"');
     expect(script).toContain('function renderPlanProgramContext()');
     expect(styles).toContain('.plan-program-context-card');
-    expect(index).toContain('data-view-target="phases">Manage</button>');
+    expect(index).toContain('data-view-target="settings">Settings</button>');
     expect(index).toContain('data-program-action="back-to-plan"');
     expect(script).toContain('target.dataset.programAction !== "back-to-plan"');
     expect(styles).toContain('.manage-programs-heading');
     expect(index).toContain('id="manage-program-templates"');
     expect(index).toContain('<summary>Saved program templates</summary>');
     expect(styles).toContain('.manage-program-templates-content');
+    expect(index).toContain('data-view-target="stats">Progress</button>');
+    expect(index).toContain('data-view-target="settings">Settings</button>');
+    expect(index).toContain('data-view="settings"');
+    expect(index).toContain('data-settings-action="manage"');
+    expect(index).toContain('data-settings-action="data"');
+    expect(script).toContain('"settings", "data"].includes(view)');
+    expect(script).toContain('["settings", "phases", "data"].includes(uiSettings.currentView)');
+    expect(styles).toContain('.settings-tool-grid');
     expect(script).toContain('getProgramWeekIndexForDate(instance.startDate, uiSettings.currentWeekStart)');
     expect(script).toContain('Week ${currentWeek} of ${instance.durationWeeks}');
     expect(index).toContain('id="activity-chart-details"');
@@ -455,7 +461,8 @@ describe("local-first UX guidance", () => {
     expect(index).toContain('class="card data-utility-card"');
     expect(index).toContain('class="card data-backup-card"');
     expect(index).toContain('<details class="card data-library-card data-collapsible-card">');
-    expect(index).toContain('<details class="card data-history-card data-collapsible-card">');
+    expect(index).toContain('<details class="data-history-card data-collapsible-card" open>');
+    expect(index).toContain('id="progress-history-section"');
     expect(index).toContain('id="export-data" class="data-backup-control data-backup-export"');
     expect(index).toContain('class="data-backup-control data-backup-import data-import-button"');
     expect(styles).toContain('.view-panel[data-view="data"] > .card');

@@ -546,6 +546,19 @@ document.querySelector('[data-view="phases"]')?.addEventListener("click", (event
   }
   setCurrentView("calendar");
 });
+document.querySelector('[data-view="settings"]')?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+  const action = target.closest("[data-settings-action]")?.dataset.settingsAction;
+  if (action === "manage") {
+    setCurrentView("phases");
+  }
+  if (action === "data") {
+    setCurrentView("data");
+  }
+});
 
 workoutForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -5333,7 +5346,7 @@ function normalizeViewName(view) {
   if (view === "review") {
     return "stats";
   }
-  return ["today", "calendar", "phases", "stats", "data"].includes(view) ? view : "today";
+  return ["today", "calendar", "phases", "stats", "settings", "data"].includes(view) ? view : "today";
 }
 
 function setCoachMode(enabled) {
@@ -5350,7 +5363,10 @@ function syncViewState() {
     panel.classList.toggle("is-hidden", panel.dataset.view !== uiSettings.currentView);
   });
   viewNavButtons.forEach((button) => {
-    const isActive = button.dataset.viewTarget === uiSettings.currentView;
+    const isSettingsDestination = ["settings", "phases", "data"].includes(uiSettings.currentView);
+    const isActive = isSettingsDestination
+      ? button.dataset.viewTarget === "settings"
+      : button.dataset.viewTarget === uiSettings.currentView;
     button.classList.toggle("is-active", isActive);
     if (isActive) {
       button.setAttribute("aria-current", "page");
