@@ -24,9 +24,9 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - status-colored planned-session cards with a dominant `Log & Complete` action for due sessions and a secondary `Details` action
   - direct access to planned-session details and `Log & Complete`
   - strength, run, and sprint quick logging through the existing Calendar form
-  - local-first onboarding that reminds athletes to plan/log, review progress, and export backups
+  - keeps daily training focused; local-first guidance and backup reminders live in Settings
   - does not duplicate or change workout, plan, adherence, or backup data
-- `Calendar`
+- `Plan`
   - week-first layout
   - main working surface for choosing a day and keeping the week visible
   - launchpad header with a next-up / weekly-progress cue above the grid
@@ -50,7 +50,7 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - `Log & Complete` flow for day-of-training execution without rewriting the plan
   - completed planned sessions can reopen the completion log for corrections
   - `completed` vs `modified` is auto-detected from planned vs actual workout data
-- `Programs`
+- `Manage programs` (opened from Settings or the Plan active-program card)
   - show scheduled strength programs first
   - store and edit reusable templates
   - inspect the workout structure inside each saved template
@@ -88,12 +88,12 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - support slot notes, including `Warm Up: 10 mins` or `Warm Up: 10-15 mins` for calendar time calculation, block timing like `15 mins`, `15-20 mins`, `30s`, `90-120s`, set prescriptions like `3` or `3-4`, and optional exercise weight targets inside imported strength plans
   - preserve rep prescriptions like `10`, `8-10`, `2x10`, and `2x8-10`
 - `Review`
-  - planned vs actual comparisons remain available as a secondary inspection drawer inside Stats
-  - stays out of the primary athlete nav and opens from the Stats page
+  - planned vs actual comparisons remain available as a secondary inspection drawer inside Progress
+  - stays out of the primary athlete nav and opens from the Progress page
   - run actual pace is calculated from logged distance and time
   - sprint review includes planned sprint blocks, actual sprint rows, and session feeling
   - strength review includes actual per-set execution with load type, reps, and load details
-- `Stats`
+- `Progress`
   - the main progress and motivation surface after logging
   - accessible from Today as a direct launchpad action
   - includes a shortcut into the secondary review drawer for planned-vs-actual inspection
@@ -119,11 +119,12 @@ V2 evolves Train With Me from a workout logger into a planning loop:
   - Sprint Insights summarize sprint workouts, total reps, unique distances, latest sprint, fastest rep, distance-specific bests, recent sessions, and feeling mix
   - Strength, Running, and Sprint insight summaries stay visible while detailed tables open on demand
   - per-entry strength, run, and sprint charts separate from strength phases
+  - workout history with edit/delete actions for saved sessions
 - `Data`
-  - quiet maintenance surface for backup export/import and maintenance
+  - legacy quiet maintenance surface for backup export/import and maintenance,
+    opened from Settings
   - backup safety checklist before export/import controls, styled to match the Programs surface
   - exercise library management hidden behind an expandable drawer
-  - workout history management hidden behind an expandable drawer
 
 ## Status Model
 Each planned session can be:
