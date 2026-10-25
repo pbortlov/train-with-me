@@ -1238,6 +1238,7 @@ historyBody.addEventListener("click", (event) => {
 });
 
 function render() {
+  syncActivityPreferenceControls();
   syncActivityVisibility();
   renderToday();
   renderSummary();
@@ -4336,6 +4337,7 @@ function importBackupData(event) {
         ),
         coachMode: Boolean(parsed.uiSettings?.coachMode),
         currentWeekStart: normalizeDateInput(parsed.uiSettings?.currentWeekStart) || formatDateInput(startOfWeek(new Date())),
+        activityPreferences: normalizeActivityPreferences(parsed.uiSettings?.activityPreferences),
       };
       strengthProgression = normalizeStrengthProgressionState(parsed.strengthProgression);
       refreshDetectedSessionStatuses({ persist: false });
