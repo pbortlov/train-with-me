@@ -79,6 +79,7 @@ The app is designed to stay approachable for non-technical users by default, whi
   - backup export/import
   - exercise library management
   - coach-mode preference and installation help
+- Activity preferences ask what you train on first use, can be edited in Settings, and filter everyday shortcuts without hiding history
 - Progress workout history management
 - Actual workout logging with edit and delete support
 - Exercise library with saved exercise names

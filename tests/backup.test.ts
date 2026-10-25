@@ -66,4 +66,21 @@ describe("backup compatibility", () => {
 
     expect(parseBackupPayload({ ...requiredBackup, workouts: [workout] }).workouts).toEqual([workout]);
   });
+
+  it("preserves activity preferences in the UI settings backup collection", () => {
+    const payload = createBackupPayload({
+      ...requiredBackup,
+      plannedSessions: [],
+      phaseTemplates: [],
+      phaseInstances: [],
+      uiSettings: {
+        activityPreferences: { configured: true, enabled: ["strength", "run"] },
+      },
+      strengthProgression: {},
+    });
+
+    expect(parseBackupPayload(payload).uiSettings).toEqual({
+      activityPreferences: { configured: true, enabled: ["strength", "run"] },
+    });
+  });
 });
