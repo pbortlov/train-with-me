@@ -269,6 +269,10 @@ const coachModeToggle = document.getElementById("coach-mode-toggle");
 const activityPreferencesForm = document.getElementById("activity-preferences-form");
 const activityPreferenceInputs = document.querySelectorAll("[data-activity-preference]");
 const activityPreferencesStatusEl = document.getElementById("activity-preferences-status");
+const activityOnboardingDialog = document.getElementById("activity-onboarding-dialog");
+const activityOnboardingForm = document.getElementById("activity-onboarding-form");
+const activityOnboardingInputs = document.querySelectorAll("[data-activity-onboarding]");
+const activityOnboardingStatusEl = document.getElementById("activity-onboarding-status");
 const viewNavButtons = document.querySelectorAll("[data-view-target]");
 const viewPanels = document.querySelectorAll(".view-panel");
 const todayViewPanel = document.querySelector('[data-view="today"]');
@@ -5229,6 +5233,7 @@ function initializeV2() {
   plannedSessionDateInput.value = formatDateInput(new Date());
   updatePlannedTypeFields();
   render();
+  maybeShowActivityOnboarding();
 }
 
 function bindV2Events() {
@@ -5244,6 +5249,10 @@ function bindV2Events() {
   addSafeEventListener(activityPreferencesForm, "submit", (event) => {
     event.preventDefault();
     saveActivityPreferencesFromSettings();
+  });
+  addSafeEventListener(activityOnboardingForm, "submit", (event) => {
+    event.preventDefault();
+    saveActivityPreferencesFromOnboarding();
   });
   addSafeEventListener(prevWeekButton, "click", () => shiftCurrentWeek(-7));
   addSafeEventListener(nextWeekButton, "click", () => shiftCurrentWeek(7));
@@ -5380,6 +5389,21 @@ function syncActivityPreferenceControls() {
   });
 }
 
+function syncActivityOnboardingControls() {
+  const enabled = new Set(uiSettings.activityPreferences.enabled);
+  activityOnboardingInputs.forEach((input) => {
+    input.checked = enabled.has(input.dataset.activityOnboarding || "");
+  });
+}
+
+function maybeShowActivityOnboarding() {
+  if (uiSettings.activityPreferences.configured || !(activityOnboardingDialog instanceof HTMLDialogElement)) {
+    return;
+  }
+  syncActivityOnboardingControls();
+  activityOnboardingDialog.showModal();
+}
+
 function syncActivityVisibility() {
   const enabled = new Set(uiSettings.activityPreferences.enabled);
   [
@@ -5420,6 +5444,25 @@ function saveActivityPreferencesFromSettings() {
   if (activityPreferencesStatusEl) {
     activityPreferencesStatusEl.textContent = "Activities saved.";
   }
+}
+
+function saveActivityPreferencesFromOnboarding() {
+  const enabled = [...activityOnboardingInputs]
+    .filter((input) => input.checked)
+    .map((input) => input.dataset.activityOnboarding)
+    .filter((activity) => ["strength", "run", "sprint"].includes(activity));
+  if (!enabled.length) {
+    if (activityOnboardingStatusEl) {
+      activityOnboardingStatusEl.textContent = "Choose at least one activity to continue.";
+    }
+    return;
+  }
+  uiSettings.activityPreferences = { configured: true, enabled: [...new Set(enabled)] };
+  savePlannerCollections();
+  syncActivityPreferenceControls();
+  syncActivityVisibility();
+  syncProgressActivityView();
+  activityOnboardingDialog?.close();
 }
 
 function setCoachMode(enabled) {

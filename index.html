@@ -1201,6 +1201,21 @@
       </div>
     </dialog>
 
+    <dialog id="activity-onboarding-dialog" aria-labelledby="activity-onboarding-heading">
+      <form id="activity-onboarding-form" method="dialog" class="activity-onboarding-form">
+        <p class="today-eyebrow">Start here</p>
+        <h3 id="activity-onboarding-heading">What do you train?</h3>
+        <p class="hint">Choose the activities you want to see in your everyday shortcuts. You can change this later in Settings; your existing history is always preserved.</p>
+        <label class="checkbox-label"><input type="checkbox" data-activity-onboarding="strength" /> Strength</label>
+        <label class="checkbox-label"><input type="checkbox" data-activity-onboarding="run" /> Running</label>
+        <label class="checkbox-label"><input type="checkbox" data-activity-onboarding="sprint" /> Sprinting</label>
+        <p id="activity-onboarding-status" class="hint" aria-live="polite"></p>
+        <div class="dialog-actions">
+          <button type="submit">Continue</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="completion-dialog">
       <form id="completion-form">
         <h3>Log &amp; Complete Planned Session</h3>

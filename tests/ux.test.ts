@@ -270,6 +270,9 @@ describe("local-first UX guidance", () => {
     expect(script).toContain("function saveActivityPreferencesFromSettings()");
     expect(script).toContain("function syncActivityVisibility()");
     expect(script).toContain('data-today-action=\\"quick-log\\"');
+    expect(index).toContain('id="activity-onboarding-dialog"');
+    expect(index).toContain("What do you train?");
+    expect(script).toContain("function maybeShowActivityOnboarding()");
   });
 
   it("turns Today into a launchpad with a direct stats jump", () => {
