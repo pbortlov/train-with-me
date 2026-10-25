@@ -125,6 +125,9 @@ V2 evolves Train With Me from a workout logger into a planning loop:
     opened from Settings
   - backup safety checklist before export/import controls, styled to match the Programs surface
   - exercise library management hidden behind an expandable drawer
+- `Settings`
+  - editable Strength, Running, and Sprinting activity preferences
+  - first-use activity chooser and local-first backup/help guidance
 
 ## Status Model
 Each planned session can be:

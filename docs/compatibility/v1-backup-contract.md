@@ -90,6 +90,11 @@ empty, and missing UI settings fall back to defaults.
 Missing or malformed `strengthProgression` falls back to default permitted gym
 weight jumps and no exercise profiles.
 
+`uiSettings.activityPreferences` is an optional object with `configured` and an
+`enabled` array containing one or more of `strength`, `run`, and `sprint`.
+Missing or malformed values fall back to all activities enabled and the first-use
+chooser state. Older consumers may ignore this optional preference field.
+
 A strength progression profile may include optional `nextTargetSuggestion`
 with `targetSets`, `reps`, `weight`, and `increment`. It is a persisted
 post-save suggestion for the next matching kg session, not a replacement for

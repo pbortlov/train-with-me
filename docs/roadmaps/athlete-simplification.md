@@ -1,9 +1,9 @@
 # Athlete Simplification Project: PR Roadmap
 
 - Updated: 2026-10-24
-- Project status: active; R09 implementation complete, PR pending
-- Implementation progress: 8 of 11 steps delivered
-- Next implementation: R10 — Activity selection
+- Project status: active; R10 implementation complete, PR pending
+- Implementation progress: 9 of 11 steps delivered
+- Next implementation: R11 — Optional 30-day inactivity suggestions
 - Baseline: [PR #69](https://github.com/pbortlov/train-with-me/pull/69), merged
 - Scope: the athlete doing strength, running, and sprinting
 - Product agreement: [decision record](../conversations/2026-09-09-athlete-simplification.md)
@@ -35,7 +35,7 @@ decisions are fixed; this ordering and the proposed PR titles are the delivery p
 | R07 | `refactor(progress): unify activity and exercise review` | Find history, targets, and trends in one relevant view | R06 | Merged — [#81](https://github.com/pbortlov/train-with-me/pull/81) |
 | R08 | `refactor(plan): combine calendar and program management` | See the week and active program before builder controls | R04; deliver after R07 | Ready for PR — implementation complete |
 | R09 | `refactor(navigation): add today plan progress and settings` | Three main tabs with clear settings and history access | R07, R08 | Implementation complete — PR pending |
-| R10 | `feat(settings): choose training activities on first use` | Choose strength, running, and/or sprinting | R09 | Planned |
+| R10 | `feat(settings): choose training activities on first use` | Choose strength, running, and/or sprinting | R09 | Implementation complete — PR pending |
 | R11 | `feat(settings): suggest hiding inactive activities` | Optional reminders after 30 inactive days | R10 | Planned |
 | Close | `docs: close and archive athlete simplification project` | Completed delivery and final validation are recorded | R01–R11 and final product check | Planned |
 
@@ -307,6 +307,20 @@ Acceptance checks:
   survive refresh and backup/restore, with safe defaults for missing fields.
 
 Docs: record preference/onboarding semantics and update the backup contract.
+
+Implementation slices completed on the R10 branch:
+
+- Added persisted activity preferences with all-activity defaults for older
+  installations and malformed settings.
+- Added the first-use **What do you train?** chooser and editable Settings
+  controls with a one-activity minimum.
+- Filtered everyday logging, Progress, and goal activity options while keeping
+  historical workouts and scheduled sessions available.
+- Preserved preferences through backup export/import and documented the optional
+  backup field.
+
+Validation: focused UX and backup tests pass, production build passes, and the
+first-use, Settings, filtering, and backup round-trip flows were manually tested.
 
 ## R11 — Optional 30-day inactivity suggestions
 
